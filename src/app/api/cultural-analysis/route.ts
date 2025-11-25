@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { redis } from '@/lib/redis';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -26,13 +27,20 @@ Bridging concepts should:
 - Represent potential areas for innovation or policy intervention
 - Be concrete and actionable
 
+For EACH bridging concept, provide:
+- The concept name (2-4 words)
+- A brief explanation (1 sentence) of what it means and why it bridges the gap
+
 Also provide:
 1. A description of the innovation opportunity this gap represents
 2. A policy implication for how to leverage this cultural hole
 
 Return your response as JSON with this structure:
 {
-  "bridgingConcepts": ["concept1", "concept2", ...],
+  "bridgingConcepts": [
+    {"concept": "concept name", "explanation": "brief explanation of this bridging concept"},
+    ...
+  ],
   "opportunity": "Description of innovation potential",
   "policyImplication": "Actionable policy recommendation"
 }`;
@@ -247,20 +255,49 @@ export async function POST(request: NextRequest) {
             size: cluster.themes.length,
         }));
 
+        // Generate descriptions for each cluster
+        console.log('Generating cluster descriptions...');
+        const clustersWithDescriptions = await Promise.all(
+            clusters.map(async (cluster) => {
+                try {
+                    const descriptionResponse = await openai.chat.completions.create({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `You are an expert in discourse analysis and policy research. Given a list of related themes, provide a single concise sentence (max 15 words) that defines what this discourse cluster represents. Examples: "regulatory copying policies", "grand societal challenges", "diversity-coherence paradox", "enactment fields". Focus on identifying the conceptual pattern or theoretical category.`
+                            },
+                            {
+                                role: 'user',
+                                content: `Themes: ${cluster.themes.join(', ')}`
+                            }
+                        ],
+                        temperature: 0.3,
+                    });
+
+                    const description = descriptionResponse.choices[0].message.content?.trim() || cluster.name;
+                    return { ...cluster, description };
+                } catch (error) {
+                    console.error(`Error generating description for cluster ${cluster.id}:`, error);
+                    return { ...cluster, description: cluster.name };
+                }
+            })
+        );
+
         // Step 4: Identify cultural holes (gaps between clusters)
         console.log('Identifying cultural holes...');
         const potentialHoles = [];
         const holeThreshold = 0.4; // Clusters with similarity < 0.4 are considered "holes"
 
-        for (let i = 0; i < clusters.length; i++) {
-            for (let j = i + 1; j < clusters.length; j++) {
-                const similarity = cosineSimilarity(clusters[i].centroid, clusters[j].centroid);
+        for (let i = 0; i < clustersWithDescriptions.length; i++) {
+            for (let j = i + 1; j < clustersWithDescriptions.length; j++) {
+                const similarity = cosineSimilarity(clustersWithDescriptions[i].centroid, clustersWithDescriptions[j].centroid);
                 const distance = 1 - similarity;
 
                 if (distance > holeThreshold) {
                     potentialHoles.push({
-                        clusterA: clusters[i],
-                        clusterB: clusters[j],
+                        clusterA: clustersWithDescriptions[i],
+                        clusterB: clustersWithDescriptions[j],
                         distance: parseFloat(distance.toFixed(3)),
                     });
                 }
@@ -319,6 +356,27 @@ export async function POST(request: NextRequest) {
 
         console.log(`Cultural analysis complete. Found ${clusters.length} clusters and ${holes.length} cultural holes`);
 
+        // Generate a unique key for this analysis request based on source IDs and lens
+        const sortedSourceIds = sources.map((s: any) => s.id).sort().join(',');
+        const cacheKey = `analysis:${sortedSourceIds}:${lensId}`;
+
+        // Check cache first
+        try {
+            const cachedAnalysis = await redis.get(cacheKey);
+            if (cachedAnalysis) {
+                console.log('Returning cached analysis for key:', cacheKey);
+                return NextResponse.json({
+                    success: true,
+                    analysis: JSON.parse(cachedAnalysis)
+                });
+            }
+        } catch (error) {
+            console.error('Redis cache check failed:', error);
+            // Continue without cache if Redis fails
+        }
+
+        // ... (Existing analysis logic) ...
+
         // Step 5: Generate overall summary
         console.log('Generating overall summary...');
         let summary = "";
@@ -336,9 +394,9 @@ export async function POST(request: NextRequest) {
                     {
                         role: 'user',
                         content: `Analysis Results:
-                        Clusters: ${clusters.map(c => c.name).join(', ')}
+                        Clusters: ${clustersWithDescriptions.map(c => c.name).join(', ')}
                         Top Cultural Hole: ${holes.length > 0 ? `Between ${holes[0].clusterA} and ${holes[0].clusterB} (Distance: ${holes[0].distance})` : "None found"}
-                        Bridging Concepts: ${holes.length > 0 ? holes[0].bridgingConcepts.join(', ') : "N/A"}`
+                        Bridging Concepts: ${holes.length > 0 ? holes[0].bridgingConcepts.map((bc: any) => bc.concept).join(', ') : "N/A"}`
                     }
                 ],
                 temperature: 0.5,
@@ -349,14 +407,23 @@ export async function POST(request: NextRequest) {
             summary = "Summary generation failed.";
         }
 
+        const analysisResult = {
+            summary,
+            clusters: clustersWithDescriptions,
+            holes,
+            timestamp: new Date().toISOString(),
+        };
+
+        // Cache the result
+        try {
+            await redis.set(cacheKey, JSON.stringify(analysisResult));
+        } catch (error) {
+            console.error('Failed to cache analysis result:', error);
+        }
+
         return NextResponse.json({
             success: true,
-            analysis: {
-                summary,
-                clusters,
-                holes,
-                timestamp: new Date().toISOString(),
-            },
+            analysis: analysisResult,
         });
     } catch (error: any) {
         console.error('Cultural analysis error:', error);

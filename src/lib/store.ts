@@ -1,35 +1,27 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { Source } from '@/types';
+import { redis } from '@/lib/redis';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'sources.json');
+const SOURCES_KEY = 'sources';
 
-// Ensure data directory exists
-const ensureDataDir = async () => {
-    try {
-        await fs.access(DATA_DIR);
-    } catch {
-        await fs.mkdir(DATA_DIR, { recursive: true });
-    }
-};
-
-// Read sources from file
+// Read sources from Redis
 export const getSources = async (): Promise<Source[]> => {
-    await ensureDataDir();
     try {
-        const data = await fs.readFile(DATA_FILE, 'utf-8');
-        return JSON.parse(data);
+        const data = await redis.get(SOURCES_KEY);
+        return data ? JSON.parse(data) : [];
     } catch (error) {
-        // If file doesn't exist or is empty, return empty array
+        console.error('Failed to fetch sources from Redis:', error);
         return [];
     }
 };
 
-// Save sources to file
+// Save sources to Redis
 export const saveSources = async (sources: Source[]): Promise<void> => {
-    await ensureDataDir();
-    await fs.writeFile(DATA_FILE, JSON.stringify(sources, null, 2), 'utf-8');
+    try {
+        await redis.set(SOURCES_KEY, JSON.stringify(sources));
+    } catch (error) {
+        console.error('Failed to save sources to Redis:', error);
+        throw error;
+    }
 };
 
 // Add a new source
@@ -64,3 +56,4 @@ export const deleteSource = async (id: string): Promise<boolean> => {
     await saveSources(filteredSources);
     return true;
 };
+

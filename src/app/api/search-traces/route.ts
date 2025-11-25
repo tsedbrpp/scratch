@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { redis } from '@/lib/redis';
 
 const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
 
@@ -26,20 +27,33 @@ interface GoogleSearchResponse {
 
 export async function POST(request: NextRequest) {
     try {
-        const { policyText, customQuery, platforms } = await request.json();
+        const body = await request.json();
+        const { policyText, customQuery, platforms } = body;
+
+        // Generate cache key
+        const cacheKey = `search-traces:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+
+        // Check cache
+        try {
+            const cachedData = await redis.get(cacheKey);
+            if (cachedData) {
+                console.log('Returning cached search traces');
+                return NextResponse.json(JSON.parse(cachedData));
+            }
+        } catch (error) {
+            console.error('Redis cache check failed:', error);
+        }
 
         // Check for required API keys
         const googleApiKey = process.env.GOOGLE_SEARCH_API_KEY;
-        const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+        const searchEngineId = process.env.GOOGLE_SEARCH_CX;
         const openaiApiKey = process.env.OPENAI_API_KEY;
-
-
 
         if (!googleApiKey || !searchEngineId) {
             return NextResponse.json(
                 {
                     error: 'Google Search API not configured',
-                    details: 'Please add GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID to .env.local'
+                    details: 'Please add GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX to .env.local'
                 },
                 { status: 500 }
             );
@@ -124,11 +138,20 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        return NextResponse.json({
+        const result = {
             success: true,
             traces: allTraces,
             queriesUsed: searchQueries.slice(0, 2)
-        });
+        };
+
+        // Cache result (expire in 24 hours)
+        try {
+            await redis.set(cacheKey, JSON.stringify(result), 'EX', 60 * 60 * 24);
+        } catch (error) {
+            console.error('Failed to cache search traces:', error);
+        }
+
+        return NextResponse.json(result);
 
     } catch (error: any) {
         console.error('Search error:', error);

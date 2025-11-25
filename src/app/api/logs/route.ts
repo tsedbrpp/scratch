@@ -1,34 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { redis } from '@/lib/redis';
 
-const LOGS_FILE = path.join(process.cwd(), 'data', 'logs.json');
-
-// Ensure data directory exists
-async function ensureDataDir() {
-    const dataDir = path.join(process.cwd(), 'data');
-    try {
-        await fs.access(dataDir);
-    } catch {
-        await fs.mkdir(dataDir, { recursive: true });
-    }
-}
+const LOGS_KEY = 'logs';
 
 // Read logs
 async function getLogs() {
-    await ensureDataDir();
     try {
-        const data = await fs.readFile(LOGS_FILE, 'utf-8');
-        return JSON.parse(data);
+        const data = await redis.get(LOGS_KEY);
+        return data ? JSON.parse(data) : [];
     } catch (error) {
+        console.error('Failed to fetch logs from Redis:', error);
         return [];
     }
 }
 
 // Save logs
 async function saveLogs(logs: any[]) {
-    await ensureDataDir();
-    await fs.writeFile(LOGS_FILE, JSON.stringify(logs, null, 2));
+    try {
+        await redis.set(LOGS_KEY, JSON.stringify(logs));
+    } catch (error) {
+        console.error('Failed to save logs to Redis:', error);
+        throw error;
+    }
 }
 
 export async function GET() {
@@ -65,3 +58,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to save log' }, { status: 500 });
     }
 }
+

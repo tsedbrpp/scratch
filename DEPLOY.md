@@ -9,6 +9,7 @@ Before deploying, ensure you have the following environment variables ready, as 
 - `OPENAI_API_KEY`: Your OpenAI API key.
 - `GOOGLE_SEARCH_API_KEY`: Your Google Custom Search API key.
 - `GOOGLE_SEARCH_CX`: Your Google Custom Search Engine ID.
+- `REDIS_URL`: Connection string for your Redis instance (e.g., `redis://localhost:6379` for local, or your Vercel KV/Upstash URL).
 
 ## Option 1: Vercel (Recommended)
 
@@ -73,8 +74,20 @@ If you prefer containerization, you can use the official Next.js Docker example.
     ```
 3.  Run the container:
     ```bash
-    docker run -p 3000:3000 -e OPENAI_API_KEY=... -e GOOGLE_SEARCH_API_KEY=... -e GOOGLE_SEARCH_CX=... my-next-app
+    docker run -p 3000:3000 -e OPENAI_API_KEY=... -e GOOGLE_SEARCH_API_KEY=... -e GOOGLE_SEARCH_CX=... -e REDIS_URL=... my-next-app
     ```
+
+## Option 5: Local Development with Docker Compose
+
+To run the required services (Redis) locally using Docker:
+
+1.  Ensure Docker Desktop is installed and running.
+2.  Run the following command in the project root:
+    ```bash
+    docker-compose up -d
+    ```
+    This will start a Redis instance on port 6379.
+3.  Set `REDIS_URL=redis://localhost:6379` in your `.env.local` file.
 
 ## Static Export (Optional)
 

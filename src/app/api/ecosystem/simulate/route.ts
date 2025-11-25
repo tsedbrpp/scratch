@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { redis } from '@/lib/redis';
 
 export async function POST(request: Request) {
     try {
@@ -7,6 +8,20 @@ export async function POST(request: Request) {
 
         if (!apiKey) {
             return NextResponse.json({ success: false, error: "Missing GOOGLE_API_KEY in .env.local" }, { status: 500 });
+        }
+
+        // Generate cache key
+        const cacheKey = `ecosystem:simulate:${Buffer.from(query).toString('base64')}`;
+
+        // Check cache
+        try {
+            const cachedData = await redis.get(cacheKey);
+            if (cachedData) {
+                console.log('Returning cached ecosystem simulation');
+                return NextResponse.json(JSON.parse(cachedData));
+            }
+        } catch (error) {
+            console.error('Redis cache check failed:', error);
         }
 
         // Use Gemini to generate synthetic ecosystem actors based on the query
@@ -46,7 +61,16 @@ export async function POST(request: Request) {
         const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsedData = JSON.parse(cleanJson);
 
-        return NextResponse.json({ success: true, actors: parsedData.actors });
+        const responseData = { success: true, actors: parsedData.actors };
+
+        // Cache result (expire in 24 hours)
+        try {
+            await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 60 * 60 * 24);
+        } catch (error) {
+            console.error('Failed to cache ecosystem simulation:', error);
+        }
+
+        return NextResponse.json(responseData);
 
     } catch (error) {
         console.error("Simulation error:", error);
