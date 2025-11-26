@@ -52,7 +52,7 @@ export function CulturalHoleMatrix({ clusters, holes }: CulturalHoleMatrixProps)
                     ))}
 
                     {/* Matrix Rows */}
-                    {clusters.map((rowCluster) => (
+                    {clusters.map((rowCluster, rowIndex) => (
                         <React.Fragment key={rowCluster.id}>
                             {/* Row Header */}
                             <div className="flex items-center justify-end pr-2 py-1 border-r border-slate-200">
@@ -62,9 +62,16 @@ export function CulturalHoleMatrix({ clusters, holes }: CulturalHoleMatrixProps)
                             </div>
 
                             {/* Cells */}
-                            {clusters.map((colCluster) => {
-                                const isDiagonal = rowCluster.id === colCluster.id;
+                            {clusters.map((colCluster, colIndex) => {
+                                const isDiagonal = rowIndex === colIndex;
+                                const isLowerTriangle = colIndex < rowIndex;
                                 const hole = getHole(rowCluster.id, colCluster.id);
+
+                                if (isLowerTriangle) {
+                                    return (
+                                        <div key={`${rowCluster.id}-${colCluster.id}`} className="bg-slate-50/50 border border-white h-12" />
+                                    );
+                                }
 
                                 if (isDiagonal) {
                                     return (
