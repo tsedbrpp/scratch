@@ -4,6 +4,14 @@ const getRedisUrl = () => {
     if (process.env.REDIS_URL) {
         return process.env.REDIS_URL;
     }
+
+    // During build time or if not configured, return a dummy URL to prevent crash
+    // The actual connection will fail if used, but it allows the app to build.
+    if (process.env.NODE_ENV === 'production') {
+        console.warn('REDIS_URL is not defined. Using dummy URL for build.');
+        return 'redis://localhost:6379';
+    }
+
     throw new Error('REDIS_URL is not defined');
 };
 
