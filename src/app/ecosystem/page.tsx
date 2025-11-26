@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,12 +28,12 @@ const MOCK_ACTORS: EcosystemActor[] = [
 ];
 
 export default function EcosystemPage() {
-    const [actors, setActors] = useState<EcosystemActor[]>(MOCK_ACTORS);
-    const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+    const [actors, setActors] = useLocalStorage<EcosystemActor[]>("ecosystem_actors", MOCK_ACTORS);
+    const [selectedActorId, setSelectedActorId] = useLocalStorage<string | null>("ecosystem_selected_actor_id", null);
     const [isSimulating, setIsSimulating] = useState(false);
-    const [simulationQuery, setSimulationQuery] = useState("AI startups and policy actors in Brussels");
+    const [simulationQuery, setSimulationQuery] = useLocalStorage<string>("ecosystem_simulation_query", "AI startups and policy actors in Brussels");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [culturalHoles, setCulturalHoles] = useState<any>(null);
+    const [culturalHoles, setCulturalHoles] = useLocalStorage<any>("ecosystem_cultural_holes", null);
     const [isAnalyzingHoles, setIsAnalyzingHoles] = useState(false);
 
     const handleSimulate = async () => {

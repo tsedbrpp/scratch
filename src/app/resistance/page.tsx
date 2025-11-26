@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSources } from "@/hooks/useSources";
 import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,7 @@ const STRATEGY_DEFINITIONS = [
 
 export default function ResistancePage() {
     const { sources, addSource, updateSource, deleteSource, isLoading } = useSources();
-    const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
+    const [selectedTraceId, setSelectedTraceId] = useLocalStorage<string | null>("resistance_selected_trace_id", null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Filter for sources that are explicitly marked as 'Trace' or have text content
@@ -66,8 +67,8 @@ export default function ResistancePage() {
     const [isSearching, setIsSearching] = useState(false);
     const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
     const [searchSource, setSearchSource] = useState<Source | null>(null);
-    const [customQuery, setCustomQuery] = useState("");
-    const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["reddit", "hackernews", "forums"]);
+    const [customQuery, setCustomQuery] = useLocalStorage<string>("resistance_custom_query", "");
+    const [selectedPlatforms, setSelectedPlatforms] = useLocalStorage<string[]>("resistance_selected_platforms", ["reddit", "hackernews", "forums"]);
 
     const handleSearchTraces = async () => {
         // Need either a policy source or custom query

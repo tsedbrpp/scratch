@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSources } from "@/hooks/useSources";
 import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,13 +114,13 @@ const STATIC_NETWORK_LINKS = [
 
 export default function OntologyPage() {
     const { sources, isLoading } = useSources();
-    const [selectedSourceId, setSelectedSourceId] = useState<string>("");
+    const [selectedSourceId, setSelectedSourceId] = useLocalStorage<string>("ontology_selected_source_id", "");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [ontologyData, setOntologyData] = useState<OntologyData | null>(null);
+    const [ontologyData, setOntologyData] = useLocalStorage<OntologyData | null>("ontology_data", null);
 
     // Interactivity State
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [selectedNodeId, setSelectedNodeId] = useLocalStorage<string | null>("ontology_selected_node_id", null);
 
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.extractedText);
