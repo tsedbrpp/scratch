@@ -46,7 +46,17 @@ export default function EcosystemPage() {
             });
             const data = await response.json();
             if (data.success && data.actors) {
-                setActors(prev => [...prev, ...data.actors]);
+                setActors(prev => {
+                    const existingNames = new Set(prev.map(a => a.name.toLowerCase()));
+                    const newUniqueActors = data.actors.filter((a: EcosystemActor) => !existingNames.has(a.name.toLowerCase()));
+
+                    if (newUniqueActors.length === 0) {
+                        alert("No new unique actors found.");
+                        return prev;
+                    }
+
+                    return [...prev, ...newUniqueActors];
+                });
                 setIsDialogOpen(false);
             } else {
                 alert("Simulation failed: " + (data.error || "Unknown error"));
