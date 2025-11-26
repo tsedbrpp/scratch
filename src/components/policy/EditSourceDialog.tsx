@@ -45,7 +45,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                 description,
                 publicationDate: publicationDate || undefined,
                 version: version || undefined,
-                jurisdiction: jurisdiction || undefined,
+                jurisdiction: (jurisdiction as Source["jurisdiction"]) || undefined,
                 pageCount: pageCount ? parseInt(pageCount) : undefined,
             };
 
