@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { redis } from '@/lib/redis';
+import crypto from 'crypto';
+
+// Helper to generate a deterministic cache key
+function generateCacheKey(mode: string, text: string, sourceType: string): string {
+  const hash = crypto.createHash('sha256').update(text).digest('hex');
+  return `analysis:${mode}:${sourceType}:${hash}`;
+}
+
+// ... (System Prompts remain unchanged - I will keep them in the file but for brevity in this tool call I am focusing on the handler) ...
 
 // DSF Lens System Prompt
 const DSF_SYSTEM_PROMPT = `You are an expert qualitative researcher acting as an 'Analytical Lens'. 
@@ -267,6 +277,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // --- CACHING LOGIC START ---
+    const cacheKey = generateCacheKey(analysisMode || 'default', text, sourceType || 'unknown');
+
+    try {
+      const cachedResult = await redis.get(cacheKey);
+      if (cachedResult) {
+        console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey}`);
+        return NextResponse.json({
+          success: true,
+          analysis: JSON.parse(cachedResult),
+          cached: true
+        });
+      }
+    } catch (cacheError) {
+      console.warn('Redis cache read failed:', cacheError);
+      // Continue to API call if cache fails
+    }
+    // --- CACHING LOGIC END ---
+
     const openai = new OpenAI({
       apiKey: apiKey,
     });
@@ -408,6 +437,16 @@ Please analyze this text according to the system prompt instructions.`;
         };
       }
     }
+
+    // --- SAVE TO CACHE ---
+    try {
+      // Cache for 30 days (2592000 seconds)
+      await redis.setex(cacheKey, 2592000, JSON.stringify(analysis));
+      console.log(`[CACHE SAVE] Saved analysis to Redis: ${cacheKey}`);
+    } catch (cacheError) {
+      console.warn('Redis cache save failed:', cacheError);
+    }
+    // ---------------------
 
     return NextResponse.json({
       success: true,
