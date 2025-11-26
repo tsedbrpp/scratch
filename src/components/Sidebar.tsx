@@ -171,7 +171,7 @@ export function Sidebar() {
                                                     {item.name}
                                                 </Link>
                                             </TooltipTrigger>
-                                            <TooltipContent side="right" className="max-w-xs">
+                                            <TooltipContent side="right" className="max-w-xs bg-slate-900 text-white border-slate-800">
                                                 <p>{item.description}</p>
                                             </TooltipContent>
                                         </Tooltip>
