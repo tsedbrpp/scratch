@@ -278,7 +278,12 @@ export async function POST(request: NextRequest) {
     }
 
     // --- CACHING LOGIC START ---
-    const cacheKey = generateCacheKey(analysisMode || 'default', text, sourceType || 'unknown');
+    let textForCache = text || '';
+    if (analysisMode === 'comparison' && sourceA && sourceB) {
+      textForCache = `${sourceA.title}:${sourceA.text}|${sourceB.title}:${sourceB.text}`;
+    }
+
+    const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
 
     try {
       const cachedResult = await redis.get(cacheKey);
