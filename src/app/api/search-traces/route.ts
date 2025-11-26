@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
         // Check for required API keys
         const googleApiKey = process.env.GOOGLE_SEARCH_API_KEY;
-        const searchEngineId = process.env.GOOGLE_SEARCH_CX;
+        const searchEngineId = process.env.GOOGLE_SEARCH_CX || process.env.GOOGLE_SEARCH_ENGINE_ID;
         const openaiApiKey = process.env.OPENAI_API_KEY;
 
         if (!googleApiKey || !searchEngineId) {
