@@ -26,7 +26,7 @@ export async function POST(req: Request) {
                 const prompt = `You are analyzing an AI governance policy document to find EMPIRICAL TRACES of real-world resistance, impacts, and micro-practices.
 
 Policy Document Excerpt:
-"${policyText.substring(0, 1000)}"
+"${policyText.substring(0, 3000)}"
 
 Your task: Generate 1-2 highly specific search queries to find:
 1. Real people discussing how this policy affects them (workers, users, communities)
@@ -39,11 +39,13 @@ IMPORTANT RULES:
 - Include action words (e.g., "resist", "workaround", "protest", "experience")
 - Avoid generic terms like "AI regulation" or "policy discussion"
 - Target platforms where affected people actually discuss issues (Reddit, forums, social media)
+- Look for CONTROVERSIAL or SPECIFIC terms in the text (e.g., "biometric categorization", "emotion recognition", "predictive policing") and combine them with "reddit" or "forum"
 
 GOOD EXAMPLES:
 - "uber drivers algorithm manipulation reddit"
 - "content moderators AI moderation burnout"
 - "facial recognition protest community resistance"
+- "biometric surveillance workplace complaint forum"
 
 BAD EXAMPLES:
 - "AI regulation" (too broad)
