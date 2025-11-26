@@ -97,9 +97,9 @@ export default function EcosystemPage() {
     };
 
     return (
-        <div className="flex h-full gap-6">
+        <div className="flex flex-col lg:flex-row h-full gap-6">
             {/* Sidebar: Actor Management */}
-            <div className="w-80 flex flex-col gap-4 shrink-0">
+            <div className="w-full lg:w-80 flex flex-col gap-4 shrink-0">
                 <Card className="h-full flex flex-col">
                     <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">

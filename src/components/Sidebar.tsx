@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,13 +13,21 @@ import {
     Network,
     Lightbulb,
     ArrowLeftRight,
-    Clock
+    Clock,
+    Menu,
+    X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function Sidebar() {
     const pathname = usePathname();
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+    // Close mobile menu when path changes
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [pathname]);
 
     const navGroups = [
         {
@@ -132,8 +141,8 @@ export function Sidebar() {
         }
     ];
 
-    return (
-        <div className="w-64 border-r border-slate-200 bg-white flex flex-col h-full flex-shrink-0">
+    const SidebarContent = () => (
+        <div className="flex flex-col h-full bg-white">
             <div className="p-6 border-b border-slate-100">
                 <Link href="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -171,7 +180,7 @@ export function Sidebar() {
                                                     {item.name}
                                                 </Link>
                                             </TooltipTrigger>
-                                            <TooltipContent side="right" className="max-w-xs bg-slate-900 text-white border-slate-800">
+                                            <TooltipContent side="right" className="max-w-xs bg-slate-900 text-white border-slate-800 hidden md:block">
                                                 <p>{item.description}</p>
                                             </TooltipContent>
                                         </Tooltip>
@@ -199,5 +208,57 @@ export function Sidebar() {
                 </div>
             </div>
         </div>
+    );
+
+    return (
+        <>
+            {/* Desktop Sidebar */}
+            <div className="hidden md:flex w-64 border-r border-slate-200 bg-white flex-col h-full flex-shrink-0">
+                <SidebarContent />
+            </div>
+
+            {/* Mobile Header */}
+            <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30">
+                <Link href="/" className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <LayoutDashboard className="text-white w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-lg text-slate-900 tracking-tight">
+                        Assemblage<span className="text-blue-600">.ai</span>
+                    </span>
+                </Link>
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="p-2 text-slate-600 hover:bg-slate-100 rounded-md"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Mobile Drawer Overlay */}
+            {isMobileOpen && (
+                <div className="fixed inset-0 z-50 md:hidden">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={() => setIsMobileOpen(false)}
+                    />
+                    {/* Drawer */}
+                    <div className="absolute top-0 left-0 bottom-0 w-80 bg-white shadow-xl flex flex-col animate-in slide-in-from-left duration-200">
+                        <div className="flex justify-end p-4 border-b border-slate-100">
+                            <button
+                                onClick={() => setIsMobileOpen(false)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <SidebarContent />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
