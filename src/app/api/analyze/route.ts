@@ -428,10 +428,33 @@ Please analyze this text according to the system prompt instructions.`;
     // Try to parse JSON response
     let analysis;
     try {
-      // Clean up markdown code fences if present
-      const cleanedResponse = responseText.replace(/```json\n?|```/g, '').trim();
+      // Robust JSON extraction
+      let cleanedResponse = responseText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+
+      // Find the first '{' or '[' to handle potential preamble text
+      const firstBrace = cleanedResponse.indexOf('{');
+      const firstBracket = cleanedResponse.indexOf('[');
+
+      let start = -1;
+      let end = -1;
+
+      // Determine if it's an object or array and find start/end
+      if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+        start = firstBrace;
+        end = cleanedResponse.lastIndexOf('}');
+      } else if (firstBracket !== -1) {
+        start = firstBracket;
+        end = cleanedResponse.lastIndexOf(']');
+      }
+
+      if (start !== -1 && end !== -1) {
+        cleanedResponse = cleanedResponse.substring(start, end + 1);
+      }
+
       analysis = JSON.parse(cleanedResponse);
-    } catch {
+    } catch (parseError) {
+      console.warn("JSON Parse failed, falling back to raw text. Error:", parseError);
+      console.warn("Failed text:", responseText);
       // If not JSON, structure it manually
       if (analysisMode === 'resistance') {
         analysis = {

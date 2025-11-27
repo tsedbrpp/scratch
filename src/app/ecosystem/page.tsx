@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
+import { generateImage } from "@/services/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -580,6 +581,14 @@ export default function EcosystemPage() {
                                                     <Badge key={g} variant="secondary" className="text-[10px] h-5">{g}</Badge>
                                                 ))}
                                             </div>
+                                            <CulturalHoleVisualizer
+                                                hole={hole}
+                                                onUpdate={(imageUrl) => {
+                                                    const newHoles = { ...culturalHoles };
+                                                    newHoles.holes[i].imageUrl = imageUrl;
+                                                    setCulturalHoles(newHoles);
+                                                }}
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -608,6 +617,65 @@ export default function EcosystemPage() {
                     </CardContent>
                 </Card>
             </div>
+        </div>
+    );
+}
+
+function CulturalHoleVisualizer({ hole, onUpdate }: { hole: any, onUpdate: (url: string | null) => void }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleVisualize = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const prompt = `A surreal, abstract visualization of the sociological concept: "${hole.concept}". 
+            Context: A disconnect between ${hole.between?.join(' and ')}. 
+            Description: ${hole.description}.
+            Style: Digital art, symbolic, high contrast.`;
+
+            const image = await generateImage(prompt);
+            onUpdate(image);
+        } catch (err) {
+            console.error("Visualization error:", err);
+            setError("Failed to generate image.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (hole.imageUrl) {
+        return (
+            <div className="mt-3 relative group">
+                <img src={hole.imageUrl} alt={hole.concept} className="w-full h-auto object-contain rounded-md border border-slate-200" />
+                <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => onUpdate(null)}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-2">
+            {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+            <Button size="sm" variant="ghost" className="text-xs h-6 w-full justify-start text-indigo-600 hover:text-indigo-800 px-0" onClick={handleVisualize} disabled={isLoading}>
+                {isLoading ? (
+                    <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Visualizing...
+                    </>
+                ) : (
+                    <>
+                        <Zap className="mr-2 h-3 w-3" />
+                        Visualize this disconnect
+                    </>
+                )}
+            </Button>
         </div>
     );
 }
