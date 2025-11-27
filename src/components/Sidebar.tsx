@@ -59,7 +59,7 @@ export function Sidebar() {
             ]
         },
         {
-            title: "Micro Analysis",
+            title: "Agency & Resistance",
             items: [
                 {
                     name: "Resistance",
@@ -76,7 +76,7 @@ export function Sidebar() {
             ]
         },
         {
-            title: "Meso Analysis",
+            title: "Assemblage Mapping",
             items: [
                 {
                     name: "Ecosystem Analysis",
@@ -93,7 +93,7 @@ export function Sidebar() {
             ]
         },
         {
-            title: "Macro Analysis",
+            title: "Structural Governance",
             items: [
                 {
                     name: "Comparison",
