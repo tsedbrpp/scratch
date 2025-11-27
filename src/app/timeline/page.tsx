@@ -248,7 +248,7 @@ export default function TimelinePage() {
 
                                     {/* Date Label */}
                                     <div className="mb-1 text-sm font-semibold text-slate-500">
-                                        {new Date(source.publicationDate!).toLocaleDateString(undefined, {
+                                        {new Date(source.publicationDate!).toLocaleDateString("en-US", {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric'
