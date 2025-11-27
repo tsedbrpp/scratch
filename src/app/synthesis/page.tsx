@@ -179,7 +179,7 @@ export default function SynthesisPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cross-Case Synthesis</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cross-Case Analysis</h2>
                     <p className="text-slate-500">Comparative analysis of AI governance frameworks using the Decolonial Situatedness Framework.</p>
                 </div>
                 <Button

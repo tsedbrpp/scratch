@@ -80,10 +80,10 @@ export function Sidebar() {
                     description: "Map actors, detect cultural holes, and visualize social networks."
                 },
                 {
-                    name: "Synthesis",
+                    name: "Cross-Case Analysis",
                     href: "/synthesis",
                     icon: Network,
-                    description: "Cross-case synthesis and AI-powered framework comparison."
+                    description: "Cross-case analysis and AI-powered framework comparison."
                 },
             ]
         },
