@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useSources } from "@/hooks/useSources";
 import {
   Database,
   BookOpen,
@@ -9,9 +13,13 @@ import {
   Scan,
   Network,
   Lightbulb,
-  Brain,
-  Sparkles,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  Search,
+  Zap,
+  Plus,
+  Upload,
+  Activity
 } from "lucide-react";
 
 const features = [
@@ -102,61 +110,101 @@ const features = [
 ];
 
 export default function Home() {
+  const { sources } = useSources();
+
+  const docCount = sources.filter(s => s.type !== 'Trace').length;
+  const traceCount = sources.filter(s => s.type === 'Trace').length;
+  const analyzedCount = sources.filter(s => s.analysis || s.cultural_framing || s.institutional_logics).length;
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-          Research Dashboard
+          Project Overview
         </h2>
         <p className="text-slate-500 mt-1">
-          Research Dashboard
+          Tracking the material and discursive evolution of AI governance.
         </p>
       </div>
 
-      {/* Hero Card */}
-      <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-purple-400" />
-            <CardTitle className="text-white">AI-Powered Research Assistant</CardTitle>
-          </div>
-          <CardDescription className="text-slate-300">
-            Comparative algorithmic assemblage analysis using the Decolonial Situatedness Framework
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <span className="text-sm font-semibold text-white">AI Analysis</span>
-              </div>
-              <p className="text-xs text-slate-300">
-                GPT-4 powered analysis through 4 decolonial lenses
-              </p>
-            </div>
-            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Network className="h-4 w-4 text-teal-400" />
-                <span className="text-sm font-semibold text-white">Ecosystem Mapping</span>
-              </div>
-              <p className="text-xs text-slate-300">
-                Visualize material and discursive interconnections
-              </p>
-            </div>
-            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="h-4 w-4 text-amber-400" />
-                <span className="text-sm font-semibold text-white">Cultural Holes</span>
-              </div>
-              <p className="text-xs text-slate-300">
-                Identify discourse gaps and innovation opportunities
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Metric Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Documents
+            </CardTitle>
+            <FileText className="h-4 w-4 text-slate-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{docCount}</div>
+            <p className="text-xs text-slate-500">
+              Primary policy texts
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Empirical Traces
+            </CardTitle>
+            <Search className="h-4 w-4 text-slate-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{traceCount}</div>
+            <p className="text-xs text-slate-500">
+              Collected from web sources
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Analyzed Sources
+            </CardTitle>
+            <Activity className="h-4 w-4 text-slate-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyzedCount}</div>
+            <p className="text-xs text-slate-500">
+              Processed with AI lenses
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/data">
+          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-blue-500 hover:bg-blue-50">
+            <Upload className="h-6 w-6 text-blue-600" />
+            <span className="font-semibold text-slate-900">Upload Document</span>
+            <span className="text-xs text-slate-500 font-normal">Add new PDF policy text</span>
+          </Button>
+        </Link>
+        <Link href="/empirical">
+          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-indigo-500 hover:bg-indigo-50">
+            <Search className="h-6 w-6 text-indigo-600" />
+            <span className="font-semibold text-slate-900">Find Traces</span>
+            <span className="text-xs text-slate-500 font-normal">Search web for evidence</span>
+          </Button>
+        </Link>
+        <Link href="/comparison">
+          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-cyan-500 hover:bg-cyan-50">
+            <Scale className="h-6 w-6 text-cyan-600" />
+            <span className="font-semibold text-slate-900">Compare Frameworks</span>
+            <span className="text-xs text-slate-500 font-normal">Side-by-side analysis</span>
+          </Button>
+        </Link>
+        <Link href="/synthesis">
+          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-teal-500 hover:bg-teal-50">
+            <Zap className="h-6 w-6 text-teal-600" />
+            <span className="font-semibold text-slate-900">Generate Report</span>
+            <span className="text-xs text-slate-500 font-normal">Create synthesis PDF</span>
+          </Button>
+        </Link>
+      </div>
 
       {/* Features Grid */}
       <div>
@@ -192,64 +240,6 @@ export default function Home() {
           })}
         </div>
       </div>
-
-      {/* Getting Started */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Getting Started</CardTitle>
-          <CardDescription>
-            Follow these steps to begin your research
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                1
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">Upload Policy Documents</p>
-                <p className="text-sm text-slate-600">
-                  Go to <Link href="/data" className="text-blue-600 hover:underline">Documents</Link> and upload PDF documents for analysis
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-700 text-sm font-semibold">
-                2
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">Analyze with AI</p>
-                <p className="text-sm text-slate-600">
-                  Use the "Analyze with AI" button to extract insights through decolonial lenses
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-sm font-semibold">
-                3
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">Compare and Synthesize</p>
-                <p className="text-sm text-slate-600">
-                  Use <Link href="/synthesis" className="text-teal-600 hover:underline">Cross-Case Analysis</Link> to compare frameworks and map ecosystem impacts
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
-                4
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">Detect Cultural Holes</p>
-                <p className="text-sm text-slate-600">
-                  Use <Link href="/cultural" className="text-amber-600 hover:underline">Cultural Framing</Link> to identify discourse gaps and innovation opportunities
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
