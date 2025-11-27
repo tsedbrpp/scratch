@@ -15,62 +15,89 @@ import {
 } from "lucide-react";
 
 const features = [
+  // Data Collection
   {
-    name: "Data Sources",
+    name: "Documents",
     href: "/data",
     icon: Database,
-    description: "Upload and manage policy documents with AI-powered analysis",
+    description: "Archive of primary policy texts (PDFs) and source materials",
     color: "bg-blue-50 text-blue-700 border-blue-200",
     iconColor: "text-blue-600",
   },
   {
-    name: "Ontology",
-    href: "/ontology",
-    icon: BookOpen,
-    description: "Map concepts, actors, and relationships in AI governance",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
-    iconColor: "text-purple-600",
+    name: "Empirical Data",
+    href: "/empirical",
+    icon: Users,
+    description: "Collect and organize empirical traces from web sources",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    iconColor: "text-indigo-600",
+  },
+  // Micro Analysis
+  {
+    name: "Resistance",
+    href: "/resistance",
+    icon: Users,
+    description: "Analyze micro-resistance strategies and counter-conduct",
+    color: "bg-red-50 text-red-700 border-red-200",
+    iconColor: "text-red-600",
+  },
+  {
+    name: "Critical Reflection",
+    href: "/reflexivity",
+    icon: Scan,
+    description: "Examine how your own perspective and context shape the analysis",
+    color: "bg-orange-50 text-orange-700 border-orange-200",
+    iconColor: "text-orange-600",
+  },
+  // Meso Analysis
+  {
+    name: "Ecosystem Analysis",
+    href: "/ecosystem",
+    icon: Users,
+    description: "Map actors, detect cultural holes, and visualize social networks",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    iconColor: "text-emerald-600",
+  },
+  {
+    name: "Cross-Case Analysis",
+    href: "/synthesis",
+    icon: Network,
+    description: "Cross-case analysis and AI-powered framework comparison",
+    color: "bg-teal-50 text-teal-700 border-teal-200",
+    iconColor: "text-teal-600",
+  },
+  // Macro Analysis
+  {
+    name: "Comparison",
+    href: "/comparison",
+    icon: Scale,
+    description: "Side-by-side comparison of governance frameworks",
+    color: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    iconColor: "text-cyan-600",
   },
   {
     name: "Governance",
     href: "/governance",
     icon: Scale,
-    description: "Compare governance structures and power dynamics",
+    description: "Analyze resource orchestration and institutional logics",
     color: "bg-green-50 text-green-700 border-green-200",
     iconColor: "text-green-600",
   },
   {
-    name: "Resistance",
-    href: "/resistance",
-    icon: Users,
-    description: "Analyze micro-resistance strategies and counter-narratives",
-    color: "bg-red-50 text-red-700 border-red-200",
-    iconColor: "text-red-600",
-  },
-  {
-    name: "Reflexivity",
-    href: "/reflexivity",
-    icon: Scan,
-    description: "Document positionality and research assumptions",
-    color: "bg-orange-50 text-orange-700 border-orange-200",
-    iconColor: "text-orange-600",
-  },
-  {
-    name: "Synthesis",
-    href: "/synthesis",
-    icon: Network,
-    description: "Cross-case synthesis and ecosystem impact mapping",
-    color: "bg-teal-50 text-teal-700 border-teal-200",
-    iconColor: "text-teal-600",
-  },
-  {
-    name: "Cultural Analysis",
+    name: "Cultural Framing",
     href: "/cultural",
     icon: Lightbulb,
-    description: "Detect cultural holes and innovation opportunities",
+    description: "Examine cultural framing and epistemic authority",
     color: "bg-amber-50 text-amber-700 border-amber-200",
     iconColor: "text-amber-600",
-    badge: "New",
+  },
+  {
+    name: "Concept Network",
+    href: "/ontology",
+    icon: BookOpen,
+    description: "Visual map of key concepts and their relationships",
+    color: "bg-purple-50 text-purple-700 border-purple-200",
+    iconColor: "text-purple-600",
   },
 ];
 
@@ -148,11 +175,6 @@ export default function Home() {
                         </div>
                         <CardTitle className="text-base">{feature.name}</CardTitle>
                       </div>
-                      {feature.badge && (
-                        <Badge className="bg-amber-500 text-white text-xs">
-                          {feature.badge}
-                        </Badge>
-                      )}
                     </div>
                     <CardDescription className="text-sm mt-2">
                       {feature.description}
@@ -188,7 +210,7 @@ export default function Home() {
               <div>
                 <p className="font-medium text-slate-900">Upload Policy Documents</p>
                 <p className="text-sm text-slate-600">
-                  Go to <Link href="/data" className="text-blue-600 hover:underline">Data Sources</Link> and upload PDF documents for analysis
+                  Go to <Link href="/data" className="text-blue-600 hover:underline">Documents</Link> and upload PDF documents for analysis
                 </p>
               </div>
             </div>
@@ -210,7 +232,7 @@ export default function Home() {
               <div>
                 <p className="font-medium text-slate-900">Compare and Synthesize</p>
                 <p className="text-sm text-slate-600">
-                  Use <Link href="/synthesis" className="text-teal-600 hover:underline">Synthesis</Link> to compare frameworks and map ecosystem impacts
+                  Use <Link href="/synthesis" className="text-teal-600 hover:underline">Cross-Case Analysis</Link> to compare frameworks and map ecosystem impacts
                 </p>
               </div>
             </div>
@@ -221,7 +243,7 @@ export default function Home() {
               <div>
                 <p className="font-medium text-slate-900">Detect Cultural Holes</p>
                 <p className="text-sm text-slate-600">
-                  Use <Link href="/cultural" className="text-amber-600 hover:underline">Cultural Analysis</Link> to identify discourse gaps and innovation opportunities
+                  Use <Link href="/cultural" className="text-amber-600 hover:underline">Cultural Framing</Link> to identify discourse gaps and innovation opportunities
                 </p>
               </div>
             </div>
