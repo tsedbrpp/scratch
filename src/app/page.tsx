@@ -130,44 +130,50 @@ export default function Home() {
 
       {/* Metric Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-blue-900">
               Documents
             </CardTitle>
-            <FileText className="h-4 w-4 text-slate-500" />
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{docCount}</div>
-            <p className="text-xs text-slate-500">
+            <div className="text-3xl font-bold text-blue-900">{docCount}</div>
+            <p className="text-xs text-blue-600 mt-1 font-medium">
               Primary policy texts
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-indigo-900">
               Empirical Traces
             </CardTitle>
-            <Search className="h-4 w-4 text-slate-500" />
+            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <Search className="h-4 w-4 text-indigo-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{traceCount}</div>
-            <p className="text-xs text-slate-500">
+            <div className="text-3xl font-bold text-indigo-900">{traceCount}</div>
+            <p className="text-xs text-indigo-600 mt-1 font-medium">
               Collected from web sources
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-emerald-900">
               Analyzed Sources
             </CardTitle>
-            <Activity className="h-4 w-4 text-slate-500" />
+            <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <Activity className="h-4 w-4 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyzedCount}</div>
-            <p className="text-xs text-slate-500">
+            <div className="text-3xl font-bold text-emerald-900">{analyzedCount}</div>
+            <p className="text-xs text-emerald-600 mt-1 font-medium">
               Processed with AI lenses
             </p>
           </CardContent>
@@ -175,35 +181,46 @@ export default function Home() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/data">
-          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-blue-500 hover:bg-blue-50">
-            <Upload className="h-6 w-6 text-blue-600" />
-            <span className="font-semibold text-slate-900">Upload Document</span>
-            <span className="text-xs text-slate-500 font-normal">Add new PDF policy text</span>
-          </Button>
-        </Link>
-        <Link href="/empirical">
-          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-indigo-500 hover:bg-indigo-50">
-            <Search className="h-6 w-6 text-indigo-600" />
-            <span className="font-semibold text-slate-900">Find Traces</span>
-            <span className="text-xs text-slate-500 font-normal">Search web for evidence</span>
-          </Button>
-        </Link>
-        <Link href="/comparison">
-          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-cyan-500 hover:bg-cyan-50">
-            <Scale className="h-6 w-6 text-cyan-600" />
-            <span className="font-semibold text-slate-900">Compare Frameworks</span>
-            <span className="text-xs text-slate-500 font-normal">Side-by-side analysis</span>
-          </Button>
-        </Link>
-        <Link href="/synthesis">
-          <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2 border-dashed border-2 hover:border-teal-500 hover:bg-teal-50">
-            <Zap className="h-6 w-6 text-teal-600" />
-            <span className="font-semibold text-slate-900">Generate Report</span>
-            <span className="text-xs text-slate-500 font-normal">Create synthesis PDF</span>
-          </Button>
-        </Link>
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Link href="/data">
+            <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer">
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <Upload className="h-6 w-6 text-blue-600" />
+              </div>
+              <span className="font-semibold text-slate-900 group-hover:text-blue-700">Upload Document</span>
+              <span className="text-xs text-slate-500 mt-1">Add new PDF policy text</span>
+            </div>
+          </Link>
+          <Link href="/empirical">
+            <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50/50 transition-all duration-200 cursor-pointer">
+              <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <Search className="h-6 w-6 text-indigo-600" />
+              </div>
+              <span className="font-semibold text-slate-900 group-hover:text-indigo-700">Find Traces</span>
+              <span className="text-xs text-slate-500 mt-1">Search web for evidence</span>
+            </div>
+          </Link>
+          <Link href="/comparison">
+            <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all duration-200 cursor-pointer">
+              <div className="h-12 w-12 rounded-full bg-cyan-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <Scale className="h-6 w-6 text-cyan-600" />
+              </div>
+              <span className="font-semibold text-slate-900 group-hover:text-cyan-700">Compare Frameworks</span>
+              <span className="text-xs text-slate-500 mt-1">Side-by-side analysis</span>
+            </div>
+          </Link>
+          <Link href="/synthesis">
+            <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50/50 transition-all duration-200 cursor-pointer">
+              <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                <Zap className="h-6 w-6 text-teal-600" />
+              </div>
+              <span className="font-semibold text-slate-900 group-hover:text-teal-700">Generate Report</span>
+              <span className="text-xs text-slate-500 mt-1">Create synthesis PDF</span>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* Features Grid */}
