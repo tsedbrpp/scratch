@@ -124,7 +124,7 @@ export default function Home() {
           Project Overview
         </h2>
         <p className="text-slate-500 mt-1">
-          Tracking the material and discursive evolution of AI governance.
+          Collect policy documents, analyze them with AI lenses, and map the global algorithmic assemblage.
         </p>
       </div>
 
