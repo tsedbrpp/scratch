@@ -109,10 +109,10 @@ export function Sidebar() {
                     description: "Examine cultural framing and epistemic authority."
                 },
                 {
-                    name: "Ontology",
+                    name: "Concept Network",
                     href: "/ontology",
                     icon: BookOpen,
-                    description: "Visual cartography of key concepts and their relationships."
+                    description: "Visual map of key concepts and their relationships."
                 },
                 {
                     name: "Temporal Dynamics",

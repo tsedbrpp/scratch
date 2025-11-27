@@ -228,7 +228,7 @@ export default function OntologyPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Ontological Cartography of Algorithmic Assemblages</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Concept Network of Algorithmic Assemblages</h2>
                     <p className="text-slate-500">Mapping the key concepts, materialities, and relationships in the sociotechnical assemblage.</p>
                 </div>
             </div>
