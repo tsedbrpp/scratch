@@ -103,7 +103,7 @@ export function Sidebar() {
                     description: "Analyze resource orchestration and institutional logics."
                 },
                 {
-                    name: "Hermeneutic Interpretation",
+                    name: "Cultural Framing",
                     href: "/cultural",
                     icon: Lightbulb,
                     description: "Examine cultural framing and epistemic authority."

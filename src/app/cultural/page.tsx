@@ -184,7 +184,7 @@ export default function CulturalAnalysisPage() {
             {/* Header */}
             <div>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                    Hermeneutic Interpretation of Discursive Fields
+                    Cultural Framing of Discursive Fields
                 </h2>
                 <p className="text-slate-500">
                     Identify gaps between discourse clusters within the algorithmic assemblage to discover innovation opportunities and legitimacy dynamics.
@@ -223,7 +223,7 @@ export default function CulturalAnalysisPage() {
                 <CardHeader>
                     <CardTitle>Theoretical Lens</CardTitle>
                     <CardDescription>
-                        Select a theoretical framework to guide the hermeneutic interpretation.
+                        Select a theoretical framework to guide the cultural framing analysis.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
