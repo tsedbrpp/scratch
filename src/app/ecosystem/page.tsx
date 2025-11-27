@@ -252,10 +252,10 @@ export default function EcosystemPage() {
                                                 {isSimulating ? (
                                                     <>
                                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                        Simulating...
+                                                        Discovering...
                                                     </>
                                                 ) : (
-                                                    "Start Simulation"
+                                                    "Discover"
                                                 )}
                                             </Button>
                                         </DialogFooter>
