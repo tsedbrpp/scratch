@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         - "type": One of "Startup", "Policymaker", "Civil Society", "Academic".
         - "description": A rich description explaining *why* they are relevant to the query "${query}".
         - "influence": "High", "Medium", or "Low".
-        - "url": The official website URL or a relevant profile page (e.g. LinkedIn, Crunchbase) if available.
+        - "url": The official website URL or a relevant profile page. **IMPORTANT**: Try to provide a URL for every actor. Use official websites first, then LinkedIn, Crunchbase, Wikipedia, or government pages. If you cannot find a specific URL, use a search query URL like "https://www.google.com/search?q=[actor name]".
 
         Output JSON only.
         `;
