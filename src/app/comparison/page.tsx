@@ -247,7 +247,7 @@ export default function ComparisonPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                             {selectedSources.map((source) => {
                                                                 // @ts-ignore
-                                                                const logicData = source.institutional_logics?.logics[logic];
+                                                                const logicData = source.institutional_logics?.logics?.[logic];
                                                                 return (
                                                                     <Card key={source.id} className={logicColors[logic as keyof typeof logicColors]}>
                                                                         <CardContent className="pt-6">
