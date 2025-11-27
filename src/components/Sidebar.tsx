@@ -45,7 +45,7 @@ export function Sidebar() {
             title: "Micro (Individual/Trace)",
             items: [
                 {
-                    name: "Trace Archive",
+                    name: "Documents",
                     href: "/data",
                     icon: Database,
                     description: "Archive of primary policy texts (PDFs) and source materials."
