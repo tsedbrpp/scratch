@@ -5,7 +5,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Network, Zap, Plus, Search, Globe, Loader2, Trash2 } from "lucide-react";
+import { Users, Network, Zap, Plus, Search, Globe, Loader2, Trash2, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ interface EcosystemActor {
     type: "Startup" | "Policymaker" | "Civil Society" | "Academic";
     description: string;
     influence: "High" | "Medium" | "Low";
+    url?: string;
 }
 
 
@@ -293,7 +294,19 @@ export default function EcosystemPage() {
                                         {actor.type}
                                     </Badge>
                                 </div>
-                                <p className="text-xs text-slate-500 line-clamp-2">{actor.description}</p>
+                                <p className="text-xs text-slate-500 line-clamp-2 mb-2">{actor.description}</p>
+                                {actor.url && (
+                                    <a
+                                        href={actor.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        Visit Website
+                                    </a>
+                                )}
                             </div>
                         ))}
                     </CardContent>

@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         - "type": One of "Startup", "Policymaker", "Civil Society", "Academic".
         - "description": A rich description explaining *why* they are relevant to the query "${query}".
         - "influence": "High", "Medium", or "Low".
+        - "url": The official website URL or a relevant profile page (e.g. LinkedIn, Crunchbase) if available.
 
         Output JSON only.
         `;
