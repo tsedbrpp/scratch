@@ -161,7 +161,7 @@ export default function ComparisonPage() {
                                                 <h4 className="font-semibold mb-4">Cultural Distinctiveness</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     {selectedSources.map((source, idx) => (
-                                                        <Card key={`${source.id}-${idx}`} className="bg-slate-50">
+                                                        <Card key={idx} className="bg-slate-50">
                                                             <CardContent className="pt-6">
                                                                 <div className="text-center">
                                                                     <div className="text-3xl font-bold text-slate-900">
@@ -188,7 +188,7 @@ export default function ComparisonPage() {
                                                     </h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         {selectedSources.map((source, idx) => (
-                                                            <Card key={`${source.id}-${idx}`}>
+                                                            <Card key={idx}>
                                                                 <CardContent className="pt-4">
                                                                     <div className="text-xs font-semibold text-slate-500 mb-2">
                                                                         {source.title}
@@ -249,7 +249,7 @@ export default function ComparisonPage() {
                                                                 // @ts-ignore
                                                                 const logicData = source.institutional_logics?.logics?.[logic];
                                                                 return (
-                                                                    <Card key={`${source.id}-${idx}`} className={logicColors[logic as keyof typeof logicColors]}>
+                                                                    <Card key={idx} className={logicColors[logic as keyof typeof logicColors]}>
                                                                         <CardContent className="pt-6">
                                                                             <div className="text-xs font-semibold mb-2">
                                                                                 {source.title}
@@ -292,7 +292,7 @@ export default function ComparisonPage() {
                                                 <h4 className="font-semibold mb-4">Dominant Logic</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     {selectedSources.map((source, idx) => (
-                                                        <Card key={`${source.id}-${idx}`} className="bg-slate-50">
+                                                        <Card key={idx} className="bg-slate-50">
                                                             <CardContent className="pt-6">
                                                                 <div className="text-center">
                                                                     <Badge className="text-lg px-4 py-2 capitalize">
@@ -316,7 +316,7 @@ export default function ComparisonPage() {
                                                 <h4 className="font-semibold mb-4">Logic Conflicts</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     {selectedSources.map((source, idx) => (
-                                                        <Card key={`${source.id}-${idx}`}>
+                                                        <Card key={idx}>
                                                             <CardContent className="pt-6">
                                                                 <div className="text-xs font-semibold text-slate-500 mb-3">
                                                                     {source.title}
