@@ -19,15 +19,22 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { UserButton } from "@clerk/nextjs";
 
 export function Sidebar() {
     const pathname = usePathname();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     // Close mobile menu when path changes
     useEffect(() => {
         setIsMobileOpen(false);
     }, [pathname]);
+
+    // Handle hydration mismatch
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const navGroups = [
         {
@@ -198,18 +205,8 @@ export function Sidebar() {
             </div>
 
             <div className="p-4 border-t border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
-                        JD
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">
-                            Jane Doe
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                            Researcher
-                        </p>
-                    </div>
+                <div className="flex items-center gap-3 justify-center">
+                    {isMounted && <UserButton showName />}
                 </div>
             </div>
         </div>

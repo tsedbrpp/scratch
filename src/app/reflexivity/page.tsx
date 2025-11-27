@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +23,7 @@ interface MethodLog {
 }
 
 export default function ReflexivityPage() {
-    const [journalEntry, setJournalEntry] = useLocalStorage("research-journal", "");
+    const [journalEntry, setJournalEntry] = useServerStorage("research-journal", "");
     const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | null>(null);
     const [logs, setLogs] = useState<MethodLog[]>([]);
 

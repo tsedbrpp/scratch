@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSources } from "@/hooks/useSources";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,7 +67,7 @@ export default function SynthesisPage() {
     const [sourceA, setSourceA] = useState<Source | null>(null);
     const [sourceB, setSourceB] = useState<Source | null>(null);
     const [isComparing, setIsComparing] = useState(false);
-    const [comparisonResult, setComparisonResult] = useLocalStorage<ComparisonResult | null>("synthesis_comparison_result", null);
+    const [comparisonResult, setComparisonResult] = useServerStorage<ComparisonResult | null>("synthesis_comparison_result", null);
 
     // Ecosystem State
     const [ecosystemSource, setEcosystemSource] = useState<Source | null>(null);

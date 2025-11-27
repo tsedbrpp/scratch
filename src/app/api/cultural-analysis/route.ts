@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -149,7 +150,30 @@ function safeJSONParse(text: string, fallback: any = []) {
     }
 }
 
+import { auth } from '@clerk/nextjs/server';
+
 export async function POST(request: NextRequest) {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Rate Limiting
+    const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
+    if (!rateLimit.success) {
+        return NextResponse.json(
+            { error: rateLimit.error || "Too Many Requests" },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimit.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+                    'X-RateLimit-Reset': rateLimit.reset.toString()
+                }
+            }
+        );
+    }
+
     try {
         // Check API key
         if (!process.env.OPENAI_API_KEY) {
@@ -175,6 +199,25 @@ export async function POST(request: NextRequest) {
                 { success: false, error: 'At least 2 sources required for cultural analysis' },
                 { status: 400 }
             );
+        }
+
+        // Generate a unique key for this analysis request based on source IDs and lens
+        const sortedSourceIds = sources.map((s: any) => s.id).sort().join(',');
+        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}`;
+
+        // Check cache first
+        try {
+            const cachedAnalysis = await redis.get(cacheKey);
+            if (cachedAnalysis) {
+                console.log('Returning cached analysis for key:', cacheKey);
+                return NextResponse.json({
+                    success: true,
+                    analysis: JSON.parse(cachedAnalysis)
+                });
+            }
+        } catch (error) {
+            console.error('Redis cache check failed:', error);
+            // Continue without cache if Redis fails
         }
 
         // Construct the lens-aware prompt
@@ -356,27 +399,6 @@ export async function POST(request: NextRequest) {
 
         console.log(`Cultural analysis complete. Found ${clusters.length} clusters and ${holes.length} cultural holes`);
 
-        // Generate a unique key for this analysis request based on source IDs and lens
-        const sortedSourceIds = sources.map((s: any) => s.id).sort().join(',');
-        const cacheKey = `analysis:${sortedSourceIds}:${lensId}`;
-
-        // Check cache first
-        try {
-            const cachedAnalysis = await redis.get(cacheKey);
-            if (cachedAnalysis) {
-                console.log('Returning cached analysis for key:', cacheKey);
-                return NextResponse.json({
-                    success: true,
-                    analysis: JSON.parse(cachedAnalysis)
-                });
-            }
-        } catch (error) {
-            console.error('Redis cache check failed:', error);
-            // Continue without cache if Redis fails
-        }
-
-        // ... (Existing analysis logic) ...
-
         // Step 5: Generate overall summary
         console.log('Generating overall summary...');
         let summary = "";
@@ -425,6 +447,7 @@ export async function POST(request: NextRequest) {
             success: true,
             analysis: analysisResult,
         });
+
     } catch (error: any) {
         console.error('Cultural analysis error:', error);
         return NextResponse.json(

@@ -1,59 +1,23 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
+const isPublicRoute = createRouteMatcher([
+    "/login(.*)",
+    "/sign-up(.*)",
+    "/api/auth/login", // Keep for backward compatibility during migration if needed
+    "/api/auth/logout"
+]);
 
-    // 1. Define public paths that don't require authentication
-    const publicPaths = [
-        '/login',
-        '/api/auth/login',
-        '/_next',
-        '/favicon.ico',
-        '/public',
-    ];
-
-    // Check if the current path is public
-    const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
-
-    if (isPublicPath) {
-        return NextResponse.next();
+export default clerkMiddleware(async (auth, request) => {
+    if (!isPublicRoute(request)) {
+        await auth.protect();
     }
-
-    // 2. Check for the auth token
-    const authToken = request.cookies.get('auth_token');
-    const isAuthenticated = !!authToken;
-
-    // 3. Handle unauthenticated access
-    if (!isAuthenticated) {
-        // If it's an API route, return 401 Unauthorized
-        if (pathname.startsWith('/api')) {
-            return NextResponse.json(
-                { error: 'Unauthorized: Please log in.' },
-                { status: 401 }
-            );
-        }
-
-        // For page visits, redirect to /login
-        const loginUrl = new URL('/login', request.url);
-        // Optional: Add ?from=... to redirect back after login
-        loginUrl.searchParams.set('from', pathname);
-        return NextResponse.redirect(loginUrl);
-    }
-
-    // 4. Allow authenticated access
-    return NextResponse.next();
-}
+});
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api/auth (handled in logic, but good to keep broad matcher)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         */
-        '/((?!_next/static|_next/image|favicon.ico).*)',
+        // Skip Next.js internals and all static files, unless found in search params
+        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+        // Always run for API routes
+        '/(api|trpc)(.*)',
     ],
 };

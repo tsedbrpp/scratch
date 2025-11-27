@@ -1,7 +1,31 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
+import { checkRateLimit } from '@/lib/ratelimit';
+
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: Request) {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Rate Limiting
+    const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
+    if (!rateLimit.success) {
+        return NextResponse.json(
+            { error: rateLimit.error || "Too Many Requests" },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimit.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+                    'X-RateLimit-Reset': rateLimit.reset.toString()
+                }
+            }
+        );
+    }
+
     try {
         const { query } = await request.json();
         const apiKey = process.env.GOOGLE_API_KEY;
@@ -11,7 +35,7 @@ export async function POST(request: Request) {
         }
 
         // Generate cache key
-        const cacheKey = `ecosystem:simulate:${Buffer.from(query).toString('base64')}`;
+        const cacheKey = `user:${userId}:ecosystem:simulate:${Buffer.from(query).toString('base64')}`;
 
         // Check cache
         try {

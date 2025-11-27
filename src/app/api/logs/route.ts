@@ -1,61 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
-
-const LOGS_KEY = 'logs';
-
-// Read logs
-async function getLogs() {
-    try {
-        const data = await redis.get(LOGS_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.error('Failed to fetch logs from Redis:', error);
-        return [];
-    }
-}
-
-// Save logs
-async function saveLogs(logs: any[]) {
-    try {
-        await redis.set(LOGS_KEY, JSON.stringify(logs));
-    } catch (error) {
-        console.error('Failed to save logs to Redis:', error);
-        throw error;
-    }
-}
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET() {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
     try {
-        const logs = await getLogs();
+        const logsKey = `user:${userId}:logs`;
+        const data = await redis.get(logsKey);
+        const logs = data ? JSON.parse(data) : [];
         return NextResponse.json(logs);
     } catch (error) {
+        console.error('Failed to fetch logs:', error);
         return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
     try {
         const body = await request.json();
-        const { action, details, timestamp } = body;
+        const logsKey = `user:${userId}:logs`;
 
-        if (!action) {
-            return NextResponse.json({ error: 'Action is required' }, { status: 400 });
-        }
+        // Fetch existing logs
+        const data = await redis.get(logsKey);
+        const logs = data ? JSON.parse(data) : [];
 
+        // Add new log
         const newLog = {
             id: crypto.randomUUID(),
-            action,
-            details: details || {},
-            timestamp: timestamp || new Date().toISOString(),
+            timestamp: new Date().toISOString(),
+            ...body
         };
-
-        const logs = await getLogs();
         logs.unshift(newLog); // Add to beginning
-        await saveLogs(logs);
+
+        // Keep only last 1000 logs
+        if (logs.length > 1000) {
+            logs.length = 1000;
+        }
+
+        await redis.set(logsKey, JSON.stringify(logs));
 
         return NextResponse.json(newLog);
     } catch (error) {
+        console.error('Failed to save log:', error);
         return NextResponse.json({ error: 'Failed to save log' }, { status: 500 });
     }
 }
-

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { toast } from "sonner";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ const STRATEGY_DEFINITIONS = [
 
 export default function ResistancePage() {
     const { sources, addSource, updateSource, deleteSource, isLoading } = useSources();
-    const [selectedTraceId, setSelectedTraceId] = useLocalStorage<string | null>("resistance_selected_trace_id", null);
+    const [selectedTraceId, setSelectedTraceId] = useServerStorage<string | null>("resistance_selected_trace_id", null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Filter for sources that are explicitly marked as 'Trace' or have text content
@@ -52,10 +53,20 @@ export default function ResistancePage() {
             const result = await response.json();
             if (result.success) {
                 await updateSource(trace.id, { resistance_analysis: result.analysis });
+                toast.success("Trace analyzed successfully!");
+            } else {
+                if (response.status === 429 || result.error === "Quota Exceeded") {
+                    toast.error("Quota Exceeded", {
+                        description: "You have reached your lifetime API limit. Please contact admin.",
+                        duration: 5000,
+                    });
+                } else {
+                    toast.error("Analysis failed", { description: result.error });
+                }
             }
         } catch (error) {
             console.error("Analysis failed", error);
-            alert("Failed to analyze trace.");
+            toast.error("Failed to analyze trace.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -67,8 +78,8 @@ export default function ResistancePage() {
     const [isSearching, setIsSearching] = useState(false);
     const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
     const [searchSource, setSearchSource] = useState<Source | null>(null);
-    const [customQuery, setCustomQuery] = useLocalStorage<string>("resistance_custom_query", "");
-    const [selectedPlatforms, setSelectedPlatforms] = useLocalStorage<string[]>("resistance_selected_platforms", ["reddit", "hackernews", "forums"]);
+    const [customQuery, setCustomQuery] = useServerStorage<string>("resistance_custom_query", "");
+    const [selectedPlatforms, setSelectedPlatforms] = useServerStorage<string[]>("resistance_selected_platforms", ["reddit", "hackernews", "forums"]);
 
     const handleSearchTraces = async () => {
         // Need either a policy source or custom query
@@ -108,14 +119,21 @@ export default function ResistancePage() {
                     await addSource(trace);
                 }
 
-                alert(`Found ${newTraces.length} resistance traces from the web!`);
+                toast.success(`Found ${newTraces.length} resistance traces from the web!`);
                 setCustomQuery(""); // Reset query
             } else {
-                alert("Search failed: " + (result.error || "Unknown error"));
+                if (response.status === 429 || result.error === "Quota Exceeded") {
+                    toast.error("Quota Exceeded", {
+                        description: "You have reached your lifetime API limit. Please contact admin.",
+                        duration: 5000,
+                    });
+                } else {
+                    toast.error("Search failed", { description: result.error || "Unknown error" });
+                }
             }
         } catch (error) {
             console.error("Search error:", error);
-            alert("Failed to search for traces. Make sure your Google Search API is configured.");
+            toast.error("Failed to search for traces", { description: "Make sure your Google Search API is configured." });
         } finally {
             setIsSearching(false);
             setIsSearchDialogOpen(false);

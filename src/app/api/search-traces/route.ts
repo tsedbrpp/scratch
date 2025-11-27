@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
 
@@ -25,13 +26,36 @@ interface GoogleSearchResponse {
     items?: SearchResult[];
 }
 
+import { auth } from '@clerk/nextjs/server';
+
 export async function POST(request: NextRequest) {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Rate Limiting
+    const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
+    if (!rateLimit.success) {
+        return NextResponse.json(
+            { error: rateLimit.error || "Too Many Requests" },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimit.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+                    'X-RateLimit-Reset': rateLimit.reset.toString()
+                }
+            }
+        );
+    }
+
     try {
         const body = await request.json();
         const { policyText, customQuery, platforms } = body;
 
         // Generate cache key
-        const cacheKey = `search-traces:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+        const cacheKey = `user:${userId}:search-traces:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
 
         // Check cache
         try {

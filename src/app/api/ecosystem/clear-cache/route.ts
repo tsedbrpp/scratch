@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST() {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
     try {
-        // Get all keys matching the ecosystem simulation pattern
-        const keys = await redis.keys('ecosystem:simulate:*');
+        // Get all keys matching the ecosystem simulation pattern for this user
+        const keys = await redis.keys(`user:${userId}:ecosystem:simulate:*`);
 
         if (keys.length > 0) {
             await redis.del(...keys);

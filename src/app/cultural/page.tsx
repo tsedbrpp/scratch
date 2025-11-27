@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,10 @@ import { CulturalAnalysisResult } from "@/types/cultural";
 
 export default function CulturalAnalysisPage() {
     const { sources, isLoading } = useSources();
-    const [selectedSources, setSelectedSources] = useLocalStorage<string[]>("cultural_selected_sources", []);
+    const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [culturalAnalysis, setCulturalAnalysis] = useLocalStorage<CulturalAnalysisResult | null>("cultural_analysis_result", null);
-    const [selectedLensId, setSelectedLensId] = useLocalStorage<string>("cultural_lens_id", "default");
+    const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result", null);
+    const [selectedLensId, setSelectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
 
     const theoreticalLenses = [
         {

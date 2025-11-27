@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import crypto from 'crypto';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
@@ -264,7 +265,30 @@ Provide your analysis in JSON format:
   "overall_connectivity_score": 0.5 // 0 (Fragmented) to 1 (Cohesive)
 }`;
 
+import { auth } from '@clerk/nextjs/server';
+
 export async function POST(request: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  // Rate Limiting
+  const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: rateLimit.error || "Too Many Requests" },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimit.limit.toString(),
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': rateLimit.reset.toString()
+        }
+      }
+    );
+  }
+
   try {
     const { text, sourceType, analysisMode, sourceA, sourceB } = await request.json();
 
@@ -284,11 +308,12 @@ export async function POST(request: NextRequest) {
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
+    const userCacheKey = `user:${userId}:${cacheKey}`;
 
     try {
-      const cachedResult = await redis.get(cacheKey);
+      const cachedResult = await redis.get(userCacheKey);
       if (cachedResult) {
-        console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey}`);
+        console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
         return NextResponse.json({
           success: true,
           analysis: JSON.parse(cachedResult),
@@ -446,8 +471,8 @@ Please analyze this text according to the system prompt instructions.`;
     // --- SAVE TO CACHE ---
     try {
       // Cache for 30 days (2592000 seconds)
-      await redis.setex(cacheKey, 2592000, JSON.stringify(analysis));
-      console.log(`[CACHE SAVE] Saved analysis to Redis: ${cacheKey}`);
+      await redis.setex(userCacheKey, 2592000, JSON.stringify(analysis));
+      console.log(`[CACHE SAVE] Saved analysis to Redis: ${userCacheKey}`);
     } catch (cacheError) {
       console.warn('Redis cache save failed:', cacheError);
     }

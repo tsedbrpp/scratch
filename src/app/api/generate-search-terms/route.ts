@@ -1,7 +1,31 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { checkRateLimit } from '@/lib/ratelimit';
+
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(req: Request) {
+    const { userId } = await auth();
+    if (!userId) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Rate Limiting
+    const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
+    if (!rateLimit.success) {
+        return NextResponse.json(
+            { error: rateLimit.error || "Too Many Requests" },
+            {
+                status: 429,
+                headers: {
+                    'X-RateLimit-Limit': rateLimit.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+                    'X-RateLimit-Reset': rateLimit.reset.toString()
+                }
+            }
+        );
+    }
+
     try {
         const { keyInsight } = await req.json();
 

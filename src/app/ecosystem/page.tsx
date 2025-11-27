@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,12 @@ interface EcosystemActor {
 
 
 export default function EcosystemPage() {
-    const [actors, setActors] = useLocalStorage<EcosystemActor[]>("ecosystem_actors", []);
-    const [selectedActorId, setSelectedActorId] = useLocalStorage<string | null>("ecosystem_selected_actor_id", null);
+    const [actors, setActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+    const [selectedActorId, setSelectedActorId] = useServerStorage<string | null>("ecosystem_selected_actor_id", null);
     const [isSimulating, setIsSimulating] = useState(false);
-    const [simulationQuery, setSimulationQuery] = useLocalStorage<string>("ecosystem_simulation_query", "AI startups and policy actors in Brussels");
+    const [simulationQuery, setSimulationQuery] = useServerStorage<string>("ecosystem_simulation_query", "AI startups and policy actors in Brussels");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [culturalHoles, setCulturalHoles] = useLocalStorage<any>("ecosystem_cultural_holes", null);
+    const [culturalHoles, setCulturalHoles] = useServerStorage<any>("ecosystem_cultural_holes", null);
     const [isAnalyzingHoles, setIsAnalyzingHoles] = useState(false);
 
     // Graph interaction state

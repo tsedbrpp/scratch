@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -26,18 +28,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
-      >
-        <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8">
-            {children}
-          </main>
-        </div>
-        <ResearchWorkflowGuide />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
+          suppressHydrationWarning
+        >
+          <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
+            <Sidebar />
+            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+              {children}
+            </main>
+          </div>
+          <ResearchWorkflowGuide />
+          <Toaster />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
