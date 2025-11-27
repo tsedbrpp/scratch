@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,59 @@ export default function EcosystemPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [culturalHoles, setCulturalHoles] = useLocalStorage<any>("ecosystem_cultural_holes", null);
     const [isAnalyzingHoles, setIsAnalyzingHoles] = useState(false);
+
+    // Graph interaction state
+    const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+
+    // Initialize positions when actors change
+    useState(() => {
+        const newPositions = { ...positions };
+        let hasChanges = false;
+
+        actors.forEach((actor, i) => {
+            if (!newPositions[actor.id]) {
+                const totalActors = actors.length;
+                const angle = (i / totalActors) * 2 * Math.PI;
+                const centerX = 350;
+                const centerY = 200;
+                const radius = 120;
+                newPositions[actor.id] = {
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                };
+                hasChanges = true;
+            }
+        });
+
+        if (hasChanges) {
+            setPositions(newPositions);
+        }
+    });
+
+    // Update positions if actors list changes (e.g. cleared or added)
+    // We use a separate effect to handle updates to the actor list after mount
+    useEffect(() => {
+        setPositions(prev => {
+            const newPositions = { ...prev };
+            let hasChanges = false;
+            actors.forEach((actor, i) => {
+                if (!newPositions[actor.id]) {
+                    const totalActors = actors.length;
+                    const angle = (i / totalActors) * 2 * Math.PI;
+                    const centerX = 350;
+                    const centerY = 200;
+                    const radius = 120;
+                    newPositions[actor.id] = {
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle)
+                    };
+                    hasChanges = true;
+                }
+            });
+            return hasChanges ? newPositions : prev;
+        });
+    }, [actors.length, actors.map(a => a.id).join(',')]);
 
     const handleSimulate = async () => {
         setIsSimulating(true);
@@ -99,6 +152,33 @@ export default function EcosystemPage() {
         setActors([]);
         setSelectedActorId(null);
         setCulturalHoles(null);
+        setPositions({});
+    };
+
+    // Drag handlers
+    const handleMouseDown = (e: React.MouseEvent, actorId: string) => {
+        e.stopPropagation();
+        setDraggingId(actorId);
+        setSelectedActorId(actorId);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+        if (!draggingId) return;
+
+        const svg = e.currentTarget;
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+
+        setPositions(prev => ({
+            ...prev,
+            [draggingId]: { x: svgP.x, y: svgP.y }
+        }));
+    };
+
+    const handleMouseUp = () => {
+        setDraggingId(null);
     };
 
     return (
@@ -226,11 +306,18 @@ export default function EcosystemPage() {
                             <CardTitle>Social Network Graph</CardTitle>
                         </div>
                         <CardDescription>
-                            Visualizing ties between actors based on shared discourse and direct interaction.
+                            Visualizing ties between actors. Drag nodes to rearrange the network.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 bg-slate-50/50 p-6 border-t">
-                        <svg width="100%" height="400" className="border border-slate-200 rounded-lg bg-white">
+                        <svg
+                            width="100%"
+                            height="400"
+                            className="border border-slate-200 rounded-lg bg-white cursor-move"
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                        >
                             <defs>
                                 <marker id="actor-arrow" markerWidth="8" markerHeight="8" refX="20" refY="4" orient="auto">
                                     <polygon points="0 0, 8 4, 0 8" fill="#94a3b8" />
@@ -262,18 +349,16 @@ export default function EcosystemPage() {
                                     else if (source.type === "Civil Society" && target.type === "Academic") label = "Data";
                                     else label = "Link";
 
-                                    // Calculate positions in a circular layout
-                                    const totalActors = actors.length;
-                                    const sourceAngle = (i / totalActors) * 2 * Math.PI;
-                                    const targetAngle = ((i + j + 1) / totalActors) * 2 * Math.PI;
-                                    const centerX = 350;
-                                    const centerY = 200;
-                                    const radius = 120;
+                                    // Get positions from state
+                                    const pos1 = positions[source.id];
+                                    const pos2 = positions[target.id];
 
-                                    const x1 = centerX + radius * Math.cos(sourceAngle);
-                                    const y1 = centerY + radius * Math.sin(sourceAngle);
-                                    const x2 = centerX + radius * Math.cos(targetAngle);
-                                    const y2 = centerY + radius * Math.sin(targetAngle);
+                                    if (!pos1 || !pos2) return null;
+
+                                    const x1 = pos1.x;
+                                    const y1 = pos1.y;
+                                    const x2 = pos2.x;
+                                    const y2 = pos2.y;
 
                                     // Midpoint for label
                                     const midX = (x1 + x2) / 2;
@@ -283,7 +368,7 @@ export default function EcosystemPage() {
                                     const opacity = selectedActorId && !isHighlighted ? 0.15 : 0.4;
 
                                     return (
-                                        <g key={`${source.id}-${target.id}`} style={{ transition: 'all 0.3s ease', opacity }}>
+                                        <g key={`${source.id}-${target.id}`} style={{ transition: 'opacity 0.3s ease', opacity }}>
                                             <line
                                                 x1={x1}
                                                 y1={y1}
@@ -321,13 +406,11 @@ export default function EcosystemPage() {
 
                             {/* Actor nodes */}
                             {actors.map((actor, i) => {
-                                const totalActors = actors.length;
-                                const angle = (i / totalActors) * 2 * Math.PI;
-                                const centerX = 350;
-                                const centerY = 200;
-                                const radius = 120;
-                                const x = centerX + radius * Math.cos(angle);
-                                const y = centerY + radius * Math.sin(angle);
+                                const pos = positions[actor.id];
+                                if (!pos) return null;
+
+                                const x = pos.x;
+                                const y = pos.y;
 
                                 const isSelected = selectedActorId === actor.id;
                                 const isDimmed = selectedActorId && !isSelected;
@@ -346,9 +429,8 @@ export default function EcosystemPage() {
                                 return (
                                     <g
                                         key={actor.id}
-                                        onClick={() => setSelectedActorId(isSelected ? null : actor.id)}
-                                        onMouseEnter={() => setSelectedActorId(actor.id)}
-                                        style={{ cursor: 'pointer', transition: 'all 0.3s ease', opacity }}
+                                        onMouseDown={(e) => handleMouseDown(e, actor.id)}
+                                        style={{ cursor: 'grab', transition: draggingId === actor.id ? 'none' : 'all 0.3s ease', opacity }}
                                         transform={`translate(${x}, ${y}) scale(${scale}) translate(${-x}, ${-y})`}
                                     >
                                         <circle
