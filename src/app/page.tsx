@@ -83,7 +83,7 @@ export default function Home() {
           Research Dashboard
         </h2>
         <p className="text-slate-500 mt-1">
-          Decolonial Situatedness in Global AI Governance
+          Research Dashboard
         </p>
       </div>
 
