@@ -254,6 +254,14 @@ export default function EcosystemPage() {
 
                                     if (!shouldConnect) return null;
 
+                                    // Determine label based on relationship
+                                    let label = "";
+                                    if (source.type === "Policymaker" && target.type === "Civil Society") label = "Consultation";
+                                    else if (source.type === "Startup" && target.type === "Academic") label = "R&D";
+                                    else if (source.type === "Policymaker" && target.type === "Startup") label = "Regulation";
+                                    else if (source.type === "Civil Society" && target.type === "Academic") label = "Data";
+                                    else label = "Link";
+
                                     // Calculate positions in a circular layout
                                     const totalActors = actors.length;
                                     const sourceAngle = (i / totalActors) * 2 * Math.PI;
@@ -267,22 +275,46 @@ export default function EcosystemPage() {
                                     const x2 = centerX + radius * Math.cos(targetAngle);
                                     const y2 = centerY + radius * Math.sin(targetAngle);
 
+                                    // Midpoint for label
+                                    const midX = (x1 + x2) / 2;
+                                    const midY = (y1 + y2) / 2;
+
                                     const isHighlighted = selectedActorId === source.id || selectedActorId === target.id;
                                     const opacity = selectedActorId && !isHighlighted ? 0.15 : 0.4;
 
                                     return (
-                                        <line
-                                            key={`${source.id}-${target.id}`}
-                                            x1={x1}
-                                            y1={y1}
-                                            x2={x2}
-                                            y2={y2}
-                                            stroke="#94a3b8"
-                                            strokeWidth={isHighlighted ? 2 : 1}
-                                            opacity={opacity}
-                                            markerEnd="url(#actor-arrow)"
-                                            style={{ transition: 'all 0.3s ease' }}
-                                        />
+                                        <g key={`${source.id}-${target.id}`} style={{ transition: 'all 0.3s ease', opacity }}>
+                                            <line
+                                                x1={x1}
+                                                y1={y1}
+                                                x2={x2}
+                                                y2={y2}
+                                                stroke="#94a3b8"
+                                                strokeWidth={isHighlighted ? 2 : 1}
+                                                markerEnd="url(#actor-arrow)"
+                                            />
+                                            <rect
+                                                x={midX - 24}
+                                                y={midY - 8}
+                                                width="48"
+                                                height="16"
+                                                rx="4"
+                                                fill="white"
+                                                stroke="#e2e8f0"
+                                                strokeWidth="1"
+                                            />
+                                            <text
+                                                x={midX}
+                                                y={midY}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                                fontSize="9"
+                                                fill="#64748b"
+                                                fontWeight="500"
+                                            >
+                                                {label}
+                                            </text>
+                                        </g>
                                     );
                                 })
                             )}
