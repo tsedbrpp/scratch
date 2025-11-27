@@ -34,6 +34,13 @@ export default function EcosystemPage() {
     // Graph interaction state
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
     const [draggingId, setDraggingId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
 
     // Initialize positions when actors change
     useState(() => {
