@@ -55,7 +55,7 @@ export default function ReflexivityPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight text-slate-900">Reflexive Analysis</h2>
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900">Critical Reflection</h2>
                 <p className="text-slate-500">Documenting epistemic location and engaging with positionality.</p>
             </div>
 

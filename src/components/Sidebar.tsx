@@ -42,7 +42,7 @@ export function Sidebar() {
             ]
         },
         {
-            title: "Micro (Individual/Trace)",
+            title: "Data Collection",
             items: [
                 {
                     name: "Documents",
@@ -55,7 +55,12 @@ export function Sidebar() {
                     href: "/empirical",
                     icon: Users,
                     description: "Collect and organize empirical traces from web sources."
-                },
+                }
+            ]
+        },
+        {
+            title: "Micro Analysis",
+            items: [
                 {
                     name: "Resistance",
                     href: "/resistance",
@@ -63,15 +68,15 @@ export function Sidebar() {
                     description: "Analyze micro-resistance strategies and counter-conduct."
                 },
                 {
-                    name: "Reflexivity",
+                    name: "Critical Reflection",
                     href: "/reflexivity",
                     icon: Scan,
-                    description: "Document researcher positionality and recursive reflections."
+                    description: "Examine how your own perspective and context shape the analysis."
                 },
             ]
         },
         {
-            title: "Meso (Field/Ecosystem)",
+            title: "Meso Analysis",
             items: [
                 {
                     name: "Ecosystem Analysis",
@@ -88,7 +93,7 @@ export function Sidebar() {
             ]
         },
         {
-            title: "Macro (System/Structural)",
+            title: "Macro Analysis",
             items: [
                 {
                     name: "Comparison",
