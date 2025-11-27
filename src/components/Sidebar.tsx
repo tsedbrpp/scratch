@@ -34,7 +34,7 @@ export function Sidebar() {
             title: "Overview",
             items: [
                 {
-                    name: "Assemblage Overview",
+                    name: "Dashboard",
                     href: "/",
                     icon: LayoutDashboard,
                     description: "High-level view of the algorithmic assemblage and research progress."
