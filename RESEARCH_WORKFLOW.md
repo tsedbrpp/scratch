@@ -1,153 +1,98 @@
-# Research Workflow
+# Assemblage AI: Research Workflow
 
-This guide outlines the recommended workflow for conducting decolonial AI governance research using this application.
+This guide outlines the recommended workflow for conducting critical analysis of complex narratives using **Assemblage AI**.
 
 ## Overview
 
-The research process is organized into three main analytical phases, each corresponding to a section in the sidebar:
+The system is designed to guide you from raw data collection to high-level synthesis through a multi-layered analytical process:
 
-1. **Data Collection** - Gather and organize source materials
-2. **Agency & Resistance** - Analyze micro-level resistance and reflexivity
-3. **Assemblage Mapping** - Map actors and cross-case patterns
-4. **Structural Governance** - Examine macro-level governance structures
+1.  **Data Collection** (Ingest & Trace)
+2.  **Micro Analysis** (Resistance & Reflexivity)
+3.  **Meso Analysis** (Ecosystem & Networks)
+4.  **Macro Analysis** (Governance & Culture)
+5.  **Synthesis** (Comparison & Reporting)
 
 ---
 
 ## Phase 1: Data Collection
 
-### 1.1 Documents
-**Purpose**: Archive primary policy texts and source materials.
+### 1.1 Documents (`/data`)
+**Goal**: Build your primary archive.
+-   **Upload**: Add PDF documents (policies, reports, whitepapers).
+-   **Metadata**: Tag documents with jurisdiction, date, and type.
+-   **Processing**: The system automatically extracts text for analysis.
 
-**Steps**:
-- Upload PDF documents of AI governance policies
-- Add metadata (title, jurisdiction, date)
-- Organize by region or theme
-
-**Tools**: `/data`
-
-### 1.2 Empirical Data
-**Purpose**: Collect empirical traces from web sources.
-
-**Steps**:
-- Search and import web-based evidence
-- Track discourse and public statements
-- Document temporal evolution
-
-**Tools**: `/empirical`
+### 1.2 Empirical Traces (`/empirical`)
+**Goal**: Ground your analysis in real-world evidence.
+-   **Search**: Use the integrated web search to find forum posts, news articles, and discussions.
+-   **Capture**: Save relevant "traces" that evidence resistance or specific cultural attitudes.
+-   **Link**: Connect these traces to your primary documents.
 
 ---
 
-## Phase 2: Agency & Resistance
+## Phase 2: Micro Analysis
 
-### 2.1 Resistance Analysis
-**Purpose**: Analyze micro-resistance strategies and counter-conduct.
+### 2.1 Resistance (`/resistance`)
+**Goal**: Identify agency and counter-conduct.
+-   **Analyze**: Use AI to detect specific strategies of resistance (e.g., *Gambiarra*, Obfuscation, Refusal) within your traces.
+-   **Catalog**: Build a library of resistance tactics used by actors in the system.
 
-**Steps**:
-- Identify resistance tactics in policy documents
-- Map counter-narratives and contestation
-- Analyze power dynamics and agency
-
-**Tools**: `/resistance`
-
-### 2.2 Critical Reflection
-**Purpose**: Examine how your own perspective shapes the analysis.
-
-**Steps**:
-- Document your positionality
-- Reflect on epistemic assumptions
-- Consider alternative interpretations
-
-**Tools**: `/reflexivity`
+### 2.2 Critical Reflection (`/reflexivity`)
+**Goal**: Maintain epistemic vigilance.
+-   **Journal**: Document your own assumptions and biases.
+-   **Challenge**: Use the AI to challenge your interpretations and suggest alternative viewpoints.
 
 ---
 
-## Phase 3: Assemblage Mapping
+## Phase 3: Meso Analysis
 
-### 3.1 Ecosystem Analysis
-**Purpose**: Map actors, detect cultural holes, and visualize social networks.
+### 3.1 Ecosystem (`/ecosystem`)
+**Goal**: Map the network of actors.
+-   **Simulate**: Generate a social graph of key actors (regulators, corporations, civil society).
+-   **Analyze**: Identify "cultural holes" (disconnects) and "bridging" opportunities.
+-   **Visualize**: View the dynamic network graph to understand power distribution.
 
-**Steps**:
-- Discover actors using web search
-- Visualize network relationships
-- Identify cultural holes and disconnects
-- Analyze bridging opportunities
-
-**Tools**: `/ecosystem`
-
-### 3.2 Cross-Case Analysis
-**Purpose**: Compare frameworks across jurisdictions.
-
-**Steps**:
-- Select multiple policy documents
-- Run AI-powered comparative analysis
-- Identify convergences and divergences
-- Synthesize findings
-
-**Tools**: `/synthesis`
+### 3.2 Concept Network (`/ontology`)
+**Goal**: Map the landscape of ideas.
+-   **Extract**: Identify key concepts and terms from your documents.
+-   **Connect**: Visualize how these concepts relate to one another (e.g., "Safety" vs. "Innovation").
 
 ---
 
-## Phase 4: Structural Governance
+## Phase 4: Macro Analysis
 
-### 4.1 Comparison
-**Purpose**: Side-by-side comparison of governance frameworks.
+### 4.1 Governance (`/governance`)
+**Goal**: Understand structural power.
+-   **Orchestration**: Analyze how resources (funding, authority, data) are distributed.
+-   **Logics**: Identify the dominant institutional logics (e.g., Market, State, Profession) driving policy.
 
-**Steps**:
-- Select two frameworks to compare
-- Analyze structural differences
-- Identify institutional logics
+### 4.2 Cultural Framing (`/cultural`)
+**Goal**: Decode the narrative.
+-   **Framing**: Analyze how problems are defined and solutions are justified.
+-   **Epistemic Authority**: Determine whose knowledge is valued and whose is marginalized.
 
-**Tools**: `/comparison`
-
-### 4.2 Governance Analysis
-**Purpose**: Analyze resource orchestration and institutional logics.
-
-**Steps**:
-- Map governance mechanisms
-- Identify power structures
-- Analyze resource flows
-
-**Tools**: `/governance`
-
-### 4.3 Cultural Framing
-**Purpose**: Examine cultural framing and epistemic authority.
-
-**Steps**:
-- Analyze cultural narratives
-- Identify epistemic authorities
-- Map discursive strategies
-
-**Tools**: `/cultural`
-
-### 4.4 Concept Network
-**Purpose**: Visual map of key concepts and their relationships.
-
-**Steps**:
-- Extract key concepts from documents
-- Visualize conceptual relationships
-- Identify semantic clusters
-
-**Tools**: `/ontology`
+### 4.3 Timeline (`/timeline`)
+**Goal**: Track temporal evolution.
+-   **History**: Visualize key events and policy shifts over time.
+-   **Dynamics**: Understand the speed and direction of change.
 
 ---
 
-## Recommended Workflow
+## Phase 5: Synthesis
 
-1. **Start with Data Collection** - Upload your policy documents
-2. **Conduct Resistance Analysis** - Identify micro-level agency
-3. **Reflect Critically** - Document your positionality
-4. **Map the Ecosystem** - Discover and visualize actors
-5. **Compare Frameworks** - Run cross-case analysis
-6. **Analyze Governance** - Examine structural patterns
-7. **Examine Cultural Framing** - Analyze discursive strategies
-8. **Build Concept Network** - Visualize conceptual relationships
+### 5.1 Comparison (`/comparison`)
+**Goal**: Side-by-side analysis.
+-   **Compare**: Select two frameworks (e.g., EU AI Act vs. Brazil PL 2338) and analyze their differences in specific dimensions (e.g., Risk Definition, Enforcement).
+
+### 5.2 Synthesis (`/synthesis`)
+**Goal**: Generate insights.
+-   **Report**: Use the AI to generate comprehensive reports that synthesize findings from all previous phases.
+-   **Export**: Download your analysis for publication or sharing.
 
 ---
 
-## Tips for Effective Research
+## Tips for Success
 
-- **Iterate**: Move back and forth between phases as insights emerge
-- **Document**: Use the Critical Reflection tool throughout the process
-- **Visualize**: Leverage network graphs and concept maps
-- **Compare**: Always analyze multiple cases to identify patterns
-- **Question**: Maintain critical awareness of your own assumptions
+*   **Iterate**: Research is non-linear. Move back and forth between phases as you discover new evidence.
+*   **Ground**: Always link your high-level claims back to specific empirical traces or document text.
+*   **Reflect**: Use the Reflexivity tool regularly to ensure your analysis remains critical and self-aware.

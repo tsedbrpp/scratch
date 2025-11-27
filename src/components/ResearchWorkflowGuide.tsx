@@ -30,33 +30,41 @@ export function ResearchWorkflowGuide() {
             id: 1,
             title: "Data Collection",
             icon: <Database size={16} />,
-            desc: "Import and tag your primary policy texts (EU AI Act, PL 2338).",
+            desc: "Ingest documents and capture empirical traces.",
             link: "/data",
-            active: pathname === "/data"
+            active: pathname === "/data" || pathname === "/empirical"
         },
         {
             id: 2,
-            title: "Trace Resistance",
-            icon: <GitGraph size={16} />,
-            desc: "Identify and map micro-resistances and friction points.",
+            title: "Micro Analysis",
+            icon: <FileText size={16} />,
+            desc: "Analyze resistance and reflect on positionality.",
             link: "/resistance",
-            active: pathname === "/resistance"
+            active: pathname === "/resistance" || pathname === "/reflexivity"
         },
         {
             id: 3,
-            title: "Synthesize Assemblages",
-            icon: <Share2 size={16} />,
-            desc: "Visualize the actor-mechanism-impact flows.",
-            link: "/synthesis",
-            active: pathname === "/synthesis"
+            title: "Meso Analysis",
+            icon: <GitGraph size={16} />,
+            desc: "Map ecosystems and conceptual networks.",
+            link: "/ecosystem",
+            active: pathname === "/ecosystem" || pathname === "/ontology"
         },
         {
             id: 4,
-            title: "Reflexive Journaling",
-            icon: <FileText size={16} />,
-            desc: "Document your situated positionality and method.",
-            link: "/reflexivity",
-            active: pathname === "/reflexivity"
+            title: "Macro Analysis",
+            icon: <Share2 size={16} />,
+            desc: "Examine governance structures and cultural framing.",
+            link: "/governance",
+            active: pathname === "/governance" || pathname === "/cultural" || pathname === "/timeline" || pathname === "/comparison"
+        },
+        {
+            id: 5,
+            title: "Synthesis",
+            icon: <BookOpen size={16} />,
+            desc: "Generate reports and visualize the assemblage.",
+            link: "/synthesis",
+            active: pathname === "/synthesis"
         }
     ];
 
@@ -66,10 +74,10 @@ export function ResearchWorkflowGuide() {
                 <div>
                     <h3 className="font-bold text-sm flex items-center gap-2">
                         <BookOpen size={16} className="text-blue-400" />
-                        Research Workflow
+                        Assemblage AI Guide
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
-                        Guide for "Algorithmic Assemblages" CFP
+                        Critical Analysis Workflow
                     </p>
                 </div>
                 <button
@@ -87,8 +95,8 @@ export function ResearchWorkflowGuide() {
                             key={step.id}
                             href={step.link}
                             className={`block group border rounded-lg p-3 transition-all ${step.active
-                                    ? "bg-blue-50 border-blue-200 ring-1 ring-blue-200"
-                                    : "bg-white border-slate-100 hover:border-blue-200 hover:shadow-sm"
+                                ? "bg-blue-50 border-blue-200 ring-1 ring-blue-200"
+                                : "bg-white border-slate-100 hover:border-blue-200 hover:shadow-sm"
                                 }`}
                         >
                             <div className="flex items-center justify-between mb-1">
@@ -112,7 +120,7 @@ export function ResearchWorkflowGuide() {
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                     <h4 className="text-xs font-semibold text-slate-700 mb-2">Current Goal:</h4>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                        Generate the <strong>Assemblage Sankey Diagram</strong> in the Synthesis tab to visualize the "Decolonial Situatedness" argument for your paper.
+                        Begin by uploading your primary policy documents in the <strong>Data Collection</strong> tab to initialize the assemblage analysis.
                     </p>
                 </div>
             </div>

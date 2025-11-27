@@ -3,6 +3,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const isPublicRoute = createRouteMatcher([
     "/login(.*)",
     "/sign-up(.*)",
+    "/", // Landing page is public
     "/api/auth/login", // Keep for backward compatibility during migration if needed
     "/api/auth/logout"
 ]);
