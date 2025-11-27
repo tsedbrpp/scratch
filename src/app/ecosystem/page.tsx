@@ -226,7 +226,7 @@ export default function EcosystemPage() {
                                     </DialogTrigger>
                                     <DialogContent>
                                         <DialogHeader>
-                                            <DialogTitle>Simulate Ecosystem Data</DialogTitle>
+                                            <DialogTitle>Discover Actors</DialogTitle>
                                             <DialogDescription>
                                                 Use web search to discover and import actors into the ecosystem.
                                             </DialogDescription>
