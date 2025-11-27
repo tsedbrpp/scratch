@@ -163,6 +163,24 @@ export default function EcosystemPage() {
         setPositions({});
     };
 
+    const handleClearCache = async () => {
+        try {
+            const response = await fetch('/api/ecosystem/clear-cache', {
+                method: 'POST',
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("Cache cleared! Run a new simulation to get actors with website URLs.");
+            } else {
+                alert("Failed to clear cache: " + (data.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Clear cache error:", error);
+            alert("Failed to clear cache.");
+        }
+    };
+
+
     // Drag handlers
     const handleMouseDown = (e: React.MouseEvent, actorId: string) => {
         e.stopPropagation();
@@ -227,6 +245,9 @@ export default function EcosystemPage() {
                                             </div>
                                         </div>
                                         <DialogFooter>
+                                            <Button variant="outline" onClick={handleClearCache}>
+                                                Clear Cache
+                                            </Button>
                                             <Button onClick={handleSimulate} disabled={isSimulating}>
                                                 {isSimulating ? (
                                                     <>
