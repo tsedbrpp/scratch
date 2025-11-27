@@ -29,12 +29,12 @@ export function DocumentCard({
 }: DocumentCardProps) {
     return (
         <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <div className="space-y-1 flex-1 min-w-0 pr-4">
+            <CardHeader className="flex flex-col md:flex-row items-start justify-between space-y-4 md:space-y-0 pb-2">
+                <div className="space-y-1 flex-1 min-w-0 pr-0 md:pr-4 w-full">
                     <CardTitle className="text-base font-semibold break-words">{source.title}</CardTitle>
                     <CardDescription className="break-words">{source.description}</CardDescription>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end md:justify-start">
                     <div
                         className={`rounded-full p-2 ${source.colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
                         onClick={() => onView(source)}

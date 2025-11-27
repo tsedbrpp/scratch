@@ -152,7 +152,7 @@ export default function EmpiricalPage() {
                                             id="title"
                                             value={newSource.title}
                                             onChange={(e) => setNewSource({ ...newSource, title: e.target.value })}
-                                            className="col-span-3"
+                                            className="col-span-3 text-slate-900"
                                             required
                                             placeholder="e.g., Reddit Thread on Uber"
                                         />
@@ -165,7 +165,7 @@ export default function EmpiricalPage() {
                                             id="description"
                                             value={newSource.description}
                                             onChange={(e) => setNewSource({ ...newSource, description: e.target.value })}
-                                            className="col-span-3"
+                                            className="col-span-3 text-slate-900"
                                             required
                                             placeholder="e.g., Drivers discussing algorithm changes"
                                         />
@@ -178,7 +178,7 @@ export default function EmpiricalPage() {
                                             id="text"
                                             value={newSource.text}
                                             onChange={(e) => setNewSource({ ...newSource, text: e.target.value })}
-                                            className="col-span-3 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="col-span-3 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-slate-900"
                                             placeholder="Paste the text content of the trace here..."
                                             required
                                         />
@@ -218,12 +218,12 @@ export default function EmpiricalPage() {
                 ) : (
                     filteredSources.map((source) => (
                         <Card key={source.id} className="hover:shadow-md transition-shadow">
-                            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                                <div className="space-y-1 flex-1 min-w-0 pr-4">
+                            <CardHeader className="flex flex-col md:flex-row items-start justify-between space-y-4 md:space-y-0 pb-2">
+                                <div className="space-y-1 flex-1 min-w-0 pr-0 md:pr-4 w-full">
                                     <CardTitle className="text-base font-semibold break-words">{source.title}</CardTitle>
                                     <CardDescription className="break-words">{source.description}</CardDescription>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end md:justify-start">
                                     <Button
                                         variant="ghost"
                                         size="sm"

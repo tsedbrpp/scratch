@@ -143,7 +143,7 @@ export default function ReflexivityPage() {
                     <CardContent className="flex-1 flex flex-col space-y-4">
                         <Textarea
                             placeholder="Start writing your reflections here..."
-                            className="flex-1 min-h-[300px] resize-none p-4 leading-relaxed"
+                            className="flex-1 min-h-[300px] resize-none p-4 leading-relaxed text-slate-900"
                             value={journalEntry}
                             onChange={(e) => setJournalEntry(e.target.value)}
                         />

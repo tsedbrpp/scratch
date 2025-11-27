@@ -77,6 +77,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Document title"
+                            className="text-slate-900"
                         />
                     </div>
 
@@ -88,6 +89,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Document description"
                             rows={3}
+                            className="text-slate-900"
                         />
                     </div>
 
@@ -99,6 +101,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                                 type="date"
                                 value={publicationDate}
                                 onChange={(e) => setPublicationDate(e.target.value)}
+                                className="text-slate-900"
                             />
                             <p className="text-xs text-muted-foreground">
                                 Required for Temporal Dynamics
@@ -112,6 +115,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                                 value={version}
                                 onChange={(e) => setVersion(e.target.value)}
                                 placeholder="e.g., 1.0, Draft"
+                                className="text-slate-900"
                             />
                         </div>
                     </div>
@@ -124,6 +128,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                                 value={jurisdiction}
                                 onChange={(e) => setJurisdiction(e.target.value)}
                                 placeholder="e.g., EU, Brazil, US"
+                                className="text-slate-900"
                             />
                         </div>
 
@@ -135,6 +140,7 @@ export function EditSourceDialog({ source, open, onOpenChange, onSave }: EditSou
                                 value={pageCount}
                                 onChange={(e) => setPageCount(e.target.value)}
                                 placeholder="Number of pages"
+                                className="text-slate-900"
                             />
                         </div>
                     </div>

@@ -205,47 +205,31 @@ export default function ResistancePage() {
                                     <span className="bg-white px-2 text-slate-500">Or</span>
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                                    Custom Search Query
-                                </label>
-                                <Input
-                                    placeholder='e.g., "uber drivers algorithm resistance"'
-                                    value={customQuery}
-                                    onChange={(e) => setCustomQuery(e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                                    Search Platforms
-                                </label>
-                                <div className="flex gap-2">
-                                    {[
-                                        { id: 'reddit', label: 'Reddit' },
-                                        { id: 'hackernews', label: 'Hacker News' },
-                                        { id: 'forums', label: 'Forums' }
-                                    ].map(platform => (
-                                        <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedPlatforms.includes(platform.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedPlatforms([...selectedPlatforms, platform.id]);
-                                                    } else {
-                                                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
-                                                    }
-                                                }}
-                                                className="rounded"
-                                            />
-                                            <span className="text-sm">{platform.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                            <div className="flex gap-2">
+                                {[
+                                    { id: 'reddit', label: 'Reddit' },
+                                    { id: 'hackernews', label: 'Hacker News' },
+                                    { id: 'forums', label: 'Forums' }
+                                ].map(platform => (
+                                    <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedPlatforms.includes(platform.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                                                } else {
+                                                    setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
+                                                }
+                                            }}
+                                            className="rounded"
+                                        />
+                                        <span className="text-sm">{platform.label}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
+
                         <DialogFooter>
                             <Button
                                 onClick={handleSearchTraces}
@@ -398,6 +382,6 @@ export default function ResistancePage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

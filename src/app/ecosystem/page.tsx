@@ -240,7 +240,7 @@ export default function EcosystemPage() {
                                                     id="query"
                                                     value={simulationQuery}
                                                     onChange={(e) => setSimulationQuery(e.target.value)}
-                                                    className="col-span-3"
+                                                    className="col-span-3 text-slate-900"
                                                 />
                                             </div>
                                         </div>
@@ -291,7 +291,7 @@ export default function EcosystemPage() {
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
                             <input
                                 placeholder="Search actors..."
-                                className="w-full pl-8 pr-4 py-2 text-sm border rounded-md bg-slate-50"
+                                className="w-full pl-8 pr-4 py-2 text-sm border rounded-md bg-slate-50 text-slate-900"
                             />
                         </div>
                     </CardHeader>
@@ -536,7 +536,7 @@ export default function EcosystemPage() {
                 {/* Cultural Holes Visualization */}
                 <Card className="min-h-[300px] flex flex-col">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
                             <div className="flex items-center gap-2">
                                 <Zap className="h-5 w-5 text-amber-600" />
                                 <CardTitle>Cultural Holes & Disconnects</CardTitle>
