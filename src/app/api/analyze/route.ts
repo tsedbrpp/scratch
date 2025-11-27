@@ -4,6 +4,9 @@ import { redis } from '@/lib/redis';
 import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
 
+export const maxDuration = 60; // Allow up to 60 seconds for analysis
+
+
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
   const hash = crypto.createHash('sha256').update(text).digest('hex');
@@ -290,7 +293,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { text, sourceType, analysisMode, sourceA, sourceB } = await request.json();
+    const { text, sourceType, analysisMode, sourceA, sourceB, force } = await request.json();
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -311,14 +314,19 @@ export async function POST(request: NextRequest) {
     const userCacheKey = `user:${userId}:${cacheKey}`;
 
     try {
-      const cachedResult = await redis.get(userCacheKey);
-      if (cachedResult) {
-        console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
-        return NextResponse.json({
-          success: true,
-          analysis: JSON.parse(cachedResult),
-          cached: true
-        });
+      // Skip cache if force is true
+      if (!force) {
+        const cachedResult = await redis.get(userCacheKey);
+        if (cachedResult) {
+          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
+          return NextResponse.json({
+            success: true,
+            analysis: JSON.parse(cachedResult),
+            cached: true
+          });
+        }
+      } else {
+        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey}`);
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
@@ -406,7 +414,7 @@ Please analyze this text according to the system prompt instructions.`;
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent }
@@ -420,7 +428,9 @@ Please analyze this text according to the system prompt instructions.`;
     // Try to parse JSON response
     let analysis;
     try {
-      analysis = JSON.parse(responseText);
+      // Clean up markdown code fences if present
+      const cleanedResponse = responseText.replace(/```json\n?|```/g, '').trim();
+      analysis = JSON.parse(cleanedResponse);
     } catch {
       // If not JSON, structure it manually
       if (analysisMode === 'resistance') {

@@ -20,7 +20,8 @@ interface AnalyzeResponse {
 export const analyzeDocument = async (
     text: string,
     mode: AnalysisMode = 'dsf',
-    sourceType: string = 'Policy Document'
+    sourceType: string = 'Policy Document',
+    force: boolean = false
 ): Promise<AnalysisResult> => {
     try {
         const response = await fetch('/api/analyze', {
@@ -29,14 +30,15 @@ export const analyzeDocument = async (
             body: JSON.stringify({
                 text,
                 sourceType,
-                analysisMode: mode
+                analysisMode: mode,
+                force
             })
         });
 
         const result: AnalyzeResponse = await response.json();
 
         if (!result.success) {
-            throw new Error(result.error || 'Analysis failed');
+            throw new Error(result.details || result.error || 'Analysis failed');
         }
 
         return result.analysis;

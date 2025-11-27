@@ -125,7 +125,7 @@ export function DocumentCard({
                             ) : (
                                 <>
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    Analyze with AI
+                                    {source.analysis ? 'Re-analyze with AI' : 'Analyze with AI'}
                                 </>
                             )}
                         </Button>

@@ -213,7 +213,7 @@ export default function EcosystemPage() {
         <div className="flex flex-col lg:flex-row h-full gap-6">
             {/* Sidebar: Actor Management */}
             <div className="w-full lg:w-80 flex flex-col gap-4 shrink-0">
-                <Card className="h-full flex flex-col">
+                <Card className="h-[500px] lg:h-full flex flex-col">
                     <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-lg">Ecosystem Actors</CardTitle>

@@ -88,12 +88,27 @@ export default function PolicyDocumentsPage() {
             return;
         }
 
+        // Check if analysis already exists
+        let force = false;
+        const hasAnalysis =
+            (mode === 'dsf' && source.analysis) ||
+            (mode === 'cultural_framing' && source.cultural_framing) ||
+            (mode === 'institutional_logics' && source.institutional_logics);
+
+        if (hasAnalysis) {
+            if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
+                return;
+            }
+            force = true;
+        }
+
         setAnalyzingId(sourceId);
         try {
             const result = await analyzeDocument(
-                source.extractedText.substring(0, 4000),
+                source.extractedText.substring(0, 25000),
                 mode,
-                'Policy Document'
+                'Policy Document',
+                force
             );
 
             const updates: Partial<Source> = {};
