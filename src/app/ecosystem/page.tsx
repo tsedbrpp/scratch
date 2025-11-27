@@ -40,7 +40,7 @@ export default function EcosystemPage() {
         setMounted(true);
     }, []);
 
-    if (!mounted) return null;
+
 
     // Initialize positions when actors change
     useState(() => {
@@ -187,6 +187,8 @@ export default function EcosystemPage() {
     const handleMouseUp = () => {
         setDraggingId(null);
     };
+
+    if (!mounted) return null;
 
     return (
         <div className="flex flex-col lg:flex-row h-full gap-6">
