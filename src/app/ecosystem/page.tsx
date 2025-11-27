@@ -20,15 +20,10 @@ interface EcosystemActor {
     influence: "High" | "Medium" | "Low";
 }
 
-const MOCK_ACTORS: EcosystemActor[] = [
-    { id: "1", name: "TechCorp AI", type: "Startup", description: "Leading generative AI startup focused on enterprise solutions.", influence: "High" },
-    { id: "2", name: "PolicyWatch", type: "Civil Society", description: "NGO monitoring AI regulation compliance.", influence: "Medium" },
-    { id: "3", name: "Ministry of Digital", type: "Policymaker", description: "Government body responsible for AI Act implementation.", influence: "High" },
-    { id: "4", name: "Prof. Smith", type: "Academic", description: "Key voice in AI ethics discourse.", influence: "Medium" },
-];
+
 
 export default function EcosystemPage() {
-    const [actors, setActors] = useLocalStorage<EcosystemActor[]>("ecosystem_actors", MOCK_ACTORS);
+    const [actors, setActors] = useLocalStorage<EcosystemActor[]>("ecosystem_actors", []);
     const [selectedActorId, setSelectedActorId] = useLocalStorage<string | null>("ecosystem_selected_actor_id", null);
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationQuery, setSimulationQuery] = useLocalStorage<string>("ecosystem_simulation_query", "AI startups and policy actors in Brussels");
@@ -190,6 +185,13 @@ export default function EcosystemPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
+                        {actors.length === 0 && (
+                            <div className="text-center p-6 text-slate-500 text-sm border-2 border-dashed border-slate-100 rounded-lg m-2">
+                                <Globe className="h-8 w-8 mx-auto mb-2 text-indigo-200" />
+                                <p>No actors found.</p>
+                                <p className="mt-2 text-xs">Click the <Globe className="inline h-3 w-3 text-indigo-600" /> icon above to simulate ecosystem data.</p>
+                            </div>
+                        )}
                         {actors.map(actor => (
                             <div
                                 key={actor.id}
