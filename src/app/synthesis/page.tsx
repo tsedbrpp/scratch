@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSources } from "@/hooks/useSources";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +67,7 @@ export default function SynthesisPage() {
     const [sourceA, setSourceA] = useState<Source | null>(null);
     const [sourceB, setSourceB] = useState<Source | null>(null);
     const [isComparing, setIsComparing] = useState(false);
-    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
+    const [comparisonResult, setComparisonResult] = useLocalStorage<ComparisonResult | null>("synthesis_comparison_result", null);
 
     // Ecosystem State
     const [ecosystemSource, setEcosystemSource] = useState<Source | null>(null);
@@ -79,9 +80,27 @@ export default function SynthesisPage() {
     const analyzedSources = sources.filter(s => s.analysis || s.extractedText);
 
     const handleExport = () => {
+        if (!comparisonResult) {
+            alert("Please run a comparison first to generate a report.");
+            return;
+        }
+
         setIsExporting(true);
         try {
-            generateSynthesisPDF(SYNTHESIS_FINDINGS);
+            // Transform comparisonResult into the format expected by generateSynthesisPDF
+            const findings = Object.entries(comparisonResult).map(([key, value]) => {
+                const typedValue = value as ComparisonResult["risk"]; // All keys have same structure
+                const findingDef = SYNTHESIS_FINDINGS.find(f => f.key === key);
+                return {
+                    dimension: findingDef?.dimension || key,
+                    convergence: typedValue.convergence,
+                    divergence: typedValue.divergence,
+                    coloniality: typedValue.coloniality,
+                    resistance: typedValue.resistance
+                };
+            });
+
+            generateSynthesisPDF(findings);
         } catch (error) {
             console.error("Error generating PDF:", error);
             alert("Failed to generate PDF. Please try again.");
@@ -263,29 +282,32 @@ export default function SynthesisPage() {
                         {comparisonResult && (
                             <div className="mt-4 space-y-3 pt-4 border-t">
                                 <h4 className="font-semibold text-slate-900">Comparison Results</h4>
-                                {Object.entries(comparisonResult).map(([key, value]) => (
-                                    <div key={key} className="space-y-2">
-                                        <p className="text-sm font-medium text-slate-700 capitalize">{key}</p>
-                                        <div className="grid grid-cols-2 gap-2 text-xs">
-                                            <div className="p-2 bg-green-50 rounded border border-green-200">
-                                                <span className="font-semibold text-green-700">Convergence:</span>
-                                                <p className="text-slate-600 mt-1">{value.convergence}</p>
-                                            </div>
-                                            <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                                                <span className="font-semibold text-blue-700">Divergence:</span>
-                                                <p className="text-slate-600 mt-1">{value.divergence}</p>
-                                            </div>
-                                            <div className="p-2 bg-red-50 rounded border border-red-200">
-                                                <span className="font-semibold text-red-700">Coloniality:</span>
-                                                <p className="text-slate-600 mt-1">{value.coloniality}</p>
-                                            </div>
-                                            <div className="p-2 bg-purple-50 rounded border border-purple-200">
-                                                <span className="font-semibold text-purple-700">Resistance:</span>
-                                                <p className="text-slate-600 mt-1">{value.resistance}</p>
+                                {Object.entries(comparisonResult).map(([key, value]) => {
+                                    const typedValue = value as ComparisonResult["risk"];
+                                    return (
+                                        <div key={key} className="space-y-2">
+                                            <p className="text-sm font-medium text-slate-700 capitalize">{key}</p>
+                                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                                <div className="p-2 bg-green-50 rounded border border-green-200">
+                                                    <span className="font-semibold text-green-700">Convergence:</span>
+                                                    <p className="text-slate-600 mt-1">{typedValue.convergence}</p>
+                                                </div>
+                                                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                                                    <span className="font-semibold text-blue-700">Divergence:</span>
+                                                    <p className="text-slate-600 mt-1">{typedValue.divergence}</p>
+                                                </div>
+                                                <div className="p-2 bg-red-50 rounded border border-red-200">
+                                                    <span className="font-semibold text-red-700">Coloniality:</span>
+                                                    <p className="text-slate-600 mt-1">{typedValue.coloniality}</p>
+                                                </div>
+                                                <div className="p-2 bg-purple-50 rounded border border-purple-200">
+                                                    <span className="font-semibold text-purple-700">Resistance:</span>
+                                                    <p className="text-slate-600 mt-1">{typedValue.resistance}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </CardContent>
@@ -457,6 +479,7 @@ export default function SynthesisPage() {
                     // Show AI-generated comparison results
                     <div className="grid gap-4">
                         {Object.entries(comparisonResult).map(([key, value]) => {
+                            const typedValue = value as ComparisonResult["risk"];
                             const finding = SYNTHESIS_FINDINGS.find(f => f.key === key);
                             const Icon = finding?.icon || AlertCircle;
                             return (
@@ -470,19 +493,19 @@ export default function SynthesisPage() {
                                     <CardContent className="space-y-3">
                                         <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                                             <p className="text-xs font-bold text-green-700 uppercase mb-1">Convergence</p>
-                                            <p className="text-sm text-slate-700">{value.convergence}</p>
+                                            <p className="text-sm text-slate-700">{typedValue.convergence}</p>
                                         </div>
                                         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                                             <p className="text-xs font-bold text-blue-700 uppercase mb-1">Divergence</p>
-                                            <p className="text-sm text-slate-700">{value.divergence}</p>
+                                            <p className="text-sm text-slate-700">{typedValue.divergence}</p>
                                         </div>
                                         <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                                             <p className="text-xs font-bold text-red-700 uppercase mb-1">Coloniality</p>
-                                            <p className="text-sm text-slate-700">{value.coloniality}</p>
+                                            <p className="text-sm text-slate-700">{typedValue.coloniality}</p>
                                         </div>
                                         <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                                             <p className="text-xs font-bold text-purple-700 uppercase mb-1">Resistance</p>
-                                            <p className="text-sm text-slate-700">{value.resistance}</p>
+                                            <p className="text-sm text-slate-700">{typedValue.resistance}</p>
                                         </div>
                                     </CardContent>
                                 </Card>
