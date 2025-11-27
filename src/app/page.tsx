@@ -107,6 +107,14 @@ const features = [
     color: "bg-purple-50 text-purple-700 border-purple-200",
     iconColor: "text-purple-600",
   },
+  {
+    name: "Temporal Dynamics",
+    href: "/timeline",
+    icon: Activity,
+    description: "Track the evolution of governance concepts over time",
+    color: "bg-pink-50 text-pink-700 border-pink-200",
+    iconColor: "text-pink-600",
+  },
 ];
 
 export default function Home() {
