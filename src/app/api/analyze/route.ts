@@ -3,17 +3,16 @@ import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { auth } from '@clerk/nextjs/server';
 
-export const maxDuration = 60; // Allow up to 60 seconds for analysis
-
+export const maxDuration = 300; // Allow up to 5 minutes for analysis
+export const dynamic = 'force-dynamic';
 
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
   const hash = crypto.createHash('sha256').update(text).digest('hex');
   return `analysis:${mode}:${sourceType}:${hash}`;
 }
-
-// ... (System Prompts remain unchanged - I will keep them in the file but for brevity in this tool call I am focusing on the handler) ...
 
 // DSF Lens System Prompt
 const DSF_SYSTEM_PROMPT = `You are an expert qualitative researcher acting as an 'Analytical Lens'. 
@@ -332,9 +331,10 @@ Provide your analysis in JSON format:
           ]
 } `;
 
-import { auth } from '@clerk/nextjs/server';
-
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()}`);
+
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -358,6 +358,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { text, sourceType, analysisMode, sourceA, sourceB, force, documents } = await request.json();
+    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}`);
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -368,7 +369,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!text || text.length < 50) {
+      console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
+      return NextResponse.json(
+        { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
+        { status: 400 }
+      );
+    }
+
     // --- CACHING LOGIC START ---
+    console.log('[ANALYSIS] Starting cache check...');
     let textForCache = text || '';
     if (analysisMode === 'comparison' && sourceA && sourceB) {
       textForCache = `${sourceA.title}:${sourceA.text}| ${sourceB.title}:${sourceB.text} `;
@@ -378,19 +388,23 @@ export async function POST(request: NextRequest) {
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
     const userCacheKey = `user:${userId}:${cacheKey} `;
+    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey}`);
 
     try {
       // Skip cache if force is true
       if (!force) {
+        console.log('[ANALYSIS] Checking Redis cache...');
         const cachedResult = await redis.get(userCacheKey);
         if (cachedResult) {
           console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey} `);
+          console.log(`[ANALYSIS] Completed (Cache Hit) in ${Date.now() - startTime}ms`);
           return NextResponse.json({
             success: true,
             analysis: JSON.parse(cachedResult),
             cached: true
           });
         }
+        console.log('[ANALYSIS] Cache Miss.');
       } else {
         console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey} `);
       }
@@ -400,6 +414,7 @@ export async function POST(request: NextRequest) {
     }
     // --- CACHING LOGIC END ---
 
+    console.log('[ANALYSIS] Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: apiKey,
     });
@@ -476,20 +491,40 @@ Please analyze the legitimacy and justification orders in this text.`;
 ${JSON.stringify(documents, null, 2)}
 
 Please synthesize the analysis results for these documents.`;
+    } else if (analysisMode === 'cultural_holes') {
+      systemPrompt = CULTURAL_HOLES_PROMPT;
+      userContent = `SOURCE TYPE: ${sourceType || 'Policy Document'}
+
+TEXT CONTENT:
+${text}
+
+Please identify cultural holes in this text.`;
     }
 
+    console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode}`);
+    const aiStartTime = Date.now();
+
     // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent }
-      ],
-      temperature: 0.8,
-      max_tokens: 1500,
-    });
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.2,
+        max_tokens: 4096,
+        response_format: { type: "json_object" }
+      });
+      console.log(`[ANALYSIS] OpenAI response received in ${Date.now() - aiStartTime}ms`);
+    } catch (openaiError) {
+      console.error('[ANALYSIS CRITICAL ERROR] OpenAI API call failed:', openaiError);
+      throw openaiError;
+    }
 
     const responseText = completion.choices[0]?.message?.content || '';
+    console.log(`[ANALYSIS] Raw OpenAI response (first 500 chars): ${responseText.substring(0, 500)}`);
 
     // Try to parse JSON response
     let analysis;
@@ -519,8 +554,8 @@ Please synthesize the analysis results for these documents.`;
 
       analysis = JSON.parse(cleanedResponse);
     } catch (parseError) {
-      console.warn("JSON Parse failed, falling back to raw text. Error:", parseError);
-      console.warn("Failed text:", responseText);
+      console.error("[ANALYSIS ERROR] JSON Parse failed:", parseError);
+      console.log("[ANALYSIS ERROR] Failed text:", responseText);
       // If not JSON, structure it manually
       if (analysisMode === 'resistance') {
         analysis = {
@@ -586,6 +621,8 @@ Please synthesize the analysis results for these documents.`;
     }
     // ---------------------
 
+    console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime}ms`);
+
     return NextResponse.json({
       success: true,
       analysis,
@@ -593,7 +630,7 @@ Please synthesize the analysis results for these documents.`;
     });
 
   } catch (error: unknown) {
-    console.error('Analysis error:', error);
+    console.error(`[ANALYSIS ERROR] Failed after ${Date.now() - startTime}ms:`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {

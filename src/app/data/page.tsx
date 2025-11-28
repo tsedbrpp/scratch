@@ -129,10 +129,15 @@ export default function PolicyDocumentsPage() {
             (mode === 'legitimacy' && source.legitimacy_analysis);
 
         if (hasAnalysis) {
-            if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
+            if (!confirm('Analysis already exists for this document. Click OK to FORCE a re-run (bypassing cache), or Cancel to abort.')) {
                 return;
             }
             force = true;
+        } else {
+            // Even if no analysis exists in UI, allow forcing if user holds Shift (optional, but good for debugging)
+            // For now, let's just rely on the fact that if they click analyze, they probably want to analyze.
+            // But if the cache is bad, we need a way to force it.
+            // Let's add a small "Force" checkbox in the UI later, but for now, let's just log it.
         }
 
         setAnalyzingId(sourceId);
