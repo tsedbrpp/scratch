@@ -21,8 +21,10 @@ export async function PUT(
         }
 
         return NextResponse.json(updatedSource);
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to update source' }, { status: 500 });
+    } catch (error: unknown) {
+        console.error('Update source error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ error: `Failed to update source: ${errorMessage}` }, { status: 500 });
     }
 }
 
