@@ -48,8 +48,15 @@ export function useSources() {
                 body: JSON.stringify(updates),
             });
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Failed to update source');
+                const text = await response.text();
+                try {
+                    const errorData = JSON.parse(text);
+                    throw new Error(errorData.error || 'Failed to update source');
+                } catch (e) {
+                    // If JSON parse fails, throw the raw text (or a summary of it)
+                    console.error('Non-JSON error response:', text);
+                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+                }
             }
             const updatedSource = await response.json();
             setSources(prev => prev.map(s => s.id === id ? updatedSource : s));
