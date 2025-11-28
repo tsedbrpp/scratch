@@ -8,7 +8,13 @@ const isPublicRoute = createRouteMatcher([
     "/api/auth/logout"
 ]);
 
+const isApiRoute = createRouteMatcher(['/api(.*)']);
+
 export default clerkMiddleware(async (auth, request) => {
+    if (isApiRoute(request)) {
+        // API routes handle their own auth and return JSON 401 if needed
+        return;
+    }
     if (!isPublicRoute(request)) {
         await auth.protect();
     }

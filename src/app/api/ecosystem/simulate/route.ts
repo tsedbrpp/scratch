@@ -7,7 +7,7 @@ import { auth } from '@clerk/nextjs/server';
 export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) {
-        return new NextResponse("Unauthorized", { status: 401 });
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate Limiting
@@ -66,12 +66,12 @@ export async function POST(request: Request) {
 
         2. **Actor Generation**: Generate a realistic list of 3-5 distinct actors based on this analysis.
            - The actors should be plausible real-world entities (or realistic archetypes if specific names aren't found).
-           - Ensure diversity: include at least one Policymaker, one Startup/Company, and one Civil Society/Academic actor if relevant.
+           - Ensure diversity: include at least one Policymaker, one Startup/Company, one Civil Society/Academic actor, and one **Infrastructure** actor (e.g., a specific algorithm, dataset, or standard) if relevant.
 
         Return a JSON object with a key "actors" containing an array of objects. Each object must have:
         - "id": A unique string ID (kebab-case based on name).
         - "name": Name of the actor.
-        - "type": One of "Startup", "Policymaker", "Civil Society", "Academic".
+        - "type": One of "Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure".
         - "description": A rich description explaining *why* they are relevant to the query "${query}".
         - "influence": "High", "Medium", or "Low".
         - "url": The official website URL or a relevant profile page. **IMPORTANT**: Try to provide a URL for every actor. Use official websites first, then LinkedIn, Crunchbase, Wikipedia, or government pages. If you cannot find a specific URL, use a search query URL like "https://www.google.com/search?q=[actor name]".

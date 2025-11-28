@@ -63,6 +63,7 @@ export interface Source {
     title: string;
     description: string;
     type: "PDF" | "Web" | "Text" | "Trace";
+    url?: string;
     jurisdiction?: "EU" | "Brazil" | "US";
     pageCount?: number;
     addedDate: string;
@@ -77,6 +78,7 @@ export interface Source {
     cultural_framing?: AnalysisResult;
     institutional_logics?: AnalysisResult;
     resistance_analysis?: ResistanceAnalysis;
+    legitimacy_analysis?: LegitimacyAnalysis;
 }
 
 export interface TimelineEvent {
@@ -105,4 +107,30 @@ export interface EcosystemImpact {
     impact: string;
     type: "Constraint" | "Affordance";
     interconnection_type?: "Material" | "Discursive" | "Hybrid";
+}
+
+export interface LegitimacyAnalysis {
+    orders: {
+        market: number; // 0-10
+        industrial: number;
+        civic: number;
+        domestic: number;
+        inspired: number;
+        fame: number;
+    };
+    dominant_order: string;
+    justification_logic: string;
+    moral_vocabulary: string[];
+    conflict_spot: string;
+}
+
+export interface ComparativeSynthesis {
+    executive_summary: string;
+    cultural_divergence: string;
+    institutional_conflict: string;
+    legitimacy_tensions: string;
+    synthesis_matrix: {
+        dimension: string;
+        comparison: string;
+    }[];
 }

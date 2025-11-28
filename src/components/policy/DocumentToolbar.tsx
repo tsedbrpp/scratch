@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Filter, Loader2, Plus, Search, Upload } from "lucide-react";
+import { Filter, Loader2, Plus, Search, Upload, Globe } from "lucide-react";
 
 interface DocumentToolbarProps {
     searchQuery: string;
@@ -9,6 +9,7 @@ interface DocumentToolbarProps {
     isUploading: boolean;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     onAddClick: () => void;
+    onAddUrlClick: () => void;
 }
 
 export function DocumentToolbar({
@@ -17,14 +18,15 @@ export function DocumentToolbar({
     onUpload,
     isUploading,
     fileInputRef,
-    onAddClick
+    onAddClick,
+    onAddUrlClick
 }: DocumentToolbarProps) {
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Policy Documents</h2>
-                    <p className="text-slate-500">Manage and analyze official policy texts (PDFs).</p>
+                    <p className="text-slate-500">Manage and analyze official policy texts (PDFs) and web content.</p>
                 </div>
                 <div className="flex gap-2">
                     <input
@@ -50,6 +52,13 @@ export function DocumentToolbar({
                                 Upload PDF
                             </>
                         )}
+                    </Button>
+                    <Button
+                        onClick={onAddUrlClick}
+                        variant="outline"
+                        className="border-slate-300 hover:bg-slate-100"
+                    >
+                        <Globe className="mr-2 h-4 w-4" /> Add from URL
                     </Button>
                     <Button
                         onClick={onAddClick}

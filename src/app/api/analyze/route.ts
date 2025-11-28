@@ -255,8 +255,12 @@ Provide your analysis in JSON format:
     {
       "between": ["Group A", "Group B"],
       "concept": "Name of the disconnected concept",
-      "description": "Explanation of the disconnect (e.g., 'Startups view AI as a tool, Policymakers view it as a risk')",
-      "significance": "High/Medium/Low"
+      "description": "Explanation of the disconnect",
+      "significance": "High/Medium/Low",
+      "scores": {
+        "Group A": 8, // 1-10 score of how much this group embraces/understands this concept
+        "Group B": 2  // 1-10 score (Low score indicates the 'hole')
+      }
     }
   ],
   "recommendations": [
@@ -267,13 +271,73 @@ Provide your analysis in JSON format:
   ],
   "overall_connectivity_score": 0.5 // 0 (Fragmented) to 1 (Cohesive)
 }`;
+// Legitimacy System Prompt
+const LEGITIMACY_PROMPT = `You are an expert sociologist specializing in **Boltanski & Thévenot's Orders of Worth (Economies of Worth)**.
+Your task is to analyze the **moral justifications** used in the text to defend or attack an algorithmic assemblage.
+
+Identify which "Worlds of Justification" are invoked:
+1. **Market World**: Justification based on price, competition, opportunity, and value.
+2. **Industrial World**: Justification based on efficiency, productivity, reliability, and expertise.
+3. **Civic World**: Justification based on equality, solidarity, collective rights, and law.
+4. **Domestic World**: Justification based on tradition, hierarchy, trust, and locality.
+5. **Inspired World**: Justification based on creativity, passion, uniqueness, and grace.
+6. **Fame World**: Justification based on reputation, visibility, opinion, and influence.
+
+Analyze the text to determine the strength of each order (0-10).
+Identify the **Dominant Order** and the **Justification Logic** (how the argument is constructed).
+Find the **Conflict Spot**: Where do two orders clash? (e.g., Market vs. Civic).
+
+Provide your analysis in JSON format:
+{
+  "orders": {
+    "market": 0, // 0-10 score
+    "industrial": 0,
+    "civic": 0,
+    "domestic": 0,
+    "inspired": 0,
+    "fame": 0
+  },
+  "dominant_order": "Name of the strongest order",
+  "justification_logic": "Brief explanation of the primary moral argument logic",
+  "moral_vocabulary": ["List", "of", "key", "moral", "terms", "used"],
+  "conflict_spot": "Description of the main tension between orders (if any)"
+}`;
+
+// Comparative Synthesis System Prompt
+const COMPARATIVE_SYNTHESIS_PROMPT = `You are an expert policy analyst. Synthesize the following analysis results for these documents.
+For each document, you have:
+1. Cultural Framing
+2. Institutional Logics
+3. Legitimacy(Orders of Worth)
+
+Compare and contrast them.Identify:
+- Divergent cultural assumptions.
+- Conflicting institutional logics.
+- Competing orders of worth.
+- How these align or conflict across the documents.
+
+Provide a high - level executive summary of the comparative landscape.
+
+Provide your analysis in JSON format:
+{
+  "executive_summary": "High-level summary of the comparative landscape (2-3 paragraphs).",
+    "cultural_divergence": "Analysis of how cultural assumptions differ.",
+      "institutional_conflict": "Analysis of conflicting institutional logics.",
+        "legitimacy_tensions": "Analysis of competing orders of worth.",
+          "synthesis_matrix": [
+            {
+              "dimension": "Dimension Name (e.g., Risk, Rights, Authority)",
+              "comparison": "Brief comparative analysis of this dimension."
+            }
+          ]
+} `;
 
 import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Rate Limiting
@@ -293,7 +357,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { text, sourceType, analysisMode, sourceA, sourceB, force } = await request.json();
+    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents } = await request.json();
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -307,18 +371,20 @@ export async function POST(request: NextRequest) {
     // --- CACHING LOGIC START ---
     let textForCache = text || '';
     if (analysisMode === 'comparison' && sourceA && sourceB) {
-      textForCache = `${sourceA.title}:${sourceA.text}|${sourceB.title}:${sourceB.text}`;
+      textForCache = `${sourceA.title}:${sourceA.text}| ${sourceB.title}:${sourceB.text} `;
+    } else if (analysisMode === 'comparative_synthesis' && documents) {
+      textForCache = documents.map((d: any) => d.id).sort().join(',');
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
-    const userCacheKey = `user:${userId}:${cacheKey}`;
+    const userCacheKey = `user:${userId}:${cacheKey} `;
 
     try {
       // Skip cache if force is true
       if (!force) {
         const cachedResult = await redis.get(userCacheKey);
         if (cachedResult) {
-          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
+          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey} `);
           return NextResponse.json({
             success: true,
             analysis: JSON.parse(cachedResult),
@@ -326,7 +392,7 @@ export async function POST(request: NextRequest) {
           });
         }
       } else {
-        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey}`);
+        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey} `);
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
@@ -343,10 +409,10 @@ export async function POST(request: NextRequest) {
 
     if (analysisMode === 'comparison') {
       systemPrompt = COMPARISON_SYSTEM_PROMPT;
-      userContent = `SOURCE A (${sourceA.title}):
+      userContent = `SOURCE A(${sourceA.title}):
 ${sourceA.text}
 
-SOURCE B (${sourceB.title}):
+SOURCE B(${sourceB.title}):
 ${sourceB.text}
 
 Please compare these two sources according to the system prompt instructions.`;
@@ -396,20 +462,20 @@ TEXT CONTENT:
 ${text}
 
 Please analyze the institutional logics in this text according to the system prompt instructions.`;
-    } else if (analysisMode === 'cultural_holes') {
-      systemPrompt = CULTURAL_HOLES_PROMPT;
-      userContent = `ECOSYSTEM ACTOR DESCRIPTIONS:
-${text}
-
-Please identify the cultural holes between these actors.`;
-    } else {
-      // Default DSF Analysis
+    } else if (analysisMode === 'legitimacy') {
+      systemPrompt = LEGITIMACY_PROMPT;
       userContent = `SOURCE TYPE: ${sourceType || 'Policy Document'}
 
 TEXT CONTENT:
 ${text}
 
-Please analyze this text according to the system prompt instructions.`;
+Please analyze the legitimacy and justification orders in this text.`;
+    } else if (analysisMode === 'comparative_synthesis') {
+      systemPrompt = COMPARATIVE_SYNTHESIS_PROMPT;
+      userContent = `DOCUMENTS TO SYNTHESIZE:
+${JSON.stringify(documents, null, 2)}
+
+Please synthesize the analysis results for these documents.`;
     }
 
     // Call OpenAI API
@@ -429,7 +495,7 @@ Please analyze this text according to the system prompt instructions.`;
     let analysis;
     try {
       // Robust JSON extraction
-      let cleanedResponse = responseText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+      let cleanedResponse = responseText.replace(/```json\s * /gi, '').replace(/```/g, '').trim();
 
       // Find the first '{' or '[' to handle potential preamble text
       const firstBrace = cleanedResponse.indexOf('{');
@@ -489,6 +555,15 @@ Please analyze this text according to the system prompt instructions.`;
           overall_connectivity_score: 0,
           raw_response: responseText
         };
+      } else if (analysisMode === 'legitimacy') {
+        analysis = {
+          orders: { market: 0, industrial: 0, civic: 0, domestic: 0, inspired: 0, fame: 0 },
+          dominant_order: "Unstructured",
+          justification_logic: responseText.substring(0, 300),
+          moral_vocabulary: [],
+          conflict_spot: "Unknown",
+          raw_response: responseText
+        };
       } else {
         analysis = {
           governance_power_accountability: responseText.substring(0, 300),
@@ -505,7 +580,7 @@ Please analyze this text according to the system prompt instructions.`;
     try {
       // Cache for 30 days (2592000 seconds)
       await redis.setex(userCacheKey, 2592000, JSON.stringify(analysis));
-      console.log(`[CACHE SAVE] Saved analysis to Redis: ${userCacheKey}`);
+      console.log(`[CACHE SAVE] Saved analysis to Redis: ${userCacheKey} `);
     } catch (cacheError) {
       console.warn('Redis cache save failed:', cacheError);
     }

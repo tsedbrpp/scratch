@@ -1,6 +1,6 @@
 import { AnalysisResult } from "@/types";
 
-export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes';
+export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis';
 
 interface AnalyzeRequest {
     text: string;
@@ -8,6 +8,7 @@ interface AnalyzeRequest {
     analysisMode?: AnalysisMode;
     sourceA?: any;
     sourceB?: any;
+    documents?: any[]; // For comparative synthesis
 }
 
 interface AnalyzeResponse {
@@ -44,6 +45,30 @@ export const analyzeDocument = async (
         return result.analysis;
     } catch (error) {
         console.error(`Analysis error (${mode}):`, error);
+        throw error;
+    }
+};
+
+export const synthesizeComparison = async (documents: any[]): Promise<AnalysisResult> => {
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                analysisMode: 'comparative_synthesis',
+                documents
+            })
+        });
+
+        const result: AnalyzeResponse = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.details || result.error || 'Synthesis failed');
+        }
+
+        return result.analysis;
+    } catch (error) {
+        console.error('Comparative synthesis error:', error);
         throw error;
     }
 };

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useSources } from "@/hooks/useSources";
-import { Source } from "@/types";
+import { Source, LegitimacyAnalysis } from "@/types";
 import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
 import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
@@ -10,12 +10,14 @@ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
 import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
 import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { Loader2 } from "lucide-react";
 
 export default function PolicyDocumentsPage() {
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [searchingId, setSearchingId] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -60,6 +62,36 @@ export default function PolicyDocumentsPage() {
         }
     };
 
+    const handleUrlAdd = async (url: string) => {
+        const response = await fetch('/api/fetch-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch URL');
+        }
+
+        const newDoc: Source = {
+            id: Date.now().toString(),
+            title: data.title || url,
+            description: `Fetched from ${new URL(url).hostname}`,
+            type: "Web",
+            addedDate: new Date().toLocaleDateString(),
+            status: "Active Case",
+            colorClass: "bg-emerald-100",
+            iconClass: "text-emerald-600",
+            extractedText: data.content,
+            url: data.url
+        };
+
+        await addSource(newDoc);
+        alert('Website content added successfully!');
+    };
+
     const handleAddSource = async (title: string, description: string, pageCount: string, publicationDate: string, version: string) => {
         const source: Source = {
             id: Date.now().toString(),
@@ -93,7 +125,8 @@ export default function PolicyDocumentsPage() {
         const hasAnalysis =
             (mode === 'dsf' && source.analysis) ||
             (mode === 'cultural_framing' && source.cultural_framing) ||
-            (mode === 'institutional_logics' && source.institutional_logics);
+            (mode === 'institutional_logics' && source.institutional_logics) ||
+            (mode === 'legitimacy' && source.legitimacy_analysis);
 
         if (hasAnalysis) {
             if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
@@ -115,13 +148,14 @@ export default function PolicyDocumentsPage() {
             if (mode === 'dsf') updates.analysis = result;
             if (mode === 'cultural_framing') updates.cultural_framing = result;
             if (mode === 'institutional_logics') updates.institutional_logics = result;
+            if (mode === 'legitimacy') updates.legitimacy_analysis = result as unknown as LegitimacyAnalysis;
 
             await updateSource(sourceId, updates);
 
             if (mode === 'dsf') {
                 alert('Analysis complete! Scroll down to see results.');
             } else {
-                alert(`✅ ${mode === 'cultural_framing' ? 'Cultural framing' : 'Institutional logics'} analysis complete! Go to Comparison page to view results.`);
+                alert(`✅ ${mode === 'cultural_framing' ? 'Cultural framing' : mode === 'institutional_logics' ? 'Institutional logics' : 'Legitimacy'} analysis complete! Go to Comparison page to view results.`);
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -206,6 +240,7 @@ export default function PolicyDocumentsPage() {
                 isUploading={isUploading}
                 fileInputRef={fileInputRef}
                 onAddClick={() => setIsAddDialogOpen(true)}
+                onAddUrlClick={() => setIsUrlDialogOpen(true)}
             />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -228,6 +263,12 @@ export default function PolicyDocumentsPage() {
                 open={isAddDialogOpen}
                 onOpenChange={setIsAddDialogOpen}
                 onAdd={handleAddSource}
+            />
+
+            <AddUrlDialog
+                open={isUrlDialogOpen}
+                onOpenChange={setIsUrlDialogOpen}
+                onAdd={handleUrlAdd}
             />
 
             <ViewSourceDialog

@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface EcosystemActor {
     id: string;
     name: string;
-    type: "Startup" | "Policymaker" | "Civil Society" | "Academic";
+    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure";
     description: string;
     influence: "High" | "Medium" | "Low";
     url?: string;
@@ -380,7 +380,10 @@ export default function EcosystemPage() {
                                         (source.type === "Policymaker" && target.type === "Civil Society") ||
                                         (source.type === "Startup" && target.type === "Academic") ||
                                         (source.type === "Policymaker" && target.type === "Startup") ||
-                                        (source.type === "Civil Society" && target.type === "Academic")
+                                        (source.type === "Civil Society" && target.type === "Academic") ||
+                                        (source.type === "Infrastructure" && target.type === "Startup") ||
+                                        (source.type === "Infrastructure" && target.type === "Policymaker") ||
+                                        (source.type === "Infrastructure" && target.type === "Academic")
                                     );
 
                                     if (!shouldConnect) return null;
@@ -391,6 +394,9 @@ export default function EcosystemPage() {
                                     else if (source.type === "Startup" && target.type === "Academic") label = "R&D";
                                     else if (source.type === "Policymaker" && target.type === "Startup") label = "Regulation";
                                     else if (source.type === "Civil Society" && target.type === "Academic") label = "Data";
+                                    else if (source.type === "Infrastructure" && target.type === "Startup") label = "Built By";
+                                    else if (source.type === "Infrastructure" && target.type === "Policymaker") label = "Regulates";
+                                    else if (source.type === "Infrastructure" && target.type === "Academic") label = "Studies";
                                     else label = "Link";
 
                                     // Get positions from state
@@ -466,7 +472,8 @@ export default function EcosystemPage() {
                                     "Startup": "#3b82f6",
                                     "Policymaker": "#dc2626",
                                     "Civil Society": "#16a34a",
-                                    "Academic": "#9333ea"
+                                    "Academic": "#9333ea",
+                                    "Infrastructure": "#f59e0b"
                                 };
                                 const color = colorMap[actor.type] || "#64748b";
 
@@ -520,7 +527,8 @@ export default function EcosystemPage() {
                                     { type: "Startup", color: "#3b82f6" },
                                     { type: "Policymaker", color: "#dc2626" },
                                     { type: "Civil Society", color: "#16a34a" },
-                                    { type: "Academic", color: "#9333ea" }
+                                    { type: "Academic", color: "#9333ea" },
+                                    { type: "Infrastructure", color: "#f59e0b" }
                                 ].map((item, i) => (
                                     <g key={item.type} transform={`translate(0, ${(i + 1) * 18})`}>
                                         <circle cx="5" cy="0" r="4" fill={item.color} />
@@ -567,6 +575,8 @@ export default function EcosystemPage() {
                                     </Badge>
                                 </div>
 
+                                <ConceptCloud holes={culturalHoles.holes} />
+
                                 <div className="space-y-4">
                                     {culturalHoles.holes?.map((hole: any, i: number) => (
                                         <div key={i} className="bg-white p-4 rounded-md border border-amber-200 shadow-sm">
@@ -581,14 +591,7 @@ export default function EcosystemPage() {
                                                     <Badge key={g} variant="secondary" className="text-[10px] h-5">{g}</Badge>
                                                 ))}
                                             </div>
-                                            <CulturalHoleVisualizer
-                                                hole={hole}
-                                                onUpdate={(imageUrl) => {
-                                                    const newHoles = { ...culturalHoles };
-                                                    newHoles.holes[i].imageUrl = imageUrl;
-                                                    setCulturalHoles(newHoles);
-                                                }}
-                                            />
+                                            <CulturalHoleChart hole={hole} />
                                         </div>
                                     ))}
                                 </div>
@@ -621,61 +624,60 @@ export default function EcosystemPage() {
     );
 }
 
-function CulturalHoleVisualizer({ hole, onUpdate }: { hole: any, onUpdate: (url: string | null) => void }) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+import { Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-    const handleVisualize = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const prompt = `A surreal, abstract visualization of the sociological concept: "${hole.concept}". 
-            Context: A disconnect between ${hole.between?.join(' and ')}. 
-            Description: ${hole.description}.
-            Style: Digital art, symbolic, high contrast.`;
+function CulturalHoleChart({ hole }: { hole: any }) {
+    if (!hole.scores) return null;
 
-            const image = await generateImage(prompt);
-            onUpdate(image);
-        } catch (err) {
-            console.error("Visualization error:", err);
-            setError("Failed to generate image.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    if (hole.imageUrl) {
-        return (
-            <div className="mt-3 relative group">
-                <img src={hole.imageUrl} alt={hole.concept} className="w-full h-auto object-contain rounded-md border border-slate-200" />
-                <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => onUpdate(null)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
-        );
-    }
+    const data = Object.entries(hole.scores).map(([name, score]) => ({
+        name,
+        score: score as number
+    }));
 
     return (
-        <div className="mt-2">
-            {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-            <Button size="sm" variant="ghost" className="text-xs h-6 w-full justify-start text-indigo-600 hover:text-indigo-800 px-0" onClick={handleVisualize} disabled={isLoading}>
-                {isLoading ? (
-                    <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Visualizing...
-                    </>
-                ) : (
-                    <>
-                        <Zap className="mr-2 h-3 w-3" />
-                        Visualize this disconnect
-                    </>
-                )}
-            </Button>
+        <div className="mt-4 h-[150px] w-full">
+            <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Concept Affinity Gap</p>
+                <div className="flex gap-2 text-[9px] text-slate-500">
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3b82f6]"></div>High Affinity</div>
+                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div>Low Affinity</div>
+                </div>
+            </div>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                    <XAxis type="number" domain={[0, 10]} hide />
+                    <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10 }} />
+                    <Tooltip
+                        cursor={{ fill: 'transparent' }}
+                        contentStyle={{ fontSize: '12px', borderRadius: '6px' }}
+                    />
+                    <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={20}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.score < 5 ? '#f59e0b' : '#3b82f6'} />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+function ConceptCloud({ holes }: { holes: any[] }) {
+    if (!holes || holes.length === 0) return null;
+
+    return (
+        <div className="flex flex-wrap gap-2 mb-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
+            {holes.map((hole, i) => {
+                const size = hole.significance === 'High' ? 'text-lg' : hole.significance === 'Medium' ? 'text-sm' : 'text-xs';
+                const weight = hole.significance === 'High' ? 'font-bold' : 'font-medium';
+                const opacity = hole.significance === 'High' ? 'opacity-100' : 'opacity-70';
+
+                return (
+                    <span key={i} className={`${size} ${weight} ${opacity} text-indigo-600 bg-white px-2 py-1 rounded-full border border-indigo-100 shadow-sm`}>
+                        {hole.concept}
+                    </span>
+                );
+            })}
         </div>
     );
 }

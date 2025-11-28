@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Globe, Loader2, Sparkles, Trash, Globe2, Scale, Pencil } from "lucide-react";
 import { AnalysisResults } from "./AnalysisResults";
+import { LegitimacyAnalysisView } from "./LegitimacyAnalysisView";
 
 interface DocumentCardProps {
     source: Source;
@@ -129,7 +130,7 @@ export function DocumentCard({
                                 </>
                             )}
                         </Button>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <Button
                                 onClick={() => onAnalyze(source.id, 'cultural_framing')}
                                 disabled={isAnalyzing}
@@ -152,10 +153,27 @@ export function DocumentCard({
                                 <Scale className="mr-1 h-3 w-3" />
                                 Logics
                             </Button>
+                            <Button
+                                onClick={() => onAnalyze(source.id, 'legitimacy')}
+                                disabled={isAnalyzing}
+                                variant="outline"
+                                size="sm"
+                                className="text-xs border-purple-200 hover:bg-purple-50"
+                                title="Analyze legitimacy and justification"
+                            >
+                                <Scale className="mr-1 h-3 w-3" />
+                                Legitimacy
+                            </Button>
                         </div>
                     </div>
                 )}
                 {source.analysis && <AnalysisResults analysis={source.analysis} />}
+                {source.legitimacy_analysis && (
+                    <div className="mt-6 pt-4 border-t border-slate-100">
+                        <h3 className="text-sm font-semibold text-slate-900 mb-4">Legitimacy & Justification Analysis</h3>
+                        <LegitimacyAnalysisView analysis={source.legitimacy_analysis} />
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
