@@ -1,7 +1,7 @@
 export interface PDFExtractionResult {
     text: string;
     pageCount: number;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
 export async function extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
@@ -31,7 +31,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
             const textContent = await page.getTextContent();
 
             const pageText = textContent.items
-                .map((item: any) => item.str)
+                .map((item: { str: string } | any) => 'str' in item ? item.str : '')
                 .join(' ');
 
             fullText += `\n\n--- Page ${pageNum} ---\n\n${pageText}`;
@@ -43,7 +43,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
         return {
             text: fullText.trim(),
             pageCount,
-            metadata: metadata.info
+            metadata: metadata.info as Record<string, unknown>
         };
     } catch (error) {
         console.error('PDF extraction error:', error);

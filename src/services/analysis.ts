@@ -1,4 +1,4 @@
-import { AnalysisResult } from "@/types";
+import { AnalysisResult, Source } from "@/types";
 
 export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'resistance_synthesis';
 
@@ -6,9 +6,9 @@ interface AnalyzeRequest {
     text: string;
     sourceType: string;
     analysisMode?: AnalysisMode;
-    sourceA?: any;
-    sourceB?: any;
-    documents?: any[]; // For comparative synthesis
+    sourceA?: { title: string; text: string };
+    sourceB?: { title: string; text: string };
+    documents?: Source[]; // For comparative synthesis
 }
 
 interface AnalyzeResponse {
@@ -53,7 +53,7 @@ export const analyzeDocument = async (
     }
 };
 
-export const synthesizeComparison = async (documents: any[]): Promise<AnalysisResult> => {
+export const synthesizeComparison = async (documents: Source[]): Promise<AnalysisResult> => {
     try {
         const response = await fetch('/api/analyze', {
             method: 'POST',

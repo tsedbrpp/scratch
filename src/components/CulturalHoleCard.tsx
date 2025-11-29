@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CulturalHole } from "@/types/cultural";
+import { CulturalHole, BridgingConcept } from "@/types/cultural";
 import { Lightbulb, ArrowRight, FileText } from "lucide-react";
 
 interface CulturalHoleCardProps {
@@ -116,7 +116,7 @@ export function CulturalHoleCard({ hole, clusters }: CulturalHoleCardProps) {
                             </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {hole.bridgingConcepts.map((bc: any, i: number) => (
+                            {hole.bridgingConcepts.map((bc: BridgingConcept, i: number) => (
                                 <TooltipProvider key={i}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>

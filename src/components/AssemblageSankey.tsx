@@ -148,6 +148,7 @@ export function AssemblageSankey({ data, height = 500 }: AssemblageSankeyProps) 
             <ResponsiveContainer>
                 <Sankey
                     data={chartData}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     node={(props: any) => {
                         const { x, y, width, height, index, payload, containerWidth } = props;
                         const isOut = x + width + 6 > (containerWidth || 500) / 2;
@@ -180,6 +181,7 @@ export function AssemblageSankey({ data, height = 500 }: AssemblageSankeyProps) 
                             </Layer>
                         );
                     }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     link={(props: any) => {
                         const { sourceX, sourceY, targetX, targetY, linkWidth, payload } = props;
                         // Color links based on the "type" of the impact

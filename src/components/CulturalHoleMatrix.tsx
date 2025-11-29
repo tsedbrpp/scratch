@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DiscourseCluster, CulturalHole } from "@/types/cultural";
+import { DiscourseCluster, CulturalHole, BridgingConcept } from "@/types/cultural";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CulturalHoleMatrixProps {
@@ -149,7 +149,7 @@ export function CulturalHoleMatrix({ clusters, holes }: CulturalHoleMatrixProps)
                                                         <div>
                                                             <p className="font-semibold text-slate-700 mb-1">Bridging Ideas:</p>
                                                             <div className="flex flex-wrap gap-1">
-                                                                {hole.bridgingConcepts.map((bc: any, idx: number) => (
+                                                                {hole.bridgingConcepts.map((bc: BridgingConcept, idx: number) => (
                                                                     <TooltipProvider key={idx}>
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>

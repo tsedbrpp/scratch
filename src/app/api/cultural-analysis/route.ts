@@ -20,6 +20,49 @@ Extract 5-10 key themes from the provided text. Each theme should be:
 Return ONLY a JSON array of objects, where each object has a 'theme' and a 'quote'.
 Example: [{"theme": "technological inevitability", "quote": "AI adoption is not a choice but a necessity..."}, {"theme": "sovereign data control", "quote": "We must regain control over our digital borders..."}]`;
 
+interface ThemeObject {
+    theme: string;
+    quote: string;
+}
+
+interface ThemeExtraction {
+    sourceId: string;
+    sourceTitle: string;
+    themes: ThemeObject[];
+}
+
+interface Cluster {
+    id: string;
+    name: string;
+    themes: string[];
+    quotes: string[];
+    sources: string[];
+    centroid: number[];
+    size: number;
+    description?: string;
+}
+
+interface BridgingConcept {
+    concept: string;
+    explanation: string;
+}
+
+interface BridgingData {
+    bridgingConcepts: BridgingConcept[];
+    opportunity: string;
+    policyImplication: string;
+}
+
+interface Hole {
+    id?: string;
+    clusterA: Cluster | string;
+    clusterB: Cluster | string;
+    distance: number;
+    bridgingConcepts?: BridgingConcept[];
+    opportunity?: string;
+    policyImplication?: string;
+}
+
 // System prompt for bridging concept generation
 const BRIDGING_PROMPT = `You are a sophisticated social theorist and policy architect.
 
@@ -136,7 +179,7 @@ function hierarchicalClustering(
 }
 
 // Helper function to safely parse JSON from AI responses
-function safeJSONParse(text: string, fallback: any = []) {
+function safeJSONParse<T>(text: string, fallback: T): T {
     try {
         // Remove markdown code blocks if present
         let cleaned = text.trim();
@@ -206,7 +249,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate a unique key for this analysis request based on source IDs and lens
-        const sortedSourceIds = sources.map((s: any) => s.id).sort().join(',');
+        const sortedSourceIds = sources.map((s: { id: string }) => s.id).sort().join(',');
         const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}:v2`;
 
         // Check cache first
@@ -231,7 +274,7 @@ export async function POST(request: NextRequest) {
         // Step 1: Extract themes from each source
         console.log('Extracting themes from sources...');
         const themeExtractions = await Promise.all(
-            sources.map(async (source: any, index: number) => {
+            sources.map(async (source: { id: string; title: string; text: string }, index: number) => {
                 try {
                     console.log(`Extracting themes from source ${index + 1}/${sources.length}: ${source.title}`);
 
@@ -247,7 +290,7 @@ export async function POST(request: NextRequest) {
                     const themesText = response.choices[0].message.content || '[]';
                     console.log(`Raw themes response for ${source.title}:`, themesText.substring(0, 200));
 
-                    const themes = safeJSONParse(themesText, []);
+                    const themes = safeJSONParse<ThemeObject[]>(themesText, []);
                     console.log(`Extracted ${themes.length} themes from ${source.title}`);
 
                     return {
@@ -269,7 +312,7 @@ export async function POST(request: NextRequest) {
         const sourceIds: string[] = [];
 
         themeExtractions.forEach((extraction) => {
-            extraction.themes.forEach((item: any) => {
+            extraction.themes.forEach((item: ThemeObject | string) => {
                 // Handle both old (string) and new (object) formats for robustness
                 const themeText = typeof item === 'string' ? item : item.theme;
                 const quote = typeof item === 'string' ? '' : item.quote;
@@ -372,7 +415,7 @@ export async function POST(request: NextRequest) {
                         temperature: 0.5,
                     });
 
-                    const bridgingData = safeJSONParse(
+                    const bridgingData = safeJSONParse<BridgingData>(
                         bridgingResponse.choices[0].message.content || '{}',
                         { bridgingConcepts: [], opportunity: '', policyImplication: '' }
                     );
@@ -422,7 +465,7 @@ export async function POST(request: NextRequest) {
                         content: `Analysis Results:
                         Clusters: ${clustersWithDescriptions.map(c => c.name).join(', ')}
                         Top Cultural Hole: ${holes.length > 0 ? `Between ${holes[0].clusterA} and ${holes[0].clusterB} (Distance: ${holes[0].distance})` : "None found"}
-                        Bridging Concepts: ${holes.length > 0 ? holes[0].bridgingConcepts.map((bc: any) => bc.concept).join(', ') : "N/A"}`
+                        Bridging Concepts: ${holes.length > 0 && holes[0].bridgingConcepts ? holes[0].bridgingConcepts.map((bc: BridgingConcept) => bc.concept).join(', ') : "N/A"}`
                     }
                 ],
                 temperature: 0.5,

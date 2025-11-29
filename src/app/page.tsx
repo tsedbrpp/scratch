@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSources } from "@/hooks/useSources";
@@ -233,7 +234,9 @@ function LandingPage() {
   );
 }
 
-function Dashboard({ sources }: { sources: any[] }) {
+// ...
+
+function Dashboard({ sources }: { sources: Source[] }) {
   const docCount = sources.filter(s => s.type !== 'Trace').length;
   const traceCount = sources.filter(s => s.type === 'Trace').length;
   const analyzedCount = sources.filter(s => s.analysis || s.cultural_framing || s.institutional_logics).length;

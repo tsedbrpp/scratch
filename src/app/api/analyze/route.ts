@@ -550,9 +550,9 @@ export async function POST(request: NextRequest) {
       // Use titles and summary/node count for cache key to avoid huge JSON strings
       textForCache = `ONTOLOGY_COMPARE:${sourceA.title}(${sourceA.data.nodes.length})|${sourceB.title}(${sourceB.data.nodes.length})`;
     } else if (analysisMode === 'comparative_synthesis' && documents) {
-      textForCache = documents.map((d: any) => d.id).sort().join(',');
+      textForCache = documents.map((d: { id: string }) => d.id).sort().join(',');
     } else if (analysisMode === 'resistance_synthesis' && documents) {
-      textForCache = documents.map((d: any) => d.title).sort().join(',');
+      textForCache = documents.map((d: { title: string }) => d.title).sort().join(',');
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');

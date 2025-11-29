@@ -15,10 +15,16 @@ const GUIDING_QUESTIONS = [
     "How does my own disciplinary background shape my interpretation of 'risk' and 'harm'?",
 ];
 
+interface MethodLogDetails {
+    lens?: string;
+    sourceCount?: number;
+    [key: string]: unknown;
+}
+
 interface MethodLog {
     id: string;
     action: string;
-    details: any;
+    details: MethodLogDetails;
     timestamp: string;
 }
 
