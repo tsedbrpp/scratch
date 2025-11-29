@@ -12,7 +12,7 @@ export function useSources() {
 
     const fetchSources = async () => {
         try {
-            const response = await fetch('/api/sources');
+            const response = await fetch('/api/sources', { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to fetch sources');
             const data = await response.json();
             setSources(data);

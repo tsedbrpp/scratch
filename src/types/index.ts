@@ -24,6 +24,12 @@ export interface AnalysisResult {
         rights?: { title: string; description: string; badge: string; quote?: string };
         scope?: { title: string; description: string; badge: string; quote?: string };
     };
+    // Assemblage Dynamics
+    assemblage_dynamics?: {
+        territorialization: string;
+        deterritorialization: string;
+        coding: string;
+    };
     // Cultural Framing fields
     state_market_society?: string;
     technology_role?: string;

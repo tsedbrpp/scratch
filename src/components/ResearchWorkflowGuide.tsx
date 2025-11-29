@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function ResearchWorkflowGuide() {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
 
     // Auto-minimize on specific pages if needed, or keep persistent

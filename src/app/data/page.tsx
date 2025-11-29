@@ -143,10 +143,12 @@ export default function PolicyDocumentsPage() {
         setAnalyzingId(sourceId);
         try {
             const result = await analyzeDocument(
-                source.extractedText.substring(0, 25000),
+                source.extractedText.substring(0, 150000),
                 mode,
                 'Policy Document',
-                force
+                force,
+                sourceId,
+                source.title
             );
 
             const updates: Partial<Source> = {};

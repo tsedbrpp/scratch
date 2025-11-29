@@ -22,7 +22,9 @@ export const analyzeDocument = async (
     text: string,
     mode: AnalysisMode = 'dsf',
     sourceType: string = 'Policy Document',
-    force: boolean = false
+    force: boolean = false,
+    documentId?: string,
+    title?: string
 ): Promise<AnalysisResult> => {
     try {
         const response = await fetch('/api/analyze', {
@@ -32,7 +34,9 @@ export const analyzeDocument = async (
                 text,
                 sourceType,
                 analysisMode: mode,
-                force
+                force,
+                documentId,
+                title
             })
         });
 

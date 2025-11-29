@@ -8,10 +8,13 @@ import { auth } from '@clerk/nextjs/server';
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
+// Increment this version to invalidate all cached analyses
+const PROMPT_VERSION = 'v2';
+
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
   const hash = crypto.createHash('sha256').update(text).digest('hex');
-  return `analysis:${mode}:${sourceType}:${hash}`;
+  return `analysis:${mode}:${sourceType}:${PROMPT_VERSION}:${hash}`;
 }
 
 // DSF Lens System Prompt
@@ -19,7 +22,7 @@ const DSF_SYSTEM_PROMPT = `You are an expert qualitative researcher acting as an
 Your specific lens is the **Decolonial Situatedness Framework (DSF)**, applied to the study of **Algorithmic Assemblages**.
 
 You view these systems not just as tools, but as **loosely coupled, emergently structured sociotechnical systems** that orchestrate value and resources.
-
+Adopt a Deleuzian/Latourian perspective: focus on **processes of becoming**, **distributed agency**, and **material-discursive practices**.
 
 DO NOT merely summarize the text. You must interpret it through the following dimensions:
 
@@ -31,7 +34,12 @@ DO NOT merely summarize the text. You must interpret it through the following di
 
 4. **Reflexivity & Situated Praxis**: Does the text show evidence of examining its own positionality, history, and value assumptions? Are the designers aware of the structural inequities shaping their choices?
 
-5. **Legitimacy Claims & Dynamics**: What forms of legitimacy does this assemblage invoke to justify its authority? How does it navigate the "legitimacy dynamics" of its institutional field? Look for tensions between democratic, technocratic, and market-based justifications.
+5. **Legitimacy Claims & Dynamics**: What forms of legitimacy does this assemblage invoke to justify its authority? How does it navigate the "legitimacy dynamics" of its institutional field?
+
+6. **Assemblage Dynamics (The "Glue" and the "Leak")**:
+   - **Territorialization**: What holds this system together? Identify the mechanisms (legal, technical, habitual) that define its boundaries and stabilize it.
+   - **Deterritorialization**: Where is the system unstable? Identify 'lines of flight' or points of rupture where the assemblage might break down or transform.
+   - **Coding**: How does the system translate complex reality into fixed categories (data types, legal definitions)? What is lost in this translation?
 
 Your goal is to reveal structural power dynamics and the **micro-macro connections** between specific algorithmic mechanisms and broader field-level effects.
 
@@ -46,7 +54,12 @@ Provide your analysis in JSON format with these fields:
     "mechanisms": "How legitimacy is established and maintained",
     "tensions": "Competing or contradictory legitimacy claims"
   },
-  "key_insight": "One-sentence summary of the most critical finding",
+  "assemblage_dynamics": {
+    "territorialization": "Analysis of stabilization mechanisms",
+    "deterritorialization": "Analysis of instability and lines of flight",
+    "coding": "Analysis of translation and homogenization"
+  },
+  "key_insight": "One-sentence summary of the assemblage's primary function or tension",
   "governance_scores": {
     "centralization": 0-100, // 0=Decentralized, 100=Centralized
     "rights_focus": 0-100, // 0=Market-focus, 100=Rights-focus
@@ -418,8 +431,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents } = await request.json();
-    console.log(`[ANALYSIS] Received request.Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force} `);
+    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents, documentId, title } = await request.json();
+    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}, DocID: ${documentId}`);
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -441,6 +454,12 @@ export async function POST(request: NextRequest) {
     // --- CACHING LOGIC START ---
     console.log('[ANALYSIS] Starting cache check...');
     let textForCache = text || '';
+
+    // Append documentId to ensure uniqueness even if text is identical
+    if (documentId) {
+      textForCache += `|doc:${documentId}`;
+    }
+
     if (analysisMode === 'comparison' && sourceA && sourceB) {
       textForCache = `${sourceA.title}:${sourceA.text}|${sourceB.title}:${sourceB.text}`;
     } else if (analysisMode === 'comparative_synthesis' && documents) {
@@ -450,8 +469,8 @@ export async function POST(request: NextRequest) {
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
-    const userCacheKey = `user:${userId}:${cacheKey} `;
-    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey} `);
+    const userCacheKey = `user:${userId}:${cacheKey}`;
+    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey}`);
 
     try {
       // Skip cache if force is true
@@ -459,8 +478,8 @@ export async function POST(request: NextRequest) {
         console.log('[ANALYSIS] Checking Redis cache...');
         const cachedResult = await redis.get(userCacheKey);
         if (cachedResult) {
-          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey} `);
-          console.log(`[ANALYSIS] Completed(Cache Hit) in ${Date.now() - startTime} ms`);
+          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
+          console.log(`[ANALYSIS] Completed (Cache Hit) in ${Date.now() - startTime}ms`);
           return NextResponse.json({
             success: true,
             analysis: JSON.parse(cachedResult),
@@ -469,7 +488,7 @@ export async function POST(request: NextRequest) {
         }
         console.log('[ANALYSIS] Cache Miss.');
       } else {
-        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey} `);
+        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey}`);
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
@@ -574,6 +593,16 @@ Please extract the assemblage from this text.`;
 ${JSON.stringify(documents, null, 2)}
 
 Please synthesize these resistance findings according to the system prompt instructions.`;
+    } else {
+      // Default to DSF / Standard Analysis
+      systemPrompt = DSF_SYSTEM_PROMPT;
+      userContent = `DOCUMENT TITLE: ${title || 'Untitled Document'}
+SOURCE TYPE: ${sourceType || 'Policy Document'}
+
+TEXT CONTENT:
+${text}
+
+Please analyze this text using the Decolonial Situatedness Framework (DSF) as described in the system prompt.`;
     }
 
     console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode}`);
