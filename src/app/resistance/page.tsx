@@ -149,6 +149,46 @@ export default function ResistancePage() {
         }
     };
 
+    const [isSynthesizing, setIsSynthesizing] = useState(false);
+    const [synthesisResult, setSynthesisResult] = useState<any>(null);
+
+    const handleSynthesizeFindings = async () => {
+        const analyzedTraces = traces.filter(t => t.resistance_analysis);
+        if (analyzedTraces.length < 2) {
+            toast.error("Not enough data", { description: "Please analyze at least 2 traces before synthesizing." });
+            return;
+        }
+
+        setIsSynthesizing(true);
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysisMode: 'resistance_synthesis',
+                    documents: analyzedTraces.map(t => ({
+                        title: t.title,
+                        content: t.extractedText,
+                        analysis: t.resistance_analysis
+                    }))
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                setSynthesisResult(result.analysis);
+                toast.success("Synthesis complete!");
+            } else {
+                toast.error("Synthesis failed", { description: result.error });
+            }
+        } catch (error) {
+            console.error("Synthesis error:", error);
+            toast.error("Failed to synthesize findings.");
+        } finally {
+            setIsSynthesizing(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -164,94 +204,148 @@ export default function ResistancePage() {
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Micro-Resistance Grounding</h2>
                     <p className="text-slate-500">Analyze empirical traces (forum posts, comments) to identify real-world resistance strategies.</p>
                 </div>
-                <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700">
-                            <Search className="mr-2 h-4 w-4" /> Search for Traces
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
-                        <DialogHeader>
-                            <DialogTitle>Search Web for Resistance Traces</DialogTitle>
-                            <DialogDescription>
-                                Find real forum posts, Reddit threads, and discussions about resistance to AI policies.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div>
-                                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                                    Auto-extract from Policy (Optional)
-                                </label>
-                                <select
-                                    className="w-full p-2 border rounded-md text-sm"
-                                    onChange={(e) => {
-                                        const source = sources.find(s => s.id === e.target.value);
-                                        setSearchSource(source || null);
-                                    }}
-                                >
-                                    <option value="">Select Policy...</option>
-                                    {sources.filter(s => s.type === 'PDF').map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleSynthesizeFindings}
+                        disabled={isSynthesizing || traces.filter(t => t.resistance_analysis).length < 2}
+                        className="border-purple-200 hover:bg-purple-50 text-purple-700"
+                    >
+                        {isSynthesizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+                        Synthesize Findings
+                    </Button>
+                    <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                                <Search className="mr-2 h-4 w-4" /> Search for Traces
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Search Web for Resistance Traces</DialogTitle>
+                                <DialogDescription>
+                                    Find real forum posts, Reddit threads, and discussions about resistance to AI policies.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700 mb-2 block">
+                                        Auto-extract from Policy (Optional)
+                                    </label>
+                                    <select
+                                        className="w-full p-2 border rounded-md text-sm"
+                                        onChange={(e) => {
+                                            const source = sources.find(s => s.id === e.target.value);
+                                            setSearchSource(source || null);
+                                        }}
+                                    >
+                                        <option value="">Select Policy...</option>
+                                        {sources.filter(s => s.type === 'PDF').map(s => (
+                                            <option key={s.id} value={s.id}>{s.title}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-slate-500 mt-1">AI will extract key terms to search for</p>
+                                </div>
+
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white px-2 text-slate-500">Or</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { id: 'reddit', label: 'Reddit' },
+                                        { id: 'hackernews', label: 'Hacker News' },
+                                        { id: 'forums', label: 'Forums' },
+                                        { id: 'twitter', label: 'Twitter/X' },
+                                        { id: 'technews', label: 'Tech News' },
+                                        { id: 'mastodon', label: 'Mastodon' }
+                                    ].map(platform => (
+                                        <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedPlatforms.includes(platform.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                                                    } else {
+                                                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
+                                                    }
+                                                }}
+                                                className="rounded"
+                                            />
+                                            <span className="text-sm">{platform.label}</span>
+                                        </label>
                                     ))}
-                                </select>
-                                <p className="text-xs text-slate-500 mt-1">AI will extract key terms to search for</p>
+                                </div>
                             </div>
 
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t" />
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-white px-2 text-slate-500">Or</span>
-                                </div>
+                            <DialogFooter>
+                                <Button
+                                    onClick={handleSearchTraces}
+                                    disabled={(!searchSource && !customQuery.trim()) || isSearching}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {isSearching ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Searching Web...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Search className="mr-2 h-4 w-4" />
+                                            Search
+                                        </>
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
+
+            {synthesisResult && (
+                <Card className="bg-purple-50 border-purple-200">
+                    <CardHeader>
+                        <CardTitle className="text-purple-900 flex items-center">
+                            <Activity className="mr-2 h-5 w-5" /> Synthesis of Findings
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold text-purple-900 mb-1">Executive Summary</h4>
+                            <p className="text-purple-800 text-sm leading-relaxed">{synthesisResult.executive_summary}</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="font-semibold text-purple-900 mb-2">Dominant Strategies</h4>
+                                <ul className="space-y-2">
+                                    {synthesisResult.dominant_strategies?.map((s: any, i: number) => (
+                                        <li key={i} className="text-sm bg-white p-2 rounded border border-purple-100">
+                                            <span className="font-bold text-purple-700">{s.strategy}</span> ({s.frequency}): {s.description}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <div className="flex gap-2">
-                                {[
-                                    { id: 'reddit', label: 'Reddit' },
-                                    { id: 'hackernews', label: 'Hacker News' },
-                                    { id: 'forums', label: 'Forums' }
-                                ].map(platform => (
-                                    <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedPlatforms.includes(platform.id)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    setSelectedPlatforms([...selectedPlatforms, platform.id]);
-                                                } else {
-                                                    setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
-                                                }
-                                            }}
-                                            className="rounded"
-                                        />
-                                        <span className="text-sm">{platform.label}</span>
-                                    </label>
-                                ))}
+                            <div>
+                                <h4 className="font-semibold text-purple-900 mb-2">Emerging Themes</h4>
+                                <ul className="list-disc list-inside text-sm text-purple-800 space-y-1">
+                                    {synthesisResult.emerging_themes?.map((t: string, i: number) => (
+                                        <li key={i}>{t}</li>
+                                    ))}
+                                </ul>
                             </div>
                         </div>
-
-                        <DialogFooter>
-                            <Button
-                                onClick={handleSearchTraces}
-                                disabled={(!searchSource && !customQuery.trim()) || isSearching}
-                                className="bg-blue-600 hover:bg-blue-700"
-                            >
-                                {isSearching ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Searching Web...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Search className="mr-2 h-4 w-4" />
-                                        Search
-                                    </>
-                                )}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
+                        <div>
+                            <h4 className="font-semibold text-purple-900 mb-1">Policy Implications</h4>
+                            <p className="text-purple-800 text-sm">{synthesisResult.implications_for_policy}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Trace Selector */}

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         const { policyText, customQuery, platforms } = body;
 
         // Generate cache key
-        const cacheKey = `user:${userId}:search-traces:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+        const cacheKey = `user:${userId}:search-traces-v6:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
 
         // Check cache
         try {
@@ -124,41 +124,98 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Ensure we have at least one broad query to catch news/social results
+        searchQueries.push("AI policy controversy");
+        console.log("Search Queries:", searchQueries);
+        console.log("Platforms:", platforms);
+
         // Construct platform-specific queries
         const platformFilters = platforms || ['reddit', 'hackernews', 'forums'];
         const allTraces: any[] = [];
 
-        for (const query of searchQueries.slice(0, 2)) { // Limit to 2 queries to save API quota
-            for (const platform of platformFilters) {
-                let siteQuery = query;
+        for (const query of searchQueries.slice(0, 2)) { // Limit to 2 queries
+            // Split platforms into two groups to prevent Reddit from drowning out others
+            const dominantPlatforms = platformFilters.filter((p: string) => ['reddit', 'hackernews', 'forums'].includes(p));
+            const diversePlatforms = platformFilters.filter((p: string) => !['reddit', 'hackernews', 'forums'].includes(p));
 
-                if (platform === 'reddit') {
-                    siteQuery = `site:reddit.com ${query}`;
-                } else if (platform === 'hackernews') {
-                    siteQuery = `site:news.ycombinator.com ${query}`;
-                } else if (platform === 'forums') {
-                    // Search general forums
-                    siteQuery = `${query} forum OR discussion`;
-                }
+            const searchRequests = [];
 
-                // Call Google Custom Search API
-                const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(siteQuery)}&num=3`;
+            // Group A: Dominant (Reddit, HN, Forums)
+            if (dominantPlatforms.length > 0) {
+                const platformQueries: string[] = [];
+                if (dominantPlatforms.includes('reddit')) platformQueries.push('site:reddit.com');
+                if (dominantPlatforms.includes('hackernews')) platformQueries.push('site:news.ycombinator.com');
+                if (dominantPlatforms.includes('forums')) platformQueries.push('(forum OR discussion)');
 
-                const response = await fetch(searchUrl);
-                const data: GoogleSearchResponse = await response.json();
+                const siteQuery = `${query} (${platformQueries.join(' OR ')})`;
+                searchRequests.push(
+                    fetch(`https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(siteQuery)}&num=5`)
+                        .then(res => res.json())
+                        .then(data => ({ type: 'dominant', items: data.items || [] }))
+                );
+            }
 
-                if (data.items) {
-                    for (const item of data.items) {
-                        allTraces.push({
-                            title: item.title,
-                            description: `From ${item.displayLink}`,
-                            content: item.snippet,
-                            sourceUrl: item.link,
-                            platform: platform,
-                            query: query
-                        });
-                    }
-                }
+            // Group B: Diverse (Twitter, Tech News, Mastodon)
+            if (diversePlatforms.length > 0) {
+                const platformQueries: string[] = [];
+                if (diversePlatforms.includes('twitter')) platformQueries.push('(site:twitter.com OR site:x.com)');
+                if (diversePlatforms.includes('technews')) platformQueries.push('(site:wired.com OR site:theverge.com OR site:techcrunch.com OR site:arstechnica.com OR site:theregister.com)');
+                if (diversePlatforms.includes('mastodon')) platformQueries.push('(site:mastodon.social OR site:mstdn.social OR site:fosstodon.org)');
+
+                const siteQuery = `${query} (${platformQueries.join(' OR ')})`;
+                searchRequests.push(
+                    fetch(`https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(siteQuery)}&num=5`)
+                        .then(res => res.json())
+                        .then(data => ({ type: 'diverse', items: data.items || [] }))
+                );
+            }
+
+            // Run searches in parallel
+            const results = await Promise.all(searchRequests);
+
+            // Process and interleave results
+            const allItems = [];
+            const dominantResults = results.find(r => r.type === 'dominant')?.items || [];
+            const diverseResults = results.find(r => r.type === 'diverse')?.items || [];
+
+            // Interleave: 1 diverse, 1 dominant, 1 diverse, etc.
+            const maxLength = Math.max(dominantResults.length, diverseResults.length);
+            for (let i = 0; i < maxLength; i++) {
+                if (i < diverseResults.length) allItems.push(diverseResults[i]);
+                if (i < dominantResults.length) allItems.push(dominantResults[i]);
+            }
+
+            // DIAGNOSTIC: If we asked for diverse platforms but got nothing, add a warning trace
+            if (diversePlatforms.length > 0 && diverseResults.length === 0 && dominantResults.length > 0) {
+                allTraces.push({
+                    title: "⚠️ Configuration Check Required",
+                    description: "No results found from Twitter/TechNews/Mastodon.",
+                    content: "If you enabled 'Search the entire web' recently, it may take a few hours to propagate. Or, your search engine might still be restricted to Reddit/HN only. Please check https://programmablesearchengine.google.com/",
+                    sourceUrl: "https://programmablesearchengine.google.com/",
+                    platform: "web",
+                    query: "System Message"
+                });
+            }
+
+            for (const item of allItems) {
+                // Infer platform from link
+                let detectedPlatform = 'web';
+                const link = item.link.toLowerCase();
+                if (link.includes('reddit.com')) detectedPlatform = 'reddit';
+                else if (link.includes('ycombinator.com')) detectedPlatform = 'hackernews';
+                else if (link.includes('twitter.com') || link.includes('x.com')) detectedPlatform = 'twitter';
+                else if (link.includes('mastodon') || link.includes('mstdn') || link.includes('fosstodon')) detectedPlatform = 'mastodon';
+                else if (link.includes('wired') || link.includes('theverge') || link.includes('techcrunch') || link.includes('arstechnica')) detectedPlatform = 'technews';
+                else detectedPlatform = 'forums';
+
+                allTraces.push({
+                    title: item.title,
+                    description: `From ${item.displayLink}`,
+                    content: item.snippet,
+                    sourceUrl: item.link,
+                    platform: detectedPlatform,
+                    query: query
+                });
             }
         }
 

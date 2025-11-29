@@ -331,9 +331,70 @@ Provide your analysis in JSON format:
           ]
 } `;
 
+// Assemblage Extraction System Prompt
+const ASSEMBLAGE_EXTRACTION_PROMPT = `You are an expert systems analyst.
+Your task is to extract an "Algorithmic Assemblage" from the provided text.
+
+1. Identify all **Actors** (people, organizations, groups), **Technologies** (systems, algorithms, infrastructure), and **Rules** (laws, policies, agreements) mentioned.
+2. Group them into a single, cohesive "Assemblage" (Super-Node).
+3. Determine the properties of this assemblage (Stability, Generativity).
+
+Return a JSON object with this structure:
+{
+  "assemblage": {
+    "name": "A descriptive name for the assemblage (e.g., 'The Dual Configuration')",
+    "description": "A brief description of what this assemblage does or represents.",
+    "properties": {
+      "stability": "High/Medium/Low",
+      "generativity": "High/Medium/Low"
+    }
+  },
+  "actors": [
+    {
+      "name": "Name of the actor/technology/rule",
+      "type": "Startup | Policymaker | Civil Society | Academic | Infrastructure",
+      "description": "Brief description of their role"
+    }
+  ],
+  "relations": [
+    {
+      "source": "Name of source actor",
+      "target": "Name of target actor",
+      "label": "Relationship label (e.g., 'regulates', 'built by', 'uses')"
+    }
+  ]
+}`;
+
+// Resistance Synthesis System Prompt
+const RESISTANCE_SYNTHESIS_PROMPT = `You are an expert qualitative researcher synthesizing findings from multiple "Micro-Resistance" trace analyses.
+Your task is to identify cross-cutting patterns, dominant strategies, and broader implications from the provided set of analyzed traces.
+
+Analyze the collection of traces to determine:
+1. **Dominant Strategies**: Which forms of resistance (Gambiarra, Obfuscation, Solidarity, Refusal) are most prevalent?
+2. **Emerging Themes**: What common grievances or structural issues are driving this resistance?
+3. **Policy Implications**: What do these resistance patterns suggest about the policy's design or enforcement?
+
+Provide your analysis in JSON format:
+{
+  "executive_summary": "A high-level summary of the resistance landscape (2-3 sentences).",
+  "dominant_strategies": [
+    {
+      "strategy": "Name of strategy (e.g., Obfuscation)",
+      "frequency": "High/Medium/Low",
+      "description": "How this strategy is manifesting across cases"
+    }
+  ],
+  "emerging_themes": [
+    "Theme 1",
+    "Theme 2",
+    "Theme 3"
+  ],
+  "implications_for_policy": "Analysis of what this resistance means for the policy's effectiveness or legitimacy."
+}`;
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()}`);
+  console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
 
   const { userId } = await auth();
   if (!userId) {
@@ -358,7 +419,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { text, sourceType, analysisMode, sourceA, sourceB, force, documents } = await request.json();
-    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}`);
+    console.log(`[ANALYSIS] Received request.Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force} `);
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -369,7 +430,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -381,14 +442,16 @@ export async function POST(request: NextRequest) {
     console.log('[ANALYSIS] Starting cache check...');
     let textForCache = text || '';
     if (analysisMode === 'comparison' && sourceA && sourceB) {
-      textForCache = `${sourceA.title}:${sourceA.text}| ${sourceB.title}:${sourceB.text} `;
+      textForCache = `${sourceA.title}:${sourceA.text}|${sourceB.title}:${sourceB.text}`;
     } else if (analysisMode === 'comparative_synthesis' && documents) {
       textForCache = documents.map((d: any) => d.id).sort().join(',');
+    } else if (analysisMode === 'resistance_synthesis' && documents) {
+      textForCache = documents.map((d: any) => d.title).sort().join(',');
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
     const userCacheKey = `user:${userId}:${cacheKey} `;
-    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey}`);
+    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey} `);
 
     try {
       // Skip cache if force is true
@@ -397,7 +460,7 @@ export async function POST(request: NextRequest) {
         const cachedResult = await redis.get(userCacheKey);
         if (cachedResult) {
           console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey} `);
-          console.log(`[ANALYSIS] Completed (Cache Hit) in ${Date.now() - startTime}ms`);
+          console.log(`[ANALYSIS] Completed(Cache Hit) in ${Date.now() - startTime} ms`);
           return NextResponse.json({
             success: true,
             analysis: JSON.parse(cachedResult),
@@ -499,6 +562,18 @@ TEXT CONTENT:
 ${text}
 
 Please identify cultural holes in this text.`;
+    } else if (analysisMode === 'assemblage_extraction') {
+      systemPrompt = ASSEMBLAGE_EXTRACTION_PROMPT;
+      userContent = `TEXT CONTENT:
+${text}
+
+Please extract the assemblage from this text.`;
+    } else if (analysisMode === 'resistance_synthesis') {
+      systemPrompt = RESISTANCE_SYNTHESIS_PROMPT;
+      userContent = `ANALYZED TRACES TO SYNTHESIZE:
+${JSON.stringify(documents, null, 2)}
+
+Please synthesize these resistance findings according to the system prompt instructions.`;
     }
 
     console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode}`);
@@ -583,6 +658,13 @@ Please identify cultural holes in this text.`;
           description: "Could not parse generated traces.",
           content: responseText
         }];
+      } else if (analysisMode === 'assemblage_extraction') {
+        analysis = {
+          assemblage: { name: "Extraction Failed", description: "Could not parse response", properties: { stability: "Low", generativity: "Low" } },
+          actors: [],
+          relations: [],
+          raw_response: responseText
+        };
       } else if (analysisMode === 'cultural_holes') {
         analysis = {
           holes: [],
@@ -597,6 +679,14 @@ Please identify cultural holes in this text.`;
           justification_logic: responseText.substring(0, 300),
           moral_vocabulary: [],
           conflict_spot: "Unknown",
+          raw_response: responseText
+        };
+      } else if (analysisMode === 'resistance_synthesis') {
+        analysis = {
+          executive_summary: responseText.substring(0, 300),
+          dominant_strategies: [],
+          emerging_themes: [],
+          implications_for_policy: "Failed to parse structured synthesis.",
           raw_response: responseText
         };
       } else {
@@ -621,7 +711,7 @@ Please identify cultural holes in this text.`;
     }
     // ---------------------
 
-    console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime}ms`);
+    console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime} ms`);
 
     return NextResponse.json({
       success: true,
@@ -630,7 +720,7 @@ Please identify cultural holes in this text.`;
     });
 
   } catch (error: unknown) {
-    console.error(`[ANALYSIS ERROR] Failed after ${Date.now() - startTime}ms:`, error);
+    console.error(`[ANALYSIS ERROR] Failed after ${Date.now() - startTime} ms: `, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {
