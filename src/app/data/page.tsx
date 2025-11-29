@@ -26,8 +26,9 @@ export default function PolicyDocumentsPage() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const filteredSources = sources.filter(source =>
-        source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        source.description.toLowerCase().includes(searchQuery.toLowerCase())
+        source.type !== 'Trace' &&
+        (source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            source.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

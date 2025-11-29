@@ -9,7 +9,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v2';
+const PROMPT_VERSION = 'v11';
 
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
@@ -80,6 +80,12 @@ const CULTURAL_FRAMING_PROMPT = `You are an expert comparative sociologist analy
 
 Analyze this text as a **discursive field** that circumscribes meaning across societies. Focus on:
 
+**STRICT REQUIREMENTS**:
+1. **CITE EVIDENCE**: You MUST cite specific articles, recitals, or sections (e.g., "Article 5", "Section 2.1") to support every claim.
+2. **BAN GENERALITIES**: Do NOT say "The text values technology." Be specific: "The text frames technology as a 'fundamental right' (Art. 1) rather than a 'market tool'."
+3. **IDENTIFY ASSUMPTIONS**: Expose the *unwritten* assumptions (e.g., "Assumes a high-literacy population").
+4. **FORMAT**: For each field (State-Market-Society, Technology's Role, etc.), provide a **bulleted list** of 3-5 distinct points. Each point must include a direct quote or specific reference.
+
 1. **State-Market-Society Relationship**: What is the assumed role of government, market, and civil society?
 2. **Technology's Role**: How is technology positioned in relation to social life? (Tool, infrastructure, threat, opportunity?)
 3. **Rights Conception**: Individual vs. collective rights emphasis? Procedural vs. substantive?
@@ -89,11 +95,11 @@ Analyze this text as a **discursive field** that circumscribes meaning across so
 
 Provide your analysis in JSON format:
 {
-  "state_market_society": "Analysis of governance philosophy",
-  "technology_role": "Analysis of technology conception",
-  "rights_conception": "Analysis of rights framework",
-  "historical_context": "Analysis of historical/colonial influences",
- "epistemic_authority": "Analysis of whose knowledge is privileged",
+  "state_market_society": "• Point 1 (Art. X)...",
+  "technology_role": "• Point 1 (Sec. Y)...",
+  "rights_conception": "• Point 1...",
+  "historical_context": "• Point 1...",
+ "epistemic_authority": "• Point 1...",
   "cultural_distinctiveness_score": 0.7, // How culturally specific vs. universal (0-1)
   "dominant_cultural_logic": "One-phrase summary (e.g., 'technocratic universalism', 'participatory localism')"
 }`;
@@ -159,28 +165,61 @@ Provide your analysis in JSON format with these fields:
 }`;
 
 // Comparison System Prompt
-const COMPARISON_SYSTEM_PROMPT = `You are an expert qualitative researcher performing a comparative analysis of two text sources using the **Decolonial Situatedness Framework (DSF)**.
+const COMPARISON_SYSTEM_PROMPT = `You are an expert socio-legal scholar performing a comparative analysis of two algorithmic governance frameworks using the **Decolonial Situatedness Framework (DSF)**.
 
-Compare the two texts across the following dimensions:
+Your goal is to move beyond surface-level similarities and identify **irreducible epistemic and structural differences**.
 
-1. **Risk Classification**: How does each text define and categorize risk? (Convergence/Divergence)
-2. **Governance Structure**: What institutions or mechanisms are proposed? (Centralized vs. Networked)
-3. **Rights Framework**: How are individual or collective rights addressed? (Procedural vs. Substantive)
-4. **Territorial Scope**: What is the geographic or jurisdictional reach? (Extraterritorial vs. Sovereign)
-5. **Coloniality/Resistance**: Identify patterns of colonial imposition or decolonial resistance.
+Compare the two texts across the following dimensions. For each, you MUST identify **specific legal or technical mechanisms** (e.g., "conformity assessments" vs. "human rights impact assessments") rather than generic goals.
+
+**STRICT REQUIREMENTS**:
+1. **CITE EVIDENCE**: You MUST cite specific articles, recitals, or sections (e.g., "Article 5", "Section 2.1") to support every claim.
+2. **BAN GENERALITIES**: Do NOT say "Both frameworks aim to ensure safety" or "Both value transparency". These are trivial. Focus on *how* they achieve it differently.
+3. **FOCUS ON MECHANISMS**: Contrast the *mechanisms* (e.g., "Ex-ante certification" vs "Ex-post liability", "Individual redress" vs "Collective audit").
+4. **FORMAT**: For each field (Convergence, Divergence, etc.), provide a **bulleted list** of 3-5 distinct points. Each point must include a direct quote or specific reference.
+
+1. **Risk Classification**:
+   - **Convergence**: Where do they agree on what constitutes a "risk"?
+   - **Divergence**: How is risk *constructed* differently? (e.g., Risk to fundamental rights vs. risk to safety/market).
+   - **Coloniality**: Does the risk model impose a universal standard that ignores local context?
+   - **Resistance**: Are there mechanisms to challenge or redefine risk locally?
+
+2. **Governance Structure**:
+   - **Convergence**: Shared institutional forms (e.g., independent authorities).
+   - **Divergence**: Centralized enforcement vs. distributed/networked oversight.
+   - **Coloniality**: Does the structure assume state capacities that may not exist in the Global South?
+   - **Resistance**: Opportunities for participatory governance or "counter-power".
+
+3. **Rights Framework**:
+   - **Convergence**: Common rights (transparency, explanation).
+   - **Divergence**: Procedural rights (checkbox compliance) vs. Substantive rights (redress, justice).
+   - **Coloniality**: Individualistic rights models vs. collective/community rights.
+   - **Resistance**: Mechanisms for "data justice" or collective bargaining.
+
+4. **Territorial Scope**:
+   - **Convergence**: Jurisdictional reach.
+   - **Divergence**: Extraterritorial application ("Brussels Effect") vs. Data Sovereignty.
+   - **Coloniality**: Imposition of external legal norms on other jurisdictions.
+   - **Resistance**: Assertions of legal or epistemic autonomy.
+
+**CRITICAL INSTRUCTION**: If you cannot find a specific difference, state "No specific mechanism found" rather than inventing a generic similarity.
 
 Provide your analysis in JSON format with this structure:
 {
-  "risk": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "..." },
-  "governance": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "..." },
-  "rights": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "..." },
-  "scope": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "..." }
+  "risk": { "convergence": "• Point 1 (Art. X)...", "divergence": "• Point 1 (Sec. Y)...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
+  "governance": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
+  "rights": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
+  "scope": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 }
 }`;
 
 // Ecosystem System Prompt
 const ECOSYSTEM_SYSTEM_PROMPT = `You are an expert qualitative researcher analyzing the impact of a policy document on an **organizational ecosystem** and **platform** using the **Decolonial Situatedness Framework (DSF)**.
 
 View the ecosystem as an **algorithmic assemblage**. Identify specific "Policy Mechanisms" and map their impact on resource orchestration and value capture.
+
+Your goal is to provide a **comprehensive mapping**.
+- Identify **at least 5-10 distinct impacts**.
+- Ensure diversity of actors (e.g., State, Market, Civil Society, Marginalized Groups).
+- Do not stop at the first obvious impact. Dig deeper into second-order effects.
 
 
 For each mechanism, determine:
@@ -191,16 +230,18 @@ For each mechanism, determine:
 5. **Interconnection Type**: Is this a **"Material"** interconnection (infrastructure, hardware, code), a **"Discursive"** interconnection (norms, language, legitimacy), or a **"Sociotechnical"** hybrid?
 
 
-Provide your analysis in JSON format as an array of objects:
-[
-  {
-    "actor": "Name of actor",
-    "mechanism": "Name of mechanism",
-    "impact": "Description of impact",
-    "type": "Constraint/Affordance",
-    "interconnection_type": "Material/Discursive/Hybrid"
-  }
-]`;
+Provide your analysis in JSON format with this structure:
+{
+  "impacts": [
+    {
+      "actor": "Name of actor",
+      "mechanism": "Name of mechanism",
+      "impact": "Description of impact",
+      "type": "Constraint/Affordance",
+      "interconnection_type": "Material/Discursive/Hybrid"
+    }
+  ]
+}`;
 
 // Resistance Generation System Prompt
 const RESISTANCE_GENERATION_PROMPT = `You are an expert Speculative Designer and Ethnographer.
@@ -231,25 +272,26 @@ Provide your output in JSON format as an array of objects:
 const ONTOLOGY_SYSTEM_PROMPT = `You are an expert qualitative researcher and systems thinker.
 Your task is to extract a "Concept Map" (Ontology) of the **Algorithmic Assemblage** described in the text.
 
-
 Identify key concepts (nodes) and the relationships (edges) between them.
-Focus on:
-1. **Core Concepts**: The central ideas or objects in the text.
-2. **Mechanisms**: How these concepts interact or influence each other.
-3. **Power Dynamics**: Relationships of control, resistance, or hierarchy.
+You MUST extract concepts for EACH of the following 4 categories:
+
+1. **Core**: The central ideas, foundational concepts, or objects in the text.
+2. **Mechanism**: The processes, logics, or technical/social mechanisms at play.
+3. **Actor**: The people, organizations, groups, or non-human actors involved.
+4. **Value**: The ethical principles, rights, norms, or justifications invoked.
 
 Provide your analysis in JSON format with this structure:
 {
     "summary": "A concise 2-3 sentence summary of the core ontological argument or structure found in the text.",
     "nodes": [
-        { "id": "concept_id", "label": "Concept Name", "category": "Core Concept/Mechanism/Actor/Value", "description": "Brief definition", "quote": "Direct quote from text supporting this concept" }
+        { "id": "concept_id", "label": "Concept Name", "category": "Core/Mechanism/Actor/Value", "description": "Brief definition", "quote": "Direct quote from text supporting this concept" }
     ],
     "links": [
         { "source": "source_concept_id", "target": "target_concept_id", "relation": "verb_phrase", "description": "Context of the relationship" }
     ]
 }
 
-Limit to 10-15 most important nodes and their connections to keep the visualization readable.`;
+Ensure you extract a comprehensive set of nodes (aim for 20-25) to fully represent the ontology across all 4 categories.`;
 
 // Cultural Holes System Prompt
 const CULTURAL_HOLES_PROMPT = `You are an expert social network analyst and sociologist specializing in "Structural Holes" and "Cultural Holes" within **Discursive Fields**.
@@ -405,6 +447,30 @@ Provide your analysis in JSON format:
   "implications_for_policy": "Analysis of what this resistance means for the policy's effectiveness or legitimacy."
 }`;
 
+// Ontology Comparison System Prompt
+const ONTOLOGY_COMPARISON_SYSTEM_PROMPT = `You are an expert systems thinker and qualitative researcher.
+Your task is to compare two "Concept Maps" (Ontologies) representing different algorithmic assemblages.
+
+Compare the two provided ontologies (Nodes and Links) to identify:
+1. **Conceptual Overlap & Divergence**: Which concepts are shared? Which are unique to each map?
+2. **Structural Differences**: How does the topology differ? (e.g., Is one more centralized? Does one focus more on actors vs. mechanisms?)
+3. **Relational Shifts**: How are the same concepts related differently in each map?
+
+Provide your analysis in JSON format:
+{
+  "summary": "Executive summary of the key differences between the two ontologies (2-3 sentences).",
+  "shared_concepts": ["List of concepts present in both"],
+  "unique_concepts_source_a": ["Concepts unique to Source A"],
+  "unique_concepts_source_b": ["Concepts unique to Source B"],
+  "structural_differences": "Analysis of the topological/structural differences.",
+  "relationship_divergences": [
+    {
+      "concept": "Name of the concept involved",
+      "difference": "How its relationships differ between the two maps"
+    }
+  ]
+}`;
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
@@ -443,12 +509,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
         { status: 400 }
       );
+    }
+
+    if (analysisMode === 'comparison') {
+      if (!sourceA?.text || sourceA.text.length < 50 || !sourceB?.text || sourceB.text.length < 50) {
+        return NextResponse.json(
+          { error: 'Insufficient text content in selected sources for comparison.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (analysisMode === 'ontology_comparison') {
+      if (!sourceA?.data || !sourceB?.data) {
+        return NextResponse.json(
+          { error: 'Missing ontology data for comparison.' },
+          { status: 400 }
+        );
+      }
     }
 
     // --- CACHING LOGIC START ---
@@ -462,6 +546,9 @@ export async function POST(request: NextRequest) {
 
     if (analysisMode === 'comparison' && sourceA && sourceB) {
       textForCache = `${sourceA.title}:${sourceA.text}|${sourceB.title}:${sourceB.text}`;
+    } else if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
+      // Use titles and summary/node count for cache key to avoid huge JSON strings
+      textForCache = `ONTOLOGY_COMPARE:${sourceA.title}(${sourceA.data.nodes.length})|${sourceB.title}(${sourceB.data.nodes.length})`;
     } else if (analysisMode === 'comparative_synthesis' && documents) {
       textForCache = documents.map((d: any) => d.id).sort().join(',');
     } else if (analysisMode === 'resistance_synthesis' && documents) {
@@ -479,10 +566,23 @@ export async function POST(request: NextRequest) {
         const cachedResult = await redis.get(userCacheKey);
         if (cachedResult) {
           console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey}`);
+          let cachedAnalysis = JSON.parse(cachedResult);
+
+          // [FIX] Ensure cached ecosystem analysis is an array
+          if (analysisMode === 'ecosystem' && !Array.isArray(cachedAnalysis)) {
+            if (cachedAnalysis.impacts && Array.isArray(cachedAnalysis.impacts)) {
+              cachedAnalysis = cachedAnalysis.impacts;
+            } else if (cachedAnalysis.analysis && Array.isArray(cachedAnalysis.analysis)) {
+              cachedAnalysis = cachedAnalysis.analysis;
+            } else {
+              cachedAnalysis = [cachedAnalysis];
+            }
+          }
+
           console.log(`[ANALYSIS] Completed (Cache Hit) in ${Date.now() - startTime}ms`);
           return NextResponse.json({
             success: true,
-            analysis: JSON.parse(cachedResult),
+            analysis: cachedAnalysis,
             cached: true
           });
         }
@@ -543,6 +643,15 @@ TEXT CONTENT:
 ${text}
 
 Please extract the ontology / concept map from this text.`;
+    } else if (analysisMode === 'ontology_comparison') {
+      systemPrompt = ONTOLOGY_COMPARISON_SYSTEM_PROMPT;
+      userContent = `ONTOLOGY A (${sourceA.title}):
+${JSON.stringify(sourceA.data, null, 2)}
+
+ONTOLOGY B (${sourceB.title}):
+${JSON.stringify(sourceB.data, null, 2)}
+
+Please compare these two ontologies according to the system prompt instructions.`;
     } else if (analysisMode === 'cultural_framing') {
       systemPrompt = CULTURAL_FRAMING_PROMPT;
       userContent = `SOURCE TYPE: ${sourceType || 'Policy Document'}
@@ -727,6 +836,20 @@ Please analyze this text using the Decolonial Situatedness Framework (DSF) as de
           key_insight: 'Analysis completed',
           raw_response: responseText
         };
+      }
+    }
+
+    // --- ROBUSTNESS FIXES ---
+    // Ecosystem Mode: Ensure it's an array
+    if (analysisMode === 'ecosystem' && !Array.isArray(analysis)) {
+      console.log('[ANALYSIS FIX] Ecosystem analysis is not an array, attempting to extract...');
+      if (analysis.impacts && Array.isArray(analysis.impacts)) {
+        analysis = analysis.impacts;
+      } else if (analysis.analysis && Array.isArray(analysis.analysis)) {
+        analysis = analysis.analysis;
+      } else {
+        // If it's a single object, wrap it
+        analysis = [analysis];
       }
     }
 

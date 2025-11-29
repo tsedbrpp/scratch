@@ -7,15 +7,17 @@ import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitMerge, GitPullRequest, AlertCircle, FileDown, CheckCircle2, Sparkles, Brain, Network, Loader2 } from "lucide-react";
+import { GitMerge, GitPullRequest, AlertCircle, FileDown, CheckCircle2, Sparkles, Brain, Network, Loader2, RefreshCw } from "lucide-react";
 import { generateSynthesisPDF } from "@/utils/generateSynthesisPDF";
 import { AssemblageSankey } from "@/components/AssemblageSankey";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Info } from "lucide-react";
 
 interface ComparisonResult {
-    risk: { convergence: string; divergence: string; coloniality: string; resistance: string };
-    governance: { convergence: string; divergence: string; coloniality: string; resistance: string };
-    rights: { convergence: string; divergence: string; coloniality: string; resistance: string };
-    scope: { convergence: string; divergence: string; coloniality: string; resistance: string };
+    risk: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
+    governance: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
+    rights: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
+    scope: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
 }
 
 import { EcosystemImpact } from "@/types";
@@ -75,6 +77,8 @@ export default function SynthesisPage() {
     const [ecosystemImpacts, setEcosystemImpacts] = useState<EcosystemImpact[]>([]);
     const [interconnectionFilter, setInterconnectionFilter] = useState<"All" | "Material" | "Discursive" | "Hybrid">("All");
     const [viewMode, setViewMode] = useState<"list" | "graph">("list");
+    const [chartView, setChartView] = useState<"radar" | "bar">("radar");
+    const [showGuide, setShowGuide] = useState(true);
 
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.analysis || s.extractedText);
@@ -109,18 +113,21 @@ export default function SynthesisPage() {
         }
     };
 
-    const handleCompare = async () => {
+    const handleCompare = async (forceRefresh = false) => {
         if (!sourceA || !sourceB) return;
 
         setIsComparing(true);
+        // setComparisonResult(null); // Keep previous result while loading so button stays visible
+
         try {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     analysisMode: 'comparison',
-                    sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 3000) || '' },
-                    sourceB: { title: sourceB.title, text: sourceB.extractedText?.substring(0, 3000) || '' }
+                    sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 50000) || '' },
+                    sourceB: { title: sourceB.title, text: sourceB.extractedText?.substring(0, 50000) || '' },
+                    force: forceRefresh
                 })
             });
 
@@ -147,7 +154,7 @@ export default function SynthesisPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    text: ecosystemSource.extractedText?.substring(0, 3000) || '',
+                    text: ecosystemSource.extractedText?.substring(0, 30000) || '',
                     sourceType: 'Policy Document',
                     analysisMode: 'ecosystem'
                 })
@@ -261,214 +268,162 @@ export default function SynthesisPage() {
                                 </select>
                             </div>
                         </div>
-                        <Button
-                            className="w-full bg-purple-600 text-white hover:bg-purple-700"
-                            onClick={handleCompare}
-                            disabled={!sourceA || !sourceB || isComparing}
-                        >
-                            {isComparing ? (
-                                <>
-                                    <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                                    Comparing...
-                                </>
-                            ) : (
-                                <>
-                                    <GitMerge className="mr-2 h-4 w-4" />
-                                    Compare Frameworks
-                                </>
-                            )}
-                        </Button>
-
-                        {comparisonResult && (
-                            <div className="mt-4 space-y-3 pt-4 border-t">
-                                <h4 className="font-semibold text-slate-900">Comparison Results</h4>
-                                {Object.entries(comparisonResult).map(([key, value]) => {
-                                    const typedValue = value as ComparisonResult["risk"];
-                                    return (
-                                        <div key={key} className="space-y-2">
-                                            <p className="text-sm font-medium text-slate-700 capitalize">{key}</p>
-                                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                                <div className="p-2 bg-green-50 rounded border border-green-200">
-                                                    <span className="font-semibold text-green-700">Convergence:</span>
-                                                    <p className="text-slate-600 mt-1">{typedValue.convergence}</p>
-                                                </div>
-                                                <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                                                    <span className="font-semibold text-blue-700">Divergence:</span>
-                                                    <p className="text-slate-600 mt-1">{typedValue.divergence}</p>
-                                                </div>
-                                                <div className="p-2 bg-red-50 rounded border border-red-200">
-                                                    <span className="font-semibold text-red-700">Coloniality:</span>
-                                                    <p className="text-slate-600 mt-1">{typedValue.coloniality}</p>
-                                                </div>
-                                                <div className="p-2 bg-purple-50 rounded border border-purple-200">
-                                                    <span className="font-semibold text-purple-700">Resistance:</span>
-                                                    <p className="text-slate-600 mt-1">{typedValue.resistance}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Ecosystem Impact Mapping */}
-            {analyzedSources.length > 0 && (
-                <Card className="border-teal-200">
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Network className="h-5 w-5 text-teal-600" />
-                            <CardTitle>Ecosystem Impact Mapping</CardTitle>
-                        </div>
-                        <CardDescription>
-                            Map how policy mechanisms constrain or afford possibilities for ecosystem actors
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex gap-4 items-end">
-                            <div className="flex-1 space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Select Policy Document</label>
-                                <select
-                                    className="w-full p-2 border rounded-md text-sm"
-                                    onChange={(e) => {
-                                        const source = analyzedSources.find(s => s.id === e.target.value);
-                                        setEcosystemSource(source || null);
-                                    }}
-                                >
-                                    <option value="">Select document...</option>
-                                    {analyzedSources.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <div className="flex gap-2">
                             <Button
-                                className="bg-teal-600 text-white hover:bg-teal-700"
-                                onClick={handleEcosystemMap}
-                                disabled={!ecosystemSource || isMapping}
+                                onClick={() => handleCompare(false)}
+                                disabled={!sourceA || !sourceB || isComparing}
+                                className="w-full bg-slate-900 hover:bg-slate-800"
                             >
-                                {isMapping ? (
+                                {isComparing ? (
                                     <>
-                                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                                        Mapping...
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Analyzing...
                                     </>
                                 ) : (
                                     <>
-                                        <Network className="mr-2 h-4 w-4" />
-                                        Generate Map
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        Compare Frameworks
                                     </>
                                 )}
                             </Button>
+                            {comparisonResult && (
+                                <Button
+                                    onClick={() => handleCompare(true)}
+                                    disabled={isComparing}
+                                    variant="outline"
+                                    title="Force Regenerate (Bypass Cache)"
+                                >
+                                    <RefreshCw className={`mr-2 h-4 w-4 ${isComparing ? 'animate-spin' : ''}`} />
+                                    Regenerate
+                                </Button>
+                            )}
                         </div>
 
-                        {ecosystemImpacts.length > 0 && (
-                            <div className="mt-4 space-y-3 pt-4 border-t">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold text-slate-900">Ecosystem Impacts</h4>
-                                    <div className="flex gap-2">
-                                        <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
-                                            <button
-                                                onClick={() => setViewMode("list")}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "list"
-                                                    ? "bg-white text-slate-900 shadow-sm"
-                                                    : "text-slate-500 hover:text-slate-900"
-                                                    }`}
-                                            >
-                                                List View
-                                            </button>
-                                            <button
-                                                onClick={() => setViewMode("graph")}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "graph"
-                                                    ? "bg-white text-slate-900 shadow-sm"
-                                                    : "text-slate-500 hover:text-slate-900"
-                                                    }`}
-                                            >
-                                                Graph View
-                                            </button>
-                                        </div>
+                        {comparisonResult && (
+                            <div className="mt-8 space-y-6 pt-4 border-t">
+                                <div className="h-[450px] w-full">
+                                    <h4 className="font-semibold text-slate-900 mb-2 text-center">Shape of Divergence</h4>
+                                    <p className="text-xs text-center text-slate-500 mb-4">
+                                        Comparing: <span className="font-medium text-slate-700">{sourceA?.title}</span> vs <span className="font-medium text-slate-700">{sourceB?.title}</span>
+                                    </p>
 
-                                        <Button
-                                            variant={interconnectionFilter === "All" ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setInterconnectionFilter("All")}
+                                    <div className="flex justify-center mb-4 space-x-2">
+                                        <button
+                                            onClick={() => setChartView("radar")}
+                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${chartView === "radar"
+                                                ? "bg-slate-900 text-white"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                }`}
                                         >
-                                            All
-                                        </Button>
-                                        <Button
-                                            variant={interconnectionFilter === "Material" ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setInterconnectionFilter("Material")}
+                                            Radar View
+                                        </button>
+                                        <button
+                                            onClick={() => setChartView("bar")}
+                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${chartView === "bar"
+                                                ? "bg-slate-900 text-white"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                }`}
                                         >
-                                            Material
-                                        </Button>
-                                        <Button
-                                            variant={interconnectionFilter === "Discursive" ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setInterconnectionFilter("Discursive")}
-                                        >
-                                            Discursive
-                                        </Button>
-                                        <Button
-                                            variant={interconnectionFilter === "Hybrid" ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setInterconnectionFilter("Hybrid")}
-                                        >
-                                            Hybrid
-                                        </Button>
+                                            Bar View
+                                        </button>
                                     </div>
-                                </div>
 
-                                {viewMode === "graph" ? (
-                                    <div className="border rounded-lg p-4 bg-white min-h-[500px]">
-                                        <AssemblageSankey
-                                            data={ecosystemImpacts.filter(impact =>
-                                                interconnectionFilter === "All" ||
-                                                impact.interconnection_type === interconnectionFilter
-                                            )}
-                                        />
-                                        <p className="text-center text-xs text-slate-500 mt-4">
-                                            Visualizing the flow from <strong>Actors</strong> → <strong>Mechanisms</strong> → <strong>Impacts</strong>
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-3">
-                                        {ecosystemImpacts
-                                            .filter(impact =>
-                                                interconnectionFilter === "All" ||
-                                                impact.interconnection_type === interconnectionFilter
-                                            )
-                                            .map((impact, i) => (
-                                                <div key={i} className={`p-3 rounded-lg border ${impact.type === "Constraint"
-                                                    ? "bg-red-50 border-red-200"
-                                                    : "bg-green-50 border-green-200"
-                                                    }`}>
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <span className={`text-xs font-bold uppercase ${impact.type === "Constraint" ? "text-red-700" : "text-green-700"
-                                                            }`}>
-                                                            {impact.type}
-                                                        </span>
-                                                        {impact.interconnection_type && (
-                                                            <Badge variant="outline" className="text-xs">
-                                                                {impact.interconnection_type}
-                                                            </Badge>
-                                                        )}
+                                    {
+                                        showGuide && (
+                                            <div className="mb-6 mx-auto max-w-2xl bg-blue-50 border border-blue-100 rounded-lg p-3 relative">
+                                                <button
+                                                    onClick={() => setShowGuide(false)}
+                                                    className="absolute top-2 right-2 text-blue-400 hover:text-blue-600"
+                                                >
+                                                    ×
+                                                </button>
+                                                <div className="flex gap-3">
+                                                    <Info className="h-5 w-5 text-blue-600 shrink-0" />
+                                                    <div className="text-xs text-blue-900 space-y-1">
+                                                        <p className="font-semibold">How to read this chart:</p>
+                                                        <p><span className="font-bold text-blue-700">Convergence (Blue):</span> How similar the frameworks are. High score = Very similar rules/definitions.</p>
+                                                        <p><span className="font-bold text-red-700">Coloniality (Red):</span> Power imbalance. High score = One framework is imposing values on the other.</p>
                                                     </div>
-                                                    <p className="text-sm font-semibold text-slate-900 mb-1">{impact.actor}</p>
-                                                    <p className="text-xs text-slate-600 mb-1">
-                                                        <span className="font-medium">Mechanism:</span> {impact.mechanism}
-                                                    </p>
-                                                    <p className="text-xs text-slate-600">
-                                                        <span className="font-medium">Impact:</span> {impact.impact}
-                                                    </p>
                                                 </div>
-                                            ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                                            </div>
+                                        )
+                                    }
+
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        {chartView === "radar" ? (
+                                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                                                { subject: 'Risk', A: comparisonResult.risk.convergence_score || 0, B: comparisonResult.risk.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Governance', A: comparisonResult.governance.convergence_score || 0, B: comparisonResult.governance.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Rights', A: comparisonResult.rights.convergence_score || 0, B: comparisonResult.rights.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Scope', A: comparisonResult.scope.convergence_score || 0, B: comparisonResult.scope.coloniality_score || 0, fullMark: 10 },
+                                            ]}>
+                                                <PolarGrid />
+                                                <PolarAngleAxis dataKey="subject" />
+                                                <PolarRadiusAxis angle={30} domain={[0, 10]} />
+                                                <Tooltip />
+                                                <Radar name="Convergence (Similarity)" dataKey="A" stroke="#2563eb" fill="#2563eb" fillOpacity={0.5} />
+                                                <Radar name="Coloniality (Power Imbalance)" dataKey="B" stroke="#dc2626" fill="#dc2626" fillOpacity={0.5} />
+                                                <Legend />
+                                            </RadarChart>
+                                        ) : (
+                                            <BarChart
+                                                data={[
+                                                    { subject: 'Risk', Convergence: comparisonResult.risk.convergence_score || 0, Coloniality: comparisonResult.risk.coloniality_score || 0 },
+                                                    { subject: 'Governance', Convergence: comparisonResult.governance.convergence_score || 0, Coloniality: comparisonResult.governance.coloniality_score || 0 },
+                                                    { subject: 'Rights', Convergence: comparisonResult.rights.convergence_score || 0, Coloniality: comparisonResult.rights.coloniality_score || 0 },
+                                                    { subject: 'Scope', Convergence: comparisonResult.scope.convergence_score || 0, Coloniality: comparisonResult.scope.coloniality_score || 0 },
+                                                ]}
+                                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="subject" />
+                                                <YAxis domain={[0, 10]} />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar dataKey="Convergence" fill="#2563eb" name="Convergence (Similarity)" />
+                                                <Bar dataKey="Coloniality" fill="#dc2626" name="Coloniality (Power Imbalance)" />
+                                            </BarChart>
+                                        )}
+                                    </ResponsiveContainer>
+                                    <p className="text-xs text-center text-slate-400 mt-4">
+                                        Scale 0-10: Higher scores indicate stronger presence of the attribute.
+                                    </p>
+                                </div >
+
+                                <h4 className="font-semibold text-slate-900">Detailed Findings</h4>
+                                {
+                                    Object.entries(comparisonResult).map(([key, value]) => {
+                                        const typedValue = value as ComparisonResult["risk"];
+                                        return (
+                                            <div key={key} className="space-y-2">
+                                                <p className="text-sm font-medium text-slate-700 capitalize">{key}</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="p-2 bg-green-50 rounded border border-green-200">
+                                                        <span className="font-semibold text-green-700">Convergence:</span>
+                                                        <p className="text-slate-600 mt-1">{typedValue.convergence}</p>
+                                                    </div>
+                                                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                                                        <span className="font-semibold text-blue-700">Divergence:</span>
+                                                        <p className="text-slate-600 mt-1">{typedValue.divergence}</p>
+                                                    </div>
+                                                    <div className="p-2 bg-red-50 rounded border border-red-200">
+                                                        <span className="font-semibold text-red-700">Coloniality:</span>
+                                                        <p className="text-slate-600 mt-1">{typedValue.coloniality}</p>
+                                                    </div>
+                                                    <div className="p-2 bg-purple-50 rounded border border-purple-200">
+                                                        <span className="font-semibold text-purple-700">Resistance:</span>
+                                                        <p className="text-slate-600 mt-1">{typedValue.resistance}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div >
+                        )
+                        }
+                    </CardContent >
+                </Card >
             )}
 
             {/* Synthesis Matrix */}
@@ -556,6 +511,167 @@ export default function SynthesisPage() {
                     </>
                 )}
             </div>
-        </div>
+
+            {/* Ecosystem Impact Mapping */}
+            {
+                analyzedSources.length > 0 && (
+                    <Card className="border-teal-200">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <Network className="h-5 w-5 text-teal-600" />
+                                <CardTitle>Ecosystem Impact Mapping</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Map how policy mechanisms constrain or afford possibilities for ecosystem actors
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex gap-4 items-end">
+                                <div className="flex-1 space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">Select Policy Document</label>
+                                    <select
+                                        className="w-full p-2 border rounded-md text-sm"
+                                        onChange={(e) => {
+                                            const source = analyzedSources.find(s => s.id === e.target.value);
+                                            setEcosystemSource(source || null);
+                                        }}
+                                    >
+                                        <option value="">Select document...</option>
+                                        {analyzedSources.map(s => (
+                                            <option key={s.id} value={s.id}>{s.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <Button
+                                    className="bg-teal-600 text-white hover:bg-teal-700"
+                                    onClick={handleEcosystemMap}
+                                    disabled={!ecosystemSource || isMapping}
+                                >
+                                    {isMapping ? (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                                            Mapping...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Network className="mr-2 h-4 w-4" />
+                                            Generate Map
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+
+                            {ecosystemImpacts.length > 0 && (
+                                <div className="mt-4 space-y-3 pt-4 border-t">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="font-semibold text-slate-900">Ecosystem Impacts</h4>
+                                        <div className="flex gap-2">
+                                            <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
+                                                <button
+                                                    onClick={() => setViewMode("list")}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "list"
+                                                        ? "bg-white text-slate-900 shadow-sm"
+                                                        : "text-slate-500 hover:text-slate-900"
+                                                        }`}
+                                                >
+                                                    List View
+                                                </button>
+                                                <button
+                                                    onClick={() => setViewMode("graph")}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "graph"
+                                                        ? "bg-white text-slate-900 shadow-sm"
+                                                        : "text-slate-500 hover:text-slate-900"
+                                                        }`}
+                                                >
+                                                    Graph View
+                                                </button>
+                                            </div>
+
+                                            <Button
+                                                variant={interconnectionFilter === "All" ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setInterconnectionFilter("All")}
+                                            >
+                                                All
+                                            </Button>
+                                            <Button
+                                                variant={interconnectionFilter === "Material" ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setInterconnectionFilter("Material")}
+                                            >
+                                                Material
+                                            </Button>
+                                            <Button
+                                                variant={interconnectionFilter === "Discursive" ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setInterconnectionFilter("Discursive")}
+                                            >
+                                                Discursive
+                                            </Button>
+                                            <Button
+                                                variant={interconnectionFilter === "Hybrid" ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setInterconnectionFilter("Hybrid")}
+                                            >
+                                                Hybrid
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {viewMode === "graph" ? (
+                                        <div className="border rounded-lg p-4 bg-white min-h-[500px]">
+                                            <AssemblageSankey
+                                                data={ecosystemImpacts.filter(impact =>
+                                                    interconnectionFilter === "All" ||
+                                                    impact.interconnection_type === interconnectionFilter
+                                                )}
+                                            />
+                                            <p className="text-center text-xs text-slate-500 mt-4">
+                                                Visualizing the flow from <strong>Actors</strong> → <strong>Mechanisms</strong> → <strong>Impacts</strong>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-3">
+                                            {ecosystemImpacts
+                                                .filter(impact =>
+                                                    interconnectionFilter === "All" ||
+                                                    impact.interconnection_type === interconnectionFilter
+                                                )
+                                                .map((impact, i) => (
+                                                    <div key={i} className={`p-3 rounded-lg border ${impact.type === "Constraint"
+                                                        ? "bg-red-50 border-red-200"
+                                                        : "bg-green-50 border-green-200"
+                                                        }`}>
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <span className={`text-xs font-bold uppercase ${impact.type === "Constraint" ? "text-red-700" : "text-green-700"
+                                                                }`}>
+                                                                {impact.type}
+                                                            </span>
+                                                            {impact.interconnection_type && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {impact.interconnection_type}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm font-semibold text-slate-900 mb-1">{impact.actor}</p>
+                                                        <p className="text-xs text-slate-600 mb-1">
+                                                            <span className="font-medium">Mechanism:</span> {impact.mechanism}
+                                                        </p>
+                                                        <p className="text-xs text-slate-600">
+                                                            <span className="font-medium">Impact:</span> {impact.impact}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )
+            }
+
+
+        </div >
     );
 }

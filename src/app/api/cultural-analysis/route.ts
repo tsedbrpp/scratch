@@ -8,33 +8,37 @@ const openai = new OpenAI({
 });
 
 // System prompt for theme extraction
-const THEME_EXTRACTION_PROMPT = `You are an expert qualitative researcher analyzing policy documents and discourse to identify key themes and concepts.
+const THEME_EXTRACTION_PROMPT = `You are an expert qualitative researcher conducting a "grounded theory" analysis of policy documents.
+
+Your goal is to identify "emic" themes—concepts and categories used by the actors themselves—rather than imposing generic "etic" categories.
 
 Extract 5-10 key themes from the provided text. Each theme should be:
-- A concise phrase (2-5 words)
-- Representing a distinct concept, practice, or understanding
-- Relevant to AI governance, policy, or ecosystem dynamics
+- A specific, theoretically rich concept (e.g., "anticipatory compliance" instead of just "compliance").
+- Grounded in the specific language of the text.
+- Relevant to the construction of legitimacy, authority, or social order.
 
 Return ONLY a JSON array of objects, where each object has a 'theme' and a 'quote'.
-Example: [{"theme": "risk-based regulation", "quote": "The regulation follows a risk-based approach..."}, {"theme": "fundamental rights", "quote": "Union values and fundamental rights must be protected..."}]`;
+Example: [{"theme": "technological inevitability", "quote": "AI adoption is not a choice but a necessity..."}, {"theme": "sovereign data control", "quote": "We must regain control over our digital borders..."}]`;
 
 // System prompt for bridging concept generation
-const BRIDGING_PROMPT = `You are an expert in innovation ecosystems and policy analysis.
+const BRIDGING_PROMPT = `You are a sophisticated social theorist and policy architect.
 
-Given two clusters of themes that represent different "discourse communities" or areas of understanding, suggest 3-5 bridging concepts that could connect these two areas.
+You are analyzing a "structural hole" between two distinct discourse communities (Cluster A and Cluster B). Your task is to propose "bridging concepts" that could theoretically and practically connect these disconnected worlds.
+
+Avoid generic management speak (e.g., "stakeholder collaboration"). Instead, propose novel, high-level theoretical or strategic concepts that resolve the tension between the two clusters.
 
 Bridging concepts should:
-- Draw from both clusters
-- Represent potential areas for innovation or policy intervention
-- Be concrete and actionable
+- Synthesize the conflicting logics of Cluster A and Cluster B.
+- Be "boundary objects"—flexible enough to be accepted by both sides but robust enough to maintain identity.
+- Represent a genuine intellectual or policy innovation.
 
 For EACH bridging concept, provide:
-- The concept name (2-4 words)
-- A brief explanation (1 sentence) of what it means and why it bridges the gap
+- The concept name (2-4 words, e.g., "Algorithmic Due Process", "Data Sovereignty Trusts").
+- A brief explanation (1 sentence) of how it theoretically bridges the specific gap.
 
 Also provide:
-1. A description of the innovation opportunity this gap represents
-2. A policy implication for how to leverage this cultural hole
+1. A description of the "Innovation Opportunity": What new form of governance or value creation is possible here?
+2. A "Policy Implication": How should this bridge be institutionalized?
 
 Return your response as JSON with this structure:
 {
@@ -52,18 +56,18 @@ const LENS_PROMPTS: Record<string, string> = {
     institutional_logics: `
     ADOPT AN INSTITUTIONAL LOGICS LENS.
     Focus specifically on identifying conflicting institutional logics (e.g., market vs. state, professional vs. corporate).
-    Look for symbols, practices, and rules that indicate which institutional order is dominant.
-    Themes should reflect these underlying logics.`,
+    Identify the "material practices" and "symbolic systems" that constitute these logics.
+    Themes should reflect these underlying logics and their contradictions.`,
     critical_data_studies: `
     ADOPT A CRITICAL DATA STUDIES LENS.
     Focus on power dynamics, surveillance, data justice, and how data practices reinforce or challenge existing inequalities.
-    Look for silence and what is NOT said.
-    Themes should reflect power relations and justice implications.`,
+    Interrogate the "political economy of data" and "epistemic violence".
+    Themes should reflect power relations, marginalization, and justice implications.`,
     actor_network_theory: `
     ADOPT AN ACTOR-NETWORK THEORY (ANT) LENS.
     Treat non-human actors (algorithms, databases, standards) as having agency.
-    Focus on translation processes and how networks of heterogeneous materials are assembled.
-    Themes should reflect the agency of artifacts and the mechanics of translation.`
+    Focus on "translation" processes, "obligatory passage points", and how networks are stabilized or destabilized.
+    Themes should reflect the agency of artifacts and the mechanics of association.`
 };
 
 // Helper function to calculate cosine similarity
@@ -185,7 +189,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { sources, lensId = 'default' } = body;
+        const { sources, lensId = 'default', forceRefresh = false } = body;
 
         console.log('Cultural analysis request received:', {
             sourceCount: sources?.length,
@@ -203,12 +207,12 @@ export async function POST(request: NextRequest) {
 
         // Generate a unique key for this analysis request based on source IDs and lens
         const sortedSourceIds = sources.map((s: any) => s.id).sort().join(',');
-        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}`;
+        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}:v2`;
 
         // Check cache first
         try {
             const cachedAnalysis = await redis.get(cacheKey);
-            if (cachedAnalysis) {
+            if (cachedAnalysis && !forceRefresh) {
                 console.log('Returning cached analysis for key:', cacheKey);
                 return NextResponse.json({
                     success: true,
@@ -357,7 +361,7 @@ export async function POST(request: NextRequest) {
             topHoles.map(async (hole) => {
                 try {
                     const bridgingResponse = await openai.chat.completions.create({
-                        model: 'gpt-4o-mini',
+                        model: 'gpt-4o',
                         messages: [
                             { role: 'system', content: BRIDGING_PROMPT },
                             {

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
 import { synthesizeComparison } from "@/services/analysis";
 
@@ -15,13 +15,14 @@ import { Source, AnalysisResult, ComparativeSynthesis } from "@/types";
 type CulturalFraming = NonNullable<AnalysisResult>;
 
 export default function ComparisonPage() {
-    const { sources, isLoading } = useSources();
+    const { sources, isLoading, updateSource } = useSources();
     const [policyDocs, setPolicyDocs] = useState<Source[]>([]);
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
     const [synthesisResult, setSynthesisResult] = useState<ComparativeSynthesis | null>(null);
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
+    const [regeneratingIds, setRegeneratingIds] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (isLoading) return;
@@ -82,6 +83,95 @@ export default function ComparisonPage() {
             setSynthesisError("Failed to generate synthesis. Please try again.");
         } finally {
             setIsSynthesizing(false);
+        }
+    };
+
+    const handleRegenerateCultural = async (source: Source) => {
+        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
+
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: source.extractedText?.substring(0, 50000) || '',
+                    sourceType: 'Policy Document',
+                    analysisMode: 'cultural_framing',
+                    force: true,
+                    documentId: source.id,
+                    title: source.title
+                })
+            });
+
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                await updateSource(source.id, { cultural_framing: data.analysis });
+            } else {
+                alert("Regeneration failed: " + (data.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Regeneration error:", error);
+            alert("Failed to regenerate analysis.");
+        } finally {
+            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
+        }
+    };
+
+    const handleRegenerateLogics = async (source: Source) => {
+        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: source.extractedText?.substring(0, 50000) || '',
+                    sourceType: 'Policy Document',
+                    analysisMode: 'institutional_logics',
+                    force: true,
+                    documentId: source.id,
+                    title: source.title
+                })
+            });
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                await updateSource(source.id, { institutional_logics: data.analysis });
+            } else {
+                alert("Regeneration failed: " + (data.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Regeneration error:", error);
+            alert("Failed to regenerate analysis.");
+        } finally {
+            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
+        }
+    };
+
+    const handleRegenerateLegitimacy = async (source: Source) => {
+        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: source.extractedText?.substring(0, 50000) || '',
+                    sourceType: 'Policy Document',
+                    analysisMode: 'legitimacy',
+                    force: true,
+                    documentId: source.id,
+                    title: source.title
+                })
+            });
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                await updateSource(source.id, { legitimacy_analysis: data.analysis });
+            } else {
+                alert("Regeneration failed: " + (data.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Regeneration error:", error);
+            alert("Failed to regenerate analysis.");
+        } finally {
+            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
         }
     };
 
@@ -262,8 +352,20 @@ export default function ComparisonPage() {
                                                 <h4 className="font-semibold mb-4">Cultural Distinctiveness</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     {selectedSources.map((source, idx) => (
-                                                        <Card key={idx} className="bg-slate-50">
+                                                        <Card key={idx} className="bg-slate-50 relative">
                                                             <CardContent className="pt-6">
+                                                                <div className="absolute top-2 right-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-6 w-6 p-0"
+                                                                        onClick={() => handleRegenerateCultural(source)}
+                                                                        disabled={regeneratingIds[source.id]}
+                                                                        title="Regenerate Analysis (Bypass Cache)"
+                                                                    >
+                                                                        <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
+                                                                    </Button>
+                                                                </div>
                                                                 <div className="text-center">
                                                                     <div className="text-3xl font-bold text-slate-900">
                                                                         {((source.cultural_framing?.cultural_distinctiveness_score ?? 0) * 100).toFixed(0)}%
@@ -291,8 +393,20 @@ export default function ComparisonPage() {
                                                         {selectedSources.map((source, idx) => (
                                                             <Card key={idx}>
                                                                 <CardContent className="pt-4">
-                                                                    <div className="text-xs font-semibold text-slate-500 mb-2">
-                                                                        {source.title}
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="text-xs font-semibold text-slate-500">
+                                                                            {source.title}
+                                                                        </div>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-6 w-6 p-0"
+                                                                            onClick={() => handleRegenerateCultural(source)}
+                                                                            disabled={regeneratingIds[source.id]}
+                                                                            title="Regenerate Analysis (Bypass Cache)"
+                                                                        >
+                                                                            <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
+                                                                        </Button>
                                                                     </div>
                                                                     <div className="text-sm text-slate-700">
                                                                         {/* @ts-ignore */}
@@ -394,8 +508,20 @@ export default function ComparisonPage() {
                                                 <h4 className="font-semibold mb-4">Dominant Logic</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     {selectedSources.map((source, idx) => (
-                                                        <Card key={idx} className="bg-slate-50">
+                                                        <Card key={idx} className="bg-slate-50 relative">
                                                             <CardContent className="pt-6">
+                                                                <div className="absolute top-2 right-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-6 w-6 p-0"
+                                                                        onClick={() => handleRegenerateLogics(source)}
+                                                                        disabled={regeneratingIds[source.id]}
+                                                                        title="Regenerate Analysis (Bypass Cache)"
+                                                                    >
+                                                                        <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
+                                                                    </Button>
+                                                                </div>
                                                                 <div className="text-center">
                                                                     <Badge className="text-lg px-4 py-2 capitalize">
                                                                         {source.institutional_logics?.dominant_logic || "Unknown"}
@@ -480,7 +606,19 @@ export default function ComparisonPage() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             {selectedSources.map((source, idx) => (
                                                 <div key={idx} className="space-y-4">
-                                                    <h3 className="font-semibold text-lg border-b pb-2">{source.title}</h3>
+                                                    <div className="flex items-center justify-between border-b pb-2">
+                                                        <h3 className="font-semibold text-lg">{source.title}</h3>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0"
+                                                            onClick={() => handleRegenerateLegitimacy(source)}
+                                                            disabled={regeneratingIds[source.id]}
+                                                            title="Regenerate Analysis (Bypass Cache)"
+                                                        >
+                                                            <RefreshCw className={`h-4 w-4 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
+                                                        </Button>
+                                                    </div>
                                                     {source.legitimacy_analysis && (
                                                         <LegitimacyAnalysisView analysis={source.legitimacy_analysis} />
                                                     )}
