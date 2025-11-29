@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Network, Scale, Users, Lightbulb, Globe } from "lucide-react";
+import { BookOpen, Network, Scale, Users, Lightbulb, Globe, ShieldCheck } from "lucide-react";
 
 export default function LiteraturePage() {
     return (
@@ -17,7 +17,7 @@ export default function LiteraturePage() {
             </div>
 
             <Tabs defaultValue="assemblage" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 bg-slate-100 p-1 rounded-lg">
+                <TabsList className="grid w-full grid-cols-6 bg-slate-100 p-1 rounded-lg">
                     <TabsTrigger value="assemblage" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <Network size={16} className="mr-2" /> Assemblage Theory
                     </TabsTrigger>
@@ -32,6 +32,9 @@ export default function LiteraturePage() {
                     </TabsTrigger>
                     <TabsTrigger value="reflexivity" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                         <Lightbulb size={16} className="mr-2" /> Reflexivity
+                    </TabsTrigger>
+                    <TabsTrigger value="legitimacy" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <ShieldCheck size={16} className="mr-2" /> Legitimacy
                     </TabsTrigger>
                 </TabsList>
 
@@ -238,6 +241,47 @@ export default function LiteraturePage() {
                                     <h4 className="text-sm font-semibold text-purple-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-purple-800">
                                         Operationalized in the <strong>Reflexivity Module</strong> via the "Methodological Log" and "Positionality Statement," ensuring the researcher does not claim a "God Trick" view from nowhere.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Legitimacy Content */}
+                    <TabsContent value="legitimacy" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ShieldCheck className="text-rose-600" />
+                                    Sociology of Critique & Orders of Worth
+                                </CardTitle>
+                                <CardDescription>
+                                    Analyzing how actors justify their actions and claims to legitimacy.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-slate-900">Key Concepts</h3>
+                                        <ul className="list-disc list-inside text-sm text-slate-600 space-y-2">
+                                            <li><strong>Orders of Worth (Cités):</strong> Distinct worlds of justification (Market, Industrial, Civic, Domestic, Inspired, Fame).</li>
+                                            <li><strong>Tests of Worth:</strong> Moments where legitimacy is challenged and must be proven through evidence.</li>
+                                            <li><strong>Compromise:</strong> Fragile agreements formed between conflicting orders of worth.</li>
+                                        </ul>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-slate-900">Key Scholars</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="outline">Luc Boltanski</Badge>
+                                            <Badge variant="outline">Laurent Thévenot</Badge>
+                                            <Badge variant="outline">Eve Chiapello</Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-rose-50 p-4 rounded-lg border border-rose-100 mt-4">
+                                    <h4 className="text-sm font-semibold text-rose-900 mb-2">Application in Project:</h4>
+                                    <p className="text-sm text-rose-800">
+                                        Used in the <strong>Legitimacy Module</strong> to analyze the "moral vocabulary" of AI policy documents, identifying which "Orders of Worth" (e.g., Industrial efficiency vs. Civic solidarity) are dominant.
                                     </p>
                                 </div>
                             </CardContent>
