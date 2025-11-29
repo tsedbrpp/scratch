@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!text || text.length < 50) {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
