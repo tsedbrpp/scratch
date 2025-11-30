@@ -26,7 +26,8 @@ import {
   Shield,
   Lock,
   GraduationCap,
-  Building
+  Building,
+  Play
 } from "lucide-react";
 
 // --- DASHBOARD DATA ---
@@ -171,7 +172,8 @@ function LandingPage() {
               </Button>
             </Link>
             <Link href="/demo">
-              <Button variant="outline" size="lg" className="text-white border-white hover:bg-white/10 px-8">
+              <Button variant="outline" size="lg" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 transition-all hover:scale-105 group">
+                <Play className="mr-2 h-4 w-4 fill-current group-hover:scale-110 transition-transform" />
                 Try Sample Analysis
               </Button>
             </Link>
