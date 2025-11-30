@@ -219,23 +219,32 @@ export default function DemoPage() {
 
                     {/* Right Column: Cultural Holes & Insights */}
                     <div className="space-y-6">
-                        <div className="bg-indigo-900 text-white p-6 rounded-xl shadow-lg">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Lightbulb className="h-6 w-6 text-yellow-400" />
-                                <h3 className="text-xl font-bold">Detected Cultural Holes</h3>
-                            </div>
-                            <p className="text-indigo-200 text-sm mb-6">
-                                Areas where the two frameworks diverge significantly, creating opportunities for theoretical innovation.
-                            </p>
+                        <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-xl shadow-2xl border border-indigo-500/30 relative overflow-hidden">
+                            {/* Decorative background element */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
 
-                            <div className="space-y-4">
-                                {DEMO_ANALYSIS.holes.map((hole) => (
-                                    <CulturalHoleCard
-                                        key={hole.id}
-                                        hole={hole}
-                                        clusters={DEMO_ANALYSIS.clusters}
-                                    />
-                                ))}
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-indigo-500/20 rounded-lg border border-indigo-500/30">
+                                        <Lightbulb className="h-5 w-5 text-yellow-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white leading-tight">Detected Cultural Holes</h3>
+                                        <p className="text-indigo-200 text-xs mt-1">
+                                            Strategic opportunities for innovation
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {DEMO_ANALYSIS.holes.map((hole) => (
+                                        <CulturalHoleCard
+                                            key={hole.id}
+                                            hole={hole}
+                                            clusters={DEMO_ANALYSIS.clusters}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
