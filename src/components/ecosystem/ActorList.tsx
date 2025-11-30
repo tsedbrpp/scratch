@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2 } from 'lucide-react';
+import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap } from 'lucide-react';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -32,6 +32,10 @@ interface ActorListProps {
     onExtract: () => void;
     isExtractionDialogOpen: boolean;
     setIsExtractionDialogOpen: (open: boolean) => void;
+
+    // Analysis Props
+    isAnalyzingHoles: boolean;
+    onAnalyze: () => void;
 }
 
 export function ActorList({
@@ -51,7 +55,9 @@ export function ActorList({
     setExtractionText,
     onExtract,
     isExtractionDialogOpen,
-    setIsExtractionDialogOpen
+    setIsExtractionDialogOpen,
+    isAnalyzingHoles,
+    onAnalyze
 }: ActorListProps) {
     return (
         <Card className="h-[500px] lg:h-full flex flex-col">
@@ -145,6 +151,21 @@ export function ActorList({
                             </DialogContent>
                         </Dialog>
 
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            title="Analyze Cultural Holes"
+                            onClick={onAnalyze}
+                            disabled={isAnalyzingHoles}
+                        >
+                            {isAnalyzingHoles ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                            ) : (
+                                <Zap className="h-4 w-4 text-amber-600" />
+                            )}
+                        </Button>
+
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8" title="Clear All Actors">
@@ -155,7 +176,7 @@ export function ActorList({
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Clear All Actors?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will remove all actors (including mock data). You'll start with an empty ecosystem. This action cannot be undone.
+                                        This will remove all actors (including mock data). You&apos;ll start with an empty ecosystem. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

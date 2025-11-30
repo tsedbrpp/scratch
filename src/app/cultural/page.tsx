@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
-import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,12 +12,13 @@ import { CulturalHoleCard } from "@/components/CulturalHoleCard";
 import { CulturalHoleNetwork } from "@/components/CulturalHoleNetwork";
 import { CulturalHoleMatrix } from "@/components/CulturalHoleMatrix";
 import { CulturalAnalysisResult } from "@/types/cultural";
+import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
 
 export default function CulturalAnalysisPage() {
     const { sources, isLoading } = useSources();
     const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result", null);
+    const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
     const [selectedLensId, setSelectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
 
     const theoreticalLenses = [
@@ -133,9 +133,9 @@ export default function CulturalAnalysisPage() {
                 console.error('Analysis failed:', data.error);
                 alert("Cultural analysis failed: " + (data.error || "Unknown error"));
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Cultural analysis error:", error);
-            alert(`Failed to perform cultural analysis: ${error.message || error}`);
+            alert(`Failed to perform cultural analysis: ${(error as Error).message || String(error)}`);
         } finally {
             console.log('Analysis complete, resetting button');
             setIsAnalyzing(false);
@@ -211,7 +211,7 @@ export default function CulturalAnalysisPage() {
                     </p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                         <li>Extracts key themes from each document</li>
-                        <li>Clusters similar themes into "discourse communities"</li>
+                        <li>Clusters similar themes into &quot;discourse communities&quot;</li>
                         <li>Identifies gaps between distant clusters</li>
                         <li>Suggests bridging concepts for policy intervention</li>
                     </ul>
@@ -257,6 +257,8 @@ export default function CulturalAnalysisPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <MultiLensAnalysis sources={sources} />
 
             {/* Selected Lens Details */}
             <Card className="bg-indigo-50/50 border-indigo-100">
@@ -397,15 +399,15 @@ export default function CulturalAnalysisPage() {
                         <CardContent className="space-y-3 text-sm text-slate-700">
                             <div>
                                 <p className="font-semibold text-blue-900 mb-1">What are Discourse Clusters?</p>
-                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent "discourse community" within your analyzed documents.</p>
+                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent &quot;discourse community&quot; within your analyzed documents.</p>
                             </div>
                             <div>
                                 <p className="font-semibold text-blue-900 mb-1">What are Cultural Holes?</p>
-                                <p>Gaps between discourse clusters where concepts don't overlap. These represent areas where different stakeholder groups or policy frameworks aren't connecting with each other.</p>
+                                <p>Gaps between discourse clusters where concepts don&apos;t overlap. These represent areas where different stakeholder groups or policy frameworks aren&apos;t connecting with each other.</p>
                             </div>
                             <div className="bg-white p-3 rounded border border-blue-200">
                                 <p className="font-semibold text-blue-900 mb-1">💡 Why This Matters</p>
-                                <p>Cultural holes reveal <span className="font-semibold">innovation opportunities</span> and <span className="font-semibold">policy blind spots</span>. The "bridging concepts" suggest ways to connect isolated conversations and create more holistic governance frameworks.</p>
+                                <p>Cultural holes reveal <span className="font-semibold">innovation opportunities</span> and <span className="font-semibold">policy blind spots</span>. The &quot;bridging concepts&quot; suggest ways to connect isolated conversations and create more holistic governance frameworks.</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -484,7 +486,8 @@ export default function CulturalAnalysisPage() {
                                                         <ul className="mt-2 space-y-2">
                                                             {cluster.quotes.slice(0, 3).map((quote, i) => (
                                                                 <li key={i} className="text-xs text-slate-600 italic border-l-2 border-blue-300 pl-2">
-                                                                    "{quote}"
+                                                                    &quot;{quote.text}&quot;
+                                                                    <span className="block text-[10px] text-slate-400 not-italic mt-1">— {quote.source}</span>
                                                                 </li>
                                                             ))}
                                                             {cluster.quotes.length > 3 && (

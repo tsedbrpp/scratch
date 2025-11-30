@@ -321,6 +321,8 @@ export default function EcosystemPage() {
                     onExtract={handleExtractAssemblage}
                     isExtractionDialogOpen={isExtractionDialogOpen}
                     setIsExtractionDialogOpen={setIsExtractionDialogOpen}
+                    isAnalyzingHoles={isAnalyzingHoles}
+                    onAnalyze={handleAnalyzeHoles}
                 />
             </div>
 

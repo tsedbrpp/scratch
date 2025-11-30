@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers } from 'lucide-react';
+import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database } from 'lucide-react';
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -178,6 +178,17 @@ export function EcosystemMap({
         });
     };
 
+    const getActorIcon = (type: string) => {
+        switch (type) {
+            case "Policymaker": return Landmark;
+            case "Civil Society": return Users;
+            case "Startup": return Rocket;
+            case "Academic": return GraduationCap;
+            case "Infrastructure": return Server;
+            default: return Database;
+        }
+    };
+
     return (
         <Card className="min-h-[400px] flex flex-col">
             <CardHeader className="z-10 relative">
@@ -286,6 +297,7 @@ export function EcosystemMap({
                         if (!pos) return null;
 
                         const isSelected = selectedForGrouping.includes(actor.id);
+                        const Icon = getActorIcon(actor.type);
 
                         return (
                             <g
@@ -304,13 +316,11 @@ export function EcosystemMap({
                                     strokeWidth="2"
                                     className="transition-all duration-300 shadow-sm"
                                 />
-                                <text
-                                    dy="4"
-                                    textAnchor="middle"
-                                    className={`text-[10px] font-bold pointer-events-none select-none ${isSelected ? "fill-white" : "fill-slate-600"}`}
-                                >
-                                    {actor.type.substring(0, 2).toUpperCase()}
-                                </text>
+                                <foreignObject x="-12" y="-12" width="24" height="24" className="pointer-events-none">
+                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : "text-slate-600"}`}>
+                                        <Icon size={16} />
+                                    </div>
+                                </foreignObject>
                                 <foreignObject x="-40" y="28" width="80" height="40">
                                     <div className="text-center text-[10px] font-medium text-slate-700 leading-tight line-clamp-2 bg-white/80 px-1 rounded">
                                         {actor.name}

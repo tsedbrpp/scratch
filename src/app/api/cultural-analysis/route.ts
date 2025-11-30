@@ -123,11 +123,11 @@ function cosineSimilarity(a: number[], b: number[]): number {
 
 // Helper function to perform hierarchical clustering
 function hierarchicalClustering(
-    themeObjects: { theme: string; quote: string }[],
+    themeObjects: { theme: string; quote: string; source: string }[],
     embeddings: number[][],
     sourceIds: string[],
     threshold: number = 0.7
-): Array<{ themes: { theme: string; quote: string }[]; sources: string[]; centroid: number[] }> {
+): Array<{ themes: { theme: string; quote: string; source: string }[]; sources: string[]; centroid: number[] }> {
     // Start with each theme as its own cluster
     let clusters = themeObjects.map((obj, i) => ({
         themes: [obj],
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
 
         // Generate a unique key for this analysis request based on source IDs and lens
         const sortedSourceIds = sources.map((s: { id: string }) => s.id).sort().join(',');
-        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}:v2`;
+        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}:v5`;
 
         // Check cache first
         try {
@@ -298,8 +298,8 @@ export async function POST(request: NextRequest) {
                         sourceTitle: source.title,
                         themes,
                     };
-                } catch (error: any) {
-                    console.error(`Error extracting themes from source ${source.title}:`, error.message);
+                } catch (error: unknown) {
+                    console.error(`Error extracting themes from source ${source.title}:`, (error as Error).message);
                     throw error;
                 }
             })
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
         // Step 2: Generate embeddings for all themes
         console.log('Generating embeddings...');
         const allThemesText: string[] = [];
-        const allThemeObjects: { theme: string; quote: string }[] = [];
+        const allThemeObjects: { theme: string; quote: string; source: string }[] = [];
         const sourceIds: string[] = [];
 
         themeExtractions.forEach((extraction) => {
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
                 const quote = typeof item === 'string' ? '' : item.quote;
 
                 allThemesText.push(themeText);
-                allThemeObjects.push({ theme: themeText, quote });
+                allThemeObjects.push({ theme: themeText, quote, source: extraction.sourceTitle });
                 sourceIds.push(extraction.sourceId);
             });
         });
@@ -339,7 +339,7 @@ export async function POST(request: NextRequest) {
             id: `cluster-${i}`,
             name: cluster.themes[0].theme, // Use first theme as cluster name
             themes: cluster.themes.map(t => t.theme), // Keep simple string array for compatibility if needed
-            quotes: cluster.themes.map(t => t.quote).filter(q => q), // Extract quotes
+            quotes: cluster.themes.map(t => ({ text: t.quote, source: t.source })).filter(q => q.text), // Extract quotes with source
             sources: cluster.sources,
             centroid: cluster.centroid,
             size: cluster.themes.length,
@@ -429,8 +429,8 @@ export async function POST(request: NextRequest) {
                         opportunity: bridgingData.opportunity || '',
                         policyImplication: bridgingData.policyImplication || '',
                     };
-                } catch (error: any) {
-                    console.error(`Error generating bridging concepts:`, error.message);
+                } catch (error: unknown) {
+                    console.error(`Error generating bridging concepts:`, (error as Error).message);
                     return {
                         id: `hole-${hole.clusterA.id}-${hole.clusterB.id}`,
                         clusterA: hole.clusterA.id,
@@ -495,10 +495,10 @@ export async function POST(request: NextRequest) {
             analysis: analysisResult,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Cultural analysis error:', error);
         return NextResponse.json(
-            { success: false, error: error.message || 'Cultural analysis failed' },
+            { success: false, error: (error as Error).message || 'Cultural analysis failed' },
             { status: 500 }
         );
     }

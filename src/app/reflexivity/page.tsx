@@ -28,6 +28,7 @@ interface MethodLog {
     timestamp: string;
 }
 
+
 export default function ReflexivityPage() {
     const [journalEntry, setJournalEntry] = useServerStorage("research-journal", "");
     const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | null>(null);
@@ -64,6 +65,7 @@ export default function ReflexivityPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900">Critical Reflection</h2>
                 <p className="text-slate-500">Documenting epistemic location and engaging with positionality.</p>
             </div>
+
 
             <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-6">
