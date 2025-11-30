@@ -6,11 +6,14 @@ import { DiscourseCluster, CulturalHole } from "@/types/cultural";
 interface CulturalHoleNetworkProps {
     clusters: DiscourseCluster[];
     holes: CulturalHole[];
+    isLive?: boolean;
 }
 
-export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProps) {
+export function CulturalHoleNetwork({ clusters, holes, isLive = false }: CulturalHoleNetworkProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const animationRef = useRef<number>();
+    const timeRef = useRef<number>(0);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -19,18 +22,44 @@ export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProp
 
         const resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
-            // Set actual canvas size to match display size for sharp rendering (handle DPI if needed, but 1:1 is a good start)
             canvas.width = width;
             canvas.height = height;
-            drawNetwork(canvas, width, height);
+            // Initial draw
+            drawNetwork(canvas, width, height, 0);
         });
 
         resizeObserver.observe(container);
 
-        return () => resizeObserver.disconnect();
+        return () => {
+            resizeObserver.disconnect();
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
     }, [clusters, holes]);
 
-    const drawNetwork = (canvas: HTMLCanvasElement, width: number, height: number) => {
+    // Animation Loop
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !isLive) {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+            // Reset to static state
+            if (canvas) drawNetwork(canvas, canvas.width, canvas.height, 0);
+            return;
+        }
+
+        const animate = () => {
+            timeRef.current += 0.01;
+            drawNetwork(canvas, canvas.width, canvas.height, timeRef.current);
+            animationRef.current = requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        return () => {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
+    }, [isLive, clusters, holes]);
+
+    const drawNetwork = (canvas: HTMLCanvasElement, width: number, height: number, time: number) => {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
@@ -40,13 +69,21 @@ export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProp
         // Calculate positions for clusters (circular layout)
         const centerX = width / 2;
         const centerY = height / 2;
-        const radius = Math.min(width, height) * 0.3; // Slightly smaller radius to ensure labels fit
+        const radius = Math.min(width, height) * 0.3;
 
         const positions = clusters.map((_, i) => {
             const angle = (i / clusters.length) * 2 * Math.PI - Math.PI / 2;
+
+            // Add subtle movement if live
+            const driftX = isLive ? Math.sin(time + i) * 10 : 0;
+            const driftY = isLive ? Math.cos(time + i * 2) * 10 : 0;
+
+            // Add "breathing" radius
+            const breathingRadius = isLive ? radius + Math.sin(time * 0.5) * 5 : radius;
+
             return {
-                x: centerX + radius * Math.cos(angle),
-                y: centerY + radius * Math.sin(angle),
+                x: centerX + breathingRadius * Math.cos(angle) + driftX,
+                y: centerY + breathingRadius * Math.sin(angle) + driftY,
             };
         });
 
@@ -64,12 +101,15 @@ export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProp
             const alpha = hole.distance;
 
             // Draw glow effect
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = isLive ? 15 + Math.sin(time * 2) * 5 : 10;
             ctx.shadowColor = `rgba(239, 68, 68, ${alpha * 0.5})`;
 
             ctx.strokeStyle = `rgba(239, 68, 68, ${alpha * 0.8})`; // Red with transparency
             ctx.lineWidth = 3;
             ctx.setLineDash([8, 6]); // Dashed line for gaps
+
+            // Animate dash offset
+            ctx.lineDashOffset = isLive ? -time * 10 : 0;
 
             ctx.beginPath();
             ctx.moveTo(posA.x, posA.y);
@@ -83,10 +123,10 @@ export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProp
         // Draw clusters as nodes
         clusters.forEach((cluster, i) => {
             const pos = positions[i];
-            const nodeRadius = 25 + cluster.size * 2; // Size based on number of themes
+            const nodeRadius = 25 + cluster.size * 2;
 
             // Draw node shadow
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = isLive ? 20 + Math.sin(time * 3) * 5 : 15;
             ctx.shadowColor = "rgba(59, 130, 246, 0.4)";
             ctx.shadowOffsetY = 4;
 
@@ -171,6 +211,12 @@ export function CulturalHoleNetwork({ clusters, holes }: CulturalHoleNetworkProp
                     <div className="w-6 h-0.5 border-t-2 border-dashed border-red-500"></div>
                     <span>Cultural Hole</span>
                 </div>
+                {isLive && (
+                    <div className="flex items-center gap-2 text-indigo-600 font-medium animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        <span>Live Assemblage</span>
+                    </div>
+                )}
             </div>
         </div>
     );

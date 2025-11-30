@@ -7,9 +7,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface CulturalHoleMatrixProps {
     clusters: DiscourseCluster[];
     holes: CulturalHole[];
+    onConceptClick?: (concept: BridgingConcept) => void;
 }
 
-export function CulturalHoleMatrix({ clusters, holes }: CulturalHoleMatrixProps) {
+export function CulturalHoleMatrix({ clusters, holes, onConceptClick }: CulturalHoleMatrixProps) {
     if (clusters.length === 0) {
         return (
             <div className="flex items-center justify-center h-96 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
@@ -147,18 +148,22 @@ export function CulturalHoleMatrix({ clusters, holes }: CulturalHoleMatrixProps)
 
                                                         {/* Bridging Concepts with individual tooltips */}
                                                         <div>
-                                                            <p className="font-semibold text-slate-700 mb-1">Bridging Ideas:</p>
+                                                            <p className="font-semibold text-slate-700 mb-1">Bridging Ideas (Click to Draft Policy):</p>
                                                             <div className="flex flex-wrap gap-1">
                                                                 {hole.bridgingConcepts.map((bc: BridgingConcept, idx: number) => (
                                                                     <TooltipProvider key={idx}>
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
-                                                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100 cursor-help text-xs hover:bg-blue-100 transition-colors">
+                                                                                <button
+                                                                                    onClick={() => onConceptClick?.(bc)}
+                                                                                    className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100 cursor-pointer text-xs hover:bg-blue-100 hover:scale-105 transition-all"
+                                                                                >
                                                                                     {bc.concept}
-                                                                                </span>
+                                                                                </button>
                                                                             </TooltipTrigger>
                                                                             <TooltipContent className="max-w-xs bg-white">
                                                                                 <p className="text-xs text-slate-700">{bc.explanation}</p>
+                                                                                <p className="text-[10px] text-blue-500 mt-1 font-semibold">Click to generate policy draft</p>
                                                                             </TooltipContent>
                                                                         </Tooltip>
                                                                     </TooltipProvider>
