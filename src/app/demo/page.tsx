@@ -40,6 +40,19 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
                 { text: "The discipline of AI use shall observe... non-discrimination and correction of biases...", source: "Brazil PL 2338" },
                 { text: "Guaranteeing the centrality of the human person...", source: "Brazil PL 2338" }
             ]
+        },
+        {
+            id: "c3",
+            name: "Corporate Self-Regulation (US)",
+            description: "Emphasis on innovation, voluntary standards, and market-driven governance.",
+            themes: ["Innovation First", "Voluntary Standards", "Market Competition", "Light-touch Regulation"],
+            sources: ["US Executive Order on AI"],
+            centroid: [0.5, 0.8], // Mock coordinates
+            size: 3,
+            quotes: [
+                { text: "Promoting innovation and competition...", source: "US Executive Order" },
+                { text: "Industry standards and best practices...", source: "US Executive Order" }
+            ]
         }
     ],
     holes: [
@@ -58,6 +71,34 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
                 {
                     concept: "Algorithmic Reparations",
                     explanation: "Moving beyond 'bias mitigation' to active redress for historical inequalities."
+                }
+            ]
+        },
+        {
+            id: "h2",
+            clusterA: "c1",
+            clusterB: "c3",
+            distance: 0.6,
+            opportunity: "Harmonizing 'Auditable Innovation' where voluntary standards can be certified for EU compliance.",
+            policyImplication: "Establish 'Safe Harbor' frameworks where US innovation practices meet EU safety thresholds through third-party audit.",
+            bridgingConcepts: [
+                {
+                    concept: "Certified Self-Regulation",
+                    explanation: "Industry standards that are formally recognized as meeting regulatory requirements."
+                }
+            ]
+        },
+        {
+            id: "h3",
+            clusterA: "c2",
+            clusterB: "c3",
+            distance: 0.9,
+            opportunity: "Constructing 'Rights-Based Innovation' that sees data protection as a competitive advantage rather than a constraint.",
+            policyImplication: "Incentivize 'Privacy-Enhancing Technologies' (PETs) that allow for innovation while respecting data sovereignty.",
+            bridgingConcepts: [
+                {
+                    concept: "Sovereign Innovation Zones",
+                    explanation: "Sandboxes where foreign tech can operate if they adopt local data governance rules."
                 }
             ]
         }
