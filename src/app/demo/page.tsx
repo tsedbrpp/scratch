@@ -192,8 +192,7 @@ export default function DemoPage() {
                                     <CulturalHoleCard
                                         key={hole.id}
                                         hole={hole}
-                                        clusterA={DEMO_ANALYSIS.clusters.find(c => c.id === hole.clusterA)!}
-                                        clusterB={DEMO_ANALYSIS.clusters.find(c => c.id === hole.clusterB)!}
+                                        clusters={DEMO_ANALYSIS.clusters}
                                     />
                                 ))}
                             </div>
