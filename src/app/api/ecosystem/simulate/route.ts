@@ -26,6 +26,17 @@ export async function POST(request: Request) {
         );
     }
 
+    // Credit Check
+    const { checkCredits } = await import('@/lib/credits');
+    const creditResult = await checkCredits(userId, 10); // Cost: 10 credits per simulation
+
+    if (!creditResult.success) {
+        return NextResponse.json(
+            { error: `Insufficient credits. You have ${creditResult.remaining} credits remaining.` },
+            { status: 402 } // Payment Required
+        );
+    }
+
     try {
         const { query } = await request.json();
         const apiKey = process.env.GOOGLE_API_KEY;
@@ -66,12 +77,13 @@ export async function POST(request: Request) {
 
         2. **Actor Generation**: Generate a realistic list of 3-5 distinct actors based on this analysis.
            - The actors should be plausible real-world entities (or realistic archetypes if specific names aren't found).
-           - Ensure diversity: include at least one Policymaker, one Startup/Company, one Civil Society/Academic actor, and one **Infrastructure** actor (e.g., a specific algorithm, dataset, or standard) if relevant.
+           - Ensure diversity: include at least one Policymaker, one Startup/Company, one Civil Society/Academic actor, and at least one **Algorithm** or **Dataset** actor.
+           - **CRITICAL FOR ALGORITHMS/DATASETS**: Do NOT use generic names like "AI Model" or "Training Data". You MUST use specific, real-world examples relevant to the query (e.g., if query is "LLM", use "GPT-4" or "The Pile"; if query is "Surveillance", use "Clearview AI Algorithm" or "Faces in the Wild").
 
         Return a JSON object with a key "actors" containing an array of objects. Each object must have:
         - "id": A unique string ID (kebab-case based on name).
         - "name": Name of the actor.
-        - "type": One of "Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure".
+        - "type": One of "Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset".
         - "description": A rich description explaining *why* they are relevant to the query "${query}".
         - "influence": "High", "Medium", or "Low".
         - "url": The official website URL or a relevant profile page. **IMPORTANT**: Try to provide a URL for every actor. Use official websites first, then LinkedIn, Crunchbase, Wikipedia, or government pages. If you cannot find a specific URL, use a search query URL like "https://www.google.com/search?q=[actor name]".

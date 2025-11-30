@@ -1,7 +1,7 @@
 export interface EcosystemActor {
     id: string;
     name: string;
-    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure";
+    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset";
     description: string;
     influence: "High" | "Medium" | "Low";
     url?: string;

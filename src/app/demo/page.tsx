@@ -169,10 +169,10 @@ export default function DemoPage() {
 
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-                        Assemblage.ai Demo
+                        Assemblage AI Demo
                     </h1>
                     <p className="text-lg text-slate-300 max-w-3xl">
-                        Explore the platform without logging in. Analyze cultural holes, review document insights, and access critical theoretical resources.
+                        Click the tabs below to explore cultural holes, review document insights, and access critical theoretical resources.
                     </p>
                 </div>
             </div>

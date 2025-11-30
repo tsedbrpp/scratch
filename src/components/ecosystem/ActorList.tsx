@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap } from 'lucide-react';
+import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw } from 'lucide-react';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -164,6 +164,16 @@ export function ActorList({
                             ) : (
                                 <Zap className="h-4 w-4 text-amber-600" />
                             )}
+                        </Button>
+
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            title="Clear Simulation Cache"
+                            onClick={onClearCache}
+                        >
+                            <RefreshCcw className="h-4 w-4 text-slate-500" />
                         </Button>
 
                         <AlertDialog>

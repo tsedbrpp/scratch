@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database } from 'lucide-react';
+import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode } from 'lucide-react';
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -185,8 +185,30 @@ export function EcosystemMap({
             case "Startup": return Rocket;
             case "Academic": return GraduationCap;
             case "Infrastructure": return Server;
-            default: return Database;
+            case "Algorithm": return Cpu;
+            case "Dataset": return Database;
+            default: return FileCode;
         }
+    };
+
+    const getLinkLabel = (sourceType: string, targetType: string) => {
+        if (sourceType === "Policymaker" && targetType === "Civil Society") return "Consults";
+        if (sourceType === "Startup" && targetType === "Academic") return "Collaborates";
+        if (sourceType === "Policymaker" && targetType === "Startup") return "Regulates";
+        if (sourceType === "Civil Society" && targetType === "Academic") return "Studies";
+        if (sourceType === "Infrastructure" && targetType === "Startup") return "Supports";
+        if (sourceType === "Infrastructure" && targetType === "Policymaker") return "Informs";
+        if (sourceType === "Infrastructure" && targetType === "Academic") return "Provides Data";
+
+        // Algorithm connections
+        if (sourceType === "Startup" && targetType === "Algorithm") return "Develops";
+        if (sourceType === "Academic" && targetType === "Algorithm") return "Audits";
+        if (sourceType === "Algorithm" && targetType === "Dataset") return "Trained On";
+        if (sourceType === "Policymaker" && targetType === "Algorithm") return "Governs";
+        if (sourceType === "Infrastructure" && targetType === "Algorithm") return "Hosts";
+        if (sourceType === "Infrastructure" && targetType === "Dataset") return "Stores";
+
+        return "Relates To";
     };
 
     return (
@@ -266,7 +288,14 @@ export function EcosystemMap({
                                 (source.type === "Civil Society" && target.type === "Academic") ||
                                 (source.type === "Infrastructure" && target.type === "Startup") ||
                                 (source.type === "Infrastructure" && target.type === "Policymaker") ||
-                                (source.type === "Infrastructure" && target.type === "Academic")
+                                (source.type === "Infrastructure" && target.type === "Academic") ||
+                                // Algorithm connections
+                                (source.type === "Startup" && target.type === "Algorithm") ||
+                                (source.type === "Academic" && target.type === "Algorithm") ||
+                                (source.type === "Algorithm" && target.type === "Dataset") ||
+                                (source.type === "Policymaker" && target.type === "Algorithm") ||
+                                (source.type === "Infrastructure" && target.type === "Algorithm") ||
+                                (source.type === "Infrastructure" && target.type === "Dataset")
                             );
 
                             if (!shouldConnect) return null;
@@ -276,17 +305,41 @@ export function EcosystemMap({
 
                             if (!pos1 || !pos2) return null;
 
+                            const label = getLinkLabel(source.type, target.type);
+                            const midX = (pos1.x + pos2.x) / 2;
+                            const midY = (pos1.y + pos2.y) / 2;
+
                             return (
-                                <line
-                                    key={`${source.id}-${target.id}`}
-                                    x1={pos1.x}
-                                    y1={pos1.y}
-                                    x2={pos2.x}
-                                    y2={pos2.y}
-                                    stroke="#cbd5e1"
-                                    strokeWidth="1"
-                                    strokeDasharray="4"
-                                />
+                                <g key={`${source.id}-${target.id}`}>
+                                    <line
+                                        x1={pos1.x}
+                                        y1={pos1.y}
+                                        x2={pos2.x}
+                                        y2={pos2.y}
+                                        stroke="#cbd5e1"
+                                        strokeWidth="1"
+                                        strokeDasharray="4"
+                                    />
+                                    <rect
+                                        x={midX - (label.length * 3)}
+                                        y={midY - 8}
+                                        width={label.length * 6}
+                                        height="16"
+                                        fill="white"
+                                        opacity="0.8"
+                                        rx="4"
+                                    />
+                                    <text
+                                        x={midX}
+                                        y={midY + 3}
+                                        textAnchor="middle"
+                                        fontSize="9"
+                                        fill="#64748b"
+                                        className="select-none pointer-events-none font-medium"
+                                    >
+                                        {label}
+                                    </text>
+                                </g>
                             );
                         })
                     )}

@@ -163,10 +163,10 @@ function LandingPage() {
             Assemblage AI
           </h1>
           <p className="mt-6 text-lg leading-8 text-slate-200">
-            Critical Analysis for Complex Narratives
+            Analysis of <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold">Algorithmic Assemblages</span>
           </p>
-          <p className="mt-4 text-sm text-slate-300 max-w-lg mx-auto">
-            Map connections, detect patterns, and uncover hidden structures in any archive. From policy documents to empirical traces, reveal the unseen assemblage.
+          <p className="mt-4 text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed text-left">
+            Assemblage.ai is a platform dedicated to analyzing and managing AI governance, policy frameworks, and structural dynamics. It offers tools for data collection, ecosystem mapping, and critical reflection to explore the complexities of AI systems. Key insights include the challenges of centralized governance, limited inclusivity, and the tension between civic values and market-driven innovation. With resources like critical glossaries and literature reviews, Assemblage.ai aims to foster responsible and equitable AI practices while addressing global regulatory and ethical challenges.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/sign-up">
@@ -204,17 +204,42 @@ function LandingPage() {
                 <div className="p-6 grid grid-cols-3 gap-6">
                   {/* Sidebar Mock */}
                   <div className="col-span-1 space-y-3">
-                    <div className="h-8 w-full bg-white/5 rounded-lg"></div>
-                    <div className="h-8 w-3/4 bg-white/5 rounded-lg"></div>
-                    <div className="h-8 w-5/6 bg-white/5 rounded-lg"></div>
-                    <div className="mt-8 h-32 w-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg border border-white/5"></div>
+                    <div className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                      <div className="text-[11px] font-medium text-blue-100 leading-tight">Centralized Governance</div>
+                    </div>
+                    <div className="px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
+                      <div className="text-[11px] font-medium text-purple-100 leading-tight">Limited Inclusivity</div>
+                    </div>
+                    <div className="px-3 py-2 bg-teal-500/10 border border-teal-500/20 rounded-lg flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
+                      <div className="text-[11px] font-medium text-teal-100 leading-tight">Civic vs Market Values</div>
+                    </div>
+                    <div className="mt-8 h-32 w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-white/5 p-3 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%,100%_100%] bg-[position:-100%_0,0_0] bg-no-repeat transition-[background-position_0s_ease] hover:bg-[position:200%_0,0_0] duration-1000"></div>
+                      <div className="text-[8px] text-slate-500 font-mono mb-1">STATUS</div>
+                      <div className="text-xs text-emerald-400 font-mono">System Active</div>
+                    </div>
                   </div>
                   {/* Main Content Mock */}
                   <div className="col-span-2 space-y-4">
-                    <div className="flex gap-4">
-                      <div className="h-24 w-1/3 bg-white/5 rounded-xl border border-white/5"></div>
-                      <div className="h-24 w-1/3 bg-white/5 rounded-xl border border-white/5"></div>
-                      <div className="h-24 w-1/3 bg-white/5 rounded-xl border border-white/5"></div>
+                    <div className="bg-white/5 rounded-xl border border-white/5 p-4 text-left">
+                      <h4 className="text-sm font-semibold text-slate-200 mb-3">Key Insights from Assemblage.ai</h4>
+                      <ul className="space-y-3">
+                        <li className="text-xs leading-relaxed text-slate-400">
+                          <strong className="text-blue-400 block mb-0.5">Challenges of Centralized Governance</strong>
+                          Highlighting the difficulties in managing AI systems under centralized frameworks.
+                        </li>
+                        <li className="text-xs leading-relaxed text-slate-400">
+                          <strong className="text-purple-400 block mb-0.5">Limited Inclusivity</strong>
+                          Addressing the lack of diverse representation in AI governance and policy-making.
+                        </li>
+                        <li className="text-xs leading-relaxed text-slate-400">
+                          <strong className="text-teal-400 block mb-0.5">Civic Values vs Market Innovation</strong>
+                          Exploring the conflict between societal values and profit-oriented AI development.
+                        </li>
+                      </ul>
                     </div>
                     <div className="h-64 w-full bg-slate-950 rounded-xl border border-white/10 relative overflow-hidden">
                       {/* Abstract Chart Lines */}
@@ -415,7 +440,7 @@ function LandingPage() {
               </dt>
               <dd className="mt-4 flex flex-auto flex-col text-base leading-7">
                 <p className="flex-auto">
-                  Developed as part of academic research on using AI for critical analysis. This tool is designed to reveal power structures, not reinforce them.
+                  Developed as part of academic research on using AI for critical analysis. This open-source tool is designed to reveal power structures, not reinforce them.
                 </p>
               </dd>
             </div>

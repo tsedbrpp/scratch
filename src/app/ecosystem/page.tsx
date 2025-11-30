@@ -159,7 +159,7 @@ export default function EcosystemPage() {
                         const createdActor: EcosystemActor = {
                             id,
                             name: newActor.name,
-                            type: newActor.type || "Civil Society", // Default fallback
+                            type: (newActor.type as any) || "Civil Society", // Default fallback
                             description: newActor.description || "",
                             influence: "Medium",
                             metrics: { influence: 5, alignment: 5, resistance: 5 }
