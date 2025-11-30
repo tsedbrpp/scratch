@@ -35,7 +35,7 @@ interface Cluster {
     id: string;
     name: string;
     themes: string[];
-    quotes: string[];
+    quotes: { text: string; source: string }[];
     sources: string[];
     centroid: number[];
     size: number;
