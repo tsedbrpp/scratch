@@ -22,7 +22,11 @@ import {
   Upload,
   Layers,
   Cpu,
-  GitGraph
+  GitGraph,
+  Shield,
+  Lock,
+  GraduationCap,
+  Building
 } from "lucide-react";
 
 // --- DASHBOARD DATA ---
@@ -166,8 +170,15 @@ function LandingPage() {
                 Get Started
               </Button>
             </Link>
+            <Link href="/demo">
+              <Button variant="outline" size="lg" className="text-white border-white hover:bg-white/10 px-8">
+                Try Sample Analysis
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-8 flex items-center justify-center">
             <Link href="/login" className="text-sm font-semibold leading-6 text-white hover:text-blue-300">
-              Log in <span aria-hidden="true">→</span>
+              Log in to your account <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
@@ -227,6 +238,83 @@ function LandingPage() {
                 </dd>
               </div>
             </dl>
+          </div>
+        </div>
+      </div>
+
+      {/* Audience Section */}
+      <div className="py-24 sm:py-32 bg-white border-t border-slate-100">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+            <h2 className="text-base font-semibold leading-7 text-indigo-600">Community</h2>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Who uses Assemblage.ai?
+            </p>
+          </div>
+          <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-3">
+            <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl">
+              <div className="p-3 bg-blue-100 rounded-xl mb-4">
+                <GraduationCap className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Academic Researchers</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Scholars in STS, Information Systems, and Law studying AI policy, algorithmic governance, and sociotechnical imaginaries.
+              </p>
+            </div>
+            <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl">
+              <div className="p-3 bg-indigo-100 rounded-xl mb-4">
+                <Building className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Policy Teams</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Regulators and analysts comparing global AI frameworks, tracking compliance logic, and identifying regulatory gaps.
+              </p>
+            </div>
+            <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl">
+              <div className="p-3 bg-teal-100 rounded-xl mb-4">
+                <Users className="h-6 w-6 text-teal-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Advocates & NGOs</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Civil society organizations examining power dynamics, data justice, and the social impact of algorithmic systems.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust & Ethics Section */}
+      <div className="py-24 sm:py-32 bg-slate-900 text-slate-300">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl lg:mx-0">
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Trust, Ethics & Privacy</h2>
+            <p className="mt-6 text-lg leading-8">
+              Built for critical research with a commitment to data sovereignty and transparency.
+            </p>
+          </div>
+          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-2">
+            <div className="flex flex-col">
+              <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-white">
+                <Lock className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                Data Handling & Privacy
+              </dt>
+              <dd className="mt-4 flex flex-auto flex-col text-base leading-7">
+                <p className="flex-auto">
+                  Uploaded documents are stored securely and are <strong>never used to train public AI models</strong>. You retain full ownership of your data. Files can be permanently deleted from our servers at any time.
+                </p>
+              </dd>
+            </div>
+            <div className="flex flex-col">
+              <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-white">
+                <Shield className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                Research Context
+              </dt>
+              <dd className="mt-4 flex flex-auto flex-col text-base leading-7">
+                <p className="flex-auto">
+                  Developed as part of academic research on <strong>Decolonial AI Governance</strong>. This tool is designed to reveal power structures, not reinforce them.
+                </p>
+              </dd>
+            </div>
           </div>
         </div>
       </div>

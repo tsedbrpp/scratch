@@ -5,7 +5,8 @@ const isPublicRoute = createRouteMatcher([
     "/sign-up(.*)",
     "/", // Landing page is public
     "/api/auth/login", // Keep for backward compatibility during migration if needed
-    "/api/auth/logout"
+    "/api/auth/logout",
+    "/demo"
 ]);
 
 const isApiRoute = createRouteMatcher(['/api(.*)']);
