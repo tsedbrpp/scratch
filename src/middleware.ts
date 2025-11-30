@@ -1,24 +1,23 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isPublicRoute = createRouteMatcher([
-    "/login(.*)",
-    "/sign-up(.*)",
-    "/", // Landing page is public
-    "/api/auth/login", // Keep for backward compatibility during migration if needed
-    "/api/auth/logout",
-    "/demo",
-    "/glossary",
-    "/literature"
+const isProtectedRoute = createRouteMatcher([
+    "/dashboard(.*)",
+    "/data(.*)",
+    "/ecosystem(.*)",
+    "/cultural(.*)",
+    "/reflexivity(.*)",
+    "/synthesis(.*)",
+    "/ontology(.*)",
+    "/resistance(.*)",
+    "/governance(.*)",
+    "/timeline(.*)",
+    "/empirical(.*)",
+    "/comparison(.*)",
+    "/admin(.*)"
 ]);
 
-const isApiRoute = createRouteMatcher(['/api(.*)']);
-
 export default clerkMiddleware(async (auth, request) => {
-    if (isApiRoute(request)) {
-        // API routes handle their own auth and return JSON 401 if needed
-        return;
-    }
-    if (!isPublicRoute(request)) {
+    if (isProtectedRoute(request)) {
         await auth.protect();
     }
 });
