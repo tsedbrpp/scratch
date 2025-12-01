@@ -271,36 +271,28 @@ function LandingPage() {
         </div>
       </div>
 
-      {/* Trusted By Section */}
+      {/* Global Coverage Section */}
       <div className="bg-white py-10 border-b border-slate-100">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <p className="text-center text-sm font-semibold leading-8 text-slate-500">
-            Trusted by researchers at leading institutions
+          <p className="text-center text-sm font-semibold leading-8 text-slate-500 uppercase tracking-widest">
+            Comparative Analysis of Major AI Regimes
           </p>
-          <div className="mx-auto mt-8 grid max-w-lg grid-cols-2 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:gap-x-10 sm:grid-cols-4 lg:mx-0 lg:max-w-none lg:grid-cols-4">
-            <div className="col-span-1 flex justify-center">
-              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                <Building className="h-6 w-6 text-slate-600" />
-                <span className="font-bold text-slate-600">University of Tech</span>
-              </div>
+          <div className="mx-auto mt-8 grid max-w-lg grid-cols-4 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:gap-x-10 sm:grid-cols-4 lg:mx-0 lg:max-w-none lg:grid-cols-4">
+            <div className="col-span-1 flex flex-col items-center justify-center gap-2 group cursor-default">
+              <span className="text-4xl filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110">🇪🇺</span>
+              <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">EU AI Act</span>
             </div>
-            <div className="col-span-1 flex justify-center">
-              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                <GraduationCap className="h-6 w-6 text-slate-600" />
-                <span className="font-bold text-slate-600">Global Institute</span>
-              </div>
+            <div className="col-span-1 flex flex-col items-center justify-center gap-2 group cursor-default">
+              <span className="text-4xl filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110">🇺🇸</span>
+              <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">US Executive Order</span>
             </div>
-            <div className="col-span-1 flex justify-center">
-              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                <Library className="h-6 w-6 text-slate-600" />
-                <span className="font-bold text-slate-600">Policy Lab</span>
-              </div>
+            <div className="col-span-1 flex flex-col items-center justify-center gap-2 group cursor-default">
+              <span className="text-4xl filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110">🇨🇳</span>
+              <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">China Interim Measures</span>
             </div>
-            <div className="col-span-1 flex justify-center">
-              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                <Scale className="h-6 w-6 text-slate-600" />
-                <span className="font-bold text-slate-600">Law Center</span>
-              </div>
+            <div className="col-span-1 flex flex-col items-center justify-center gap-2 group cursor-default">
+              <span className="text-4xl filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110">🇧🇷</span>
+              <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Brazil PL 2338</span>
             </div>
           </div>
         </div>
