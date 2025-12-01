@@ -335,6 +335,43 @@ function LandingPage() {
                 <span className="text-xl font-bold text-slate-600">Redis</span>
               </div>
             </div>
+
+            {/* Gemini Logo */}
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100">
+                <svg className="h-8 w-8" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="url(#gemini-gradient)" />
+                  <defs>
+                    <linearGradient id="gemini-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#4E85F7" />
+                      <stop offset="100%" stopColor="#D6669D" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="text-xl font-bold text-slate-600">Gemini</span>
+              </div>
+            </div>
+
+            {/* Next.js Logo */}
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100">
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 19.7778H22L12 2Z" fill="black" className="fill-slate-900" />
+                </svg>
+                <span className="text-xl font-bold text-slate-600">Next.js</span>
+              </div>
+            </div>
+
+            {/* Grok Logo */}
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100">
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="24" height="24" rx="4" className="fill-slate-900" />
+                  <path d="M6 18L18 6M18 6H10M18 6V14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-xl font-bold text-slate-600">Grok</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
