@@ -191,9 +191,31 @@ function LandingPage() {
           {/* CSS-Based Dashboard Preview */}
           <div className="mt-16 flow-root sm:mt-24">
             <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-              <div className="relative rounded-xl bg-slate-900/80 shadow-2xl ring-1 ring-white/10 backdrop-blur-md overflow-hidden">
+              <div className="relative rounded-xl bg-slate-900/80 shadow-2xl ring-1 ring-white/10 backdrop-blur-md overflow-hidden group">
+                {/* 
+                  VIDEO EFFECT INSTRUCTION:
+                  To use a real video instead of the mock UI, uncomment the following video tag and remove the "Mock UI Body" div below.
+                  Ensure you have a file named 'demo.mp4' in your public folder.
+                */}
+                {/* 
+                <video 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="w-full h-full object-cover opacity-90"
+                  poster="/dashboard-preview.png"
+                >
+                  <source src="/demo.mp4" type="video/mp4" />
+                </video>
+                */}
+
+                {/* Scanline/CRT Effect Overlay */}
+                <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] bg-repeat opacity-20"></div>
+                <div className="absolute inset-0 pointer-events-none z-50 bg-gradient-to-b from-white/5 to-transparent opacity-10"></div>
+
                 {/* Mock UI Header */}
-                <div className="border-b border-white/10 bg-white/5 px-4 py-2 flex items-center gap-2">
+                <div className="border-b border-white/10 bg-white/5 px-4 py-2 flex items-center gap-2 relative z-10">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
@@ -202,7 +224,7 @@ function LandingPage() {
                   <div className="ml-4 h-2 w-32 bg-white/10 rounded-full"></div>
                 </div>
                 {/* Mock UI Body */}
-                <div className="p-6 grid grid-cols-3 gap-6">
+                <div className="p-6 grid grid-cols-3 gap-6 relative z-10">
                   {/* Sidebar Mock */}
                   <div className="col-span-1 space-y-3">
                     <div className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center gap-2">
