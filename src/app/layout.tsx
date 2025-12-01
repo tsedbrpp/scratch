@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Decolonial AI Governance Research",
+  title: "Assemblage-AI",
   description: "A comparative algorithmic assemblage analysis tool",
 };
 

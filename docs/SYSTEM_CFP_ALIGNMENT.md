@@ -4,7 +4,7 @@
 **Submission Deadline:** 15 May 2026
 
 ## Executive Summary
-**Assemblage.ai** is designed as a "computational hermeneutic instrument" specifically tailored to meet the objectives of the Special Issue on **Algorithmic Assemblages**. It bridges the gap between macro-level ecosystem analysis and micro-level discursive interpretation, directly addressing the editors' call for innovative, mixed-method approaches.
+**Assemblage-AI** is designed as a "computational hermeneutic instrument" specifically tailored to meet the objectives of the Special Issue on **Algorithmic Assemblages**. It bridges the gap between macro-level ecosystem analysis and micro-level discursive interpretation, directly addressing the editors' call for innovative, mixed-method approaches.
 
 ---
 
@@ -45,4 +45,4 @@
 ---
 
 ## Conclusion
-**Assemblage.ai** is not merely a tool for data collection; it is a **methodological prototype** for the kind of research this Special Issue seeks to promote. It operationalizes "assemblage theory" into a working software artifact, allowing researchers to *see*, *touch*, and *analyze* the complex entanglements of code, culture, and power.
+**Assemblage-AI** is not merely a tool for data collection; it is a **methodological prototype** for the kind of research this Special Issue seeks to promote. It operationalizes "assemblage theory" into a working software artifact, allowing researchers to *see*, *touch*, and *analyze* the complex entanglements of code, culture, and power.

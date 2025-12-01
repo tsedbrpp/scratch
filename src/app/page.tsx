@@ -27,7 +27,8 @@ import {
   Lock,
   GraduationCap,
   Building,
-  Play
+  Play,
+  Library
 } from "lucide-react";
 
 // --- DASHBOARD DATA ---
@@ -166,7 +167,7 @@ function LandingPage() {
             Analysis of <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold">Algorithmic Assemblages</span>
           </p>
           <p className="mt-4 text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed text-left">
-            Assemblage.ai is a platform dedicated to analyzing and managing AI governance, policy frameworks, and structural dynamics. It offers tools for data collection, ecosystem mapping, and critical reflection to explore the complexities of AI systems. Key insights include the challenges of centralized governance, limited inclusivity, and the tension between civic values and market-driven innovation. With resources like critical glossaries and literature reviews, Assemblage.ai aims to foster responsible and equitable AI practices while addressing global regulatory and ethical challenges.
+            Assemblage-AI is a platform dedicated to analyzing and managing AI governance, policy frameworks, and structural dynamics. It offers tools for data collection, ecosystem mapping, and critical reflection to explore the complexities of AI systems. Key insights include the challenges of centralized governance, limited inclusivity, and the tension between civic values and market-driven innovation. With resources like critical glossaries and literature reviews, Assemblage-AI aims to foster responsible and equitable AI practices while addressing global regulatory and ethical challenges.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/sign-up">
@@ -225,7 +226,7 @@ function LandingPage() {
                   {/* Main Content Mock */}
                   <div className="col-span-2 space-y-4">
                     <div className="bg-white/5 rounded-xl border border-white/5 p-4 text-left">
-                      <h4 className="text-sm font-semibold text-slate-200 mb-3">Key Insights from Assemblage.ai</h4>
+                      <h4 className="text-sm font-semibold text-slate-200 mb-3">Key Insights from Assemblage-AI</h4>
                       <ul className="space-y-3">
                         <li className="text-xs leading-relaxed text-slate-400">
                           <strong className="text-blue-400 block mb-0.5">Challenges of Centralized Governance</strong>
@@ -270,7 +271,40 @@ function LandingPage() {
         </div>
       </div>
 
-      {/* Tech Stack Section */}
+      {/* Trusted By Section */}
+      <div className="bg-white py-10 border-b border-slate-100">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <p className="text-center text-sm font-semibold leading-8 text-slate-500">
+            Trusted by researchers at leading institutions
+          </p>
+          <div className="mx-auto mt-8 grid max-w-lg grid-cols-2 items-center gap-x-8 gap-y-10 sm:max-w-xl sm:gap-x-10 sm:grid-cols-4 lg:mx-0 lg:max-w-none lg:grid-cols-4">
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                <Building className="h-6 w-6 text-slate-600" />
+                <span className="font-bold text-slate-600">University of Tech</span>
+              </div>
+            </div>
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                <GraduationCap className="h-6 w-6 text-slate-600" />
+                <span className="font-bold text-slate-600">Global Institute</span>
+              </div>
+            </div>
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                <Library className="h-6 w-6 text-slate-600" />
+                <span className="font-bold text-slate-600">Policy Lab</span>
+              </div>
+            </div>
+            <div className="col-span-1 flex justify-center">
+              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                <Scale className="h-6 w-6 text-slate-600" />
+                <span className="font-bold text-slate-600">Law Center</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="bg-white py-12 border-b border-slate-100">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <p className="text-center text-sm font-semibold leading-8 text-slate-500 uppercase tracking-widest">
@@ -377,7 +411,7 @@ function LandingPage() {
           <div className="mx-auto max-w-2xl lg:text-center mb-16">
             <h2 className="text-base font-semibold leading-7 text-indigo-600">Community</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              Who uses Assemblage.ai?
+              Who uses Assemblage-AI?
             </p>
           </div>
           <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-3">
@@ -415,11 +449,21 @@ function LandingPage() {
       {/* Trust & Ethics Section */}
       <div className="py-24 sm:py-32 bg-slate-900 text-slate-300">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl lg:mx-0">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Trust, Ethics & Privacy</h2>
-            <p className="mt-6 text-lg leading-8">
-              Built for critical research with a commitment to data sovereignty and transparency.
-            </p>
+          <div className="mx-auto max-w-2xl lg:mx-0 flex flex-col lg:flex-row items-center gap-12">
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Trust, Ethics & Privacy</h2>
+              <p className="mt-6 text-lg leading-8">
+                Built for critical research with a commitment to data sovereignty and transparency.
+              </p>
+            </div>
+            <div className="lg:w-1/2 relative">
+              <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+              <img
+                src="/trust-ethics.png"
+                alt="Digital Trust and Privacy"
+                className="relative rounded-2xl shadow-2xl border border-white/10 w-full max-w-md mx-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
           </div>
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-2">
             <div className="flex flex-col">
@@ -445,8 +489,64 @@ function LandingPage() {
               </dd>
             </div>
           </div>
+
+          {/* Privacy Badges */}
+          <div className="mt-16 pt-10 border-t border-white/10 flex flex-wrap justify-center gap-8 opacity-80">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <Shield className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-slate-300">GDPR Ready</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <Lock className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-medium text-slate-300">End-to-End Encrypted</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <Database className="h-4 w-4 text-purple-400" />
+              <span className="text-sm font-medium text-slate-300">No Model Training</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <GitGraph className="h-4 w-4 text-orange-400" />
+              <span className="text-sm font-medium text-slate-300">Open Source</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="col-span-1 md:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg"></div>
+              <span className="text-xl font-bold text-white">Assemblage-AI</span>
+            </div>
+            <p className="text-sm leading-relaxed max-w-xs">
+              An open-source platform for critical AI governance research, bridging the gap between policy intent and algorithmic reality.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-4">Platform</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/data" className="hover:text-blue-400 transition-colors">Data Collection</Link></li>
+              <li><Link href="/ecosystem" className="hover:text-blue-400 transition-colors">Ecosystem Map</Link></li>
+              <li><Link href="/synthesis" className="hover:text-blue-400 transition-colors">Analysis Tools</Link></li>
+              <li><Link href="/demo" className="hover:text-blue-400 transition-colors">Live Demo</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-4">Resources</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="#" className="hover:text-blue-400 transition-colors">Documentation</Link></li>
+              <li><Link href="#" className="hover:text-blue-400 transition-colors">GitHub Repository</Link></li>
+              <li><Link href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</Link></li>
+              <li><Link href="#" className="hover:text-blue-400 transition-colors">Contact</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 pt-8 border-t border-slate-900 text-xs text-center">
+          &copy; {new Date().getFullYear()} Assemblage-AI Research Group. Open Source (MIT License).
+        </div>
+      </footer>
     </div>
   );
 }
@@ -573,7 +673,7 @@ function Dashboard({ sources }: { sources: Source[] }) {
             const Icon = feature.icon;
             return (
               <Link key={feature.name} href={feature.href}>
-                <Card className={`${feature.color} border-2 hover:shadow-lg transition-all cursor-pointer group`}>
+                <Card className={`${feature.color} border-2 hover:shadow-lg transition-all cursor-pointer group animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">

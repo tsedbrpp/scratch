@@ -161,7 +161,7 @@ export function Sidebar() {
                         <LayoutDashboard className="text-white w-5 h-5" />
                     </div>
                     <span className="font-bold text-lg text-slate-900 tracking-tight">
-                        Assemblage<span className="text-blue-600">.ai</span>
+                        Assemblage<span className="text-blue-600">-AI</span>
                     </span>
                 </Link>
             </div>
@@ -226,7 +226,7 @@ export function Sidebar() {
                         <LayoutDashboard className="text-white w-5 h-5" />
                     </div>
                     <span className="font-bold text-lg text-slate-900 tracking-tight">
-                        Assemblage<span className="text-blue-600">.ai</span>
+                        Assemblage<span className="text-blue-600">-AI</span>
                     </span>
                 </Link>
                 <button
