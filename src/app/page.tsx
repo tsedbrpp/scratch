@@ -197,18 +197,16 @@ function LandingPage() {
                   To use a real video instead of the mock UI, uncomment the following video tag and remove the "Mock UI Body" div below.
                   Ensure you have a file named 'demo.mp4' in your public folder.
                 */}
-                {/* 
-                <video 
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline 
-                  className="w-full h-full object-cover opacity-90"
-                  poster="/dashboard-preview.png"
-                >
-                  <source src="/demo.mp4" type="video/mp4" />
-                </video>
-                */}
+                {
+                  <video
+                    controls
+                    playsInline
+                    className="w-full h-full object-cover opacity-90"
+                    poster="/dashboard-preview.png"
+                  >
+                    <source src="/Sequence 01.mp4" type="video/mp4" />
+                  </video>
+                }
 
                 {/* Scanline/CRT Effect Overlay */}
                 <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] bg-repeat opacity-20"></div>
