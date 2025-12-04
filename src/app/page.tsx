@@ -164,7 +164,11 @@ function LandingPage() {
             Assemblage AI
           </h1>
           <p className="mt-6 text-lg leading-8 text-slate-200">
-            Analysis of <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold">Algorithmic Assemblages</span>
+            <Link href="/glossary" className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-blue-500/50 hover:scale-105 transition-all duration-300 group">
+              <span className="text-slate-300 group-hover:text-white transition-colors">What is</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold">Assemblage AI</span>
+              <span className="text-slate-400 group-hover:text-blue-400 transition-colors">?</span>
+            </Link>
           </p>
           <p className="mt-4 text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed text-left">
             Assemblage-AI is a platform dedicated to analyzing and managing AI governance, policy frameworks, and structural dynamics. It offers tools for data collection, ecosystem mapping, and critical reflection to explore the complexities of AI systems. Key insights include the challenges of centralized governance, limited inclusivity, and the tension between civic values and market-driven innovation. With resources like critical glossaries and literature reviews, Assemblage-AI aims to foster responsible and equitable AI practices while addressing global regulatory and ethical challenges.

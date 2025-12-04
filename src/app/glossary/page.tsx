@@ -78,10 +78,10 @@ export default function GlossaryPage() {
                 <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                         <BookOpen className="h-5 w-5 text-indigo-400" />
-                        Introduction To Assemblage Theory
+                        Introduction To Assemblage-AI
                     </CardTitle>
                     <CardDescription className="text-slate-400">
-                        A video exploration of algorithmic assemblages.
+                        A video exploration the need for Assemblage-AI.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
