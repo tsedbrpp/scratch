@@ -1,13 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { updateSource, deleteSource } from '@/lib/store';
 
 import { auth } from '@clerk/nextjs/server';
 
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { userId } = await auth();
+    let { userId } = await auth();
+
+    // Check for demo user if not authenticated
+    if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+        const demoUserId = request.headers.get('x-demo-user-id');
+        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            userId = demoUserId;
+        }
+    }
+
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
@@ -29,10 +38,19 @@ export async function PUT(
 }
 
 export async function DELETE(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { userId } = await auth();
+    let { userId } = await auth();
+
+    // Check for demo user if not authenticated
+    if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+        const demoUserId = request.headers.get('x-demo-user-id');
+        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            userId = demoUserId;
+        }
+    }
+
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }

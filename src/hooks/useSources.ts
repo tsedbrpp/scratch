@@ -12,7 +12,15 @@ export function useSources() {
 
     const fetchSources = async () => {
         try {
-            const response = await fetch('/api/sources', { cache: 'no-store' });
+            const headers: HeadersInit = {};
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
+            const response = await fetch('/api/sources', {
+                cache: 'no-store',
+                headers
+            });
             if (!response.ok) throw new Error('Failed to fetch sources');
             const data = await response.json();
             setSources(data);

@@ -22,6 +22,11 @@ export default clerkMiddleware(async (auth, request) => {
         return;
     }
 
+    // Bypass auth if demo mode is enabled
+    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
+        return;
+    }
+
     if (isProtectedRoute(request)) {
         await auth.protect();
     }

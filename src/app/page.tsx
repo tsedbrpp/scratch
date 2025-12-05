@@ -765,6 +765,10 @@ export default function Home() {
   }
 
   if (!isSignedIn) {
+    // Bypass login if demo mode is enabled
+    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
+      return <Dashboard sources={sources} />;
+    }
     return <LandingPage />;
   }
 
