@@ -120,9 +120,14 @@ export default function OntologyPage() {
 
         setIsAnalyzing(true);
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     text: source.extractedText.substring(0, 3000), // Limit text length
                     analysisMode: 'ontology',
@@ -178,9 +183,14 @@ export default function OntologyPage() {
         setComparisonResult(null);
 
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     analysisMode: 'ontology_comparison',
                     sourceA: { title: sourceA.title, data: mapA },

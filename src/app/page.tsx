@@ -174,21 +174,21 @@ function LandingPage() {
             Assemblage-AI is a platform dedicated to analyzing and managing AI governance, policy frameworks, and structural dynamics. It offers tools for data collection, ecosystem mapping, and critical reflection to explore the complexities of AI systems. Key insights include the challenges of centralized governance, limited inclusivity, and the tension between civic values and market-driven innovation. With resources like critical glossaries and literature reviews, Assemblage-AI aims to foster responsible and equitable AI practices while addressing global regulatory and ethical challenges.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
+            <Link href="/demo">
+              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 px-8 transition-all hover:scale-105 group shadow-lg shadow-emerald-900/20">
+                <Activity className="mr-2 h-4 w-4 group-hover:animate-pulse" />
+                Explore Analysis Output
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-8 flex flex-col items-center justify-center gap-6">
+            <Link href="/login" className="text-sm font-semibold leading-6 text-white hover:text-blue-300">
+              Log in to your account <span aria-hidden="true">→</span>
+            </Link>
             <Link href="/sign-up">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8">
                 Get Started
               </Button>
-            </Link>
-            <Link href="/demo">
-              <Button variant="outline" size="lg" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 transition-all hover:scale-105 group">
-                <Play className="mr-2 h-4 w-4 fill-current group-hover:scale-110 transition-transform" />
-                Try Sample Analysis
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-8 flex items-center justify-center">
-            <Link href="/login" className="text-sm font-semibold leading-6 text-white hover:text-blue-300">
-              Log in to your account <span aria-hidden="true">→</span>
             </Link>
           </div>
 
@@ -206,9 +206,8 @@ function LandingPage() {
                     controls
                     playsInline
                     className="w-full h-full object-cover opacity-90"
-                    poster="/dashboard-preview.png"
                   >
-                    <source src="/Sequence 01.mp4" type="video/mp4" />
+                    <source src="/Sequence 01.mp4#t=0.001" type="video/mp4" />
                   </video>
                 }
 
@@ -216,79 +215,7 @@ function LandingPage() {
                 <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] bg-repeat opacity-20"></div>
                 <div className="absolute inset-0 pointer-events-none z-50 bg-gradient-to-b from-white/5 to-transparent opacity-10"></div>
 
-                {/* Mock UI Header */}
-                <div className="border-b border-white/10 bg-white/5 px-4 py-2 flex items-center gap-2 relative z-10">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
-                  </div>
-                  <div className="ml-4 h-2 w-32 bg-white/10 rounded-full"></div>
-                </div>
-                {/* Mock UI Body */}
-                <div className="p-6 grid grid-cols-3 gap-6 relative z-10">
-                  {/* Sidebar Mock */}
-                  <div className="col-span-1 space-y-3">
-                    <div className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                      <div className="text-[11px] font-medium text-blue-100 leading-tight">Centralized Governance</div>
-                    </div>
-                    <div className="px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
-                      <div className="text-[11px] font-medium text-purple-100 leading-tight">Limited Inclusivity</div>
-                    </div>
-                    <div className="px-3 py-2 bg-teal-500/10 border border-teal-500/20 rounded-lg flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
-                      <div className="text-[11px] font-medium text-teal-100 leading-tight">Civic vs Market Values</div>
-                    </div>
-                    <div className="mt-8 h-32 w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-white/5 p-3 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%,100%_100%] bg-[position:-100%_0,0_0] bg-no-repeat transition-[background-position_0s_ease] hover:bg-[position:200%_0,0_0] duration-1000"></div>
-                      <div className="text-[8px] text-slate-500 font-mono mb-1">STATUS</div>
-                      <div className="text-xs text-emerald-400 font-mono">System Active</div>
-                    </div>
-                  </div>
-                  {/* Main Content Mock */}
-                  <div className="col-span-2 space-y-4">
-                    <div className="bg-white/5 rounded-xl border border-white/5 p-4 text-left">
-                      <h4 className="text-sm font-semibold text-slate-200 mb-3">Key Insights from Assemblage-AI</h4>
-                      <ul className="space-y-3">
-                        <li className="text-xs leading-relaxed text-slate-400">
-                          <strong className="text-blue-400 block mb-0.5">Challenges of Centralized Governance</strong>
-                          Highlighting the difficulties in managing AI systems under centralized frameworks.
-                        </li>
-                        <li className="text-xs leading-relaxed text-slate-400">
-                          <strong className="text-purple-400 block mb-0.5">Limited Inclusivity</strong>
-                          Addressing the lack of diverse representation in AI governance and policy-making.
-                        </li>
-                        <li className="text-xs leading-relaxed text-slate-400">
-                          <strong className="text-teal-400 block mb-0.5">Civic Values vs Market Innovation</strong>
-                          Exploring the conflict between societal values and profit-oriented AI development.
-                        </li>
-                      </ul>
-                    </div>
-                    <div className="h-64 w-full bg-slate-950 rounded-xl border border-white/10 relative overflow-hidden">
-                      {/* Abstract Chart Lines */}
-                      <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none">
-                        <path d="M0,100 C150,200 350,0 500,100 C650,200 850,0 1000,100" fill="none" stroke="url(#gradient1)" strokeWidth="2" />
-                        <path d="M0,150 C200,50 400,250 600,150 C800,50 1000,200 1200,150" fill="none" stroke="url(#gradient2)" strokeWidth="2" />
-                        <defs>
-                          <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#3b82f6" />
-                            <stop offset="100%" stopColor="#8b5cf6" />
-                          </linearGradient>
-                          <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#10b981" />
-                            <stop offset="100%" stopColor="#06b6d4" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      {/* Floating Nodes */}
-                      <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.5)] animate-pulse"></div>
-                      <div className="absolute top-2/3 right-1/3 w-4 h-4 bg-purple-400 rounded-full shadow-[0_0_15px_rgba(192,132,252,0.5)] animate-pulse delay-75"></div>
-                      <div className="absolute bottom-1/4 right-1/4 w-2 h-2 bg-teal-400 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)] animate-pulse delay-150"></div>
-                    </div>
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>
@@ -411,6 +338,33 @@ function LandingPage() {
             <p className="mt-6 text-lg leading-8 text-slate-600">
               A systematic approach to analyzing complex textual datasets through multiple theoretical lenses.
             </p>
+
+            {/* Video Panel */}
+            <div className="mt-12 w-full max-w-4xl mx-auto">
+              <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    <div className="p-1 bg-indigo-500/20 rounded">
+                      <Play className="h-4 w-4 text-indigo-400" />
+                    </div>
+                    Introduction To Assemblage-AI
+                  </h3>
+                  <p className="text-sm text-slate-400 mt-1">
+                    A video exploration of the need for Assemblage-AI.
+                  </p>
+                </div>
+                <div className="aspect-video w-full bg-black relative">
+                  <video
+                    controls
+                    className="w-full h-full object-contain"
+                    poster="/landing-bg.png"
+                  >
+                    <source src="/assemblagebr.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
             <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
@@ -766,9 +720,9 @@ export default function Home() {
 
   if (!isSignedIn) {
     // Bypass login if demo mode is enabled
-    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
-      return <Dashboard sources={sources} />;
-    }
+    // if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
+    //   return <Dashboard sources={sources} />;
+    // }
     return <LandingPage />;
   }
 

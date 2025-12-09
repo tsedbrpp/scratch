@@ -16,6 +16,7 @@ interface DocumentCardProps {
     onEdit: (source: Source) => void;
     onFindTraces: (source: Source) => void;
     onView: (source: Source) => void;
+    onUpdateSource?: (id: string, updates: Partial<Source>) => void;
 }
 
 export function DocumentCard({
@@ -26,7 +27,8 @@ export function DocumentCard({
     onDelete,
     onEdit,
     onFindTraces,
-    onView
+    onView,
+    onUpdateSource
 }: DocumentCardProps) {
     return (
         <Card className="hover:shadow-md transition-shadow">
@@ -167,7 +169,15 @@ export function DocumentCard({
                         </div>
                     </div>
                 )}
-                {source.analysis && <AnalysisResults analysis={source.analysis} />}
+                {source.analysis && (
+                    <AnalysisResults
+                        analysis={source.analysis}
+                        sourceTitle={source.title}
+                        onUpdate={(updates) => onUpdateSource && onUpdateSource(source.id, {
+                            analysis: { ...source.analysis!, ...updates }
+                        })}
+                    />
+                )}
                 {source.legitimacy_analysis && (
                     <div className="mt-6 pt-4 border-t border-slate-100">
                         <h3 className="text-sm font-semibold text-slate-900 mb-4">Legitimacy & Justification Analysis</h3>

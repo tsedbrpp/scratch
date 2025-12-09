@@ -1,4 +1,4 @@
-import { AnalysisResult, Source } from "@/types";
+import { AnalysisResult, Source, PositionalityData } from "@/types";
 
 export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'resistance_synthesis';
 
@@ -24,19 +24,27 @@ export const analyzeDocument = async (
     sourceType: string = 'Policy Document',
     force: boolean = false,
     documentId?: string,
-    title?: string
+    title?: string,
+    positionality?: PositionalityData
 ): Promise<AnalysisResult> => {
     try {
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        }
+        console.log('analyzeDocument headers:', headers);
+
         const response = await fetch('/api/analyze', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify({
                 text,
                 sourceType,
                 analysisMode: mode,
                 force,
                 documentId,
-                title
+                title,
+                positionality
             })
         });
 
@@ -55,9 +63,14 @@ export const analyzeDocument = async (
 
 export const synthesizeComparison = async (documents: Source[]): Promise<AnalysisResult> => {
     try {
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        }
+
         const response = await fetch('/api/analyze', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify({
                 analysisMode: 'comparative_synthesis',
                 documents
@@ -79,9 +92,14 @@ export const synthesizeComparison = async (documents: Source[]): Promise<Analysi
 
 export const generateSearchTerms = async (insight: string): Promise<string[]> => {
     try {
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        }
+
         const response = await fetch('/api/generate-search-terms', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify({ insight })
         });
 

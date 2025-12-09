@@ -67,9 +67,14 @@ export default function EmpiricalPage() {
 
         setAnalyzingId(sourceId);
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     text: source.extractedText.substring(0, 4000), // Limit to first 4000 chars
                     sourceType: 'Empirical Trace'

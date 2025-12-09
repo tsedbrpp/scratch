@@ -209,6 +209,33 @@ export function ActorList({
                         className="w-full pl-8 pr-4 py-2 text-sm border rounded-md bg-slate-50 text-slate-900"
                     />
                 </div>
+
+                {/* Explicit Actions Row */}
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => setIsDialogOpen(true)}
+                    >
+                        <Globe className="mr-2 h-3 w-3 text-indigo-600" />
+                        Simulate
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={onAnalyze}
+                        disabled={isAnalyzingHoles}
+                    >
+                        {isAnalyzingHoles ? (
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin text-amber-600" />
+                        ) : (
+                            <Zap className="mr-2 h-3 w-3 text-amber-600" />
+                        )}
+                        Analyze Holes
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
                 {actors.length === 0 && (

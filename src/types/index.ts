@@ -48,6 +48,24 @@ export interface AnalysisResult {
     dominant_logic?: string;
     logic_conflicts?: LogicConflict[];
     overall_assessment?: string;
+    verification_gap?: {
+        high_rhetoric_low_verification: boolean;
+        gap_explanation: string;
+    };
+    user_impression?: string;
+    anchor_bias_choice?: "extractive_asymmetrical" | "regenerative_participatory";
+    validation_status?: {
+        agreement: "yes" | "no";
+        justification?: string;
+        timestamp: string;
+    };
+}
+
+export interface PositionalityData {
+    locus: string;
+    discipline: string;
+    reflexiveGap: string;
+    enableCounterNarrative: boolean;
 }
 
 export interface LogicAnalysis {

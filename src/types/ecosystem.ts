@@ -35,7 +35,9 @@ export interface CulturalHole {
 }
 
 export interface CulturalHolesAnalysisResult {
+    summary: string;
     overall_connectivity_score: number;
     holes: CulturalHole[];
+    silences?: { id: string; name: string; category: string; keywords: string[] }[];
     recommendations: { role: string; action: string }[];
 }

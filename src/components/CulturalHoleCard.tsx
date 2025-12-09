@@ -12,8 +12,8 @@ interface CulturalHoleCardProps {
 }
 
 export function CulturalHoleCard({ hole, clusters }: CulturalHoleCardProps) {
-    const clusterA = clusters.find((c) => c.id === hole.clusterA);
-    const clusterB = clusters.find((c) => c.id === hole.clusterB);
+    const clusterA = clusters.find((c) => c.name === hole.clusterA);
+    const clusterB = clusters.find((c) => c.name === hole.clusterB);
 
     if (!clusterA || !clusterB) return null;
 

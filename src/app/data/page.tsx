@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useSources } from "@/hooks/useSources";
-import { Source, LegitimacyAnalysis } from "@/types";
+import { Source, LegitimacyAnalysis, PositionalityData } from "@/types";
 import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
 import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
@@ -11,6 +11,7 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
 import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { Loader2 } from "lucide-react";
 
 export default function PolicyDocumentsPage() {
@@ -23,6 +24,8 @@ export default function PolicyDocumentsPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
     const [editingSource, setEditingSource] = useState<Source | null>(null);
+    const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
+    const [pendingAnalysis, setPendingAnalysis] = useState<{ sourceId: string, mode: AnalysisMode, force: boolean } | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const filteredSources = sources.filter(source =>
@@ -64,9 +67,14 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleUrlAdd = async (url: string) => {
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        }
+
         const response = await fetch('/api/fetch-url', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify({ url })
         });
 
@@ -134,12 +142,20 @@ export default function PolicyDocumentsPage() {
                 return;
             }
             force = true;
-        } else {
-            // Even if no analysis exists in UI, allow forcing if user holds Shift (optional, but good for debugging)
-            // For now, let's just rely on the fact that if they click analyze, they probably want to analyze.
-            // But if the cache is bad, we need a way to force it.
-            // Let's add a small "Force" checkbox in the UI later, but for now, let's just log it.
         }
+
+        setPendingAnalysis({ sourceId, mode, force });
+        setIsPositionalityDialogOpen(true);
+    };
+
+    const proceedWithAnalysis = async (positionalityData: PositionalityData) => {
+        if (!pendingAnalysis) return;
+        const { sourceId, mode, force } = pendingAnalysis;
+        const source = sources.find(s => s.id === sourceId);
+
+        setIsPositionalityDialogOpen(false);
+
+        if (!source || !source.extractedText) return;
 
         setAnalyzingId(sourceId);
         try {
@@ -149,7 +165,8 @@ export default function PolicyDocumentsPage() {
                 'Policy Document',
                 force,
                 sourceId,
-                source.title
+                source.title,
+                positionalityData
             );
 
             const updates: Partial<Source> = {};
@@ -170,6 +187,7 @@ export default function PolicyDocumentsPage() {
             alert(`Analysis failed: ${errorMessage}`);
         } finally {
             setAnalyzingId(null);
+            setPendingAnalysis(null);
         }
     };
 
@@ -182,9 +200,14 @@ export default function PolicyDocumentsPage() {
         setSearchingId(source.id);
         try {
             // Generate search terms from the document text
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/search', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     policyText: source.extractedText.substring(0, 3000),
                     maxResults: 5
@@ -263,6 +286,7 @@ export default function PolicyDocumentsPage() {
                         onEdit={(source) => setEditingSource(source)}
                         onFindTraces={handleFindTraces}
                         onView={(source) => setViewingSource(source)}
+                        onUpdateSource={updateSource}
                     />
                 ))}
             </div>
@@ -289,6 +313,12 @@ export default function PolicyDocumentsPage() {
                 open={!!editingSource}
                 onOpenChange={(open) => !open && setEditingSource(null)}
                 onSave={handleEditSource}
+            />
+
+            <PositionalityDialog
+                isOpen={isPositionalityDialogOpen}
+                onClose={() => setIsPositionalityDialogOpen(false)}
+                onConfirm={proceedWithAnalysis}
             />
         </div>
     );

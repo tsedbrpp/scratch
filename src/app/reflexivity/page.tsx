@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BookOpen, Save, UserCircle, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LogEntry } from "@/components/reflexivity/LogEntry";
+import { MethodLog } from "@/types/logs";
 
 const GUIDING_QUESTIONS = [
     "How does my location in the Global North/South affect my reading of these texts?",
@@ -14,19 +16,6 @@ const GUIDING_QUESTIONS = [
     "Whose voices are missing from the documents I am analyzing?",
     "How does my own disciplinary background shape my interpretation of 'risk' and 'harm'?",
 ];
-
-interface MethodLogDetails {
-    lens?: string;
-    sourceCount?: number;
-    [key: string]: unknown;
-}
-
-interface MethodLog {
-    id: string;
-    action: string;
-    details: MethodLogDetails;
-    timestamp: string;
-}
 
 
 export default function ReflexivityPage() {
@@ -40,7 +29,12 @@ export default function ReflexivityPage() {
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch('/api/logs');
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
+            const res = await fetch('/api/logs', { headers });
             if (res.ok) {
                 const data = await res.json();
                 setLogs(data);
@@ -109,24 +103,7 @@ export default function ReflexivityPage() {
                                     <p className="text-sm text-slate-500 italic">No actions logged yet.</p>
                                 ) : (
                                     logs.map((log) => (
-                                        <div key={log.id} className="border-l-2 border-slate-200 pl-4 py-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-semibold text-slate-500">
-                                                    {new Date(log.timestamp).toLocaleString()}
-                                                </span>
-                                                <Badge variant="outline" className="text-xs">
-                                                    {log.action}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-sm text-slate-800 font-medium">
-                                                {log.details.lens ? `Lens: ${log.details.lens}` : ''}
-                                            </p>
-                                            {log.details.sourceCount && (
-                                                <p className="text-xs text-slate-600">
-                                                    Analyzed {log.details.sourceCount} sources
-                                                </p>
-                                            )}
-                                        </div>
+                                        <LogEntry key={log.id} log={log} />
                                     ))
                                 )}
                             </div>

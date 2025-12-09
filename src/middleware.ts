@@ -28,7 +28,10 @@ export default clerkMiddleware(async (auth, request) => {
     }
 
     if (isProtectedRoute(request)) {
+        console.log('[MIDDLEWARE] Protecting route:', request.nextUrl.pathname);
         await auth.protect();
+    } else {
+        console.log('[MIDDLEWARE] Allowing public route:', request.nextUrl.pathname);
     }
 });
 

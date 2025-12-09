@@ -120,9 +120,14 @@ export default function SynthesisPage() {
         // setComparisonResult(null); // Keep previous result while loading so button stays visible
 
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     analysisMode: 'comparison',
                     sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 50000) || '' },
@@ -150,9 +155,14 @@ export default function SynthesisPage() {
 
         setIsMapping(true);
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     text: ecosystemSource.extractedText?.substring(0, 30000) || '',
                     sourceType: 'Policy Document',

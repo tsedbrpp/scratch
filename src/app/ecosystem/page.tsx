@@ -66,9 +66,14 @@ export default function EcosystemPage() {
     const handleSimulate = async () => {
         setIsSimulating(true);
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/ecosystem/simulate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({ query: simulationQuery })
             });
             const data = await response.json();
@@ -103,14 +108,24 @@ export default function EcosystemPage() {
         }
         setIsAnalyzingHoles(true);
         try {
-            const actorsText = actors.map(a => `ACTOR: ${a.name} (${a.type})\nDESCRIPTION: ${a.description}`).join("\n\n");
+            // Map actors to sources format for the advanced analysis API
+            const sources = actors.map(a => ({
+                id: a.id,
+                title: a.name,
+                text: `ACTOR TYPE: ${a.type}\nDESCRIPTION: ${a.description}\nINFLUENCE: ${a.influence}`
+            }));
 
-            const response = await fetch('/api/analyze', {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
+            const response = await fetch('/api/cultural-analysis', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
-                    text: actorsText,
-                    analysisMode: 'cultural_holes'
+                    sources: sources,
+                    lensId: 'default'
                 })
             });
             const data = await response.json();
@@ -131,9 +146,14 @@ export default function EcosystemPage() {
         if (!extractionText.trim()) return;
         setIsExtracting(true);
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     text: extractionText,
                     analysisMode: 'assemblage_extraction',
@@ -217,8 +237,14 @@ export default function EcosystemPage() {
 
     const handleClearCache = async () => {
         try {
+            const headers: HeadersInit = {};
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/ecosystem/clear-cache', {
                 method: 'POST',
+                headers: headers
             });
             const data = await response.json();
             if (data.success) {

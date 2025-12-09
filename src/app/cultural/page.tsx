@@ -20,6 +20,7 @@ export default function CulturalAnalysisPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
     const [selectedLensId, setSelectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
+    const [forceRefresh, setForceRefresh] = useState(false);
 
     const theoreticalLenses = [
         {
@@ -85,14 +86,23 @@ export default function CulturalAnalysisPage() {
                     title: s.title,
                     text: s.extractedText?.substring(0, 4000) || '',
                 })),
-                lensId: selectedLensId
+                lensId: selectedLensId,
+                forceRefresh: forceRefresh
             };
 
             console.log('Sending request to /api/cultural-analysis...');
 
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+            console.log('Request headers:', headers);
+            console.log('Demo mode:', process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE);
+            console.log('Demo User ID:', process.env.NEXT_PUBLIC_DEMO_USER_ID);
+
             const response = await fetch('/api/cultural-analysis', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(requestBody),
             });
 
@@ -113,9 +123,14 @@ export default function CulturalAnalysisPage() {
 
                 // Log the methodological action
                 try {
+                    const logHeaders: HeadersInit = { 'Content-Type': 'application/json' };
+                    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                        logHeaders['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                    }
+
                     await fetch('/api/logs', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: logHeaders,
                         body: JSON.stringify({
                             action: "Cultural Analysis",
                             details: {
@@ -336,8 +351,17 @@ export default function CulturalAnalysisPage() {
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t">
-                                <div className="text-sm text-slate-600">
-                                    {selectedSources.length} source{selectedSources.length !== 1 ? 's' : ''} selected
+                                <div className="text-sm text-slate-600 flex items-center gap-4">
+                                    <span>{selectedSources.length} source{selectedSources.length !== 1 ? 's' : ''} selected</span>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={forceRefresh}
+                                            onChange={(e) => setForceRefresh(e.target.checked)}
+                                            className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                                        />
+                                        <span className="text-sm text-slate-600">Force Refresh (Ignore Cache)</span>
+                                    </label>
                                 </div>
                                 <Button
                                     className="bg-amber-600 text-white hover:bg-amber-700"

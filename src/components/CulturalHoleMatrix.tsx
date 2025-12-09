@@ -20,10 +20,10 @@ export function CulturalHoleMatrix({ clusters, holes, onConceptClick }: Cultural
     }
 
     // Helper to get hole between two clusters
-    const getHole = (idA: string, idB: string) => {
+    const getHole = (nameA: string, nameB: string) => {
         return holes.find(h =>
-            (h.clusterA === idA && h.clusterB === idB) ||
-            (h.clusterA === idB && h.clusterB === idA)
+            (h.clusterA === nameA && h.clusterB === nameB) ||
+            (h.clusterA === nameB && h.clusterB === nameA)
         );
     };
 
@@ -66,7 +66,7 @@ export function CulturalHoleMatrix({ clusters, holes, onConceptClick }: Cultural
                             {clusters.map((colCluster, colIndex) => {
                                 const isDiagonal = rowIndex === colIndex;
                                 const isLowerTriangle = colIndex < rowIndex;
-                                const hole = getHole(rowCluster.id, colCluster.id);
+                                const hole = getHole(rowCluster.name, colCluster.name);
 
                                 if (isLowerTriangle) {
                                     return (
@@ -116,22 +116,22 @@ export function CulturalHoleMatrix({ clusters, holes, onConceptClick }: Cultural
                                                         <div>
                                                             <span className="font-semibold text-indigo-700">Cluster A:</span>{" "}
                                                             <span className="text-slate-700">
-                                                                {clusters.find(c => c.id === hole.clusterA)?.name}
+                                                                {hole.clusterA}
                                                             </span>
-                                                            {clusters.find(c => c.id === hole.clusterA)?.description && (
+                                                            {clusters.find(c => c.name === hole.clusterA)?.description && (
                                                                 <p className="text-slate-600 italic mt-0.5 pl-2">
-                                                                    {clusters.find(c => c.id === hole.clusterA)?.description}
+                                                                    {clusters.find(c => c.name === hole.clusterA)?.description}
                                                                 </p>
                                                             )}
                                                         </div>
                                                         <div>
                                                             <span className="font-semibold text-indigo-700">Cluster B:</span>{" "}
                                                             <span className="text-slate-700">
-                                                                {clusters.find(c => c.id === hole.clusterB)?.name}
+                                                                {hole.clusterB}
                                                             </span>
-                                                            {clusters.find(c => c.id === hole.clusterB)?.description && (
+                                                            {clusters.find(c => c.name === hole.clusterB)?.description && (
                                                                 <p className="text-slate-600 italic mt-0.5 pl-2">
-                                                                    {clusters.find(c => c.id === hole.clusterB)?.description}
+                                                                    {clusters.find(c => c.name === hole.clusterB)?.description}
                                                                 </p>
                                                             )}
                                                         </div>

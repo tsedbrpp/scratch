@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { detectSilences } from '@/lib/ontology';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -205,13 +206,15 @@ export async function POST(request: NextRequest) {
     // Check for demo user if not authenticated
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
         const demoUserId = request.headers.get('x-demo-user-id');
+        console.log('Demo auth check - Header:', demoUserId, 'Expected:', process.env.NEXT_PUBLIC_DEMO_USER_ID);
         if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
             userId = demoUserId;
         }
     }
 
     if (!userId) {
-        return new NextResponse("Unauthorized", { status: 401 });
+        console.log('Unauthorized request. Headers:', Object.fromEntries(request.headers));
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate Limiting
@@ -332,9 +335,27 @@ export async function POST(request: NextRequest) {
             });
         });
 
+        // Filter out empty themes
+        const validThemes = allThemesText.filter(t => t && t.trim().length > 0);
+
+        if (validThemes.length === 0) {
+            console.log('No valid themes found in sources.');
+            return NextResponse.json({
+                success: true,
+                analysis: {
+                    summary: "No themes could be extracted from the provided sources. Please ensure the documents contain sufficient text content.",
+                    clusters: [],
+                    holes: [],
+                    silences: [],
+                    overall_connectivity_score: 0,
+                    timestamp: new Date().toISOString(),
+                }
+            });
+        }
+
         const embeddingResponse = await openai.embeddings.create({
             model: 'text-embedding-3-small',
-            input: allThemesText,
+            input: validThemes,
         });
 
         const embeddings = embeddingResponse.data.map((item) => item.embedding);
@@ -431,8 +452,8 @@ export async function POST(request: NextRequest) {
 
                     return {
                         id: `hole-${hole.clusterA.id}-${hole.clusterB.id}`,
-                        clusterA: hole.clusterA.id,
-                        clusterB: hole.clusterB.id,
+                        clusterA: hole.clusterA.name,
+                        clusterB: hole.clusterB.name,
                         distance: hole.distance,
                         bridgingConcepts: bridgingData.bridgingConcepts || [],
                         opportunity: bridgingData.opportunity || '',
@@ -442,8 +463,8 @@ export async function POST(request: NextRequest) {
                     console.error(`Error generating bridging concepts:`, (error as Error).message);
                     return {
                         id: `hole-${hole.clusterA.id}-${hole.clusterB.id}`,
-                        clusterA: hole.clusterA.id,
-                        clusterB: hole.clusterB.id,
+                        clusterA: hole.clusterA.name,
+                        clusterB: hole.clusterB.name,
                         distance: hole.distance,
                         bridgingConcepts: [],
                         opportunity: 'Error generating opportunity description',
@@ -454,6 +475,13 @@ export async function POST(request: NextRequest) {
         );
 
         console.log(`Cultural analysis complete. Found ${clusters.length} clusters and ${holes.length} cultural holes`);
+
+        // Step 4b: Detect Silences (Cultural-Hole Detector)
+        console.log('Detecting silences (missing stakeholders)...');
+        // Combine all source text for silence detection
+        const combinedText = sources.map((s: { text: string }) => s.text).join(' ');
+        const silences = detectSilences(combinedText);
+        console.log(`Found ${silences.length} silences.`);
 
         // Step 5: Generate overall summary
         console.log('Generating overall summary...');
@@ -485,10 +513,29 @@ export async function POST(request: NextRequest) {
             summary = "Summary generation failed.";
         }
 
+        // Calculate Overall Connectivity Score
+        let overall_connectivity_score = 1.0;
+        if (clustersWithDescriptions.length > 1) {
+            let totalSimilarity = 0;
+            let pairCount = 0;
+            for (let i = 0; i < clustersWithDescriptions.length; i++) {
+                for (let j = i + 1; j < clustersWithDescriptions.length; j++) {
+                    const similarity = cosineSimilarity(clustersWithDescriptions[i].centroid, clustersWithDescriptions[j].centroid);
+                    totalSimilarity += similarity;
+                    pairCount++;
+                }
+            }
+            if (pairCount > 0) {
+                overall_connectivity_score = totalSimilarity / pairCount;
+            }
+        }
+
         const analysisResult = {
             summary,
             clusters: clustersWithDescriptions,
             holes,
+            silences,
+            overall_connectivity_score,
             timestamp: new Date().toISOString(),
         };
 

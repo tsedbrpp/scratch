@@ -72,6 +72,10 @@ Provide your analysis in JSON format with these fields:
     "enforcement": { "title": "Short Title", "description": "Brief summary of enforcement", "badge": "One-word characteristic", "quote": "Direct quote from text supporting this classification" },
     "rights": { "title": "Short Title", "description": "Brief summary of rights", "badge": "One-word characteristic", "quote": "Direct quote from text supporting this classification" },
     "scope": { "title": "Short Title", "description": "Brief summary of scope", "badge": "One-word characteristic", "quote": "Direct quote from text supporting this classification" }
+  },
+  "verification_gap": {
+    "high_rhetoric_low_verification": boolean, // True if high ethical claims but low operational details (audit logs, metrics)
+    "gap_explanation": "Explanation of the discrepancy between rhetoric and verification mechanisms"
   }
 }`;
 
@@ -475,8 +479,19 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
 
-  const { userId } = await auth();
+  let { userId } = await auth();
+
+  // Check for demo user if not authenticated
+  if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+    const demoUserId = request.headers.get('x-demo-user-id');
+    console.log('[ANALYSIS] Demo auth check - Header:', demoUserId, 'Expected:', process.env.NEXT_PUBLIC_DEMO_USER_ID);
+    if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+      userId = demoUserId;
+    }
+  }
+
   if (!userId) {
+    console.log('[ANALYSIS] Unauthorized. Headers:', Object.fromEntries(request.headers));
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -497,8 +512,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents, documentId, title } = await request.json();
-    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}, DocID: ${documentId}`);
+    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents, documentId, title, positionality } = await request.json();
+    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}, DocID: ${documentId}, Positionality: ${!!positionality}`);
 
     // Check for API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -542,6 +557,12 @@ export async function POST(request: NextRequest) {
     // Append documentId to ensure uniqueness even if text is identical
     if (documentId) {
       textForCache += `|doc:${documentId}`;
+    }
+
+    // Append positionality to cache key to ensure different perspectives get different analyses
+    if (positionality) {
+      const posString = typeof positionality === 'object' ? JSON.stringify(positionality) : positionality;
+      textForCache += `|pos:${posString}`;
     }
 
     if (analysisMode === 'comparison' && sourceA && sourceB) {
@@ -595,6 +616,37 @@ export async function POST(request: NextRequest) {
       // Continue to API call if cache fails
     }
     // --- CACHING LOGIC END ---
+
+    // Inject Positionality Calibration
+    let calibrationContext = "";
+    if (positionality && typeof positionality === 'object') {
+      const { locus, discipline, reflexiveGap, enableCounterNarrative } = positionality as any;
+
+      calibrationContext = `
+### *** DYNAMIC POSITIONALITY OVERLAY ***
+**USER CONTEXT:** The human analyst identifies as **${locus}** with a **${discipline}** lens.
+**RISK FACTOR:** They have flagged a potential blind spot regarding **${reflexiveGap}**.
+
+### YOUR PRIME DIRECTIVES (CALIBRATED):
+1.  **COUNTER-BIAS PROTOCOL:**
+    ${locus.includes('Global North') ? `Because the analyst is from the Global North, you must NOT accept standard Western legal definitions of "privacy" or "ownership" as default.
+    * *Action:* If the text mentions "Data Ownership," immediately query: "Does this imply individual property (Western) or sovereign stewardship (Indigenous)?"` : ''}
+    ${discipline.includes('Legal') ? `Because the analyst uses a Legal lens, you must explicitly highlight technical or sociological implications they might miss.` : ''}
+
+2.  **BLIND SPOT WATCHDOG:**
+    The analyst fears missing **${reflexiveGap}**.
+    * *Action:* Scan the document specifically for concepts related to this gap. If these terms are absent, flag a "Critical Silence".
+
+3.  **ADVERSARIAL SUMMARY:**
+    ${enableCounterNarrative ? `After your standard summary, you must generate a "Counter-Narrative" written from the perspective of the most marginalized actors identified (or silenced) in the text, critiquing the policy's reliance on dominant standards.` : ''}
+`;
+    } else if (positionality && typeof positionality === 'string') {
+      calibrationContext = `
+*** ANALYST POSITIONALITY STATEMENT ***
+The analyst has provided the following positionality statement: "${positionality}"
+INSTRUCTION: Use this statement to contextualize your analysis. Flag any concepts in the text that might conflict with or be invisible to this specific worldview.
+`;
+    }
 
     console.log('[ANALYSIS] Initializing OpenAI client...');
     const openai = new OpenAI({
@@ -712,6 +764,11 @@ TEXT CONTENT:
 ${text}
 
 Please analyze this text using the Decolonial Situatedness Framework (DSF) as described in the system prompt.`;
+    }
+
+    // Append calibration context to system prompt for supported modes
+    if (['dsf', 'cultural_framing', 'institutional_logics', 'legitimacy'].includes(analysisMode || 'dsf')) {
+      systemPrompt += calibrationContext;
     }
 
     console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode}`);

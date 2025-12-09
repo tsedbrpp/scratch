@@ -46,26 +46,85 @@ export function CulturalHolesAnalysis({ culturalHoles, isAnalyzingHoles, onAnaly
                             </Badge>
                         </div>
 
+                        {/* Analysis Summary */}
+                        {culturalHoles.summary && (
+                            <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100 text-sm text-slate-700">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Zap className="h-4 w-4 text-indigo-600" />
+                                    <span className="font-semibold text-indigo-900">Analysis Summary</span>
+                                </div>
+                                <p>{culturalHoles.summary}</p>
+                            </div>
+                        )}
+
                         <ConceptCloud holes={culturalHoles.holes} />
 
                         <div className="space-y-4">
-                            {culturalHoles.holes?.map((hole: CulturalHole, i: number) => (
+                            {culturalHoles.holes?.map((hole: any, i: number) => (
                                 <div key={i} className="bg-white p-4 rounded-md border border-amber-200 shadow-sm">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="font-bold text-amber-700 text-sm">{hole.concept}</span>
-                                        <Badge variant="outline" className="text-xs">{hole.significance}</Badge>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-xs font-normal text-slate-500">Gap</Badge>
+                                            <span className="font-bold text-amber-700 text-sm">
+                                                {hole.clusterA} <span className="text-slate-400 mx-1">↔</span> {hole.clusterB}
+                                            </span>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">
+                                            Dist: {(hole.distance * 100).toFixed(0)}%
+                                        </Badge>
                                     </div>
-                                    <p className="text-xs text-slate-600 mb-2">{hole.description}</p>
-                                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                                        <span>Between:</span>
-                                        {hole.between?.map((g: string) => (
-                                            <Badge key={g} variant="secondary" className="text-[10px] h-5">{g}</Badge>
-                                        ))}
+
+                                    <div className="mb-3">
+                                        <p className="text-xs font-semibold text-slate-700 mb-1">Opportunity:</p>
+                                        <p className="text-xs text-slate-600">{hole.opportunity}</p>
                                     </div>
-                                    <CulturalHoleChart hole={hole} />
+
+                                    {hole.bridgingConcepts && hole.bridgingConcepts.length > 0 && (
+                                        <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Bridging Concepts</p>
+                                            <div className="space-y-2">
+                                                {hole.bridgingConcepts.map((bc: any, idx: number) => (
+                                                    <div key={idx} className="flex flex-col gap-1">
+                                                        <span className="text-xs font-bold text-indigo-600">{bc.concept}</span>
+                                                        <span className="text-xs text-slate-500">{bc.description}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
+
+                        {/* Silences (Ghost Nodes) Section */}
+                        {culturalHoles.silences && culturalHoles.silences.length > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-slate-200">
+                                <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-slate-500" />
+                                    <h4 className="font-semibold text-sm text-slate-700">Detected Silences (Ghost Nodes)</h4>
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                    Stakeholders or concepts from the global ontology that are absent in the current discourse.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {culturalHoles.silences.map((silence, i) => (
+                                        <div key={i} className="bg-slate-50 p-3 rounded border border-slate-200 opacity-70 hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-medium text-sm text-slate-700">{silence.name}</span>
+                                                <Badge variant="outline" className="text-[10px] bg-white">{silence.category}</Badge>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1">
+                                                {silence.keywords.slice(0, 3).map(k => (
+                                                    <span key={k} className="text-[10px] text-slate-400 bg-white px-1 rounded border border-slate-100">
+                                                        #{k}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {culturalHoles.recommendations?.length > 0 && (
                             <div className="pt-4 border-t border-slate-200">

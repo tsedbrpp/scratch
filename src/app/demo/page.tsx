@@ -17,45 +17,45 @@ import { useState } from "react";
 // --- FROZEN DEMO DATA ---
 const DEMO_ANALYSIS: CulturalAnalysisResult = {
     timestamp: new Date().toISOString(),
-    summary: "This analysis reveals a significant 'cultural hole' between the EU's risk-based, state-centric approach and Brazil's rights-based, collective-focused framework. The primary tension lies between 'technocratic universalism' and 'data sovereignty'.",
+    summary: "This comparative analysis exposes a foundational epistemic divergence: The EU operates on a logic of 'Market Hygiene' (mitigating risk to facilitate trade), while Brazil's framework is grounded in 'Situated Rights' (protecting collective vulnerability against power asymmetry). The US model remains distinct as 'Geopolitical Techno-Optimism'.",
     clusters: [
         {
             id: "c1",
-            name: "Technocratic Universalism (EU)",
-            description: "Governance through standardized risk assessments and expert oversight.",
-            themes: ["Risk Management", "Standardization", "Market Harmonization", "Fundamental Rights as Compliance"],
+            name: "EU: Instrumental Rationality",
+            description: "A framework where safety is operationalized as product compliance. Rights are proceduralized into technical standards.",
+            themes: ["Market Hygiene", "Technocratic Universalism", "Risk Taxonomy", "Procedural Fairness"],
             sources: ["EU AI Act"],
-            centroid: [0.1, 0.2], // Mock coordinates
-            size: 4,
+            centroid: [0.15, 0.25],
+            size: 5,
             quotes: [
-                { text: "High-risk AI systems shall be subject to a conformity assessment...", source: "EU AI Act" },
-                { text: "Ensure the proper functioning of the internal market...", source: "EU AI Act" }
+                { text: "The purpose of this Regulation is to improve the functioning of the internal market...", source: "EU AI Act, Recital 1" },
+                { text: "High-risk AI systems should be designed... to ensure appropriate levels of accuracy, robustness and cybersecurity.", source: "EU AI Act, Art. 15" }
             ]
         },
         {
             id: "c2",
-            name: "Data Sovereignty (Brazil)",
-            description: "Focus on collective rights, anti-discrimination, and national control over data.",
-            themes: ["Collective Rights", "Anti-Discrimination", "National Sovereignty", "Algorithmic Racism"],
+            name: "Brazil: Rights-Based Precaution",
+            description: "A framework emphasizing the redress of historical inequality and collective harm, viewing data as a manifestation of personality.",
+            themes: ["Data Sovereignty", "Algorithmic Reparations", "Collective Redress", "Reverse Burden of Proof"],
             sources: ["Brazil PL 2338"],
-            centroid: [0.8, 0.9], // Mock coordinates
-            size: 4,
+            centroid: [0.85, 0.85],
+            size: 5,
             quotes: [
-                { text: "The discipline of AI use shall observe... non-discrimination and correction of biases...", source: "Brazil PL 2338" },
-                { text: "Guaranteeing the centrality of the human person...", source: "Brazil PL 2338" }
+                { text: "The use of AI systems must observe... non-discrimination, justice, and the correction of biases...", source: "PL 2338/23, Art. 3" },
+                { text: "Ensuring the centrality of the human person and the preservation of democratic regimes.", source: "PL 2338/23, Art. 1" }
             ]
         },
         {
             id: "c3",
-            name: "Corporate Self-Regulation (US)",
-            description: "Emphasis on innovation, voluntary standards, and market-driven governance.",
-            themes: ["Innovation First", "Voluntary Standards", "Market Competition", "Light-touch Regulation"],
-            sources: ["US Executive Order on AI"],
-            centroid: [0.5, 0.8], // Mock coordinates
-            size: 3,
+            name: "US: Geopolitical Acceleration",
+            description: "Governance serves to maintain strategic hegemony. Regulation is voluntary to avoid slowing down innovation velocity.",
+            themes: ["National Security", "Innovation Velocity", "Voluntary Commitments", "Industry Self-Policing"],
+            sources: ["US Exec. Order 14110"],
+            centroid: [0.45, 0.75],
+            size: 4,
             quotes: [
-                { text: "Promoting innovation and competition...", source: "US Executive Order" },
-                { text: "Industry standards and best practices...", source: "US Executive Order" }
+                { text: "Leading the world in innovation and discovery...", source: "EO 14110" },
+                { text: "We must govern the development and use of AI safely and responsibly [without] stifling innovation.", source: "EO 14110" }
             ]
         }
     ],
@@ -64,17 +64,17 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
             id: "h1",
             clusterA: "c1",
             clusterB: "c2",
-            distance: 0.85,
-            opportunity: "Developing 'Sovereign Compliance' mechanisms that satisfy EU standards while enforcing local collective rights.",
-            policyImplication: "Create 'tropicalized' conformity assessments that include racial impact studies as a mandatory component of risk analysis.",
+            distance: 0.78,
+            opportunity: "Bridging the gap between EU 'Technical Safety' and Brazilian 'Social Justice'.",
+            policyImplication: "Develop 'Socio-Technical Conformity Assessments' where EU technical standards must be validated against Brazilian racial impact indicators.",
             bridgingConcepts: [
                 {
-                    concept: "Situated Risk Assessment",
-                    explanation: "Risk metrics that adapt to local social vulnerabilities rather than universal technical standards."
+                    concept: "Cosmotechnical Alignment",
+                    explanation: "Harmonizing technical standards not by universalizing them, but by adapting them to local cosmologies and social realities."
                 },
                 {
-                    concept: "Algorithmic Reparations",
-                    explanation: "Moving beyond 'bias mitigation' to active redress for historical inequalities."
+                    concept: "Situated Risk Scoring",
+                    explanation: "Risk metrics that weigh 'cultural harm' and 'erasure' as heavily as physical safety or discrimination."
                 }
             ]
         },
@@ -82,13 +82,13 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
             id: "h2",
             clusterA: "c1",
             clusterB: "c3",
-            distance: 0.6,
-            opportunity: "Harmonizing 'Auditable Innovation' where voluntary standards can be certified for EU compliance.",
-            policyImplication: "Establish 'Safe Harbor' frameworks where US innovation practices meet EU safety thresholds through third-party audit.",
+            distance: 0.45,
+            opportunity: "Harmonizing 'Auditable Innovation' mechanisms to allow US firms market access without diluting EU safety.",
+            policyImplication: "Create 'Transatlantic Safe Harbors' where US voluntary commitments are legally recognized if they meet specific EU audit thresholds.",
             bridgingConcepts: [
                 {
-                    concept: "Certified Self-Regulation",
-                    explanation: "Industry standards that are formally recognized as meeting regulatory requirements."
+                    concept: "Binding Self-Regulation",
+                    explanation: "Voluntary industry codes that become legally enforceable contracts once adopted."
                 }
             ]
         },
@@ -96,13 +96,17 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
             id: "h3",
             clusterA: "c2",
             clusterB: "c3",
-            distance: 0.9,
-            opportunity: "Constructing 'Rights-Based Innovation' that sees data protection as a competitive advantage rather than a constraint.",
-            policyImplication: "Incentivize 'Privacy-Enhancing Technologies' (PETs) that allow for innovation while respecting data sovereignty.",
+            distance: 0.92,
+            opportunity: "Reconciling 'Data Sovereignty' with 'Global Innovation Flows'.",
+            policyImplication: "Implement 'Sovereign Compute Zones' where US companies invest in local Brazil infrastructure in exchange for data access.",
             bridgingConcepts: [
                 {
-                    concept: "Sovereign Innovation Zones",
-                    explanation: "Sandboxes where foreign tech can operate if they adopt local data governance rules."
+                    concept: "Infrastructural Sovereignty",
+                    explanation: "Ensuring that the physical hardware and compute power for local AI resides within national borders."
+                },
+                {
+                    concept: "Epistemic Reparations",
+                    explanation: "US firms funding local research to 'correct' the biases in their foundation models using local data."
                 }
             ]
         }
@@ -169,35 +173,51 @@ export default function DemoPage() {
 
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-                        Assemblage AI Demo
+                        A quick overview of Assemblage-AI
                     </h1>
-                    <p className="text-lg text-slate-300 max-w-3xl">
-                        Click the tabs below to explore cultural holes, review document insights, and access critical theoretical resources.
-                    </p>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-6 -mt-8">
-                {/* CTA Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/10 rounded-lg hidden md:block">
-                            <Lock className="h-6 w-6 text-blue-100" />
-                        </div>
-                        <div className="text-center md:text-left">
-                            <h3 className="text-lg font-bold">Ready to analyze your own data?</h3>
-                            <p className="text-blue-100 text-sm">
-                                Create an account to upload documents, run custom analyses, and save your research.
-                            </p>
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200 mb-8 space-y-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">System Function: Decolonial Situatedness in Global AI Governance Research Platform</h2>
+                        <p className="text-slate-700 leading-relaxed">
+                            This application is a specialized research instrument designed to operationalize the <strong>Decolonial Situatedness Framework (DSF)</strong> for analyzing global AI governance. Unlike standard legal compliance tools, it functions as an "epistemic lens," revealing the hidden structural power dynamics, cultural assumptions, and colonial legacies embedded within policy texts (e.g., the EU AI Act, Brazil’s PL 2338).
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-3">Core Capabilities</h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 className="font-semibold text-slate-800 mb-1">1. Multi-Lens Algorithmic Analysis</h4>
+                                <p className="text-sm text-slate-600 mb-2">The system employs advanced LLM-driven qualitative analysis to interpret documents through distinct theoretical frameworks:</p>
+                                <ul className="list-disc list-inside text-sm text-slate-600 space-y-1 ml-2">
+                                    <li><strong>Institutional Logics:</strong> Identifies conflicting values (Market vs. State vs. Community).</li>
+                                    <li><strong>Cultural Framing:</strong> Exposes regionally specific assumptions about technology and rights.</li>
+                                    <li><strong>Legitimacy Dynamics:</strong> Maps the moral justifications (Orders of Worth) used to defend authority.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-slate-800 mb-1">2. Ecosystem & Assemblage Mapping</h4>
+                                <p className="text-sm text-slate-600">It visualizes governance not as static text, but as active "assemblages." The <strong>Ecosystem Impact Map</strong> traces how specific policy mechanisms (e.g., "sandboxes") constrain or afford possibilities for diverse actors, distinguishing between material infrastructures and discursive norms.</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-slate-800 mb-1">3. Comparative Synthesis</h4>
+                                <p className="text-sm text-slate-600">The platform features a <strong>Convergence/Divergence Engine</strong> that quantifies the "epistemic distance" between frameworks. It generates "Coloniality Scores" to highlight where Global North standards may be overshadowing local contexts, visualizing these asymmetries via radar charts and synthesis matrices.</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-slate-800 mb-1">4. Empirical Grounding (Micro-Resistance)</h4>
+                                <p className="text-sm text-slate-600">To counter abstract high-level rhetoric, the system integrates an <strong>Empirical Traces</strong> engine. It searches live data sources (forums, Reddit) to find "micro-resistances"—real-world examples of how workers and communities subvert or navigate algorithmic control (e.g., "gambiarra" or workarounds), grounding theory in lived experience.</p>
+                            </div>
                         </div>
                     </div>
-                    <Link href="/sign-up">
-                        <Button className="bg-white text-blue-700 hover:bg-blue-50 font-semibold px-8 whitespace-nowrap">
-                            Get Started for Free
-                        </Button>
-                    </Link>
-                </div>
 
+                    <p className="text-slate-700 italic border-l-4 border-indigo-500 pl-4 py-1 bg-slate-50">
+                        Ultimately, this system transforms static policy analysis into a dynamic, comparative critique, empowering researchers to challenge hegemonic norms in global AI governance.
+                    </p>
+                </div>
                 <Tabs defaultValue="document" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-8">
                         <TabsTrigger value="document" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-none py-3">

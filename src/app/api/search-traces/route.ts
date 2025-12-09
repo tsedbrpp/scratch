@@ -29,7 +29,16 @@ interface GoogleSearchResponse {
 import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
-    const { userId } = await auth();
+    let { userId } = await auth();
+
+    // Check for demo user if not authenticated
+    if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+        const demoUserId = request.headers.get('x-demo-user-id');
+        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            userId = demoUserId;
+        }
+    }
+
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }

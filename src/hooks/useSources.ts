@@ -33,9 +33,14 @@ export function useSources() {
 
     const addSource = async (source: Source) => {
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch('/api/sources', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(source),
             });
             if (!response.ok) throw new Error('Failed to add source');
@@ -50,9 +55,14 @@ export function useSources() {
 
     const updateSource = async (id: string, updates: Partial<Source>) => {
         try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch(`/api/sources/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(updates),
             });
             if (!response.ok) {
@@ -77,8 +87,14 @@ export function useSources() {
 
     const deleteSource = async (id: string) => {
         try {
+            const headers: HeadersInit = {};
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
             const response = await fetch(`/api/sources/${id}`, {
                 method: 'DELETE',
+                headers: headers
             });
             if (!response.ok) throw new Error('Failed to delete source');
             setSources(prev => prev.filter(s => s.id !== id));

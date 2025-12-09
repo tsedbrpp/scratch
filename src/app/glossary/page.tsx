@@ -73,30 +73,7 @@ export default function GlossaryPage() {
                 </p>
             </div>
 
-            {/* Video Panel */}
-            <Card className="bg-slate-900 border-slate-800 overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-indigo-400" />
-                        Introduction To Assemblage-AI
-                    </CardTitle>
-                    <CardDescription className="text-slate-400">
-                        A video exploration the need for Assemblage-AI.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="aspect-video w-full bg-black relative">
-                        <video
-                            controls
-                            className="w-full h-full object-contain"
-                            poster="/landing-bg.png"
-                        >
-                            <source src="/assemblagebr.mp4" type="video/mp4" />
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
-                </CardContent>
-            </Card>
+
 
             <div className="grid gap-6 md:grid-cols-2">
                 {TERMS.map((item, index) => (
