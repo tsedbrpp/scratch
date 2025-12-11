@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSources } from "@/hooks/useSources";
-import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -151,11 +150,9 @@ export default function GovernancePage() {
     const [driftAnalysis, setDriftAnalysis] = useState<DriftVector | null>(null);
     const [isAnalyzingDrift, setIsAnalyzingDrift] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [lastRunTime, setLastRunTime] = useState<string | null>(null);
 
     const runDriftAnalysis = async (policy: string, tech: string) => {
         setError(null);
-        setLastRunTime(new Date().toLocaleTimeString());
         console.log("Running drift analysis with:", { policyLength: policy?.length, techLength: tech?.length });
         if (!policy || !tech) {
             setError("Please select both policy and technical documents with valid text content.");
@@ -308,7 +305,7 @@ export default function GovernancePage() {
                                 <h4 className="text-sm font-semibold text-yellow-800">Re-analysis Required</h4>
                                 <p className="text-sm text-yellow-700">
                                     One or more selected sources are missing governance scores. Please go to the
-                                    <span className="font-bold"> Data </span> page and re-run the "DSF Analysis" for these documents to generate the necessary data.
+                                    <span className="font-bold"> Data </span> page and re-run the &quot;DSF Analysis&quot; for these documents to generate the necessary data.
                                 </p>
                             </div>
                         </div>
@@ -563,10 +560,10 @@ export default function GovernancePage() {
                                             <p className="text-sm text-slate-600 leading-relaxed">
                                                 {pillarA?.description || "Structural analysis not available for this dimension."}
                                             </p>
-                                            {(pillarA as any)?.quote && (
+                                            {(pillarA as unknown as { quote?: string })?.quote && (
                                                 <div className="mt-3 pt-3 border-t border-slate-100">
                                                     <p className="text-xs text-slate-500 italic">
-                                                        "{(pillarA as any).quote}"
+                                                        &quot;{(pillarA as unknown as { quote?: string }).quote}&quot;
                                                     </p>
                                                 </div>
                                             )}
@@ -588,10 +585,10 @@ export default function GovernancePage() {
                                             <p className="text-sm text-slate-600 leading-relaxed">
                                                 {pillarB?.description || "Structural analysis not available for this dimension."}
                                             </p>
-                                            {(pillarB as any)?.quote && (
+                                            {(pillarB as unknown as { quote?: string })?.quote && (
                                                 <div className="mt-3 pt-3 border-t border-slate-100">
                                                     <p className="text-xs text-slate-500 italic">
-                                                        "{(pillarB as any).quote}"
+                                                        &quot;{(pillarB as unknown as { quote?: string }).quote}&quot;
                                                     </p>
                                                 </div>
                                             )}
@@ -630,7 +627,7 @@ export default function GovernancePage() {
                                     onChange={(e) => {
                                         const source = sources.find(s => s.id === e.target.value);
                                         // Fallback to 'text' if 'extractedText' is missing
-                                        const text = source?.extractedText || (source as any)?.text || "";
+                                        const text = source?.extractedText || (source as unknown as { text?: string })?.text || "";
                                         setSelectedPolicyText(text);
                                     }}
                                 >
@@ -654,7 +651,7 @@ export default function GovernancePage() {
                                     onChange={(e) => {
                                         const source = sources.find(s => s.id === e.target.value);
                                         // Fallback to 'text' if 'extractedText' is missing
-                                        const text = source?.extractedText || (source as any)?.text || "";
+                                        const text = source?.extractedText || (source as unknown as { text?: string })?.text || "";
                                         setSelectedTechText(text);
                                     }}
                                 >

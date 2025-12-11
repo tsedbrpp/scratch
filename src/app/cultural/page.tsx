@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lightbulb, Sparkles, Network, Loader2, BookOpen } from "lucide-react";
 import { CulturalHoleCard } from "@/components/CulturalHoleCard";
-import { CulturalHoleNetwork } from "@/components/CulturalHoleNetwork";
 import { CulturalHoleMatrix } from "@/components/CulturalHoleMatrix";
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";

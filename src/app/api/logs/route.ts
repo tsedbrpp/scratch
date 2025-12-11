@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import { auth } from '@clerk/nextjs/server';
 
+// Define a type for the log entry
+type LogEntry = {
+    id: string;
+    timestamp: string;
+    [key: string]: unknown; // Allow other properties
+};
+
+// Helper function to get logs
+async function getLogs(userId: string): Promise<LogEntry[]> {
+    const logsKey = `user:${userId}:logs`;
+    const data = await redis.get(logsKey);
+    return data ? JSON.parse(data) : [];
+}
+
+// Helper function to save logs
+async function saveLogs(userId: string, logs: LogEntry[]) {
+    const logsKey = `user:${userId}:logs`;
+    await redis.set(logsKey, JSON.stringify(logs));
+}
+
 export async function GET(request: NextRequest) {
     let { userId } = await auth();
 
@@ -17,12 +37,9 @@ export async function GET(request: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
     try {
-        const logsKey = `user:${userId}:logs`;
-        const data = await redis.get(logsKey);
-        const logs = data ? JSON.parse(data) : [];
+        const logs: LogEntry[] = await getLogs(userId);
         return NextResponse.json(logs);
-    } catch (error) {
-        console.error('Failed to fetch logs:', error);
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
     }
 }
@@ -43,14 +60,12 @@ export async function POST(request: NextRequest) {
     }
     try {
         const body = await request.json();
-        const logsKey = `user:${userId}:logs`;
 
         // Fetch existing logs
-        const data = await redis.get(logsKey);
-        const logs = data ? JSON.parse(data) : [];
+        const logs: LogEntry[] = await getLogs(userId);
 
         // Add new log
-        const newLog = {
+        const newLog: LogEntry = {
             id: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
             ...body
@@ -62,11 +77,10 @@ export async function POST(request: NextRequest) {
             logs.length = 1000;
         }
 
-        await redis.set(logsKey, JSON.stringify(logs));
+        await saveLogs(userId, logs);
 
         return NextResponse.json(newLog);
-    } catch (error) {
-        console.error('Failed to save log:', error);
+    } catch {
         return NextResponse.json({ error: 'Failed to save log' }, { status: 500 });
     }
 }

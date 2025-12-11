@@ -19,7 +19,7 @@ async function isAdmin(userId: string) {
 // Initialize Clerk Client
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     const { userId } = await auth();
     if (!userId || !await isAdmin(userId)) {
         return new NextResponse("Unauthorized", { status: 401 });

@@ -8,7 +8,7 @@ import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash } from "lucide-react";
 import {
     Dialog,
@@ -26,6 +26,13 @@ const STRATEGY_DEFINITIONS = [
     { title: "Solidarity", icon: Users, color: "text-green-600", bg: "bg-green-100" },
     { title: "Refusal", icon: Zap, color: "text-red-600", bg: "bg-red-100" },
 ];
+
+interface ResistanceSynthesisResult {
+    executive_summary: string;
+    dominant_strategies: { strategy: string; frequency: string; description: string }[];
+    emerging_themes: string[];
+    implications_for_policy: string;
+}
 
 export default function ResistancePage() {
     const { sources, addSource, updateSource, deleteSource, isLoading } = useSources();
@@ -160,7 +167,7 @@ export default function ResistancePage() {
     };
 
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResult, setSynthesisResult] = useState<any>(null);
+    const [synthesisResult, setSynthesisResult] = useState<ResistanceSynthesisResult | null>(null);
 
     const handleSynthesizeFindings = async () => {
         const analyzedTraces = traces.filter(t => t.resistance_analysis);
@@ -338,7 +345,7 @@ export default function ResistancePage() {
                             <div>
                                 <h4 className="font-semibold text-purple-900 mb-2">Dominant Strategies</h4>
                                 <ul className="space-y-2">
-                                    {synthesisResult.dominant_strategies?.map((s: any, i: number) => (
+                                    {synthesisResult.dominant_strategies?.map((s: { strategy: string; frequency: string; description: string }, i: number) => (
                                         <li key={i} className="text-sm bg-white p-2 rounded border border-purple-100">
                                             <span className="font-bold text-purple-700">{s.strategy}</span> ({s.frequency}): {s.description}
                                         </li>
@@ -372,7 +379,7 @@ export default function ResistancePage() {
                         {traces.length === 0 && (
                             <Card className="bg-slate-50 border-dashed">
                                 <CardContent className="p-4 text-center text-sm text-slate-500">
-                                    No traces found. Go to Data page to add "Empirical Trace" sources or use "Search for Traces".
+                                    No traces found. Go to Data page to add &quot;Empirical Trace&quot; sources or use &quot;Search for Traces&quot;.
                                 </CardContent>
                             </Card>
                         )}
@@ -452,7 +459,7 @@ export default function ResistancePage() {
                                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 relative">
                                                 <Quote className="absolute top-2 left-2 h-8 w-8 text-slate-200 -z-0" />
                                                 <p className="text-slate-700 italic relative z-10 pl-6">
-                                                    "{currentAnalysis.evidence_quote}"
+                                                    &quot;{currentAnalysis.evidence_quote}&quot;
                                                 </p>
                                             </div>
 
@@ -465,7 +472,7 @@ export default function ResistancePage() {
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 text-slate-500">
-                                            <p>Select "Analyze Trace" to identify resistance strategies using the LLM.</p>
+                                            <p>Select &quot;Analyze Trace&quot; to identify resistance strategies using the LLM.</p>
                                         </div>
                                     )}
                                 </CardContent>

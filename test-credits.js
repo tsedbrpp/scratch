@@ -1,4 +1,5 @@
 
+/* eslint-disable */
 const { initializeCredits, checkCredits, getCredits, addCredits } = require('./src/lib/credits');
 const { redis } = require('./src/lib/redis');
 

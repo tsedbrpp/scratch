@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
-import { EcosystemActor, EcosystemConfiguration } from "@/types/ecosystem";
+import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
 
 // Components
 import { ActorList } from "@/components/ecosystem/ActorList";
@@ -17,7 +17,7 @@ export default function EcosystemPage() {
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulationQuery, setSimulationQuery] = useServerStorage<string>("ecosystem_simulation_query", "AI startups and policy actors in Brussels");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [culturalHoles, setCulturalHoles] = useServerStorage<any>("ecosystem_cultural_holes", null);
+    const [culturalHoles, setCulturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
     const [isAnalyzingHoles, setIsAnalyzingHoles] = useState(false);
 
     // Interaction Modes
@@ -61,7 +61,7 @@ export default function EcosystemPage() {
             });
             return hasChanges ? newPositions : prev;
         });
-    }, [actors.length, actors.map(a => a.id).join(',')]);
+    }, [actors.length, actors.map(a => a.id).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSimulate = async () => {
         setIsSimulating(true);
@@ -163,13 +163,13 @@ export default function EcosystemPage() {
 
             const data = await response.json();
             if (data.success && data.analysis) {
-                const { assemblage, actors: newActorsList, relations } = data.analysis;
+                const { assemblage, actors: newActorsList } = data.analysis;
 
                 // 1. Process Actors
                 const memberIds: string[] = [];
                 const currentActors = [...actors];
 
-                newActorsList.forEach((newActor: any) => {
+                newActorsList.forEach((newActor: { name: string; type: string; description?: string }) => {
                     // Check if actor exists (fuzzy match by name)
                     const existing = currentActors.find(a => a.name.toLowerCase() === newActor.name.toLowerCase());
                     if (existing) {
@@ -179,7 +179,7 @@ export default function EcosystemPage() {
                         const createdActor: EcosystemActor = {
                             id,
                             name: newActor.name,
-                            type: (newActor.type as any) || "Civil Society", // Default fallback
+                            type: (newActor.type as EcosystemActor["type"]) || "Civil Society", // Default fallback
                             description: newActor.description || "",
                             influence: "Medium",
                             metrics: { influence: 5, alignment: 5, resistance: 5 }

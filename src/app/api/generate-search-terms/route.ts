@@ -77,7 +77,7 @@ Return ONLY a JSON array of search terms, without any markdown formatting or exp
             } else {
                 searchTerms = JSON.parse(content);
             }
-        } catch (parseError) {
+        } catch {
             console.error('Failed to parse AI response:', content);
             return NextResponse.json(
                 { success: false, error: 'Failed to parse AI response' },

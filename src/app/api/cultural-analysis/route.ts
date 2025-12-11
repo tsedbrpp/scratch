@@ -26,22 +26,10 @@ interface ThemeObject {
     quote: string;
 }
 
-interface ThemeExtraction {
-    sourceId: string;
-    sourceTitle: string;
-    themes: ThemeObject[];
-}
+// interface ThemeExtraction removed
 
-interface Cluster {
-    id: string;
-    name: string;
-    themes: string[];
-    quotes: { text: string; source: string }[];
-    sources: string[];
-    centroid: number[];
-    size: number;
-    description?: string;
-}
+
+
 
 interface BridgingConcept {
     concept: string;
@@ -54,15 +42,8 @@ interface BridgingData {
     policyImplication: string;
 }
 
-interface Hole {
-    id?: string;
-    clusterA: Cluster | string;
-    clusterB: Cluster | string;
-    distance: number;
-    bridgingConcepts?: BridgingConcept[];
-    opportunity?: string;
-    policyImplication?: string;
-}
+// interface Hole removed
+
 
 // System prompt for bridging concept generation
 const BRIDGING_PROMPT = `You are a sophisticated social theorist and policy architect.

@@ -3,7 +3,7 @@
 import { useSources } from "@/hooks/useSources";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, TrendingUp } from "lucide-react";
+import { Calendar, Clock, TrendingUp } from "lucide-react";
 import { Source } from "@/types";
 
 export default function TimelinePage() {
@@ -238,7 +238,7 @@ export default function TimelinePage() {
                                 No documents with publication dates found. Edit your documents to add dates.
                             </div>
                         ) : (
-                            timelineEvents.map((source, index) => (
+                            timelineEvents.map((source) => (
                                 <div key={source.id} className="relative pl-8 md:pl-12">
                                     {/* Timeline Dot */}
                                     <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-white ${source.jurisdiction === 'EU' ? 'bg-blue-500' :

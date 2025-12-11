@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useSources } from "@/hooks/useSources";
-import { Source, LegitimacyAnalysis, PositionalityData } from "@/types";
-import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
+import { Source, LegitimacyAnalysis, PositionalityData, AnalysisResult } from "@/types";
+import { analyzeDocument, AnalysisMode } from "@/services/analysis";
 import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
 import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
@@ -135,7 +135,8 @@ export default function PolicyDocumentsPage() {
             (mode === 'dsf' && source.analysis) ||
             (mode === 'cultural_framing' && source.cultural_framing) ||
             (mode === 'institutional_logics' && source.institutional_logics) ||
-            (mode === 'legitimacy' && source.legitimacy_analysis);
+            (mode === 'legitimacy' && source.legitimacy_analysis) ||
+            (mode === 'stress_test' && source.analysis?.stress_test_report);
 
         if (hasAnalysis) {
             if (!confirm('Analysis already exists for this document. Click OK to FORCE a re-run (bypassing cache), or Cancel to abort.')) {
@@ -166,7 +167,8 @@ export default function PolicyDocumentsPage() {
                 force,
                 sourceId,
                 source.title,
-                positionalityData
+                positionalityData,
+                source.analysis // Pass existing analysis to avoid re-running it during stress test
             );
 
             const updates: Partial<Source> = {};
@@ -174,11 +176,15 @@ export default function PolicyDocumentsPage() {
             if (mode === 'cultural_framing') updates.cultural_framing = result;
             if (mode === 'institutional_logics') updates.institutional_logics = result;
             if (mode === 'legitimacy') updates.legitimacy_analysis = result as unknown as LegitimacyAnalysis;
+            if (mode === 'stress_test') {
+                // The API returns a full analysis object including standard DSF fields AND stress_test_report
+                updates.analysis = result;
+            }
 
             await updateSource(sourceId, updates);
 
-            if (mode === 'dsf') {
-                alert('Analysis complete! Scroll down to see results.');
+            if (mode === 'dsf' || mode === 'stress_test') {
+                alert('Analysis complete! Scroll down to see results inside the document card.');
             } else {
                 alert(`✅ ${mode === 'cultural_framing' ? 'Cultural framing' : mode === 'institutional_logics' ? 'Institutional logics' : 'Legitimacy'} analysis complete! Go to Comparison page to view results.`);
             }

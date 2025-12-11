@@ -1,0 +1,387 @@
+
+> scratch@0.1.0 lint
+> eslint
+
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\cultural-analysis\route.ts
+  133:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:40   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:33   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  224:46   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  341:33   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  377:100  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  397:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\generate-search-terms\route.ts
+  56:18  warning  'parseError' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\logs\route.ts
+  23:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  29:31  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  64:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\search-traces\route.ts
+   91:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\search\route.ts
+  115:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\sources\[id]\route.ts
+  18:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  36:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\api\sources\route.ts
+   8:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  18:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\comparison\page.tsx
+   12:6   warning  'CulturalFraming' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   25:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\comparison\page.tsx:25:9
+  23 |         // Filter for policy documents (non-traces)
+  24 |         const policies = sources.filter(s => s.type !== "Trace");
+> 25 |         setPolicyDocs(policies);
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |
+  27 |         // Auto-select first two docs
+  28 |         if (policies.length >= 2 && selectedDocs.length === 0) {  react-hooks/set-state-in-effect
+  152:63  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react/no-unescaped-entities
+  152:80  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react/no-unescaped-entities
+  197:74  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+  231:63  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react/no-unescaped-entities
+  231:84  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react/no-unescaped-entities
+  249:65  error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\cultural\page.tsx
+    5:10   warning  'Source' is defined but never used                               @typescript-eslint/no-unused-vars
+   12:10   warning  'CulturalHoleNetwork' is defined but never used                  @typescript-eslint/no-unused-vars
+  135:25   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  213:58   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  213:80   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  399:136  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  399:156  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  403:86   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  403:180  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  407:189  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  407:207  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  486:69   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  486:77   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\data\page.tsx
+  6:27  warning  'generateSearchTerms' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\ecosystem\page.tsx
+   35:56   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  157:103  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  400:70   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  421:86   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  435:67   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  435:81   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\empirical\page.tsx
+   20:10   warning  'FileText' is defined but never used                             @typescript-eslint/no-unused-vars
+  216:85   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  216:97   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  286:94   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  286:124  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\glossary\page.tsx
+   3:29  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+   5:10  warning  'BookOpen' is defined but never used         @typescript-eslint/no-unused-vars
+  97:43  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  99:56  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\governance\page.tsx
+    5:10   warning  'Source' is defined but never used                               @typescript-eslint/no-unused-vars
+    9:10   warning  'Scale' is defined but never used                                @typescript-eslint/no-unused-vars
+  261:99   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  261:112  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  516:58   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  519:57   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  519:71   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  519:82   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  541:58   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  544:57   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  544:71   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  544:82   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\literature\page.tsx
+    6:10   warning  'BookOpen' is defined but never used                             @typescript-eslint/no-unused-vars
+   14:75   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   14:123  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   15:47   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   74:203  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   74:215  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   90:51   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   90:61   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  116:142  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  116:152  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  116:177  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  116:180  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  116:200  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  158:105  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  158:121  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  158:127  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  158:149  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  184:89   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  200:129  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  200:145  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  200:205  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  200:224  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  216:65   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  240:108  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  240:127  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  240:133  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  240:158  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  240:201  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  240:211  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\ontology\page.tsx
+  5:10  warning  'Source' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\page.tsx
+  202:27  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  202:43  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\reflexivity\page.tsx
+   21:14   error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   31:9    error  Error: Cannot access variable before it is declared
+
+`fetchLogs` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\reflexivity\page.tsx:31:9
+  29 |
+  30 |     useEffect(() => {
+> 31 |         fetchLogs();
+     |         ^^^^^^^^^ `fetchLogs` accessed before it is declared
+  32 |     }, []);
+  33 |
+  34 |     const fetchLogs = async () => {
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\reflexivity\page.tsx:34:5
+  32 |     }, []);
+  33 |
+> 34 |     const fetchLogs = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 35 |         try {
+     | ^^^^^^^^^^^^^
+> 36 |             const res = await fetch('/api/logs');
+     …
+     | ^^^^^^^^^^^^^
+> 43 |         }
+     | ^^^^^^^^^^^^^
+> 44 |     };
+     | ^^^^^^^ `fetchLogs` is declared here
+  45 |
+  46 |     const handleSave = () => {
+  47 |         setSaveStatus("saving");  react-hooks/immutability
+  129:25   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:141  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:150  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:156  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:167  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:169  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\resistance\page.tsx
+  263:77   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  263:93   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  263:110  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  263:128  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  343:53   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  343:86   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  356:55   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  356:69   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\synthesis\page.tsx
+  497:103  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  497:135  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\app\timeline\page.tsx
+    6:27  warning  'FileText' is defined but never used  @typescript-eslint/no-unused-vars
+  241:57  warning  'index' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\AssemblageSankey.tsx
+   56:17  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  151:35  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  183:35  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\CulturalHoleCard.tsx
+  119:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\CulturalHoleMatrix.tsx
+  102:89   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  102:92   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  102:112  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  145:97   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\ResearchWorkflowGuide.tsx
+    3:20   warning  'useEffect' is defined but never used                            @typescript-eslint/no-unused-vars
+    4:23   warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+   72:35   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   72:59   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  115:119  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  115:143  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\policy\AnalysisResults.tsx
+  15:66  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  15:89  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\policy\DocumentCard.tsx
+  1:18  warning  'AnalysisResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\ui\input.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\hooks\useLocalStorage.ts
+   6:12  warning  'isInitialized' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  13:17  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\hooks\useLocalStorage.ts:13:17
+  11 |             const item = window.localStorage.getItem(key);
+  12 |             if (item) {
+> 13 |                 setStoredValue(JSON.parse(item));
+     |                 ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  14 |             }
+  15 |             setIsInitialized(true);
+  16 |         } catch (error) {  react-hooks/set-state-in-effect
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\lib\store.ts
+  23:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\services\analysis.ts
+   5:11  warning  'AnalyzeRequest' is defined but never used  @typescript-eslint/no-unused-vars
+   9:15  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+  10:15  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\backups\pre_redis_migration\src\utils\pdfExtractor.ts
+   4:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\scripts\test-search-config.js
+  1:15  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  3:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\AssemblageSankey.tsx
+  56:17  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\CulturalHoleMatrix.tsx
+  110:89   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  110:92   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  110:112  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ResearchWorkflowGuide.tsx
+  3:20  warning  'useEffect' is defined but never used     @typescript-eslint/no-unused-vars
+  4:23  warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\Sidebar.tsx
+  220:27  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\Sidebar.tsx:220:27
+  218 |     // Close mobile menu when path changes
+  219 |     useEffect(() => {
+> 220 |         if (isMobileOpen) setIsMobileOpen(false);
+      |                           ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  221 |     }, [pathname, isMobileOpen]);
+  222 |
+  223 |     // Handle hydration mismatch  react-hooks/set-state-in-effect
+  225:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\Sidebar.tsx:225:9
+  223 |     // Handle hydration mismatch
+  224 |     useEffect(() => {
+> 225 |         setIsMounted(true);
+      |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  226 |     }, []);
+  227 |
+  228 |     return (                                                                                                  react-hooks/set-state-in-effect
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\CulturalHolesAnalysis.tsx
+   63:62  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   86:81  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  147:59  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  147:73  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  155:10  warning  'CulturalHoleChart' is defined but never used                    @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap.tsx
+  283:58  warning  'j' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\governance\GovernanceCompass.tsx
+  4:107  warning  'Label' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\DocumentCard.tsx
+  1:18  warning  'AnalysisResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\GovernanceCompass.tsx
+  1:105  warning  'Label' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\LegitimacyAnalysisView.tsx
+  4:29  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\reflexivity\LogEntry.tsx
+    4:31   warning  'CheckCircle' is defined but never used                          @typescript-eslint/no-unused-vars
+   29:43   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   29:67   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  104:33   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  104:147  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\reflexivity\PositionalityDialog.tsx
+    8:47  warning  'AlertTriangle' is defined but never used                        @typescript-eslint/no-unused-vars
+   78:70  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   78:89  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  156:44  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  156:62  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ui\input.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\governance.ts
+  37:9  warning  'count' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\services\analysis.ts
+  5:11  warning  'AnalyzeRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\utils\pdfExtractor.ts
+  34:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\test-credits.js
+  2:42  warning  'getCredits' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  2:69  error    A `require()` style import is forbidden          @typescript-eslint/no-require-imports
+  3:9   warning  'redis' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  3:19  error    A `require()` style import is forbidden          @typescript-eslint/no-require-imports
+
+✖ 187 problems (146 errors, 41 warnings)
+

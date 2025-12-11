@@ -70,7 +70,7 @@ export function useSources() {
                 try {
                     const errorData = JSON.parse(text);
                     throw new Error(errorData.error || 'Failed to update source');
-                } catch (e) {
+                } catch {
                     // If JSON parse fails, throw the raw text (or a summary of it)
                     console.error('Non-JSON error response:', text);
                     throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);

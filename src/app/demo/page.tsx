@@ -4,11 +4,12 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BrainCircuit, Lightbulb, Sparkles, Lock, FileText, Activity, Grid, Download, Share2, Maximize2, SlidersHorizontal, Info, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Lightbulb, Sparkles, FileText, Activity, Grid, Download, Share2, Maximize2, SlidersHorizontal } from "lucide-react";
 import { CulturalHoleCard } from "@/components/CulturalHoleCard";
 import { CulturalHoleNetwork } from "@/components/CulturalHoleNetwork";
 import { CulturalHoleMatrix } from "@/components/CulturalHoleMatrix";
 import { CulturalAnalysisResult, BridgingConcept } from "@/types/cultural";
+import { AnalysisResult } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -114,7 +115,7 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
 };
 
 // Mock Data for Document Analysis
-const DEMO_FULL_ANALYSIS: any = {
+const DEMO_FULL_ANALYSIS: AnalysisResult = {
     key_insight: "The EU AI Act represents a 'Brussels Effect' strategy, attempting to export a risk-based technocratic governance model that prioritizes market safety over situated social justice, potentially creating a 'compliance industrial complex' that marginalizes non-European epistemologies.",
     governance_power_accountability: "Centralized enforcement through the AI Office and national competent authorities. Accountability is procedural, focused on conformity assessments rather than direct democratic oversight.",
     plurality_inclusion_embodiment: "Limited. The 'risk' taxonomy is universalizing, failing to account for how AI harms are differentially embodied across race, gender, and geography (e.g., migration control systems).",
@@ -132,7 +133,7 @@ const DEMO_FULL_ANALYSIS: any = {
     }
 };
 
-const DEMO_STANDARD_ANALYSIS: any = {
+const DEMO_STANDARD_ANALYSIS: AnalysisResult = {
     key_insight: "The EU AI Act establishes a comprehensive risk-based framework for AI safety, ensuring market harmonization while protecting fundamental rights through technical standards and conformity assessments.",
     governance_power_accountability: "Clear governance structure with EU AI Office and national authorities. Accountability ensured through ex-ante conformity assessments and post-market monitoring.",
     plurality_inclusion_embodiment: "Standardized approach to fundamental rights impact assessments. Focus on technical bias mitigation and data quality requirements.",
@@ -183,7 +184,7 @@ export default function DemoPage() {
                     <div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">System Function: Decolonial Situatedness in Global AI Governance Research Platform</h2>
                         <p className="text-slate-700 leading-relaxed">
-                            This application is a specialized research instrument designed to operationalize the <strong>Decolonial Situatedness Framework (DSF)</strong> for analyzing global AI governance. Unlike standard legal compliance tools, it functions as an "epistemic lens," revealing the hidden structural power dynamics, cultural assumptions, and colonial legacies embedded within policy texts (e.g., the EU AI Act, Brazil’s PL 2338).
+                            This application is a specialized research instrument designed to operationalize the <strong>Decolonial Situatedness Framework (DSF)</strong> for analyzing global AI governance. Unlike standard legal compliance tools, it functions as an &quot;epistemic lens,&quot; revealing the hidden structural power dynamics, cultural assumptions, and colonial legacies embedded within policy texts (e.g., the EU AI Act, Brazil&apos;s PL 2338).
                         </p>
                     </div>
 
@@ -201,15 +202,15 @@ export default function DemoPage() {
                             </div>
                             <div>
                                 <h4 className="font-semibold text-slate-800 mb-1">2. Ecosystem & Assemblage Mapping</h4>
-                                <p className="text-sm text-slate-600">It visualizes governance not as static text, but as active "assemblages." The <strong>Ecosystem Impact Map</strong> traces how specific policy mechanisms (e.g., "sandboxes") constrain or afford possibilities for diverse actors, distinguishing between material infrastructures and discursive norms.</p>
+                                <p className="text-sm text-slate-600">It visualizes governance not as static text, but as active &quot;assemblages.&quot; The <strong>Ecosystem Impact Map</strong> traces how specific policy mechanisms (e.g., &quot;sandboxes&quot;) constrain or afford possibilities for diverse actors, distinguishing between material infrastructures and discursive norms.</p>
                             </div>
                             <div>
                                 <h4 className="font-semibold text-slate-800 mb-1">3. Comparative Synthesis</h4>
-                                <p className="text-sm text-slate-600">The platform features a <strong>Convergence/Divergence Engine</strong> that quantifies the "epistemic distance" between frameworks. It generates "Coloniality Scores" to highlight where Global North standards may be overshadowing local contexts, visualizing these asymmetries via radar charts and synthesis matrices.</p>
+                                <p className="text-sm text-slate-600">The platform features a <strong>Convergence/Divergence Engine</strong> that quantifies the &quot;epistemic distance&quot; between frameworks. It generates &quot;Coloniality Scores&quot; to highlight where Global North standards may be overshadowing local contexts, visualizing these asymmetries via radar charts and synthesis matrices.</p>
                             </div>
                             <div>
                                 <h4 className="font-semibold text-slate-800 mb-1">4. Empirical Grounding (Micro-Resistance)</h4>
-                                <p className="text-sm text-slate-600">To counter abstract high-level rhetoric, the system integrates an <strong>Empirical Traces</strong> engine. It searches live data sources (forums, Reddit) to find "micro-resistances"—real-world examples of how workers and communities subvert or navigate algorithmic control (e.g., "gambiarra" or workarounds), grounding theory in lived experience.</p>
+                                <p className="text-sm text-slate-600">To counter abstract high-level rhetoric, the system integrates an <strong>Empirical Traces</strong> engine. It searches live data sources (forums, Reddit) to find &quot;micro-resistances&quot;—real-world examples of how workers and communities subvert or navigate algorithmic control (e.g., &quot;gambiarra&quot; or workarounds), grounding theory in lived experience.</p>
                             </div>
                         </div>
                     </div>
@@ -316,7 +317,7 @@ export default function DemoPage() {
                                                     <ul className="space-y-2">
                                                         {cluster.quotes?.map((quote, i) => (
                                                             <li key={i} className="text-xs text-slate-600 italic border-l-2 border-blue-300 pl-2">
-                                                                "{quote.text}"
+                                                                &quot;{quote.text}&quot;
                                                                 <span className="block text-[10px] text-slate-400 not-italic mt-1">— {quote.source}</span>
                                                             </li>
                                                         ))}
@@ -419,7 +420,7 @@ export default function DemoPage() {
                                     </div>
                                     <h3 className="font-semibold text-slate-900 mb-2">Find Opportunities</h3>
                                     <p className="text-sm text-slate-600">
-                                        Hover over cells to reveal specific "bridging concepts" that can reconcile these differences.
+                                        Hover over cells to reveal specific &quot;bridging concepts&quot; that can reconcile these differences.
                                     </p>
                                 </div>
                                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -428,7 +429,7 @@ export default function DemoPage() {
                                     </div>
                                     <h3 className="font-semibold text-slate-900 mb-2">Design Policy</h3>
                                     <p className="text-sm text-slate-600">
-                                        Use the suggested "Policy Implications" to draft regulations that work across borders.
+                                        Use the suggested &quot;Policy Implications&quot; to draft regulations that work across borders.
                                     </p>
                                 </div>
                             </div>
@@ -481,7 +482,7 @@ export default function DemoPage() {
                                 Generative Policy Drafter
                             </DialogTitle>
                             <DialogDescription>
-                                Drafting a policy clause based on the bridging concept: <span className="font-bold text-slate-900">"{selectedConcept?.concept}"</span>
+                                Drafting a policy clause based on the bridging concept: <span className="font-bold text-slate-900">&quot;{selectedConcept?.concept}&quot;</span>
                             </DialogDescription>
                         </DialogHeader>
 
@@ -498,7 +499,7 @@ export default function DemoPage() {
                                     Drafted Clause (v0.1)
                                 </h4>
                                 <p className="font-mono text-sm text-indigo-900 leading-relaxed bg-white/50 p-4 rounded-lg border border-indigo-200/50">
-                                    "Article 14(a): Providers of high-risk AI systems shall implement <strong>{selectedConcept?.concept.toLowerCase()}</strong> protocols. These protocols must demonstrate not only technical compliance but also alignment with local cultural norms and fundamental rights frameworks of the deployment context, subject to third-party audit."
+                                    &quot;Article 14(a): Providers of high-risk AI systems shall implement <strong>{selectedConcept?.concept.toLowerCase()}</strong> protocols. These protocols must demonstrate not only technical compliance but also alignment with local cultural norms and fundamental rights frameworks of the deployment context, subject to third-party audit.&quot;
                                 </p>
                             </div>
 

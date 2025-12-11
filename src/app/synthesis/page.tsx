@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
-import { Source } from "@/types";
+import { Source, EcosystemImpact } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,13 @@ interface ComparisonResult {
     governance: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
     rights: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
     scope: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
+    verified_quotes?: Array<{ text: string; source: string; relevance: string }>;
+    system_critique?: {
+        blind_spots: string[];
+        over_interpretation: string;
+        legitimacy_correction: string;
+    } | string;
 }
-
-import { EcosystemImpact } from "@/types";
 
 const SYNTHESIS_FINDINGS = [
     {
@@ -251,6 +255,7 @@ export default function SynthesisPage() {
                                 <label className="text-sm font-medium text-slate-700">Source A</label>
                                 <select
                                     className="w-full p-2 border rounded-md text-sm"
+                                    value={sourceA?.id || ""}
                                     onChange={(e) => {
                                         const source = analyzedSources.find(s => s.id === e.target.value);
                                         setSourceA(source || null);
@@ -266,6 +271,7 @@ export default function SynthesisPage() {
                                 <label className="text-sm font-medium text-slate-700">Source B</label>
                                 <select
                                     className="w-full p-2 border rounded-md text-sm"
+                                    value={sourceB?.id || ""}
                                     onChange={(e) => {
                                         const source = analyzedSources.find(s => s.id === e.target.value);
                                         setSourceB(source || null);
@@ -277,31 +283,40 @@ export default function SynthesisPage() {
                                     ))}
                                 </select>
                             </div>
-                        </div>
+                        </div >
                         <div className="flex gap-2">
-                            <Button
-                                onClick={() => handleCompare(false)}
-                                disabled={!sourceA || !sourceB || isComparing}
-                                className="w-full bg-slate-900 hover:bg-slate-800"
-                            >
-                                {isComparing ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="mr-2 h-4 w-4" />
-                                        Compare Frameworks
-                                    </>
+                            <div className="flex flex-col gap-2 w-full">
+                                <Button
+                                    onClick={() => handleCompare(false)}
+                                    disabled={!sourceA || !sourceB || isComparing}
+                                    className="w-full bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={(!sourceA || !sourceB) ? "Please select two documents to compare" : "Run comparison"}
+                                >
+                                    {isComparing ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            Compare Frameworks
+                                        </>
+                                    )}
+                                </Button>
+                                {(!sourceA || !sourceB) && (
+                                    <p className="text-xs text-center text-slate-500">
+                                        Select two documents above to enable comparison.
+                                    </p>
                                 )}
-                            </Button>
+                            </div>
                             {comparisonResult && (
                                 <Button
                                     onClick={() => handleCompare(true)}
                                     disabled={isComparing}
                                     variant="outline"
                                     title="Force Regenerate (Bypass Cache)"
+                                    className="shrink-0"
                                 >
                                     <RefreshCw className={`mr-2 h-4 w-4 ${isComparing ? 'animate-spin' : ''}`} />
                                     Regenerate
@@ -338,26 +353,24 @@ export default function SynthesisPage() {
                                         </button>
                                     </div>
 
-                                    {
-                                        showGuide && (
-                                            <div className="mb-6 mx-auto max-w-2xl bg-blue-50 border border-blue-100 rounded-lg p-3 relative">
-                                                <button
-                                                    onClick={() => setShowGuide(false)}
-                                                    className="absolute top-2 right-2 text-blue-400 hover:text-blue-600"
-                                                >
-                                                    ×
-                                                </button>
-                                                <div className="flex gap-3">
-                                                    <Info className="h-5 w-5 text-blue-600 shrink-0" />
-                                                    <div className="text-xs text-blue-900 space-y-1">
-                                                        <p className="font-semibold">How to read this chart:</p>
-                                                        <p><span className="font-bold text-blue-700">Convergence (Blue):</span> How similar the frameworks are. High score = Very similar rules/definitions.</p>
-                                                        <p><span className="font-bold text-red-700">Coloniality (Red):</span> Power imbalance. High score = One framework is imposing values on the other.</p>
-                                                    </div>
+                                    {showGuide && (
+                                        <div className="mb-6 mx-auto max-w-2xl bg-blue-50 border border-blue-100 rounded-lg p-3 relative">
+                                            <button
+                                                onClick={() => setShowGuide(false)}
+                                                className="absolute top-2 right-2 text-blue-400 hover:text-blue-600"
+                                            >
+                                                ×
+                                            </button>
+                                            <div className="flex gap-3">
+                                                <Info className="h-5 w-5 text-blue-600 shrink-0" />
+                                                <div className="text-xs text-blue-900 space-y-1">
+                                                    <p className="font-semibold">How to read this chart:</p>
+                                                    <p><span className="font-bold text-blue-700">Convergence (Blue):</span> How similar the frameworks are. High score = Very similar rules/definitions.</p>
+                                                    <p><span className="font-bold text-red-700">Coloniality (Red):</span> Power imbalance. High score = One framework is imposing values on the other.</p>
                                                 </div>
                                             </div>
-                                        )
-                                    }
+                                        </div>
+                                    )}
 
                                     <ResponsiveContainer width="100%" height={300}>
                                         {chartView === "radar" ? (
@@ -400,40 +413,11 @@ export default function SynthesisPage() {
                                     </p>
                                 </div >
 
-                                <h4 className="font-semibold text-slate-900">Detailed Findings</h4>
-                                {
-                                    Object.entries(comparisonResult).map(([key, value]) => {
-                                        const typedValue = value as ComparisonResult["risk"];
-                                        return (
-                                            <div key={key} className="space-y-2">
-                                                <p className="text-sm font-medium text-slate-700 capitalize">{key}</p>
-                                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                                    <div className="p-2 bg-green-50 rounded border border-green-200">
-                                                        <span className="font-semibold text-green-700">Convergence:</span>
-                                                        <p className="text-slate-600 mt-1">{typedValue.convergence}</p>
-                                                    </div>
-                                                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                                                        <span className="font-semibold text-blue-700">Divergence:</span>
-                                                        <p className="text-slate-600 mt-1">{typedValue.divergence}</p>
-                                                    </div>
-                                                    <div className="p-2 bg-red-50 rounded border border-red-200">
-                                                        <span className="font-semibold text-red-700">Coloniality:</span>
-                                                        <p className="text-slate-600 mt-1">{typedValue.coloniality}</p>
-                                                    </div>
-                                                    <div className="p-2 bg-purple-50 rounded border border-purple-200">
-                                                        <span className="font-semibold text-purple-700">Resistance:</span>
-                                                        <p className="text-slate-600 mt-1">{typedValue.resistance}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })
-                                }
+
                             </div >
-                        )
-                        }
-                    </CardContent >
-                </Card >
+                        )}
+                    </CardContent>
+                </Card>
             )}
 
             {/* Synthesis Matrix */}
@@ -443,46 +427,48 @@ export default function SynthesisPage() {
                 {comparisonResult ? (
                     // Show AI-generated comparison results
                     <div className="grid gap-4">
-                        {Object.entries(comparisonResult).map(([key, value]) => {
-                            const typedValue = value as ComparisonResult["risk"];
-                            const finding = SYNTHESIS_FINDINGS.find(f => f.key === key);
-                            const Icon = finding?.icon || AlertCircle;
-                            return (
-                                <Card key={key}>
-                                    <CardHeader>
-                                        <div className="flex items-center gap-2">
-                                            <Icon className="h-5 w-5 text-slate-600" />
-                                            <CardTitle>{finding?.dimension || key}</CardTitle>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                                            <p className="text-xs font-bold text-green-700 uppercase mb-1">Convergence</p>
-                                            <p className="text-sm text-slate-700">{typedValue.convergence}</p>
-                                        </div>
-                                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <p className="text-xs font-bold text-blue-700 uppercase mb-1">Divergence</p>
-                                            <p className="text-sm text-slate-700">{typedValue.divergence}</p>
-                                        </div>
-                                        <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                                            <p className="text-xs font-bold text-red-700 uppercase mb-1">Coloniality</p>
-                                            <p className="text-sm text-slate-700">{typedValue.coloniality}</p>
-                                        </div>
-                                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                                            <p className="text-xs font-bold text-purple-700 uppercase mb-1">Resistance</p>
-                                            <p className="text-sm text-slate-700">{typedValue.resistance}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                        {Object.entries(comparisonResult)
+                            .filter(([key]) => key !== 'verified_quotes' && key !== 'system_critique')
+                            .map(([key, value]) => {
+                                const typedValue = value as ComparisonResult["risk"];
+                                const finding = SYNTHESIS_FINDINGS.find(f => f.key === key);
+                                const Icon = finding?.icon || AlertCircle;
+                                return (
+                                    <Card key={key}>
+                                        <CardHeader>
+                                            <div className="flex items-center gap-2">
+                                                <Icon className="h-5 w-5 text-slate-600" />
+                                                <CardTitle>{finding?.dimension || key}</CardTitle>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                                <p className="text-xs font-bold text-green-700 uppercase mb-1">Convergence</p>
+                                                <p className="text-sm text-slate-700">{typedValue.convergence}</p>
+                                            </div>
+                                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                <p className="text-xs font-bold text-blue-700 uppercase mb-1">Divergence</p>
+                                                <p className="text-sm text-slate-700">{typedValue.divergence}</p>
+                                            </div>
+                                            <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                                                <p className="text-xs font-bold text-red-700 uppercase mb-1">Coloniality</p>
+                                                <p className="text-sm text-slate-700">{typedValue.coloniality}</p>
+                                            </div>
+                                            <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                                <p className="text-xs font-bold text-purple-700 uppercase mb-1">Resistance</p>
+                                                <p className="text-sm text-slate-700">{typedValue.resistance}</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                     </div>
                 ) : (
                     // Show placeholder framework when no comparison is active
                     <>
                         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-900">
-                                <strong>Note:</strong> To see AI-generated synthesis results, use the "AI-Powered Framework Comparison" tool above to compare two policy documents.
+                                <strong>Note:</strong> To see AI-generated synthesis results, use the &quot;AI-Powered Framework Comparison&quot; tool above to compare two policy documents.
                             </p>
                         </div>
                         <div className="grid gap-4">
@@ -521,6 +507,85 @@ export default function SynthesisPage() {
                     </>
                 )}
             </div>
+
+            {/* Verified Quotes Section */}
+            {
+                comparisonResult?.verified_quotes && comparisonResult.verified_quotes.length > 0 && (
+                    <Card className="border-blue-200 bg-blue-50/50">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                                <CardTitle>Verified Canonical Evidence</CardTitle>
+                            </div>
+                            <CardDescription>Direct textual evidence supporting the analysis</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {comparisonResult.verified_quotes.map((quote, idx) => (
+                                <div key={idx} className="p-3 bg-white rounded border border-blue-100 shadow-sm">
+                                    <p className="text-sm italic text-slate-700 mb-2">"{quote.text}"</p>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="font-semibold text-blue-800">{quote.source}</span>
+                                        <span className="text-slate-500">{quote.relevance}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )
+            }
+
+            {/* System Critique Section */}
+            {
+                comparisonResult?.system_critique && (
+                    <Card className="border-purple-200 bg-purple-50/50">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <Brain className="h-5 w-5 text-purple-600" />
+                                <CardTitle>Systemic Critique (Devil's Advocate)</CardTitle>
+                            </div>
+                            <CardDescription>Synthesized critical analysis and blind-spot detection</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {typeof comparisonResult.system_critique === 'string' ? (
+                                <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                    {comparisonResult.system_critique}
+                                </p>
+                            ) : (
+                                <>
+                                    {/* Blind Spots */}
+                                    {comparisonResult.system_critique.blind_spots && comparisonResult.system_critique.blind_spots.length > 0 && (
+                                        <div className="p-3 bg-red-50 rounded-md border border-red-100">
+                                            <p className="text-xs font-bold text-red-800 uppercase mb-2">Potential Blind Spots</p>
+                                            <ul className="list-disc list-inside space-y-1">
+                                                {comparisonResult.system_critique.blind_spots.map((spot, idx) => (
+                                                    <li key={idx} className="text-sm text-red-900">{spot}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Over Interpretation */}
+                                    {comparisonResult.system_critique.over_interpretation && (
+                                        <div className="p-3 bg-amber-50 rounded-md border border-amber-100">
+                                            <p className="text-xs font-bold text-amber-800 uppercase mb-1">Over-Interpretation Check</p>
+                                            <p className="text-sm text-amber-900">{comparisonResult.system_critique.over_interpretation}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Legitimacy Correction */}
+                                    {comparisonResult.system_critique.legitimacy_correction && (
+                                        <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
+                                            <p className="text-xs font-bold text-blue-800 uppercase mb-1">Legitimacy Correction</p>
+                                            <p className="text-sm text-blue-900">{comparisonResult.system_critique.legitimacy_correction}</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                )
+            }
+
 
             {/* Ecosystem Impact Mapping */}
             {
@@ -673,11 +738,12 @@ export default function SynthesisPage() {
                                                     </div>
                                                 ))}
                                         </div>
-                                    )}
-                                </div>
+                                    )
+                                    }
+                                </div >
                             )}
-                        </CardContent>
-                    </Card>
+                        </CardContent >
+                    </Card >
                 )
             }
 

@@ -20,16 +20,15 @@ import {
   Zap,
   Activity,
   Upload,
-  Layers,
   Cpu,
   GitGraph,
   Shield,
   Lock,
   GraduationCap,
   Building,
-  Play,
-  Library
+  Play
 } from "lucide-react";
+import Image from "next/image";
 
 // --- DASHBOARD DATA ---
 const features = [
@@ -465,9 +464,11 @@ function LandingPage() {
             </div>
             <div className="lg:w-1/2 relative">
               <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
-              <img
+              <Image
                 src="/trust-ethics.png"
                 alt="Digital Trust and Privacy"
+                width={800}
+                height={600}
                 className="relative rounded-2xl shadow-2xl border border-white/10 w-full max-w-md mx-auto hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -557,8 +558,6 @@ function LandingPage() {
     </div>
   );
 }
-
-// ...
 
 function Dashboard({ sources }: { sources: Source[] }) {
   const docCount = sources.filter(s => s.type !== 'Trace').length;

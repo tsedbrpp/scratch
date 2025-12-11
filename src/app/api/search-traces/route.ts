@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { auth } from '@clerk/nextjs/server';
 
 const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
 
@@ -15,18 +16,14 @@ Focus on:
 Return ONLY a JSON array of strings, nothing else:
 ["term 1", "term 2", "term 3"]`;
 
-interface SearchResult {
+interface Trace {
     title: string;
-    snippet: string;
-    link: string;
-    displayLink: string;
+    description: string;
+    content: string;
+    sourceUrl: string;
+    platform: string;
+    query: string;
 }
-
-interface GoogleSearchResponse {
-    items?: SearchResult[];
-}
-
-import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
     let { userId } = await auth();
@@ -140,7 +137,7 @@ export async function POST(request: NextRequest) {
 
         // Construct platform-specific queries
         const platformFilters = platforms || ['reddit', 'hackernews', 'forums'];
-        const allTraces: any[] = [];
+        const allTraces: Trace[] = [];
 
         for (const query of searchQueries.slice(0, 2)) { // Limit to 2 queries
             // Split platforms into two groups to prevent Reddit from drowning out others
@@ -243,12 +240,12 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(result);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Search error:', error);
         return NextResponse.json(
             {
                 error: 'Search failed',
-                details: error.message
+                details: (error as Error).message || 'Unknown error'
             },
             { status: 500 }
         );

@@ -166,6 +166,17 @@ export function DocumentCard({
                                 <Scale className="mr-1 h-3 w-3" />
                                 Legitimacy
                             </Button>
+                            <Button
+                                onClick={() => onAnalyze(source.id, 'stress_test')}
+                                disabled={isAnalyzing}
+                                variant="outline"
+                                size="sm"
+                                className="text-xs border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
+                                title="Run Adversarial Integrity Stress-Test"
+                            >
+                                <Scale className="mr-1 h-3 w-3" />
+                                Stress Test
+                            </Button>
                         </div>
                     </div>
                 )}

@@ -17,7 +17,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { FileText, Plus, Search, Filter, Sparkles, Loader2, Trash, Eye } from "lucide-react";
+import { Plus, Search, Filter, Sparkles, Loader2, Trash, Eye } from "lucide-react";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
 
 export default function EmpiricalPage() {
@@ -219,7 +219,7 @@ export default function EmpiricalPage() {
                 {filteredSources.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-slate-500">
                         <p>No empirical traces found.</p>
-                        <p className="text-sm mt-2">Add a new trace manually or use "Find Traces" on the Policy Documents page.</p>
+                        <p className="text-sm mt-2">Add a new trace manually or use &quot;Find Traces&quot; on the Policy Documents page.</p>
                     </div>
                 ) : (
                     filteredSources.map((source) => (

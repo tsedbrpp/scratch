@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BookOpen, Save, UserCircle, History } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+
 import { LogEntry } from "@/components/reflexivity/LogEntry";
 import { MethodLog } from "@/types/logs";
 
@@ -24,25 +24,25 @@ export default function ReflexivityPage() {
     const [logs, setLogs] = useState<MethodLog[]>([]);
 
     useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
+
+                const res = await fetch('/api/logs', { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLogs(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch logs", error);
+            }
+        };
+
         fetchLogs();
     }, []);
-
-    const fetchLogs = async () => {
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
-            const res = await fetch('/api/logs', { headers });
-            if (res.ok) {
-                const data = await res.json();
-                setLogs(data);
-            }
-        } catch (error) {
-            console.error("Failed to fetch logs", error);
-        }
-    };
 
     const handleSave = () => {
         setSaveStatus("saving");
@@ -111,7 +111,7 @@ export default function ReflexivityPage() {
                     </Card>
 
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm text-slate-600 italic">
-                        "To think from the border is to think from the exteriority of modernity... it is a way of thinking that is not just 'critical' but 'decolonial'." — Walter Mignolo
+                        &quot;To think from the border is to think from the exteriority of modernity... it is a way of thinking that is not just &apos;critical&apos; but &apos;decolonial&apos;.&quot; — Walter Mignolo
                     </div>
                 </div>
 

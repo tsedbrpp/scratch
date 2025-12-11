@@ -15,145 +15,142 @@ import {
     ArrowLeftRight,
     Clock,
     Menu,
-    X
+    X,
+    LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserButton } from "@clerk/nextjs";
 
-export function Sidebar() {
-    const pathname = usePathname();
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+interface NavGroup {
+    title: string;
+    items: {
+        name: string;
+        href: string;
+        icon: LucideIcon;
+        description: string;
+    }[];
+}
 
-    // Close mobile menu when path changes
-    useEffect(() => {
-        setIsMobileOpen(false);
-    }, [pathname]);
+const NAV_GROUPS: NavGroup[] = [
+    {
+        title: "Overview",
+        items: [
+            {
+                name: "Dashboard",
+                href: "/",
+                icon: LayoutDashboard,
+                description: "High-level view of the algorithmic assemblage and research progress."
+            }
+        ]
+    },
+    {
+        title: "Data Collection",
+        items: [
+            {
+                name: "Documents",
+                href: "/data",
+                icon: Database,
+                description: "Archive of primary policy texts (PDFs) and source materials."
+            },
+            {
+                name: "Empirical Data",
+                href: "/empirical",
+                icon: Users,
+                description: "Collect and organize empirical traces from web sources."
+            }
+        ]
+    },
+    {
+        title: "Agency & Resistance",
+        items: [
+            {
+                name: "Resistance",
+                href: "/resistance",
+                icon: Users,
+                description: "Analyze micro-resistance strategies and counter-conduct."
+            },
+            {
+                name: "Critical Reflection",
+                href: "/reflexivity",
+                icon: Scan,
+                description: "Examine how your own perspective and context shape the analysis."
+            },
+        ]
+    },
+    {
+        title: "Assemblage Mapping",
+        items: [
+            {
+                name: "Ecosystem Analysis",
+                href: "/ecosystem",
+                icon: Users,
+                description: "Map actors, detect cultural holes, and visualize social networks."
+            },
+            {
+                name: "Cross-Case Analysis",
+                href: "/synthesis",
+                icon: Network,
+                description: "Cross-case analysis and AI-powered framework comparison."
+            },
+        ]
+    },
+    {
+        title: "Structural Governance",
+        items: [
+            {
+                name: "Comparison",
+                href: "/comparison",
+                icon: ArrowLeftRight,
+                description: "Side-by-side comparison of governance frameworks."
+            },
+            {
+                name: "Governance",
+                href: "/governance",
+                icon: Scale,
+                description: "Analyze resource orchestration and institutional logics."
+            },
+            {
+                name: "Cultural Framing",
+                href: "/cultural",
+                icon: Lightbulb,
+                description: "Examine cultural framing and epistemic authority."
+            },
+            {
+                name: "Concept Network",
+                href: "/ontology",
+                icon: BookOpen,
+                description: "Visual map of key concepts and their relationships."
+            },
+            {
+                name: "Temporal Dynamics",
+                href: "/timeline",
+                icon: Clock,
+                description: "Track the evolution of discourse and policy over time."
+            },
+        ]
+    },
+    {
+        title: "Educational Resources",
+        items: [
+            {
+                name: "Critical Glossary",
+                href: "/glossary",
+                icon: BookOpen,
+                description: "Definitions of key theoretical concepts and terms."
+            },
+            {
+                name: "Literature Review",
+                href: "/literature",
+                icon: BookOpen,
+                description: "Theoretical framework and key scholarship."
+            }
+        ]
+    }
+];
 
-    // Handle hydration mismatch
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    const navGroups = [
-        {
-            title: "Overview",
-            items: [
-                {
-                    name: "Dashboard",
-                    href: "/",
-                    icon: LayoutDashboard,
-                    description: "High-level view of the algorithmic assemblage and research progress."
-                }
-            ]
-        },
-        {
-            title: "Data Collection",
-            items: [
-                {
-                    name: "Documents",
-                    href: "/data",
-                    icon: Database,
-                    description: "Archive of primary policy texts (PDFs) and source materials."
-                },
-                {
-                    name: "Empirical Data",
-                    href: "/empirical",
-                    icon: Users,
-                    description: "Collect and organize empirical traces from web sources."
-                }
-            ]
-        },
-        {
-            title: "Agency & Resistance",
-            items: [
-                {
-                    name: "Resistance",
-                    href: "/resistance",
-                    icon: Users,
-                    description: "Analyze micro-resistance strategies and counter-conduct."
-                },
-                {
-                    name: "Critical Reflection",
-                    href: "/reflexivity",
-                    icon: Scan,
-                    description: "Examine how your own perspective and context shape the analysis."
-                },
-            ]
-        },
-        {
-            title: "Assemblage Mapping",
-            items: [
-                {
-                    name: "Ecosystem Analysis",
-                    href: "/ecosystem",
-                    icon: Users,
-                    description: "Map actors, detect cultural holes, and visualize social networks."
-                },
-                {
-                    name: "Cross-Case Analysis",
-                    href: "/synthesis",
-                    icon: Network,
-                    description: "Cross-case analysis and AI-powered framework comparison."
-                },
-            ]
-        },
-        {
-            title: "Structural Governance",
-            items: [
-                {
-                    name: "Comparison",
-                    href: "/comparison",
-                    icon: ArrowLeftRight,
-                    description: "Side-by-side comparison of governance frameworks."
-                },
-                {
-                    name: "Governance",
-                    href: "/governance",
-                    icon: Scale,
-                    description: "Analyze resource orchestration and institutional logics."
-                },
-                {
-                    name: "Cultural Framing",
-                    href: "/cultural",
-                    icon: Lightbulb,
-                    description: "Examine cultural framing and epistemic authority."
-                },
-                {
-                    name: "Concept Network",
-                    href: "/ontology",
-                    icon: BookOpen,
-                    description: "Visual map of key concepts and their relationships."
-                },
-                {
-                    name: "Temporal Dynamics",
-                    href: "/timeline",
-                    icon: Clock,
-                    description: "Track the evolution of discourse and policy over time."
-                },
-            ]
-        },
-        {
-            title: "Educational Resources",
-            items: [
-                {
-                    name: "Critical Glossary",
-                    href: "/glossary",
-                    icon: BookOpen,
-                    description: "Definitions of key theoretical concepts and terms."
-                },
-                {
-                    name: "Literature Review",
-                    href: "/literature",
-                    icon: BookOpen,
-                    description: "Theoretical framework and key scholarship."
-                }
-            ]
-        }
-    ];
-
-    const SidebarContent = () => (
+function SidebarContent({ pathname, isMounted }: { pathname: string; isMounted: boolean }) {
+    return (
         <div className="flex flex-col h-full bg-white">
             <div className="p-6 border-b border-slate-100">
                 <Link href="/" className="flex items-center gap-2">
@@ -167,7 +164,7 @@ export function Sidebar() {
             </div>
 
             <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8">
-                {navGroups.map((group, groupIndex) => (
+                {NAV_GROUPS.map((group, groupIndex) => (
                     <div key={groupIndex}>
                         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
                             {group.title}
@@ -211,12 +208,29 @@ export function Sidebar() {
             </div>
         </div>
     );
+}
+
+export function Sidebar() {
+    const pathname = usePathname();
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Close mobile menu when path changes
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [pathname]);
+
+    // Handle hydration mismatch
+    useEffect(() => {
+        // setIsMounted(true); // Hydration mismatch fix not strictly needed if we just render conditionally
+        setIsMounted(true);
+    }, []);
 
     return (
         <>
             {/* Desktop Sidebar */}
             <div className="hidden md:flex w-64 border-r border-slate-200 bg-white flex-col h-full flex-shrink-0">
-                <SidebarContent />
+                <SidebarContent pathname={pathname} isMounted={isMounted} />
             </div>
 
             {/* Mobile Header */}
@@ -256,7 +270,7 @@ export function Sidebar() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <SidebarContent />
+                            <SidebarContent pathname={pathname} isMounted={isMounted} />
                         </div>
                     </div>
                 </div>

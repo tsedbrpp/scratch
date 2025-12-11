@@ -107,7 +107,7 @@ export function CulturalHoleMatrix({ clusters, holes, onConceptClick }: Cultural
                                                     <div>
                                                         <p className="font-bold text-sm text-amber-700">💡 Cultural Gap Detected</p>
                                                         <p className="text-xs text-slate-600 mt-1">
-                                                            These discourse clusters don't "speak to each other" — they use different language and concepts.
+                                                            These discourse clusters don&apos;t "speak to each other" — they use different language and concepts.
                                                         </p>
                                                     </div>
 

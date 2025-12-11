@@ -31,7 +31,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
             const textContent = await page.getTextContent();
 
             const pageText = textContent.items
-                .map((item: { str: string } | any) => 'str' in item ? item.str : '')
+                .map((item: { str?: string } | { [key: string]: unknown }) => 'str' in item && typeof item.str === 'string' ? item.str : '')
                 .join(' ');
 
             fullText += `\n\n--- Page ${pageNum} ---\n\n${pageText}`;

@@ -129,7 +129,7 @@ Return ONLY a JSON array of 1-2 search queries, no markdown:
             );
         }
 
-        const results = data.items?.map((item: any) => ({
+        const results = data.items?.map((item: { title: string; link: string; snippet: string }) => ({
             title: item.title,
             link: item.link,
             snippet: item.snippet,

@@ -1,8 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Quote, ExternalLink } from "lucide-react";
+import { Quote, ExternalLink } from "lucide-react";
 
 const TERMS = [
     {
@@ -96,9 +96,9 @@ export default function GlossaryPage() {
                                 <Quote className="h-3 w-3 text-indigo-400" />
                                 <span className="font-medium">Scholarship:</span>
                                 <span className="italic">{item.scholar}</span>
-                                {(item as any).url && (
+                                {item.url && (
                                     <a
-                                        href={(item as any).url}
+                                        href={item.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="ml-auto flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"

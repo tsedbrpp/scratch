@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,16 @@ import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, Aler
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
 import { synthesizeComparison } from "@/services/analysis";
 
-import { Source, AnalysisResult, ComparativeSynthesis } from "@/types";
+import { Source, ComparativeSynthesis } from "@/types";
 
-type CulturalFraming = NonNullable<AnalysisResult>;
+// CulturalFraming type removed
 
 export default function ComparisonPage() {
     const { sources, isLoading, updateSource } = useSources();
-    const [policyDocs, setPolicyDocs] = useState<Source[]>([]);
+
+    // Filter for policy documents (non-traces)
+    const policyDocs = useMemo(() => sources.filter(s => s.type !== "Trace"), [sources]);
+
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -27,15 +30,11 @@ export default function ComparisonPage() {
     useEffect(() => {
         if (isLoading) return;
 
-        // Filter for policy documents (non-traces)
-        const policies = sources.filter(s => s.type !== "Trace");
-        setPolicyDocs(policies);
-
         // Auto-select first two docs
-        if (policies.length >= 2 && selectedDocs.length === 0) {
-            setSelectedDocs([policies[0].id, policies[1].id]);
+        if (policyDocs.length >= 2 && selectedDocs.length === 0) {
+            setSelectedDocs([policyDocs[0].id, policyDocs[1].id]);
         }
-    }, [sources, isLoading, selectedDocs.length]);
+    }, [isLoading, selectedDocs.length, policyDocs]);
 
     const selectedSources = selectedDocs
         .map(id => policyDocs.find(s => s.id === id))
@@ -75,8 +74,7 @@ export default function ComparisonPage() {
         try {
             // Prepare documents for synthesis (strip unnecessary fields to save tokens if needed, but passing full object for now is fine as they contain the analysis)
             const result = await synthesizeComparison(selectedSources);
-            // @ts-ignore - The API returns the synthesis in the analysis field, but typed as AnalysisResult. We cast it or handle it.
-            // Actually, the API returns the JSON directly.
+            // The API returns the synthesis in the analysis field, but untyped.
             setSynthesisResult(result as unknown as ComparativeSynthesis);
         } catch (error) {
             console.error("Synthesis failed:", error);
@@ -235,7 +233,7 @@ export default function ComparisonPage() {
                             Legitimacy
                         </div>
                         <p className="text-slate-600">
-                            The moral justifications used to defend or critique a system (based on Boltanski & Thévenot's Orders of Worth).
+                            The moral justifications used to defend or critique a system (based on Boltanski & Thévenot&apos;s Orders of Worth).
                         </p>
                     </div>
                 </CardContent>
@@ -355,7 +353,7 @@ export default function ComparisonPage() {
                                                 Run cultural framing analysis on these documents first.
                                             </p>
                                             <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: 'cultural_framing'
+                                                analysisMode: &apos;cultural_framing&apos;
                                             </code>
                                         </div>
                                     )}
@@ -399,7 +397,7 @@ export default function ComparisonPage() {
                                             </div>
 
                                             {/* Dimension Comparison */}
-                                            {["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"].map((dimension) => (
+                                            {(["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"] as const).map((dimension) => (
                                                 <div key={dimension}>
                                                     <h4 className="font-semibold mb-3 capitalize">
                                                         {dimension.replace(/_/g, " ")}
@@ -424,7 +422,6 @@ export default function ComparisonPage() {
                                                                         </Button>
                                                                     </div>
                                                                     <div className="text-sm text-slate-700">
-                                                                        {/* @ts-ignore */}
                                                                         {source.cultural_framing?.[dimension] || "Not analyzed"}
                                                                     </div>
                                                                 </CardContent>
@@ -459,7 +456,7 @@ export default function ComparisonPage() {
                                                 Run institutional logics analysis on these documents first.
                                             </p>
                                             <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: 'institutional_logics'
+                                                analysisMode: &apos;institutional_logics&apos;
                                             </code>
                                         </div>
                                     )}
@@ -467,8 +464,8 @@ export default function ComparisonPage() {
                                     {selectedSources[0]?.institutional_logics && (
                                         <div className="space-y-8">
                                             {/* Logic Strength Comparison */}
-                                            {["market", "state", "professional", "community"].map((logic) => {
-                                                const Icon = logicIcons[logic as keyof typeof logicIcons];
+                                            {(["market", "state", "professional", "community"] as const).map((logic) => {
+                                                const Icon = logicIcons[logic];
                                                 return (
                                                     <div key={logic}>
                                                         <h4 className="font-semibold mb-4 flex items-center gap-2 capitalize">
@@ -477,7 +474,6 @@ export default function ComparisonPage() {
                                                         </h4>
                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                             {selectedSources.map((source, idx) => {
-                                                                // @ts-ignore
                                                                 const logicData = source.institutional_logics?.logics?.[logic];
                                                                 return (
                                                                     <Card key={idx} className={logicColors[logic as keyof typeof logicColors]}>
@@ -612,7 +608,7 @@ export default function ComparisonPage() {
                                                 Run legitimacy analysis on these documents first.
                                             </p>
                                             <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: 'legitimacy'
+                                                analysisMode: &apos;legitimacy&apos;
                                             </code>
                                         </div>
                                     )}
@@ -663,7 +659,7 @@ export default function ComparisonPage() {
                                     {!synthesisResult && !isSynthesizing && (
                                         <div className="text-center py-12 text-slate-500">
                                             <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                                            <p>Click "Synthesize" to generate a comparative analysis.</p>
+                                            <p>Click &quot;Synthesize&quot; to generate a comparative analysis.</p>
                                         </div>
                                     )}
 

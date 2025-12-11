@@ -23,7 +23,13 @@ export interface CulturalHole {
     distance: number; // 0-1, higher = bigger gap
     bridgingConcepts: BridgingConcept[];
     opportunity: string; // Description of innovation potential
+
     policyImplication: string;
+    prediction_scenarios?: {
+        scenario: string;
+        likelihood: number; // 0-100
+        indicator: string;
+    }[];
 }
 
 export interface CulturalAnalysisResult {

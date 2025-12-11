@@ -24,6 +24,13 @@ export interface AnalysisResult {
         rights?: { title: string; description: string; badge: string; quote?: string };
         scope?: { title: string; description: string; badge: string; quote?: string };
     };
+    governance_score_explanations?: {
+        centralization?: string;
+        rights_focus?: string;
+        flexibility?: string;
+        market_power?: string;
+        procedurality?: string;
+    };
     // Assemblage Dynamics
     assemblage_dynamics?: {
         territorialization: string;
@@ -59,6 +66,33 @@ export interface AnalysisResult {
         justification?: string;
         timestamp: string;
     };
+    verified_quotes?: {
+        text: string;
+        verified: boolean;
+        confidence: number; // 0-1
+        context: string;
+    }[];
+    system_critique?: {
+        blind_spots: string[];
+        over_interpretation: string;
+        legitimacy_correction: string;
+    };
+    stress_test_report?: {
+        original_score: number;
+        perturbed_score: number;
+        framing_sensitivity: "High" | "Medium" | "Low";
+        shift_explanation?: string;
+        inverted_text_excerpt: string;
+        rhetorical_shifts?: { original: string; new: string; explanation: string }[];
+    };
+    holes?: {
+        between: string[];
+        concept: string;
+        description: string;
+        significance: string;
+        scores: Record<string, number>;
+        prediction_scenarios?: { scenario: string; likelihood: number; indicator: string }[];
+    }[];
 }
 
 export interface PositionalityData {

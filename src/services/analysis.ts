@@ -1,6 +1,6 @@
 import { AnalysisResult, Source, PositionalityData } from "@/types";
 
-export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'resistance_synthesis';
+export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'resistance_synthesis' | 'stress_test';
 
 interface AnalyzeRequest {
     text: string;
@@ -9,6 +9,7 @@ interface AnalyzeRequest {
     sourceA?: { title: string; text: string };
     sourceB?: { title: string; text: string };
     documents?: Source[]; // For comparative synthesis
+    existingAnalysis?: AnalysisResult;
 }
 
 interface AnalyzeResponse {
@@ -25,7 +26,8 @@ export const analyzeDocument = async (
     force: boolean = false,
     documentId?: string,
     title?: string,
-    positionality?: PositionalityData
+    positionality?: PositionalityData,
+    existingAnalysis?: AnalysisResult
 ): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -44,7 +46,8 @@ export const analyzeDocument = async (
                 force,
                 documentId,
                 title,
-                positionality
+                positionality,
+                existingAnalysis
             })
         });
 

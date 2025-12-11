@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Network, Scale, Users, Lightbulb, Globe, ShieldCheck } from "lucide-react";
+import { Scale, Network, Globe, Users, Lightbulb, ShieldCheck } from "lucide-react";
 
 export default function LiteraturePage() {
     return (
@@ -11,8 +11,8 @@ export default function LiteraturePage() {
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold text-slate-900">Theoretical Framework & Literature Review</h1>
                 <p className="text-slate-600 max-w-3xl">
-                    This module maps the theoretical underpinnings of the "Decolonial Situatedness in Global AI Governance" project.
-                    It grounds the application's methodology in key scholarship across Decolonial Studies, STS, and Critical Legal Theory.
+                    This module maps the theoretical underpinnings of the &quot;Decolonial Situatedness in Global AI Governance&quot; project.
+                    It grounds the application&apos;s methodology in key scholarship across Decolonial Studies, STS, and Critical Legal Theory.
                 </p>
             </div>
 
@@ -74,7 +74,7 @@ export default function LiteraturePage() {
                                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mt-4">
                                     <h4 className="text-sm font-semibold text-slate-800 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-slate-600">
-                                        Used in the <strong>Synthesis Module</strong> to map the flow from Actors &rarr; Mechanisms &rarr; Impacts, visualizing how the EU AI Act and PL 2338 function as "assemblages" of power rather than just text.
+                                        Used in the <strong>Synthesis Module</strong> to map the flow from Actors &rarr; Mechanisms &rarr; Impacts, visualizing how the EU AI Act and PL 2338 function as &quot;assemblages&quot; of power rather than just text.
                                     </p>
                                 </div>
                             </CardContent>
@@ -90,7 +90,7 @@ export default function LiteraturePage() {
                                     Decolonial Situatedness
                                 </CardTitle>
                                 <CardDescription>
-                                    Analyzing how "universal" AI governance reinforces Global North epistemologies.
+                                    Analyzing how &quot;universal&quot; AI governance reinforces Global North epistemologies.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -116,7 +116,7 @@ export default function LiteraturePage() {
                                 <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 mt-4">
                                     <h4 className="text-sm font-semibold text-emerald-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-emerald-800">
-                                        Informs the <strong>Ontology Module</strong> and <strong>Cultural Analysis</strong>, questioning the "universal" applicability of the EU's "Risk-Based Approach" when transplanted to the Brazilian context.
+                                        Informs the <strong>Ontology Module</strong> and <strong>Cultural Analysis</strong>, questioning the &quot;universal&quot; applicability of the EU&apos;s &quot;Risk-Based Approach&quot; when transplanted to the Brazilian context.
                                     </p>
                                 </div>
                             </CardContent>
@@ -158,7 +158,7 @@ export default function LiteraturePage() {
                                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-100 mt-4">
                                     <h4 className="text-sm font-semibold text-amber-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-amber-800">
-                                        Central to the <strong>Resistance Module</strong>, where we map "Friction Points" and "Subversion Strategies" in the implementation of AI laws.
+                                        Central to the <strong>Resistance Module</strong>, where we map &quot;Friction Points&quot; and &quot;Subversion Strategies&quot; in the implementation of AI laws.
                                     </p>
                                 </div>
                             </CardContent>
@@ -184,7 +184,7 @@ export default function LiteraturePage() {
                                         <ul className="list-disc list-inside text-sm text-slate-600 space-y-2">
                                             <li><strong>Legal Transplants:</strong> The movement of laws across borders and their mutation (Watson/Frankenberg).</li>
                                             <li><strong>TWAIL:</strong> Third World Approaches to International Law, critiquing the colonial origins of international norms.</li>
-                                            <li><strong>Brussels Effect:</strong> The EU's unilateral power to regulate global markets (Bradford) - <em>critiqued here</em>.</li>
+                                            <li><strong>Brussels Effect:</strong> The EU&apos;s unilateral power to regulate global markets (Bradford) - <em>critiqued here</em>.</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-3">
@@ -200,7 +200,7 @@ export default function LiteraturePage() {
                                 <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mt-4">
                                     <h4 className="text-sm font-semibold text-indigo-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-indigo-800">
-                                        Used in the <strong>Data Module</strong> and <strong>Comparison</strong> to analyze the "Brussels Effect" not as a neutral diffusion of standards, but as a form of "Legal Imperialism."
+                                        Used in the <strong>Data Module</strong> and <strong>Comparison</strong> to analyze the &quot;Brussels Effect&quot; not as a neutral diffusion of standards, but as a form of &quot;Legal Imperialism.&quot;
                                     </p>
                                 </div>
                             </CardContent>
@@ -216,7 +216,7 @@ export default function LiteraturePage() {
                                     Feminist Standpoint & Reflexivity
                                 </CardTitle>
                                 <CardDescription>
-                                    Acknowledging the researcher's position within the assemblage.
+                                    Acknowledging the researcher&apos;s position within the assemblage.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -240,7 +240,7 @@ export default function LiteraturePage() {
                                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 mt-4">
                                     <h4 className="text-sm font-semibold text-purple-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-purple-800">
-                                        Operationalized in the <strong>Reflexivity Module</strong> via the "Methodological Log" and "Positionality Statement," ensuring the researcher does not claim a "God Trick" view from nowhere.
+                                        Operationalized in the <strong>Reflexivity Module</strong> via the &quot;Methodological Log&quot; and &quot;Positionality Statement,&quot; ensuring the researcher does not claim a &quot;God Trick&quot; view from nowhere.
                                     </p>
                                 </div>
                             </CardContent>
@@ -281,7 +281,7 @@ export default function LiteraturePage() {
                                 <div className="bg-rose-50 p-4 rounded-lg border border-rose-100 mt-4">
                                     <h4 className="text-sm font-semibold text-rose-900 mb-2">Application in Project:</h4>
                                     <p className="text-sm text-rose-800">
-                                        Used in the <strong>Legitimacy Module</strong> to analyze the "moral vocabulary" of AI policy documents, identifying which "Orders of Worth" (e.g., Industrial efficiency vs. Civic solidarity) are dominant.
+                                        Used in the <strong>Legitimacy Module</strong> to analyze the &quot;moral vocabulary&quot; of AI policy documents, identifying which &quot;Orders of Worth&quot; (e.g., Industrial efficiency vs. Civic solidarity) are dominant.
                                     </p>
                                 </div>
                             </CardContent>

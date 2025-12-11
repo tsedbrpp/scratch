@@ -19,7 +19,7 @@ import { ConceptDetailsModal } from "@/components/ontology/ConceptDetailsModal";
 import { ComparisonView } from "@/components/ontology/ComparisonView";
 
 // Static Data (Fallback) - Kept for initial state visualization
-import { Globe, Brain, Share2, Database, Scale } from "lucide-react";
+
 
 const STATIC_CONCEPTS = [
     {
@@ -140,6 +140,7 @@ export default function OntologyPage() {
                 // Process nodes to add coordinates and colors
                 const processedNodes = data.analysis.nodes.map((node: OntologyNode, index: number) => ({
                     ...node,
+                    label: node.label || node.id,
                     x: 300 + 200 * Math.cos(2 * Math.PI * index / data.analysis.nodes.length),
                     y: 200 + 150 * Math.sin(2 * Math.PI * index / data.analysis.nodes.length),
                     color: getColorForCategory(node.category)

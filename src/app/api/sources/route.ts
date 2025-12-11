@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     try {
         const sources = await getSources(userId);
         return NextResponse.json(sources);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch sources' }, { status: 500 });
     }
 }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const newSource = await addSource(userId, body);
         return NextResponse.json(newSource);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to create source' }, { status: 500 });
     }
 }

@@ -4,9 +4,14 @@ interface GovernanceCompassProps {
     rhetoricScore: number; // 0-100 (Y-Axis)
     realityScore: number; // 0-100 (X-Axis)
     driftExplanation?: string;
+    scoreExplanations?: {
+        rights_focus?: string;
+        procedurality?: string;
+        [key: string]: string | undefined;
+    };
 }
 
-export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanation }: GovernanceCompassProps) {
+export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanation, scoreExplanations }: GovernanceCompassProps) {
     const data = [
         { x: realityScore, y: rhetoricScore, name: 'Governance State' }
     ];
@@ -42,7 +47,21 @@ export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanatio
                             label={{ value: 'Discursive Rhetoric (Claims) →', angle: -90, position: 'left', offset: 0, fontSize: 10 }}
                         />
                         <ZAxis range={[100, 100]} />
-                        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                        <Tooltip
+                            cursor={{ strokeDasharray: '3 3' }}
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-white p-2 border border-slate-200 shadow-md rounded text-xs max-w-[200px]">
+                                            <p className="font-bold mb-1">Governance Coords</p>
+                                            <p>Real: {payload[0].value}</p>
+                                            <p>Rhet: {payload[1].value}</p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
 
                         {/* Quadrant Lines */}
                         <ReferenceLine x={50} stroke="#e2e8f0" />
@@ -77,8 +96,23 @@ export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanatio
                 </div>
             </div>
 
+            <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Rhetoric Score ({rhetoricScore})</div>
+                    <p className="text-[10px] text-slate-700 italic leading-snug mt-1">
+                        {scoreExplanations?.rights_focus || "Measures the intensity of ethical/human-rights claims made in the text."}
+                    </p>
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Reality Score ({realityScore})</div>
+                    <p className="text-[10px] text-slate-700 italic leading-snug mt-1">
+                        {scoreExplanations?.procedurality || "Measures the concreteness of operational mechanisms described."}
+                    </p>
+                </div>
+            </div>
+
             {isHighDrift && (
-                <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-100 text-xs text-red-800">
+                <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-100 text-xs text-red-800">
                     <strong>Governance Drift:</strong> {driftExplanation || "Significant gap between ethical claims and enforcement mechanisms."}
                 </div>
             )}

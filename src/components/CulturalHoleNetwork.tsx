@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { DiscourseCluster, CulturalHole } from "@/types/cultural";
 
 interface CulturalHoleNetworkProps {
@@ -12,54 +12,10 @@ interface CulturalHoleNetworkProps {
 export function CulturalHoleNetwork({ clusters, holes, isLive = false }: CulturalHoleNetworkProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const animationRef = useRef<number>();
+    const animationRef = useRef<number | null>(null);
     const timeRef = useRef<number>(0);
 
-    useEffect(() => {
-        const container = containerRef.current;
-        const canvas = canvasRef.current;
-        if (!container || !canvas || clusters.length === 0) return;
-
-        const resizeObserver = new ResizeObserver((entries) => {
-            const { width, height } = entries[0].contentRect;
-            canvas.width = width;
-            canvas.height = height;
-            // Initial draw
-            drawNetwork(canvas, width, height, 0);
-        });
-
-        resizeObserver.observe(container);
-
-        return () => {
-            resizeObserver.disconnect();
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        };
-    }, [clusters, holes]);
-
-    // Animation Loop
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !isLive) {
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-            // Reset to static state
-            if (canvas) drawNetwork(canvas, canvas.width, canvas.height, 0);
-            return;
-        }
-
-        const animate = () => {
-            timeRef.current += 0.01;
-            drawNetwork(canvas, canvas.width, canvas.height, timeRef.current);
-            animationRef.current = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        };
-    }, [isLive, clusters, holes]);
-
-    const drawNetwork = (canvas: HTMLCanvasElement, width: number, height: number, time: number) => {
+    const drawNetwork = useCallback((canvas: HTMLCanvasElement, width: number, height: number, time: number) => {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
@@ -186,7 +142,51 @@ export function CulturalHoleNetwork({ clusters, holes, isLive = false }: Cultura
             ctx.fillText(cluster.size.toString(), pos.x, pos.y);
             ctx.shadowBlur = 0;
         });
-    };
+    }, [clusters, holes, isLive]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        const canvas = canvasRef.current;
+        if (!container || !canvas || clusters.length === 0) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            canvas.width = width;
+            canvas.height = height;
+            // Initial draw
+            drawNetwork(canvas, width, height, 0);
+        });
+
+        resizeObserver.observe(container);
+
+        return () => {
+            resizeObserver.disconnect();
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
+    }, [clusters, holes, drawNetwork]);
+
+    // Animation Loop
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !isLive) {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+            // Reset to static state
+            if (canvas) drawNetwork(canvas, canvas.width, canvas.height, 0);
+            return;
+        }
+
+        const animate = () => {
+            timeRef.current += 0.01;
+            drawNetwork(canvas, canvas.width, canvas.height, timeRef.current);
+            animationRef.current = requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        return () => {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
+    }, [isLive, drawNetwork]);
 
     if (clusters.length === 0) {
         return (
