@@ -118,8 +118,10 @@ export default function ResistancePage() {
             });
 
             const result = await response.json();
+            console.log("DEBUG: Search Result Traces:", result.traces); // Check raw response in browser console
+
             if (result.success && Array.isArray(result.traces)) {
-                const newTraces = result.traces.map((trace: { title: string; description: string; query: string; content: string; sourceUrl: string }) => ({
+                const newTraces = result.traces.map((trace: { title: string; description: string; query: string; content: string; sourceUrl: string; strategy?: string; explanation?: string }) => ({
                     id: Math.random().toString(36).substr(2, 9),
                     title: `[Web] ${trace.title}`,
                     description: `${trace.description} • Query: "${trace.query}"`,
@@ -128,7 +130,13 @@ export default function ResistancePage() {
                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
                     status: "Active Case",
                     colorClass: "bg-blue-100",
-                    iconClass: "text-blue-600"
+                    iconClass: "text-blue-600",
+                    resistance_analysis: trace.strategy ? {
+                        strategy_detected: trace.strategy,
+                        evidence_quote: trace.content,
+                        interpretation: trace.explanation || "⚠️ NO INTERPRETATION RECEIVED",
+                        confidence: "Medium"
+                    } : undefined
                 }));
 
                 // Add each new trace to the store
@@ -167,13 +175,20 @@ export default function ResistancePage() {
     };
 
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResult, setSynthesisResult] = useState<ResistanceSynthesisResult | null>(null);
+    const [synthesisResult, setSynthesisResult] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
 
     const handleSynthesizeFindings = async () => {
         const analyzedTraces = traces.filter(t => t.resistance_analysis);
         if (analyzedTraces.length < 2) {
             toast.error("Not enough data", { description: "Please analyze at least 2 traces before synthesizing." });
             return;
+        }
+
+        // Check if we already have results and ask for confirmation
+        if (synthesisResult) {
+            if (!confirm("Existing synthesis found. Do you want to re-run it? This will overwrite the current findings.")) {
+                return;
+            }
         }
 
         setIsSynthesizing(true);
@@ -396,7 +411,11 @@ export default function ResistancePage() {
                                         >
                                             <div className="font-medium text-slate-900 break-words">{trace.title}</div>
                                             <div className="text-xs text-slate-500 mt-1 break-words">{trace.description}</div>
-                                            {trace.resistance_analysis && (
+                                            {trace.resistance_analysis?.strategy_detected ? (
+                                                <Badge variant="secondary" className="mt-2 bg-purple-100 text-purple-700 border-purple-200">
+                                                    {trace.resistance_analysis.strategy_detected}
+                                                </Badge>
+                                            ) : trace.resistance_analysis && (
                                                 <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
                                                     Analyzed
                                                 </Badge>

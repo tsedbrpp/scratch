@@ -28,4 +28,11 @@ export interface ComparisonResult {
     unique_concepts_source_b: string[];
     structural_differences: string;
     relationship_divergences: { concept: string; difference: string }[];
+    system_critique?: {
+        blind_spots?: string[];
+        over_interpretation?: string;
+        legitimacy_correction?: string;
+    };
+    sourceAId?: string;
+    sourceBId?: string;
 }

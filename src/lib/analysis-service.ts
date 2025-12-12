@@ -14,12 +14,13 @@ import {
     ASSEMBLAGE_EXTRACTION_PROMPT,
     RESISTANCE_SYNTHESIS_PROMPT,
     STRESS_TEST_SYSTEM_PROMPT
-} from './analysis-prompts';
+} from './prompts';
 
 export interface AnalysisConfig {
     systemPrompt: string;
     userContent: string;
 }
+
 
 export function getAnalysisConfig(
     analysisMode: string,
@@ -27,8 +28,11 @@ export function getAnalysisConfig(
         text?: string;
         title?: string;
         sourceType?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sourceA?: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sourceB?: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         documents?: any[];
     }
 ): AnalysisConfig {

@@ -25,8 +25,9 @@ async function testGoogleSearch() {
     console.log('\n🌐 Testing API connection...\n');
 
     try {
-        const testQuery = 'test';
-        const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${testQuery}&num=1`;
+        const searchQuery = 'test';
+        const enhancedQuery = `${searchQuery} (site:reddit.com OR site:news.ycombinator.com OR site:*.stackexchange.com OR inurl:forum OR inurl:discussion)`;
+        const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(enhancedQuery)}&num=1`;
 
         const response = await fetch(url);
         const data = await response.json();

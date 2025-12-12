@@ -1,18 +1,19 @@
 "use client";
+// Force rebuild trigger
 
 import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
+import { useServerStorage } from "@/hooks/useServerStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle } from "lucide-react";
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
-import { synthesizeComparison } from "@/services/analysis";
+import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
+import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 
-import { Source, ComparativeSynthesis } from "@/types";
-
-// CulturalFraming type removed
+import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 
 export default function ComparisonPage() {
     const { sources, isLoading, updateSource } = useSources();
@@ -23,9 +24,14 @@ export default function ComparisonPage() {
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResult, setSynthesisResult] = useState<ComparativeSynthesis | null>(null);
+    const [synthesisResult, setSynthesisResult] = useServerStorage<ComparativeSynthesis | null>("comparison_synthesis_result", null);
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
-    const [regeneratingIds, setRegeneratingIds] = useState<Record<string, boolean>>({});
+    // const [regeneratingIds, setRegeneratingIds] = useState<Record<string, boolean>>({});
+
+    // Deep Analysis State
+    const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
+    const [analyzingSourceId, setAnalyzingSourceId] = useState<string | null>(null);
+    const [isDeepAnalyzing, setIsDeepAnalyzing] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (isLoading) return;
@@ -67,14 +73,22 @@ export default function ComparisonPage() {
             return;
         }
 
+        // Confirmation: Check if persistence data exists
+        if (synthesisResult) {
+            if (!confirm("Existing synthesis found. Do you want to re-run it? This will overwrite the current findings.")) {
+                // If they cancel, we just switch to the tab to show existing results
+                setActiveTab("synthesis");
+                return;
+            }
+        }
+
         setSynthesisError(null);
         setIsSynthesizing(true);
         setActiveTab("synthesis");
 
         try {
-            // Prepare documents for synthesis (strip unnecessary fields to save tokens if needed, but passing full object for now is fine as they contain the analysis)
+            // Prepare documents for synthesis
             const result = await synthesizeComparison(selectedSources);
-            // The API returns the synthesis in the analysis field, but untyped.
             setSynthesisResult(result as unknown as ComparativeSynthesis);
         } catch (error) {
             console.error("Synthesis failed:", error);
@@ -84,108 +98,95 @@ export default function ComparisonPage() {
         }
     };
 
-    const handleRegenerateCultural = async (source: Source) => {
-        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
+    const initiateDeepAnalysis = (sourceId: string) => {
+        setAnalyzingSourceId(sourceId);
+        setIsPositionalityOpen(true);
+    };
+
+    const handleRunDeepAnalysis = async (positionality: PositionalityData) => {
+        if (!analyzingSourceId) return;
+        const sourceId = analyzingSourceId;
+        const source = sources.find(s => s.id === sourceId);
+
+        setIsPositionalityOpen(false);
+        setAnalyzingSourceId(null);
+
+        if (!source || !source.extractedText) return;
+
+        setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: true }));
 
         try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
+            // Run all 3 analyses in parallel
+            const modes = ['cultural_framing', 'institutional_logics', 'legitimacy'] as const;
 
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    text: source.extractedText?.substring(0, 50000) || '',
-                    sourceType: 'Policy Document',
-                    analysisMode: 'cultural_framing',
-                    force: true,
-                    documentId: source.id,
-                    title: source.title
-                })
+            const promises = modes.map(mode =>
+                analyzeDocument(
+                    source.extractedText!.substring(0, 50000),
+                    mode,
+                    'Policy Document',
+                    true, // Forces refresh as this is an explicit user action
+                    sourceId,
+                    source.title,
+                    positionality
+                ).then(result => ({ mode, result }))
+            );
+
+            const results = await Promise.all(promises);
+
+            // Construct updates
+            const updates: Partial<Source> = {};
+            results.forEach(({ mode, result }) => {
+                if (mode === 'cultural_framing') updates.cultural_framing = result;
+                if (mode === 'institutional_logics') updates.institutional_logics = result;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if (mode === 'legitimacy') updates.legitimacy_analysis = result as any;
             });
 
-            const data = await response.json();
-            if (data.success && data.analysis) {
-                await updateSource(source.id, { cultural_framing: data.analysis });
-            } else {
-                alert("Regeneration failed: " + (data.error || "Unknown error"));
-            }
+            await updateSource(sourceId, updates);
+            // alert(`Deep analysis complete for ${source.title}!`); // Optional: maybe too noisy
+
         } catch (error) {
-            console.error("Regeneration error:", error);
-            alert("Failed to regenerate analysis.");
+            console.error("Deep analysis failed:", error);
+            alert("Failed to complete deep analysis. Check console for details.");
         } finally {
-            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
+            setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: false }));
         }
     };
 
-    const handleRegenerateLogics = async (source: Source) => {
-        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
+    // Helper to render the "Run Deep Analysis" button if data is missing
+    const renderAnalysisButtonOrContent = (source: Source, type: 'cultural' | 'logics' | 'legitimacy', content: React.ReactNode) => {
+        const hasData = type === 'cultural' ? !!source.cultural_framing :
+            type === 'logics' ? !!source.institutional_logics :
+                !!source.legitimacy_analysis;
 
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    text: source.extractedText?.substring(0, 50000) || '',
-                    sourceType: 'Policy Document',
-                    analysisMode: 'institutional_logics',
-                    force: true,
-                    documentId: source.id,
-                    title: source.title
-                })
-            });
-            const data = await response.json();
-            if (data.success && data.analysis) {
-                await updateSource(source.id, { institutional_logics: data.analysis });
-            } else {
-                alert("Regeneration failed: " + (data.error || "Unknown error"));
-            }
-        } catch (error) {
-            console.error("Regeneration error:", error);
-            alert("Failed to regenerate analysis.");
-        } finally {
-            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
-        }
-    };
+        if (hasData) return content;
 
-    const handleRegenerateLegitimacy = async (source: Source) => {
-        setRegeneratingIds(prev => ({ ...prev, [source.id]: true }));
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    text: source.extractedText?.substring(0, 50000) || '',
-                    sourceType: 'Policy Document',
-                    analysisMode: 'legitimacy',
-                    force: true,
-                    documentId: source.id,
-                    title: source.title
-                })
-            });
-            const data = await response.json();
-            if (data.success && data.analysis) {
-                await updateSource(source.id, { legitimacy_analysis: data.analysis });
-            } else {
-                alert("Regeneration failed: " + (data.error || "Unknown error"));
-            }
-        } catch (error) {
-            console.error("Regeneration error:", error);
-            alert("Failed to regenerate analysis.");
-        } finally {
-            setRegeneratingIds(prev => ({ ...prev, [source.id]: false }));
-        }
+        return (
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center h-full min-h-[200px]">
+                <Sparkles className="h-8 w-8 text-indigo-300 mb-3" />
+                <h3 className="text-sm font-semibold text-slate-700 mb-1">Missing {type === 'cultural' ? 'Cultural' : type === 'logics' ? 'Logics' : 'Legitimacy'} Data</h3>
+                <p className="text-xs text-slate-500 max-w-xs mb-4">
+                    Run a deep analysis to generate {type} insights for this document.
+                </p>
+                <Button
+                    onClick={() => initiateDeepAnalysis(source.id)}
+                    disabled={isDeepAnalyzing[source.id]}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                >
+                    {isDeepAnalyzing[source.id] ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Analyzing...
+                        </>
+                    ) : (
+                        <>
+                            <Wand2 className="mr-2 h-4 w-4" />
+                            Run Deep Analysis
+                        </>
+                    )}
+                </Button>
+            </div>
+        );
     };
 
     if (isLoading) {
@@ -198,6 +199,12 @@ export default function ComparisonPage() {
 
     return (
         <div className="space-y-8">
+            <PositionalityDialog
+                isOpen={isPositionalityOpen}
+                onClose={() => setIsPositionalityOpen(false)}
+                onConfirm={handleRunDeepAnalysis}
+            />
+
             <div>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900">Comparative Analysis</h2>
                 <p className="text-slate-500">Compare cultural framing, institutional logics, and legitimacy across jurisdictions.</p>
@@ -336,7 +343,6 @@ export default function ComparisonPage() {
 
                     {/* Cultural Framing Comparison */}
                     {activeTab === "cultural" && (
-                        // ... existing cultural framing content
                         <div className="space-y-6">
                             <Card>
                                 <CardHeader>
@@ -346,92 +352,42 @@ export default function ComparisonPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {!selectedSources[0]?.cultural_framing && (
-                                        <div className="text-center py-8 text-slate-500">
-                                            <p className="mb-4">No cultural framing analysis yet.</p>
-                                            <p className="text-sm">
-                                                Run cultural framing analysis on these documents first.
-                                            </p>
-                                            <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: &apos;cultural_framing&apos;
-                                            </code>
-                                        </div>
-                                    )}
-
-                                    {selectedSources[0]?.cultural_framing && (
-                                        <div className="space-y-8">
-                                            {/* Cultural Distinctiveness Scores */}
-                                            <div>
-                                                <h4 className="font-semibold mb-4">Cultural Distinctiveness</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {selectedSources.map((source, idx) => (
-                                                        <Card key={idx} className="bg-slate-50 relative">
-                                                            <CardContent className="pt-6">
-                                                                <div className="absolute top-2 right-2">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="h-6 w-6 p-0"
-                                                                        onClick={() => handleRegenerateCultural(source)}
-                                                                        disabled={regeneratingIds[source.id]}
-                                                                        title="Regenerate Analysis (Bypass Cache)"
-                                                                    >
-                                                                        <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
-                                                                    </Button>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {selectedSources.map((source, idx) => (
+                                            <div key={idx} className="space-y-4">
+                                                {renderAnalysisButtonOrContent(source, 'cultural', (
+                                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                                        {/* Cultural Distinctiveness Scores */}
+                                                        <Card className="bg-slate-50 relative border-blue-100">
+                                                            <CardContent className="pt-6 text-center">
+                                                                <div className="text-3xl font-bold text-slate-900">
+                                                                    {((source.cultural_framing?.cultural_distinctiveness_score ?? 0) * 100).toFixed(0)}%
                                                                 </div>
-                                                                <div className="text-center">
-                                                                    <div className="text-3xl font-bold text-slate-900">
-                                                                        {((source.cultural_framing?.cultural_distinctiveness_score ?? 0) * 100).toFixed(0)}%
-                                                                    </div>
-                                                                    <div className="text-sm text-slate-600 mt-1">
-                                                                        {source.title}
-                                                                    </div>
-                                                                    <div className="text-xs text-slate-500 mt-2 italic">
-                                                                        {source.cultural_framing?.dominant_cultural_logic}
-                                                                    </div>
+                                                                <div className="text-sm text-slate-600 mt-1 font-medium">
+                                                                    {source.title}
+                                                                </div>
+                                                                <div className="text-xs text-slate-500 mt-2 italic px-2">
+                                                                    {source.cultural_framing?.dominant_cultural_logic}
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
-                                                    ))}
-                                                </div>
-                                            </div>
 
-                                            {/* Dimension Comparison */}
-                                            {(["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"] as const).map((dimension) => (
-                                                <div key={dimension}>
-                                                    <h4 className="font-semibold mb-3 capitalize">
-                                                        {dimension.replace(/_/g, " ")}
-                                                    </h4>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        {selectedSources.map((source, idx) => (
-                                                            <Card key={idx}>
-                                                                <CardContent className="pt-4">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className="text-xs font-semibold text-slate-500">
-                                                                            {source.title}
-                                                                        </div>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            className="h-6 w-6 p-0"
-                                                                            onClick={() => handleRegenerateCultural(source)}
-                                                                            disabled={regeneratingIds[source.id]}
-                                                                            title="Regenerate Analysis (Bypass Cache)"
-                                                                        >
-                                                                            <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
-                                                                        </Button>
-                                                                    </div>
-                                                                    <div className="text-sm text-slate-700">
-                                                                        {source.cultural_framing?.[dimension] || "Not analyzed"}
-                                                                    </div>
-                                                                </CardContent>
-                                                            </Card>
+                                                        {/* Dimension Comparison */}
+                                                        {(["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"] as const).map((dimension) => (
+                                                            <div key={dimension} className="space-y-1">
+                                                                <h4 className="font-semibold text-xs uppercase text-slate-500">
+                                                                    {dimension.replace(/_/g, " ")}
+                                                                </h4>
+                                                                <div className="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200">
+                                                                    {source.cultural_framing?.[dimension] || "Not analyzed"}
+                                                                </div>
+                                                            </div>
                                                         ))}
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -439,7 +395,6 @@ export default function ComparisonPage() {
 
                     {/* Institutional Logics Comparison */}
                     {activeTab === "logics" && (
-                        // ... existing institutional logics content
                         <div className="space-y-6">
                             <Card>
                                 <CardHeader>
@@ -449,142 +404,65 @@ export default function ComparisonPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {!selectedSources[0]?.institutional_logics && (
-                                        <div className="text-center py-8 text-slate-500">
-                                            <p className="mb-4">No institutional logics analysis yet.</p>
-                                            <p className="text-sm">
-                                                Run institutional logics analysis on these documents first.
-                                            </p>
-                                            <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: &apos;institutional_logics&apos;
-                                            </code>
-                                        </div>
-                                    )}
-
-                                    {selectedSources[0]?.institutional_logics && (
-                                        <div className="space-y-8">
-                                            {/* Logic Strength Comparison */}
-                                            {(["market", "state", "professional", "community"] as const).map((logic) => {
-                                                const Icon = logicIcons[logic];
-                                                return (
-                                                    <div key={logic}>
-                                                        <h4 className="font-semibold mb-4 flex items-center gap-2 capitalize">
-                                                            <Icon className="h-5 w-5" />
-                                                            {logic} Logic
-                                                        </h4>
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                            {selectedSources.map((source, idx) => {
-                                                                const logicData = source.institutional_logics?.logics?.[logic];
-                                                                return (
-                                                                    <Card key={idx} className={logicColors[logic as keyof typeof logicColors]}>
-                                                                        <CardContent className="pt-6">
-                                                                            <div className="text-xs font-semibold mb-2">
-                                                                                {source.title}
-                                                                            </div>
-                                                                            <div className="mb-3">
-                                                                                <div className="flex items-center justify-between mb-1">
-                                                                                    <span className="text-xs">Strength</span>
-                                                                                    <span className="text-sm font-bold">
-                                                                                        {((logicData?.strength || 0) * 100).toFixed(0)}%
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="w-full bg-white rounded-full h-2">
-                                                                                    <div
-                                                                                        className="bg-slate-800 h-2 rounded-full"
-                                                                                        style={{ width: `${(logicData?.strength || 0) * 100}%` }}
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-xs space-y-2">
-                                                                                <div>
-                                                                                    <span className="font-semibold">Material:</span>{" "}
-                                                                                    {logicData?.material || "N/A"}
-                                                                                </div>
-                                                                                <div>
-                                                                                    <span className="font-semibold">Discursive:</span>{" "}
-                                                                                    {logicData?.discursive || "N/A"}
-                                                                                </div>
-                                                                            </div>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-
-                                            {/* Dominant Logic Summary */}
-                                            <div>
-                                                <h4 className="font-semibold mb-4">Dominant Logic</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {selectedSources.map((source, idx) => (
-                                                        <Card key={idx} className="bg-slate-50 relative">
-                                                            <CardContent className="pt-6">
-                                                                <div className="absolute top-2 right-2">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="h-6 w-6 p-0"
-                                                                        onClick={() => handleRegenerateLogics(source)}
-                                                                        disabled={regeneratingIds[source.id]}
-                                                                        title="Regenerate Analysis (Bypass Cache)"
-                                                                    >
-                                                                        <RefreshCw className={`h-3 w-3 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
-                                                                    </Button>
-                                                                </div>
-                                                                <div className="text-center">
-                                                                    <Badge className="text-lg px-4 py-2 capitalize">
-                                                                        {source.institutional_logics?.dominant_logic || "Unknown"}
-                                                                    </Badge>
-                                                                    <div className="text-xs text-slate-600 mt-3">
-                                                                        {source.title}
-                                                                    </div>
-                                                                    <div className="text-xs text-slate-700 mt-4 text-left">
-                                                                        {source.institutional_logics?.overall_assessment || "No assessment"}
-                                                                    </div>
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Logic Conflicts */}
-                                            <div>
-                                                <h4 className="font-semibold mb-4">Logic Conflicts</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {selectedSources.map((source, idx) => (
-                                                        <Card key={idx}>
-                                                            <CardContent className="pt-6">
-                                                                <div className="text-xs font-semibold text-slate-500 mb-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {selectedSources.map((source, idx) => (
+                                            <div key={idx}>
+                                                {renderAnalysisButtonOrContent(source, 'logics', (
+                                                    <div className="space-y-6 animate-in fade-in duration-500">
+                                                        <Card className="bg-slate-50 relative border-purple-100">
+                                                            <CardContent className="pt-6 text-center">
+                                                                <Badge className="text-lg px-4 py-2 capitalize mb-2">
+                                                                    {source.institutional_logics?.dominant_logic || "Unknown"}
+                                                                </Badge>
+                                                                <div className="text-sm font-medium text-slate-900">
                                                                     {source.title}
                                                                 </div>
-                                                                <div className="space-y-3">
-                                                                    {source.institutional_logics?.logic_conflicts?.map((conflict, idx) => (
-                                                                        <div key={idx} className="text-xs space-y-1 p-2 bg-amber-50 rounded border border-amber-200">
-                                                                            <div className="font-semibold text-amber-800">
-                                                                                {conflict.between}
-                                                                            </div>
-                                                                            <div className="text-slate-700">
-                                                                                <span className="font-semibold">Site:</span> {conflict.site_of_conflict}
-                                                                            </div>
-                                                                            <div className="text-slate-700">
-                                                                                <span className="font-semibold">Resolution:</span> {conflict.resolution_strategy}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                    {(!source.institutional_logics?.logic_conflicts || source.institutional_logics.logic_conflicts.length === 0) && (
-                                                                        <div className="text-slate-500 italic">No conflicts identified</div>
-                                                                    )}
-                                                                </div>
                                                             </CardContent>
                                                         </Card>
-                                                    ))}
-                                                </div>
+
+                                                        {/* Logic Strengths */}
+                                                        <div className="space-y-3">
+                                                            {(["market", "state", "professional", "community"] as const).map(logic => {
+                                                                const Icon = logicIcons[logic];
+                                                                const logicData = source.institutional_logics?.logics?.[logic];
+                                                                return (
+                                                                    <div key={logic} className={`p-3 rounded border ${logicColors[logic].replace('text-', 'border-').replace('bg-', 'bg-opacity-10 ')}`}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className="flex items-center gap-2 font-semibold capitalize text-sm">
+                                                                                <Icon className="h-4 w-4" />
+                                                                                {logic}
+                                                                            </div>
+                                                                            <span className="text-sm font-bold">
+                                                                                {((logicData?.strength || 0) * 100).toFixed(0)}%
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                                                            <div
+                                                                                className="bg-current h-full"
+                                                                                style={{ width: `${(logicData?.strength || 0) * 100}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+
+                                                        {/* Conflicts */}
+                                                        <div>
+                                                            <h4 className="font-semibold text-xs uppercase text-slate-500 mb-2">Key Conflicts</h4>
+                                                            {source.institutional_logics?.logic_conflicts?.map((conflict, cIdx) => (
+                                                                <div key={cIdx} className="text-xs p-2 bg-amber-50 rounded border border-amber-200 mb-2">
+                                                                    <div className="font-bold text-amber-800 mb-1">{conflict.between}</div>
+                                                                    <div className="text-slate-600 mb-1">{conflict.site_of_conflict}</div>
+                                                                    <div className="text-slate-500 italic">{conflict.resolution_strategy}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    )}
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -601,42 +479,20 @@ export default function ComparisonPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {!selectedSources[0]?.legitimacy_analysis && (
-                                        <div className="text-center py-8 text-slate-500">
-                                            <p className="mb-4">No legitimacy analysis yet.</p>
-                                            <p className="text-sm">
-                                                Run legitimacy analysis on these documents first.
-                                            </p>
-                                            <code className="text-xs bg-slate-100 px-2 py-1 rounded mt-2 block max-w-2xl mx-auto">
-                                                analysisMode: &apos;legitimacy&apos;
-                                            </code>
-                                        </div>
-                                    )}
-
-                                    {selectedSources[0]?.legitimacy_analysis && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            {selectedSources.map((source, idx) => (
-                                                <div key={idx} className="space-y-4">
-                                                    <div className="flex items-center justify-between border-b pb-2">
-                                                        <h3 className="font-semibold text-lg">{source.title}</h3>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 w-8 p-0"
-                                                            onClick={() => handleRegenerateLegitimacy(source)}
-                                                            disabled={regeneratingIds[source.id]}
-                                                            title="Regenerate Analysis (Bypass Cache)"
-                                                        >
-                                                            <RefreshCw className={`h-4 w-4 ${regeneratingIds[source.id] ? 'animate-spin' : 'text-slate-400'}`} />
-                                                        </Button>
-                                                    </div>
-                                                    {source.legitimacy_analysis && (
-                                                        <LegitimacyAnalysisView analysis={source.legitimacy_analysis} />
-                                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {selectedSources.map((source, idx) => (
+                                            <div key={idx} className="space-y-4">
+                                                <div className="flex items-center justify-between border-b pb-2">
+                                                    <h3 className="font-semibold text-lg">{source.title}</h3>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                {renderAnalysisButtonOrContent(source, 'legitimacy', (
+                                                    source.legitimacy_analysis ? (
+                                                        <LegitimacyAnalysisView analysis={source.legitimacy_analysis} />
+                                                    ) : null
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -672,7 +528,7 @@ export default function ComparisonPage() {
                                     )}
 
                                     {synthesisResult && (
-                                        <div className="space-y-8">
+                                        <div className="space-y-8 animate-in fade-in duration-500">
                                             {/* Executive Summary */}
                                             <div>
                                                 <h3 className="text-lg font-semibold text-slate-900 mb-3">Executive Summary</h3>
@@ -730,7 +586,7 @@ export default function ComparisonPage() {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-100">
-                                                            {synthesisResult.synthesis_matrix?.map((row, idx) => (
+                                                            {synthesisResult.synthesis_matrix?.map((row: { dimension: string; comparison: string }, idx: number) => (
                                                                 <tr key={idx} className="hover:bg-slate-50/50">
                                                                     <td className="px-6 py-4 font-medium text-slate-900 bg-slate-50/30">
                                                                         {row.dimension}

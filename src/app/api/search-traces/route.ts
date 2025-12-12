@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
+import { executeGoogleSearch, curateResultsWithAI, SearchResult } from '@/lib/search-service';
 
 const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
 
@@ -23,12 +24,12 @@ interface Trace {
     sourceUrl: string;
     platform: string;
     query: string;
+    strategy?: string;
+    explanation?: string;
 }
 
 export async function POST(request: NextRequest) {
     let { userId } = await auth();
-
-    // Check for demo user if not authenticated
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
         const demoUserId = request.headers.get('x-demo-user-id');
         if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
@@ -56,12 +57,14 @@ export async function POST(request: NextRequest) {
         );
     }
 
+
     try {
         const body = await request.json();
         const { policyText, customQuery, platforms } = body;
+        console.log(`DEBUG: Received request. PolicyText length: ${policyText?.length}, Query: ${customQuery}`);
 
         // Generate cache key
-        const cacheKey = `user:${userId}:search-traces-v6:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+        const cacheKey = `user:${userId}:search-traces-v13-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
 
         // Check cache
         try {
@@ -144,9 +147,9 @@ export async function POST(request: NextRequest) {
             const dominantPlatforms = platformFilters.filter((p: string) => ['reddit', 'hackernews', 'forums'].includes(p));
             const diversePlatforms = platformFilters.filter((p: string) => !['reddit', 'hackernews', 'forums'].includes(p));
 
-            const searchRequests = [];
+            const searchPromises: Promise<{ type: string, items: SearchResult[] }>[] = [];
 
-            // Group A: Dominant (Reddit, HN, Forums)
+            // Group A: Dominant
             if (dominantPlatforms.length > 0) {
                 const platformQueries: string[] = [];
                 if (dominantPlatforms.includes('reddit')) platformQueries.push('site:reddit.com');
@@ -154,14 +157,13 @@ export async function POST(request: NextRequest) {
                 if (dominantPlatforms.includes('forums')) platformQueries.push('(forum OR discussion)');
 
                 const siteQuery = `${query} (${platformQueries.join(' OR ')})`;
-                searchRequests.push(
-                    fetch(`https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(siteQuery)}&num=5`)
-                        .then(res => res.json())
-                        .then(data => ({ type: 'dominant', items: data.items || [] }))
+                searchPromises.push(
+                    executeGoogleSearch(siteQuery, googleApiKey, searchEngineId)
+                        .then(items => ({ type: 'dominant', items }))
                 );
             }
 
-            // Group B: Diverse (Twitter, Tech News, Mastodon)
+            // Group B: Diverse
             if (diversePlatforms.length > 0) {
                 const platformQueries: string[] = [];
                 if (diversePlatforms.includes('twitter')) platformQueries.push('(site:twitter.com OR site:x.com)');
@@ -169,29 +171,21 @@ export async function POST(request: NextRequest) {
                 if (diversePlatforms.includes('mastodon')) platformQueries.push('(site:mastodon.social OR site:mstdn.social OR site:fosstodon.org)');
 
                 const siteQuery = `${query} (${platformQueries.join(' OR ')})`;
-                searchRequests.push(
-                    fetch(`https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${searchEngineId}&q=${encodeURIComponent(siteQuery)}&num=5`)
-                        .then(res => res.json())
-                        .then(data => ({ type: 'diverse', items: data.items || [] }))
+                searchPromises.push(
+                    executeGoogleSearch(siteQuery, googleApiKey, searchEngineId)
+                        .then(items => ({ type: 'diverse', items }))
                 );
             }
 
-            // Run searches in parallel
-            const results = await Promise.all(searchRequests);
+            // Execute parallel searches
+            const results = await Promise.all(searchPromises);
 
-            // Process and interleave results
-            const allItems = [];
+            // Interleave Strategy
             const dominantResults = results.find(r => r.type === 'dominant')?.items || [];
             const diverseResults = results.find(r => r.type === 'diverse')?.items || [];
-
-            // Interleave: 1 diverse, 1 dominant, 1 diverse, etc.
             const maxLength = Math.max(dominantResults.length, diverseResults.length);
-            for (let i = 0; i < maxLength; i++) {
-                if (i < diverseResults.length) allItems.push(diverseResults[i]);
-                if (i < dominantResults.length) allItems.push(dominantResults[i]);
-            }
 
-            // DIAGNOSTIC: If we asked for diverse platforms but got nothing, add a warning trace
+            // DIAGNOSTIC: Check for missing diverse results
             if (diversePlatforms.length > 0 && diverseResults.length === 0 && dominantResults.length > 0) {
                 allTraces.push({
                     title: "⚠️ Configuration Check Required",
@@ -199,37 +193,94 @@ export async function POST(request: NextRequest) {
                     content: "If you enabled 'Search the entire web' recently, it may take a few hours to propagate. Or, your search engine might still be restricted to Reddit/HN only. Please check https://programmablesearchengine.google.com/",
                     sourceUrl: "https://programmablesearchengine.google.com/",
                     platform: "web",
-                    query: "System Message"
+                    query: "System Message",
+                    strategy: undefined,
+                    explanation: undefined
                 });
             }
 
-            for (const item of allItems) {
-                // Infer platform from link
-                let detectedPlatform = 'web';
-                const link = item.link.toLowerCase();
-                if (link.includes('reddit.com')) detectedPlatform = 'reddit';
-                else if (link.includes('ycombinator.com')) detectedPlatform = 'hackernews';
-                else if (link.includes('twitter.com') || link.includes('x.com')) detectedPlatform = 'twitter';
-                else if (link.includes('mastodon') || link.includes('mstdn') || link.includes('fosstodon')) detectedPlatform = 'mastodon';
-                else if (link.includes('wired') || link.includes('theverge') || link.includes('techcrunch') || link.includes('arstechnica')) detectedPlatform = 'technews';
-                else detectedPlatform = 'forums';
+            for (let i = 0; i < maxLength; i++) {
+                if (i < diverseResults.length) processItem(diverseResults[i], query);
+                if (i < dominantResults.length) processItem(dominantResults[i], query);
+            }
+        }
 
-                allTraces.push({
-                    title: item.title,
-                    description: `From ${item.displayLink}`,
-                    content: item.snippet,
-                    sourceUrl: item.link,
-                    platform: detectedPlatform,
-                    query: query
+        function processItem(item: SearchResult, query: string) {
+            let detectedPlatform = 'web';
+            const link = item.link.toLowerCase();
+            if (link.includes('reddit.com')) detectedPlatform = 'reddit';
+            else if (link.includes('ycombinator.com')) detectedPlatform = 'hackernews';
+            else if (link.includes('twitter.com') || link.includes('x.com')) detectedPlatform = 'twitter';
+            else if (link.includes('mastodon') || link.includes('mstdn') || link.includes('fosstodon')) detectedPlatform = 'mastodon';
+            else if (link.includes('wired') || link.includes('theverge') || link.includes('techcrunch') || link.includes('arstechnica')) detectedPlatform = 'technews';
+            else detectedPlatform = 'forums';
+
+            allTraces.push({
+                title: item.title,
+                description: `From ${new URL(item.link).hostname}`,
+                content: item.snippet,
+                sourceUrl: item.link,
+                platform: detectedPlatform,
+                query: query
+            });
+        }
+
+        // ==========================================
+        // AI CURATION & CLASSIFICATION STEP (SERVICE)
+        // ==========================================
+        let finalTraces = allTraces;
+        console.log(`DEBUG: Traces found before AI: ${allTraces.length}`);
+
+        if (allTraces.length > 0) {
+            const aiApiKey = process.env.GOOGLE_API_KEY;
+            if (!aiApiKey) {
+                console.error("AI API key missing for curation.");
+            } else {
+                console.log("Starting AI Curation Service...");
+                // Convert Traces back to SearchResult format for service
+                const searchResults: SearchResult[] = allTraces.map(t => ({
+                    title: t.title,
+                    link: t.sourceUrl,
+                    snippet: t.content
+                }));
+
+                // Use Policy Text or clean Custom Query as the "Subject"
+                let policySubject = "AI Resistance";
+                if (policyText) {
+                    policySubject = policyText.substring(0, 100).split('\n')[0];
+                } else if (customQuery) {
+                    policySubject = customQuery;
+                }
+
+                const curatedResults = await curateResultsWithAI(searchResults, policySubject, aiApiKey);
+
+                // Merge curation back into Traces
+                finalTraces = curatedResults.map(curated => {
+                    const original = allTraces.find(t => t.sourceUrl === curated.link);
+                    return {
+                        title: curated.title,
+                        description: original?.description || `From ${new URL(curated.link).hostname}`,
+                        content: curated.snippet,
+                        sourceUrl: curated.link,
+                        platform: original?.platform || 'web',
+                        query: original?.query || customQuery || '',
+                        strategy: curated.strategy,
+                        explanation: curated.explanation
+                    };
                 });
             }
         }
 
         const result = {
             success: true,
-            traces: allTraces,
+            traces: finalTraces,
             queriesUsed: searchQueries.slice(0, 2)
         };
+
+        if (finalTraces.length > 0) {
+            console.log("DEBUG: Final outgoing traces count:", finalTraces.length);
+            console.log("DEBUG: First trace explanation:", finalTraces[0].explanation);
+        }
 
         // Cache result (expire in 24 hours)
         try {

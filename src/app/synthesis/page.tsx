@@ -76,9 +76,11 @@ export default function SynthesisPage() {
     const [comparisonResult, setComparisonResult] = useServerStorage<ComparisonResult | null>("synthesis_comparison_result", null);
 
     // Ecosystem State
-    const [ecosystemSource, setEcosystemSource] = useState<Source | null>(null);
+    const [selectedEcosystemSourceId, setSelectedEcosystemSourceId] = useServerStorage<string | null>("synthesis_ecosystem_source_id", null);
+    const ecosystemSource = sources.find(s => s.id === selectedEcosystemSourceId) || null;
+
     const [isMapping, setIsMapping] = useState(false);
-    const [ecosystemImpacts, setEcosystemImpacts] = useState<EcosystemImpact[]>([]);
+    const [ecosystemImpacts, setEcosystemImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
     const [interconnectionFilter, setInterconnectionFilter] = useState<"All" | "Material" | "Discursive" | "Hybrid">("All");
     const [viewMode, setViewMode] = useState<"list" | "graph">("list");
     const [chartView, setChartView] = useState<"radar" | "bar">("radar");
@@ -156,6 +158,14 @@ export default function SynthesisPage() {
 
     const handleEcosystemMap = async () => {
         if (!ecosystemSource) return;
+
+        // Check for existing results
+        if (ecosystemImpacts.length > 0) {
+            const confirmRun = confirm("Existing ecosystem map found. Do you want to re-run it? This will overwrite the current map.");
+            if (!confirmRun) {
+                return;
+            }
+        }
 
         setIsMapping(true);
         try {
@@ -606,9 +616,9 @@ export default function SynthesisPage() {
                                     <label className="text-sm font-medium text-slate-700">Select Policy Document</label>
                                     <select
                                         className="w-full p-2 border rounded-md text-sm"
+                                        value={selectedEcosystemSourceId || ""}
                                         onChange={(e) => {
-                                            const source = analyzedSources.find(s => s.id === e.target.value);
-                                            setEcosystemSource(source || null);
+                                            setSelectedEcosystemSourceId(e.target.value || null);
                                         }}
                                     >
                                         <option value="">Select document...</option>

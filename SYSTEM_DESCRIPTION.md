@@ -18,5 +18,4 @@ The platform features a **Convergence/Divergence Engine** that quantifies the "e
 
 **4. Empirical Grounding (Micro-Resistance)**
 To counter abstract high-level rhetoric, the system integrates an **Empirical Traces** engine. It searches live data sources (forums, Reddit) to find "micro-resistances"—real-world examples of how workers and communities subvert or navigate algorithmic control (e.g., "gambiarra" or workarounds), grounding theory in lived experience.
-
 Ultimately, this system transforms static policy analysis into a dynamic, comparative critique, empowering researchers to challenge hegemonic norms in global AI governance.

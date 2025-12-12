@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { executeGoogleSearch, curateResultsWithAI, getMockResults, SearchResult } from '@/lib/search-service';
 import { auth } from '@clerk/nextjs/server';
 
 export async function POST(req: Request) {
@@ -38,37 +38,34 @@ export async function POST(req: Request) {
                 const modelName = process.env.GOOGLE_AI_MODEL || "gemini-1.5-flash";
                 const model = genAI.getGenerativeModel({ model: modelName });
 
-                const prompt = `You are analyzing an AI governance policy document to find EMPIRICAL TRACES of real-world resistance, impacts, and micro-practices.
+                // EXTRACT SUBJECT ENTITY FIRST (Crucial for relevance)
+                // We use the AI to determine exactly WHAT this policy is about (e.g. "European AI Act", "Uber Driver App")
+                // This prevents generic "AI" searches or cross-contamination.
+                const subjectPrompt = `Identify the SPECIFIC Policy, Act, Bill, Platform, or Company this text describes. 
+                Text: "${policyText.substring(0, 1000)}"
+                Return ONLY the name (e.g. "EU AI Act"). If unclear, return "AI Governance Policy".`;
 
-Policy Document Excerpt:
-"${policyText.substring(0, 3000)}"
+                const subjectResult = await model.generateContent(subjectPrompt);
+                let policySubject = subjectResult.response.text().trim().replace(/['"]/g, '');
+                console.log("Extracted Policy Subject:", policySubject);
 
-Your task: Generate 1-2 highly specific search queries to find:
-1. Real people discussing how this policy affects them (workers, users, communities)
-2. Evidence of resistance strategies (workarounds, refusals, collective action)
-3. Concrete examples of policy implementation challenges or failures
-4. Forum posts, Reddit threads, or social media discussions about lived experiences
+                const prompt = `You are an expert investigative researcher. 
+Your goal is to find real-world discussions about: "${policySubject}".
 
-IMPORTANT RULES:
-- Focus on SPECIFIC stakeholders (e.g., "gig workers", "content moderators", "AI developers")
-- Include action words (e.g., "resist", "workaround", "protest", "experience")
-- Avoid generic terms like "AI regulation" or "policy discussion"
-- Target platforms where affected people actually discuss issues (Reddit, forums, social media)
-- Look for CONTROVERSIAL or SPECIFIC terms in the text (e.g., "biometric categorization", "emotion recognition", "predictive policing") and combine them with "reddit" or "forum"
+TASK:
+Generate 2 very precise Google Search queries.
 
-GOOD EXAMPLES:
-- "uber drivers algorithm manipulation reddit"
-- "content moderators AI moderation burnout"
-- "facial recognition protest community resistance"
-- "biometric surveillance workplace complaint forum"
+RULES:
+1. **Identify the Subject**: ALWAYS include the name "${policySubject}" in every query.
+2. **FORCE Resistance Keywords**: You MUST include at least one resistance-specific term in EVERY query to find behavioral adaptations. Use terms like: "workaround", "bypass", "trick", "cheat", "exploit", "jailbreak", "strike", "protest", "loophole", "refusal".
+3. **Target Empirical Forums**: Combine these with "reddit", "forum", "discussion" to find lived experiences.
+4. **Avoid Generalities**: Do NOT use generic terms like "challenges" or "issues". Use "failure", "glitch", "harm".
 
-BAD EXAMPLES:
-- "AI regulation" (too broad)
-- "EU AI Act" (just the policy name)
-- "artificial intelligence governance" (academic, not empirical)
+OUTPUT FORMAT:
+Return ONLY a JSON array of strings.
+Example: ["${policySubject} workaround reddit", "${policySubject} bypass trick forum"]
 
-Return ONLY a JSON array of 1-2 search queries, no markdown:
-["specific query 1", "specific query 2"]`;
+["Query 1", "Query 2"]`;
 
                 const result = await model.generateContent(prompt);
                 const response = result.response;
@@ -81,17 +78,15 @@ Return ONLY a JSON array of 1-2 search queries, no markdown:
                 if (Array.isArray(searchTerms) && searchTerms.length > 0) {
                     searchQuery = searchTerms[0]; // Use the first search term
                 } else {
-                    return NextResponse.json(
-                        { success: false, error: 'Failed to generate search terms from policy text' },
-                        { status: 400 }
-                    );
+                    console.warn('Failed to parse search terms, falling back.');
                 }
             } catch (aiError) {
                 console.error('AI search term generation error:', aiError);
-                return NextResponse.json(
-                    { success: false, error: 'Failed to generate search terms' },
-                    { status: 500 }
-                );
+                // Fallback: Try to extract potential title
+                const firstLine = policyText.split('\n')[0].substring(0, 100);
+                const fallbackQuery = (firstLine.length < 50 ? firstLine : firstLine.split(' ').slice(0, 6).join(' ')) + " resistance";
+                searchQuery = fallbackQuery;
+                console.log('Falling back to basic query:', searchQuery);
             }
         }
 
@@ -104,41 +99,62 @@ Return ONLY a JSON array of 1-2 search queries, no markdown:
 
         const googleApiKey = process.env.GOOGLE_SEARCH_API_KEY;
         const cx = process.env.GOOGLE_SEARCH_CX || process.env.GOOGLE_SEARCH_ENGINE_ID;
+        const aiApiKey = process.env.GOOGLE_API_KEY;
 
-        if (!googleApiKey || !cx) {
-            return NextResponse.json(
-                { success: false, error: 'Google Search API configuration missing. Please set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in .env.local' },
-                { status: 500 }
-            );
+        // MOCK FALLBACK: If keys are missing, return realistic mock data
+        if (!googleApiKey || !cx || !aiApiKey) {
+            console.warn("Google Search/AI keys missing. Returning MOCK results.");
+            return NextResponse.json({
+                success: true,
+                results: getMockResults(searchQuery),
+                searchQuery,
+                isMock: true
+            });
         }
 
-        // Enhance query with site-specific operators to target empirical discussion platforms
-        // This helps filter out news articles and academic papers in favor of real discussions
-        const enhancedQuery = `${searchQuery} (site:reddit.com OR site:news.ycombinator.com OR site:*.stackexchange.com OR inurl:forum OR inurl:discussion)`;
+        // AGGREGATION STRATEGY: Run multiple variations to maximize yield
+        const strictQuery = `${searchQuery} (site:reddit.com OR site:news.ycombinator.com OR site:*.stackexchange.com OR site:x.com OR site:twitter.com OR site:medium.com OR site:substack.com OR inurl:forum OR inurl:discussion)`;
+        const relaxedQuery = `${searchQuery} discussion opinion experience problem`;
 
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${cx}&q=${encodeURIComponent(enhancedQuery)}&num=${Math.min(maxResults, 10)}`;
+        // Typology Queries
+        const techniqueQuery = `${searchQuery} workaround bypass hack trick jailbreak spoof`;
+        const collectiveQuery = `${searchQuery} strike union protest boycott refused banned quit`;
 
-        const response = await fetch(searchUrl);
-        const data = await response.json();
+        console.log("Running parallel search strategies via SearchService...");
+        const [strictResults, relaxedResults, techniqueResults, collectiveResults] = await Promise.all([
+            executeGoogleSearch(strictQuery, googleApiKey, cx),
+            executeGoogleSearch(relaxedQuery, googleApiKey, cx),
+            executeGoogleSearch(techniqueQuery, googleApiKey, cx),
+            executeGoogleSearch(collectiveQuery, googleApiKey, cx)
+        ]);
 
-        if (!response.ok) {
-            console.error('Google Search API Error:', data);
-            return NextResponse.json(
-                { success: false, error: data.error?.message || 'Failed to fetch search results' },
-                { status: response.status }
-            );
+        // Merge and Deduplicate by Link
+        const allRawResults = [...strictResults, ...techniqueResults, ...collectiveResults, ...relaxedResults];
+        const uniqueMap = new Map<string, SearchResult>();
+        allRawResults.forEach(r => {
+            if (!uniqueMap.has(r.link)) uniqueMap.set(r.link, r);
+        });
+
+        let results = Array.from(uniqueMap.values());
+        console.log(`Aggregated ${results.length} unique raw results.`);
+
+        // Final check for empty
+        if (results.length === 0) {
+            return NextResponse.json({
+                success: true,
+                results: [],
+                searchQuery
+            });
         }
 
-        const results = data.items?.map((item: { title: string; link: string; snippet: string }) => ({
-            title: item.title,
-            link: item.link,
-            snippet: item.snippet,
-        })) || [];
+        // AI CURATION STEP using Service
+        console.log("Starting AI Curation Service...");
+        const curatedResults = await curateResultsWithAI(results, policyText, aiApiKey);
 
         return NextResponse.json({
             success: true,
-            results,
-            searchQuery // Return the query that was used
+            results: curatedResults,
+            searchQuery
         });
 
     } catch (error) {
@@ -149,3 +165,5 @@ Return ONLY a JSON array of 1-2 search queries, no markdown:
         );
     }
 }
+
+

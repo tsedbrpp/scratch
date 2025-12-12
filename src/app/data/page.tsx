@@ -216,24 +216,31 @@ export default function PolicyDocumentsPage() {
                 headers: headers,
                 body: JSON.stringify({
                     policyText: source.extractedText.substring(0, 3000),
-                    maxResults: 5
+                    maxResults: 10
                 })
             });
 
             const result = await response.json();
 
             if (result.success && Array.isArray(result.results) && result.results.length > 0) {
+                console.log("DEBUG: Data Page Search Results:", result.results);
                 // Create trace sources from search results
-                const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string }) => ({
+                const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string; strategy?: string; explanation?: string }) => ({
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                     title: `[Trace] ${item.title}`,
                     description: item.snippet || 'No description available',
                     type: "Trace" as const,
-                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"`,
+                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'}`,
                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
                     status: "Active Case" as const,
                     colorClass: "bg-blue-100",
-                    iconClass: "text-blue-600"
+                    iconClass: "text-blue-600",
+                    resistance_analysis: item.strategy ? {
+                        strategy_detected: item.strategy,
+                        evidence_quote: item.snippet,
+                        interpretation: item.explanation || "⚠️ NO INTERPRETATION RECEIVED",
+                        confidence: "Medium" // Start with medium confidence until verified
+                    } : undefined
                 }));
 
                 // Add all traces to the store

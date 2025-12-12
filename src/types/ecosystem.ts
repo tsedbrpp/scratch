@@ -25,13 +25,19 @@ export interface EcosystemConfiguration {
     color: string;
 }
 
-export interface CulturalHole {
+export interface BridgingConcept {
     concept: string;
-    significance: "High" | "Medium" | "Low";
-    description: string;
-    between: string[];
-    scores?: Record<string, number>;
-    bridgingConcepts?: { concept: string; description: string }[];
+    explanation: string;
+}
+
+export interface CulturalHole {
+    id: string;
+    clusterA: string;
+    clusterB: string;
+    distance: number;
+    bridgingConcepts: BridgingConcept[];
+    opportunity: string;
+    policyImplication: string;
 }
 
 export interface CulturalHolesAnalysisResult {
@@ -39,5 +45,5 @@ export interface CulturalHolesAnalysisResult {
     overall_connectivity_score: number;
     holes: CulturalHole[];
     silences?: { id: string; name: string; category: string; keywords: string[] }[];
-    recommendations: { role: string; action: string }[];
+    recommendations?: { role: string; action: string }[];
 }

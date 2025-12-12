@@ -3,9 +3,8 @@ import { AnalysisMode } from "@/services/analysis";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Globe, Loader2, Sparkles, Trash, Globe2, Scale, Pencil } from "lucide-react";
+import { FileText, Globe, Loader2, Sparkles, Trash, Pencil, Zap } from "lucide-react";
 import { AnalysisResults } from "./AnalysisResults";
-import { LegitimacyAnalysisView } from "./LegitimacyAnalysisView";
 
 interface DocumentCardProps {
     source: Source;
@@ -79,6 +78,13 @@ export function DocumentCard({
                     </span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+                    {/* NEW: Explicit Resistance Strategy Badge */}
+                    {source.resistance_analysis?.strategy_detected && (
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
+                            {source.resistance_analysis.strategy_detected}
+                        </Badge>
+                    )}
+
                     <div>Added: {source.addedDate}</div>
                     {source.publicationDate && (
                         <>
@@ -132,52 +138,24 @@ export function DocumentCard({
                                 </>
                             )}
                         </Button>
-                        <div className="grid grid-cols-3 gap-2">
-                            <Button
-                                onClick={() => onAnalyze(source.id, 'cultural_framing')}
-                                disabled={isAnalyzing}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs border-purple-200 hover:bg-purple-50"
-                                title="Analyze cultural framing for CFP"
-                            >
-                                <Globe2 className="mr-1 h-3 w-3" />
-                                Cultural
-                            </Button>
-                            <Button
-                                onClick={() => onAnalyze(source.id, 'institutional_logics')}
-                                disabled={isAnalyzing}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs border-purple-200 hover:bg-purple-50"
-                                title="Analyze institutional logics for CFP"
-                            >
-                                <Scale className="mr-1 h-3 w-3" />
-                                Logics
-                            </Button>
-                            <Button
-                                onClick={() => onAnalyze(source.id, 'legitimacy')}
-                                disabled={isAnalyzing}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs border-purple-200 hover:bg-purple-50"
-                                title="Analyze legitimacy and justification"
-                            >
-                                <Scale className="mr-1 h-3 w-3" />
-                                Legitimacy
-                            </Button>
-                            <Button
-                                onClick={() => onAnalyze(source.id, 'stress_test')}
-                                disabled={isAnalyzing}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
-                                title="Run Adversarial Integrity Stress-Test"
-                            >
-                                <Scale className="mr-1 h-3 w-3" />
-                                Stress Test
-                            </Button>
-                        </div>
+                        <Button
+                            onClick={() => onAnalyze(source.id, 'stress_test')}
+                            disabled={isAnalyzing}
+                            className="w-full bg-orange-600 text-white hover:bg-orange-700"
+                            size="sm"
+                        >
+                            {isAnalyzing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Analyzing...
+                                </>
+                            ) : (
+                                <>
+                                    <Zap className="mr-2 h-4 w-4" />
+                                    Run Stress Test
+                                </>
+                            )}
+                        </Button>
                     </div>
                 )}
                 {source.analysis && (
@@ -188,12 +166,6 @@ export function DocumentCard({
                             analysis: { ...source.analysis!, ...updates }
                         })}
                     />
-                )}
-                {source.legitimacy_analysis && (
-                    <div className="mt-6 pt-4 border-t border-slate-100">
-                        <h3 className="text-sm font-semibold text-slate-900 mb-4">Legitimacy & Justification Analysis</h3>
-                        <LegitimacyAnalysisView analysis={source.legitimacy_analysis} />
-                    </div>
                 )}
             </CardContent>
         </Card>

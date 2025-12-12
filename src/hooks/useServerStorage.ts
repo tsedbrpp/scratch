@@ -10,7 +10,14 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
 
         const fetchValue = async () => {
             try {
-                const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
+
+                const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
+                    headers: headers
+                });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.value !== null && isMounted) {
@@ -42,11 +49,14 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                 const valueToStore = value instanceof Function ? value(prevValue) : value;
 
                 // Save to server
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
+
                 fetch('/api/storage', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: headers,
                     body: JSON.stringify({ key, value: valueToStore }),
                 }).catch(err => console.error(`Failed to save storage key "${key}":`, err));
 

@@ -97,9 +97,9 @@ export default function OntologyPage() {
     const [ontologyMaps, setOntologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
 
     // Comparison State
-    const [isComparing, setIsComparing] = useState(false);
-    const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
-    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
+    const [isComparing, setIsComparing] = useServerStorage<boolean>("ontology_is_comparing", false);
+    const [selectedForComparison, setSelectedForComparison] = useServerStorage<string[]>("ontology_selected_comparison_ids", []);
+    const [comparisonResult, setComparisonResult, isComparisonResultLoading] = useServerStorage<ComparisonResult | null>("ontology_comparison_result", null);
     const [isComparingLoading, setIsComparingLoading] = useState(false);
 
     // Interactivity State
@@ -170,9 +170,31 @@ export default function OntologyPage() {
 
     const handleCompareOntologies = async () => {
         if (selectedForComparison.length !== 2) return;
+        if (isComparisonResultLoading) return; // Prevent run if still loading
 
         const sourceAId = selectedForComparison[0];
         const sourceBId = selectedForComparison[1];
+
+        // Check for existing result
+        if (comparisonResult) {
+            // Check if the existing result matches the currently selected sources
+            const isSameComparison =
+                (comparisonResult.sourceAId === sourceAId && comparisonResult.sourceBId === sourceBId) ||
+                (comparisonResult.sourceAId === sourceBId && comparisonResult.sourceBId === sourceAId); // Order doesn't matter
+
+            if (isSameComparison) {
+                // IDs match! Show the existing result without re-running or asking
+                setIsComparing(true); // Ensure comparison view is active
+                return;
+            }
+
+            // IDs differ, ask to overwrite
+            const confirmRun = confirm("Existing comparison found for DIFFERENT maps. Do you want to run a new comparison? This will overwrite the current results.");
+            if (!confirmRun) {
+                return;
+            }
+        }
+
         const sourceA = sources.find(s => s.id === sourceAId);
         const sourceB = sources.find(s => s.id === sourceBId);
         const mapA = ontologyMaps?.[sourceAId];
@@ -181,7 +203,7 @@ export default function OntologyPage() {
         if (!sourceA || !sourceB || !mapA || !mapB) return;
 
         setIsComparingLoading(true);
-        setComparisonResult(null);
+        // setComparisonResult(null); // Keep previous result for better UX during load
 
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -202,7 +224,13 @@ export default function OntologyPage() {
 
             const data = await response.json();
             if (data.success && data.analysis) {
-                setComparisonResult(data.analysis);
+                // Attach the source IDs to the result so we can identify it later
+                const analysisWithIds: ComparisonResult = {
+                    ...data.analysis,
+                    sourceAId: sourceAId,
+                    sourceBId: sourceBId
+                };
+                setComparisonResult(analysisWithIds);
             } else {
                 alert("Comparison failed: " + (data.error || "Unknown error"));
             }
@@ -377,6 +405,7 @@ export default function OntologyPage() {
                 onToggleComparisonSelection={toggleComparisonSelection}
                 onCompare={handleCompareOntologies}
                 isComparingLoading={isComparingLoading}
+                isComparisonResultLoading={isComparisonResultLoading}
             />
 
             <ConceptDetailsModal

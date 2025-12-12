@@ -10,3 +10,4 @@ export * from './legitimacy';
 export * from './assemblage';
 export * from './stress-test';
 export * from './critique';
+export * from './comparative-synthesis';

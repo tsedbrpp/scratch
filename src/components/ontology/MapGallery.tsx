@@ -15,6 +15,7 @@ interface MapGalleryProps {
     onToggleComparisonSelection: (sourceId: string) => void;
     onCompare: () => void;
     isComparingLoading: boolean;
+    isComparisonResultLoading: boolean;
 }
 
 export function MapGallery({
@@ -26,7 +27,8 @@ export function MapGallery({
     selectedForComparison,
     onToggleComparisonSelection,
     onCompare,
-    isComparingLoading
+    isComparingLoading,
+    isComparisonResultLoading
 }: MapGalleryProps) {
     if (!ontologyMaps || Object.keys(ontologyMaps).length === 0) return null;
 
@@ -37,7 +39,7 @@ export function MapGallery({
                 {isComparing && (
                     <Button
                         onClick={onCompare}
-                        disabled={selectedForComparison.length !== 2 || isComparingLoading}
+                        disabled={selectedForComparison.length !== 2 || isComparingLoading || isComparisonResultLoading}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
                     >
                         {isComparingLoading ? (

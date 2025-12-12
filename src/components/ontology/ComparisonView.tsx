@@ -2,6 +2,7 @@ import React from 'react';
 import { ComparisonResult } from '@/types/ontology';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 
 interface ComparisonViewProps {
     result: ComparisonResult;
@@ -78,6 +79,10 @@ export function ComparisonView({ result }: ComparisonViewProps) {
                     </CardContent>
                 </Card>
             </div>
+            {/* System Critique (Devil's Advocate) */}
+            {result.system_critique && (
+                <SystemCritiqueSection critique={result.system_critique} />
+            )}
         </div>
     );
 }
