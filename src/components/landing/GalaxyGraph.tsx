@@ -24,6 +24,7 @@ interface Node {
 interface LinkData {
     source: string; // ID of source node
     target: string; // ID of target node
+    type?: 'structural' | 'justification'; // Type of connection
 }
 
 // --- Data ---
@@ -49,20 +50,23 @@ const INITIAL_NODES: Omit<Node, 'x' | 'y' | 'vx' | 'vy' | 'radius'>[] = [
 
 // Define relationships (assemblage connections)
 const LINKS: LinkData[] = [
-    { source: 'docs', target: 'governance' },
-    { source: 'empirical', target: 'resistance' },
-    { source: 'resistance', target: 'ecosystem' },
-    { source: 'reflexivity', target: 'synthesis' },
-    { source: 'ecosystem', target: 'governance' },
-    { source: 'synthesis', target: 'comparison' },
-    { source: 'cultural', target: 'ontology' },
-    { source: 'ontology', target: 'docs' },
-    { source: 'timeline', target: 'comparison' },
-    { source: 'docs', target: 'empirical' },
-    { source: 'resistance', target: 'reflexivity' },
-    { source: 'resistance', target: 'cultural' },
-    { source: 'governance', target: 'cultural' },
-    { source: 'ecosystem', target: 'synthesis' }
+    // Structural Links (The "Skeleton")
+    { source: 'docs', target: 'governance', type: 'structural' },
+    { source: 'empirical', target: 'resistance', type: 'structural' },
+    { source: 'resistance', target: 'ecosystem', type: 'structural' },
+    { source: 'reflexivity', target: 'synthesis', type: 'structural' },
+    { source: 'ecosystem', target: 'governance', type: 'structural' },
+    { source: 'synthesis', target: 'comparison', type: 'structural' },
+    { source: 'cultural', target: 'ontology', type: 'structural' },
+    { source: 'ontology', target: 'docs', type: 'structural' },
+    { source: 'timeline', target: 'comparison', type: 'structural' },
+    { source: 'docs', target: 'empirical', type: 'structural' },
+
+    // Justification/Discursive Links (The "Meaning") - New for CfP Alignment
+    { source: 'governance', target: 'cultural', type: 'justification' },  // Governance justifies via Culture
+    { source: 'resistance', target: 'docs', type: 'justification' },      // Resistance challenges Docs
+    { source: 'reflexivity', target: 'ontology', type: 'justification' }, // Reflexivity questions Ontology
+    { source: 'ecosystem', target: 'synthesis', type: 'structural' }
 ];
 
 // Physics Constants
@@ -296,20 +300,25 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
 
                     // Highlight link if connected to 'hot' ecosystem
                     const isHotLink = (highResistanceCount > 0) && (source.id === 'ecosystem' || target.id === 'ecosystem');
+                    const isJustification = link.type === 'justification';
 
                     return (
-                        <line
-                            key={i}
-                            x1={source.x}
-                            y1={source.y}
-                            x2={target.x}
-                            y2={target.y}
-                            stroke={isHotLink ? "#ef4444" : "#475569"}
-                            strokeWidth={isHotLink ? "2" : "1"}
-                            strokeOpacity={isHotLink ? "0.6" : "0.4"}
-                            strokeDasharray={isHotLink ? "4 4" : "0"}
-                            className={isHotLink ? "animate-pulse" : ""}
-                        />
+                        <g key={i}>
+                            <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke={isHotLink ? "#ef4444" : isJustification ? "#d8b4fe" : "#475569"} // Purple for justification
+                                strokeWidth={isHotLink ? "2" : isJustification ? "1.5" : "1"}
+                                strokeOpacity={isHotLink ? "0.6" : isJustification ? "0.5" : "0.4"}
+                                strokeDasharray={isHotLink || isJustification ? "4 4" : "0"}
+                                className={isHotLink ? "animate-pulse" : ""}
+                            />
+                            {isJustification && (
+                                <title>Justification Bond: Discursive Connection</title>
+                            )}
+                        </g>
                     );
                 })}
 
