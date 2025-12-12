@@ -12,7 +12,7 @@ interface Node {
     icon: React.ElementType;
     description: string;
     color: string;
-    category: 'micro' | 'meso' | 'macro';
+    category: 'micro' | 'mezzo' | 'macro';
     x: number;
     y: number;
     vx: number;
@@ -35,10 +35,10 @@ const INITIAL_NODES: Omit<Node, 'x' | 'y' | 'vx' | 'vy' | 'radius'>[] = [
     { id: 'reflexivity', name: 'Reflexivity', href: '/reflexivity', icon: Scan, description: 'Critical self-reflection', color: '#ef4444', category: 'micro' },
     { id: 'cultural', name: 'Cultural', href: '/cultural', icon: Lightbulb, description: 'Epistemic authority', color: '#ef4444', category: 'micro' },
 
-    // Meso: Institutional, Documents, Governance -> BLUE Theme
-    { id: 'docs', name: 'Documents', href: '/data', icon: Database, description: 'Archive of policy texts', color: '#3b82f6', category: 'meso' },
-    { id: 'governance', name: 'Governance', href: '/governance', icon: Scale, description: 'Institutional logics', color: '#3b82f6', category: 'meso' },
-    { id: 'comparison', name: 'Comparison', href: '/comparison', icon: Scale, description: 'Side-by-side frameworks', color: '#3b82f6', category: 'meso' },
+    // Mezzo: Institutional, Documents, Governance -> BLUE Theme
+    { id: 'docs', name: 'Documents', href: '/data', icon: Database, description: 'Archive of policy texts', color: '#3b82f6', category: 'mezzo' },
+    { id: 'governance', name: 'Governance', href: '/governance', icon: Scale, description: 'Institutional logics', color: '#3b82f6', category: 'mezzo' },
+    { id: 'comparison', name: 'Comparison', href: '/comparison', icon: Scale, description: 'Side-by-side frameworks', color: '#3b82f6', category: 'mezzo' },
 
     // Macro: Systemic, Ecosystem, Time -> GREEN Theme
     { id: 'ecosystem', name: 'Ecosystem', href: '/ecosystem', icon: Users, description: 'Actor network mapping', color: '#10b981', category: 'macro' },
@@ -87,8 +87,6 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
         const initialNodes = INITIAL_NODES.map(n => ({
             ...n,
             // If high resistance is detected, the Ecosystem node becomes "Hot" (Red)
-            // But now all Micro nodes are red too, so we need to be careful with visual collision.
-            // Let's keep the pulse effect distinct.
             color: (n.id === 'ecosystem' && highResistanceCount > 0) ? '#ef4444' : n.color,
             x: Math.random() * 800,
             y: Math.random() * 600,
@@ -124,9 +122,9 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
 
             // Define Gravity Centers for Categories - Adjusted to safe zones
             const centers = {
-                meso: { x: width * 0.5, y: height * 0.25 },   // Top Center
-                micro: { x: width * 0.25, y: height * 0.6 },  // Bottom Left (Moved Up)
-                macro: { x: width * 0.75, y: height * 0.6 }   // Bottom Right (Moved Up)
+                mezzo: { x: width * 0.5, y: height * 0.25 },   // Top Center
+                micro: { x: width * 0.25, y: height * 0.6 },  // Bottom Left
+                macro: { x: width * 0.75, y: height * 0.6 }   // Bottom Right
             };
 
             // 1. Repulsion
@@ -211,7 +209,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
         return () => cancelAnimationFrame(requestRef.current);
     }, [dimensions]);
 
-    // Interaction Handlers (omitted for brevity)
+    // Interaction Handlers
     const handleMouseDown = (e: React.MouseEvent, nodeId: string) => {
         isDragging.current = nodeId;
         const rect = containerRef.current?.getBoundingClientRect();
@@ -244,7 +242,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
     const width = dimensions.width;
     const height = dimensions.height;
     const centers = {
-        meso: { x: width * 0.5, y: height * 0.25 },
+        mezzo: { x: width * 0.5, y: height * 0.25 },
         micro: { x: width * 0.25, y: height * 0.6 },
         macro: { x: width * 0.75, y: height * 0.6 }
     };
@@ -265,7 +263,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
                         <stop offset="0%" stopColor="#dc2626" stopOpacity="0.15" />
                         <stop offset="100%" stopColor="#dc2626" stopOpacity="0" />
                     </radialGradient>
-                    <radialGradient id="grad-meso" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <radialGradient id="grad-mezzo" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                         <stop offset="0%" stopColor="#2563eb" stopOpacity="0.15" />
                         <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
                     </radialGradient>
@@ -277,16 +275,16 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
 
                 {/* Zone Backgrounds */}
                 <circle cx={centers.micro.x} cy={centers.micro.y} r="200" fill="url(#grad-micro)" />
-                <circle cx={centers.meso.x} cy={centers.meso.y} r="200" fill="url(#grad-meso)" />
+                <circle cx={centers.mezzo.x} cy={centers.mezzo.y} r="200" fill="url(#grad-mezzo)" />
                 <circle cx={centers.macro.x} cy={centers.macro.y} r="200" fill="url(#grad-macro)" />
 
                 {/* Category Labels (Background) - Adjusted Safe Positions */}
-                <text x={centers.meso.x} y={centers.meso.y - 80} textAnchor="middle" fill="#60a5fa" fontSize="36" fontWeight="900" opacity="0.4" className="select-none pointer-events-none tracking-widest">MESO: INSTITUTIONAL</text>
+                <text x={centers.mezzo.x} y={centers.mezzo.y - 80} textAnchor="middle" fill="#60a5fa" fontSize="36" fontWeight="900" opacity="0.4" className="select-none pointer-events-none tracking-widest">MEZZO: INSTITUTIONAL</text>
                 <text x={centers.micro.x} y={centers.micro.y + 130} textAnchor="middle" fill="#f87171" fontSize="36" fontWeight="900" opacity="0.4" className="select-none pointer-events-none tracking-widest">MICRO: INDIVIDUAL</text>
                 <text x={centers.macro.x} y={centers.macro.y + 130} textAnchor="middle" fill="#34d399" fontSize="36" fontWeight="900" opacity="0.4" className="select-none pointer-events-none tracking-widest">MACRO: SYSTEMIC</text>
 
                 {/* Region Rings (Visual Guide) */}
-                <circle cx={centers.meso.x} cy={centers.meso.y} r="180" fill="none" stroke="#2563eb" strokeWidth="2" opacity="0.1" strokeDasharray="8 8" />
+                <circle cx={centers.mezzo.x} cy={centers.mezzo.y} r="180" fill="none" stroke="#2563eb" strokeWidth="2" opacity="0.1" strokeDasharray="8 8" />
                 <circle cx={centers.micro.x} cy={centers.micro.y} r="180" fill="none" stroke="#dc2626" strokeWidth="2" opacity="0.1" strokeDasharray="8 8" />
                 <circle cx={centers.macro.x} cy={centers.macro.y} r="180" fill="none" stroke="#059669" strokeWidth="2" opacity="0.1" strokeDasharray="8 8" />
 
@@ -392,7 +390,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
                 >
                     <div className="flex items-center gap-2 mb-1">
                         <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${nodes.find(n => n.id === hoveredNode)?.category === 'micro' ? 'border-red-500/50 text-red-400 bg-red-950/30' :
-                                nodes.find(n => n.id === hoveredNode)?.category === 'meso' ? 'border-blue-500/50 text-blue-400 bg-blue-950/30' :
+                                nodes.find(n => n.id === hoveredNode)?.category === 'mezzo' ? 'border-blue-500/50 text-blue-400 bg-blue-950/30' :
                                     'border-emerald-500/50 text-emerald-400 bg-emerald-950/30'
                             }`}>
                             {nodes.find(n => n.id === hoveredNode)?.category}
@@ -411,7 +409,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
             )}
 
             <div className="absolute top-4 left-4 text-xs text-slate-500 bg-slate-950/50 px-2 py-1 rounded border border-slate-900">
-                Drag to rearrange • Hover for details • Gravity aligns to Micro/Meso/Macro levels
+                Drag to rearrange • Hover for details • Gravity aligns to Micro/Mezzo/Macro levels
             </div>
         </div>
     );

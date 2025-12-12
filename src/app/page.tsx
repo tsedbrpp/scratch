@@ -69,9 +69,17 @@ function LandingPage() {
               Advanced Research Tool for Complex Systems
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-            Assemblage AI
-          </h1>
+          {/* Replaced Text Title with Branding Image */}
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/algorithmic-assemblages.png"
+              alt="Algorithmic Assemblages: Fields, Ecosystems, and Platforms"
+              width={600}
+              height={600}
+              className="w-full max-w-xl h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+              priority
+            />
+          </div>
           <p className="mt-6 text-lg leading-8 text-slate-200">
             <Link href="/glossary" className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-blue-500/50 hover:scale-105 transition-all duration-300 group">
               <span className="text-slate-300 group-hover:text-white transition-colors">What is</span>
