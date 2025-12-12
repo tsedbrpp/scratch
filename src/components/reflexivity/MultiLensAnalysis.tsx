@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText } from 'lucide-react';
 import { analyzeDocument, AnalysisMode } from '@/services/analysis';
 import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
+import { SpectralRadar } from './SpectralRadar';
+import { SystemCritiqueSection } from '@/components/common/SystemCritiqueSection';
 
 interface MultiLensAnalysisProps {
     initialText?: string;
@@ -97,7 +99,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                         Comparative Lens Analysis
                     </CardTitle>
                     <CardDescription>
-                        Run multiple theoretical lenses simultaneously to reveal how different frameworks interpret the same text.
+                        Deploy multiple theoretical lenses simultaneously to observe how the assemblage refracts the artifact.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -106,7 +108,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                             <FileText className="h-4 w-4 text-slate-500" />
                             <Select onValueChange={handleSourceSelect}>
                                 <SelectTrigger className="w-full md:w-[300px]">
-                                    <SelectValue placeholder="Select a document to analyze..." />
+                                    <SelectValue placeholder="Select artifact to assemble..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sources.map(source => (
@@ -120,7 +122,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                         </div>
                     )}
                     <Textarea
-                        placeholder="Paste text to analyze here..."
+                        placeholder="Paste text for theoretical entanglement..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         className="min-h-[150px] font-mono text-sm"
@@ -138,7 +140,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                         ) : (
                             <>
                                 <Play className="mr-2 h-4 w-4" />
-                                Run All Lenses
+                                Initiate Entanglement
                             </>
                         )}
                     </Button>
@@ -146,56 +148,66 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
             </Card>
 
             {Object.values(results).some(r => r !== null) && (
-                <div className="grid gap-6 md:grid-cols-2">
-                    {LENSES.map((lens) => (
-                        <Card key={lens.id} className={`flex flex-col ${expandedLens === lens.id ? 'md:col-span-2 ring-2 ring-indigo-500' : ''}`}>
-                            <CardHeader className="pb-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-base font-semibold text-slate-800">
-                                            {lens.name}
-                                        </CardTitle>
-                                        <CardDescription className="text-xs">
-                                            {lens.description}
-                                        </CardDescription>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        onClick={() => setExpandedLens(expandedLens === lens.id ? null : lens.id)}
-                                    >
-                                        {expandedLens === lens.id ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-1 text-sm text-slate-600">
-                                {results[lens.id] ? (
-                                    <div className="space-y-3">
-                                        <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Key Insight</span>
-                                            <p className="leading-relaxed">
-                                                {getKeyInsight(lens.id, results[lens.id])}
-                                            </p>
-                                        </div>
+                <div className="space-y-6">
+                    {/* Visualization of Entanglements */}
+                    <SpectralRadar results={results} />
 
-                                        {expandedLens === lens.id && (
-                                            <div className="mt-4 space-y-2 animate-in fade-in duration-300">
-                                                <h4 className="font-medium text-slate-900">Detailed Analysis</h4>
-                                                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-50 p-4 rounded-md text-xs overflow-x-auto max-h-[300px]">
-                                                    {JSON.stringify(results[lens.id], null, 2)}
-                                                </pre>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {LENSES.map((lens) => (
+                            <Card key={lens.id} className={`flex flex-col ${expandedLens === lens.id ? 'md:col-span-2 ring-2 ring-indigo-500' : ''}`}>
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <CardTitle className="text-base font-semibold text-slate-800">
+                                                {lens.name}
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                {lens.description}
+                                            </CardDescription>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => setExpandedLens(expandedLens === lens.id ? null : lens.id)}
+                                        >
+                                            {expandedLens === lens.id ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 text-sm text-slate-600">
+                                    {results[lens.id] ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Key Insight</span>
+                                                <p className="leading-relaxed">
+                                                    {getKeyInsight(lens.id, results[lens.id])}
+                                                </p>
                                             </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="h-24 flex items-center justify-center text-slate-400 italic bg-slate-50 rounded-md border border-dashed">
-                                        Waiting for analysis...
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+
+                                            {expandedLens === lens.id && (
+                                                <div className="mt-4 space-y-2 animate-in fade-in duration-300">
+                                                    <h4 className="font-medium text-slate-900">Detailed Analysis</h4>
+                                                    <pre className="whitespace-pre-wrap bg-slate-900 text-slate-50 p-4 rounded-md text-xs overflow-x-auto max-h-[300px]">
+                                                        {JSON.stringify(results[lens.id], null, 2)}
+                                                    </pre>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="h-24 flex items-center justify-center text-slate-400 italic bg-slate-50 rounded-md border border-dashed">
+                                            Waiting for analysis...
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* System Critique (Devil's Advocate) */}
+                    {results['dsf'] && results['dsf'].system_critique && (
+                        <SystemCritiqueSection critique={results['dsf'].system_critique} />
+                    )}
                 </div>
             )}
         </div>

@@ -40,6 +40,30 @@ export default function EcosystemPage() {
         setMounted(true);
     }, []);
 
+    useEffect(() => {
+        const uniqueIds = new Set();
+        let hasDuplicates = false;
+        actors.forEach(actor => {
+            if (uniqueIds.has(actor.id)) {
+                hasDuplicates = true;
+            } else {
+                uniqueIds.add(actor.id);
+            }
+        });
+
+        if (hasDuplicates) {
+            console.warn("Detected duplicate actors in state. Deduplicating...");
+            setActors(prev => {
+                const seen = new Set();
+                return prev.filter(actor => {
+                    if (seen.has(actor.id)) return false;
+                    seen.add(actor.id);
+                    return true;
+                });
+            });
+        }
+    }, [actors, setActors]);
+
     // Initialize positions when actors change
     useEffect(() => {
         setPositions(prev => {
@@ -79,8 +103,18 @@ export default function EcosystemPage() {
             const data = await response.json();
             if (data.success && data.actors) {
                 setActors(prev => {
+                    const existingIds = new Set(prev.map(a => a.id));
                     const existingNames = new Set(prev.map(a => a.name.toLowerCase()));
-                    const newUniqueActors = data.actors.filter((a: EcosystemActor) => !existingNames.has(a.name.toLowerCase()));
+                    const newUniqueActors: EcosystemActor[] = [];
+
+                    data.actors.forEach((actor: EcosystemActor) => {
+                        const normalizedName = actor.name.toLowerCase();
+                        if (!existingIds.has(actor.id) && !existingNames.has(normalizedName)) {
+                            existingIds.add(actor.id);
+                            existingNames.add(normalizedName);
+                            newUniqueActors.push(actor);
+                        }
+                    });
 
                     if (newUniqueActors.length === 0) {
                         alert("No new unique actors found.");
@@ -323,6 +357,18 @@ export default function EcosystemPage() {
         });
     };
 
+    // Layer State
+    const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
+        resistance: false
+    });
+
+    const toggleLayer = (layer: string) => {
+        setActiveLayers(prev => ({
+            ...prev,
+            [layer]: !prev[layer]
+        }));
+    };
+
     if (!mounted) return null;
 
     return (
@@ -370,6 +416,8 @@ export default function EcosystemPage() {
                     onCreateConfiguration={handleCreateConfiguration}
                     onActorDrag={handleActorDrag}
                     onConfigDrag={handleConfigDrag}
+                    activeLayers={activeLayers}
+                    toggleLayer={toggleLayer}
                 />
 
                 <CulturalHolesAnalysis

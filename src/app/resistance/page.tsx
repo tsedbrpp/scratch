@@ -238,7 +238,7 @@ export default function ResistancePage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Micro-Resistance Grounding</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Micro-Resistance: Empirical Traces</h2>
                     <p className="text-slate-500">Analyze empirical traces (forum posts, comments) to identify real-world resistance strategies.</p>
                 </div>
                 <div className="flex gap-2">

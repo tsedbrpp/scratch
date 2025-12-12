@@ -95,7 +95,11 @@ export async function POST(request: Request) {
         - "type": One of "Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset".
         - "description": A rich description explaining *why* they are relevant to the query "${query}".
         - "influence": "High", "Medium", or "Low".
-        - "url": The official website URL or a relevant profile page. **IMPORTANT**: Try to provide a URL for every actor. Use official websites first, then LinkedIn, Crunchbase, Wikipedia, or government pages. If you cannot find a specific URL, use a search query URL like "https://www.google.com/search?q=[actor name]".
+        - "url": The official website URL or a relevant profile page.
+        - "metrics": An object containing:
+            - "influence": 1-10 integer (Power in the network).
+            - "alignment": 1-10 integer (Congruence with dominant norms).
+            - "resistance": 1-10 integer (Potential for disruption/friction). THIS IS CRITICAL. Ensure some actors have High Resistance (>6) if they are critics, activists, or disruptive technologies.
 
         Output JSON only.
         `;

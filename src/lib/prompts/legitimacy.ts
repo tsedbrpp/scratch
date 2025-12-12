@@ -132,22 +132,17 @@ No markdown or other text.
 
 {
   "orders": {
-    "market": { "score": 8, "justification_logic": "...", "evidence": "..." },
-    "industrial": { "score": 6, "justification_logic": "...", "evidence": "..." },
-    "civic": { "score": 3, "justification_logic": "...", "evidence": "..." },
-    "domestic": { "score": 1, "justification_logic": "...", "evidence": "..." },
-    "inspired": { "score": 2, "justification_logic": "...", "evidence": "..." },
-    "fame": { "score": 4, "justification_logic": "...", "evidence": "..." }
+    "market": 8,
+    "industrial": 6,
+    "civic": 3,
+    "domestic": 1,
+    "inspired": 2,
+    "fame": 4
   },
-  "dominant_orders": ["market", "industrial"],
-  "legitimacy_crises": [
-    {
-      "conflict": "Civic vs Market",
-      "description": "...",
-      "intensity": "High"
-    }
-  ],
-  "overall_legitimacy_assessment": "..."
+  "dominant_order": "Market (supported by Industrial)",
+  "justification_logic": "The text primarily justifies action through efficiency and competition...",
+  "moral_vocabulary": ["efficiency", "transparency", "accountability", "innovation"],
+  "conflict_spot": "Standardization vs. Local Custom (Industrial vs Domestic)"
 }
 
 Rules:

@@ -29,102 +29,12 @@ import {
   Play
 } from "lucide-react";
 import Image from "next/image";
+import { GalaxyGraph } from "@/components/landing/GalaxyGraph";
+import { useServerStorage } from "@/hooks/useServerStorage";
+import { EcosystemActor } from "@/types/ecosystem";
 
 // --- DASHBOARD DATA ---
-const features = [
-  // Data Collection
-  {
-    name: "Documents",
-    href: "/data",
-    icon: Database,
-    description: "Archive of primary policy texts (PDFs) and source materials",
-    color: "bg-blue-50 text-blue-700 border-blue-200",
-    iconColor: "text-blue-600",
-  },
-  {
-    name: "Empirical Data",
-    href: "/empirical",
-    icon: Users,
-    description: "Collect and organize empirical traces from web sources",
-    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    iconColor: "text-indigo-600",
-  },
-  // Micro Analysis
-  {
-    name: "Resistance",
-    href: "/resistance",
-    icon: Users,
-    description: "Analyze micro-resistance strategies and counter-conduct",
-    color: "bg-red-50 text-red-700 border-red-200",
-    iconColor: "text-red-600",
-  },
-  {
-    name: "Critical Reflection",
-    href: "/reflexivity",
-    icon: Scan,
-    description: "Examine how your own perspective and context shape the analysis",
-    color: "bg-orange-50 text-orange-700 border-orange-200",
-    iconColor: "text-orange-600",
-  },
-  // Meso Analysis
-  {
-    name: "Ecosystem Analysis",
-    href: "/ecosystem",
-    icon: Users,
-    description: "Map actors, detect cultural holes, and visualize social networks",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    iconColor: "text-emerald-600",
-  },
-  {
-    name: "Cross-Case Analysis",
-    href: "/synthesis",
-    icon: Network,
-    description: "Cross-case analysis and AI-powered framework comparison",
-    color: "bg-teal-50 text-teal-700 border-teal-200",
-    iconColor: "text-teal-600",
-  },
-  // Macro Analysis
-  {
-    name: "Comparison",
-    href: "/comparison",
-    icon: Scale,
-    description: "Side-by-side comparison of governance frameworks",
-    color: "bg-cyan-50 text-cyan-700 border-cyan-200",
-    iconColor: "text-cyan-600",
-  },
-  {
-    name: "Governance",
-    href: "/governance",
-    icon: Scale,
-    description: "Analyze resource orchestration and institutional logics",
-    color: "bg-green-50 text-green-700 border-green-200",
-    iconColor: "text-green-600",
-  },
-  {
-    name: "Cultural Framing",
-    href: "/cultural",
-    icon: Lightbulb,
-    description: "Examine cultural framing and epistemic authority",
-    color: "bg-amber-50 text-amber-700 border-amber-200",
-    iconColor: "text-amber-600",
-  },
-  {
-    name: "Concept Network",
-    href: "/ontology",
-    icon: BookOpen,
-    description: "Visual map of key concepts and their relationships",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
-    iconColor: "text-purple-600",
-  },
-  {
-    name: "Temporal Dynamics",
-    href: "/timeline",
-    icon: Activity,
-    description: "Track the evolution of governance concepts over time",
-    color: "bg-pink-50 text-pink-700 border-pink-200",
-    iconColor: "text-pink-600",
-  },
-];
+
 
 // --- COMPONENTS ---
 
@@ -564,6 +474,10 @@ function Dashboard({ sources }: { sources: Source[] }) {
   const traceCount = sources.filter(s => s.type === 'Trace').length;
   const analyzedCount = sources.filter(s => s.analysis || s.cultural_framing || s.institutional_logics).length;
 
+  // Retrieve ecosystem state to visualize resistance
+  const [actors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+  const highResistanceCount = actors.filter(a => (a.metrics?.resistance || 0) > 5).length;
+
   return (
     <div className="space-y-8">
       {/* Dashboard Header */}
@@ -572,7 +486,7 @@ function Dashboard({ sources }: { sources: Source[] }) {
           Assemblage Dashboard
         </h2>
         <p className="text-slate-500 mt-1">
-          Welcome back. Continue your critical analysis of complex narratives.
+          Assemblage Resumed. Continue critical entanglement with complex narratives.
         </p>
       </div>
 
@@ -628,9 +542,27 @@ function Dashboard({ sources }: { sources: Source[] }) {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Rhizomatic Explorer (Primary Navigation) */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Rhizomatic Navigation</h3>
+            <p className="text-sm text-slate-500">Explore the assemblage through entangled concepts.</p>
+          </div>
+          {highResistanceCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 animate-pulse">
+              High Resistance Detected in Ecosystem
+            </span>
+          )}
+        </div>
+        <div className="mb-12">
+          <GalaxyGraph highResistanceCount={highResistanceCount} />
+        </div>
+      </div>
+
+      {/* Quick Actions (Secondary) */}
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Assemblage Operations</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Link href="/data">
             <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer">
@@ -670,41 +602,6 @@ function Dashboard({ sources }: { sources: Source[] }) {
           </Link>
         </div>
       </div>
-
-      {/* Features Grid */}
-      <div>
-        <h3 className="text-xl font-semibold text-slate-900 mb-4">Research Tools</h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <Link key={feature.name} href={feature.href}>
-                <Card className={`${feature.color} border-2 hover:shadow-lg transition-all cursor-pointer group animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both`}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg">
-                          <Icon className={`h-5 w-5 ${feature.iconColor}`} />
-                        </div>
-                        <CardTitle className="text-base">{feature.name}</CardTitle>
-                      </div>
-                    </div>
-                    <CardDescription className="text-sm mt-2">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center text-sm font-medium group-hover:translate-x-1 transition-transform">
-                      Open tool
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
@@ -719,9 +616,9 @@ export default function Home() {
 
   if (!isSignedIn) {
     // Bypass login if demo mode is enabled
-    // if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
-    //   return <Dashboard sources={sources} />;
-    // }
+    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
+      return <Dashboard sources={sources} />;
+    }
     return <LandingPage />;
   }
 

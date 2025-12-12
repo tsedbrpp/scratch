@@ -15,6 +15,8 @@ interface EcosystemMapProps {
     onCreateConfiguration: () => void;
     onActorDrag: (actorId: string, x: number, y: number) => void;
     onConfigDrag: (configId: string, dx: number, dy: number) => void;
+    activeLayers?: Record<string, boolean>;
+    toggleLayer?: (layer: string) => void;
 }
 
 export function EcosystemMap({
@@ -27,7 +29,9 @@ export function EcosystemMap({
     onToggleSelection,
     onCreateConfiguration,
     onActorDrag,
-    onConfigDrag
+    onConfigDrag,
+    activeLayers = {},
+    toggleLayer = () => { }
 }: EcosystemMapProps) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
@@ -219,6 +223,20 @@ export function EcosystemMap({
                         <Network className="h-5 w-5 text-indigo-600" />
                         <CardTitle>Social Network Graph</CardTitle>
                     </div>
+
+                    {/* Layer Controls */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant={activeLayers['resistance'] ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => toggleLayer('resistance')}
+                            className="h-7 text-xs gap-1 transition-all"
+                        >
+                            <span className={`block w-2 h-2 rounded-full mr-2 ${activeLayers['resistance'] ? 'bg-white' : 'bg-red-500'}`} />
+                            Resistance Layer
+                        </Button>
+                    </div>
+
                     <div className="flex items-center gap-2">
                         <div className="flex bg-slate-100 p-1 rounded-lg">
                             <Button
@@ -273,12 +291,19 @@ export function EcosystemMap({
                             <feGaussianBlur stdDeviation="3" result="blur" />
                             <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
+                        <filter id="resistance-glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feFlood floodColor="#ef4444" floodOpacity="0.6" result="color" />
+                            <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                            <feComposite in="SourceGraphic" in2="shadow" operator="over" />
+                        </filter>
                     </defs>
 
                     {/* Render Configuration Super-Nodes (Background) */}
                     {renderConfigurationShapes()}
 
                     {/* Generate connections based on actor types */}
+                    {/* Connections */}
                     {actors.map((source, i) =>
                         actors.slice(i + 1).map((target, j) => {
                             const shouldConnect = (
@@ -309,6 +334,25 @@ export function EcosystemMap({
                             const midX = (pos1.x + pos2.x) / 2;
                             const midY = (pos1.y + pos2.y) / 2;
 
+                            // Resistance Layer Logic
+                            const isResistanceLayer = activeLayers['resistance'];
+                            const sourceRes = source.metrics?.resistance || 0;
+                            const targetRes = target.metrics?.resistance || 0;
+
+                            // Solidarity: Two resistant actors connecting (Alliance)
+                            const isSolidarity = isResistanceLayer && sourceRes > 6 && targetRes > 6;
+
+                            // Friction: Resistant actor connecting to status quo (Conflict)
+                            const isFriction = isResistanceLayer && (
+                                (sourceRes > 6 && targetRes < 4) ||
+                                (sourceRes < 4 && targetRes > 6)
+                            );
+
+                            const lineColor = isSolidarity ? "#9333ea" : (isFriction ? "#ef4444" : "#cbd5e1");
+                            const lineWidth = (isSolidarity || isFriction) ? "2" : "1";
+                            const lineDash = isFriction ? "2,2" : "4"; // Solidarity is solid
+                            const lineClass = isFriction ? "animate-pulse" : "";
+
                             return (
                                 <g key={`${source.id}-${target.id}`}>
                                     <line
@@ -316,9 +360,10 @@ export function EcosystemMap({
                                         y1={pos1.y}
                                         x2={pos2.x}
                                         y2={pos2.y}
-                                        stroke="#cbd5e1"
-                                        strokeWidth="1"
-                                        strokeDasharray="4"
+                                        stroke={lineColor}
+                                        strokeWidth={lineWidth}
+                                        strokeDasharray={lineDash}
+                                        className={lineClass}
                                     />
                                     <rect
                                         x={midX - (label.length * 3)}
@@ -352,6 +397,11 @@ export function EcosystemMap({
                         const isSelected = selectedForGrouping.includes(actor.id);
                         const Icon = getActorIcon(actor.type);
 
+                        // Resistance Layer Visuals
+                        const resistanceScore = actor.metrics?.resistance || 0;
+                        const isResistanceActive = activeLayers['resistance'];
+                        const showResistance = isResistanceActive && resistanceScore > 5;
+
                         return (
                             <g
                                 key={actor.id}
@@ -359,18 +409,31 @@ export function EcosystemMap({
                                 onMouseDown={(e) => handleMouseDown(e, actor.id)}
                                 className="cursor-pointer transition-all duration-200"
                                 style={{
-                                    filter: isSelected ? "url(#actor-glow)" : "none"
+                                    filter: isSelected ? "url(#actor-glow)" : (showResistance ? "url(#resistance-glow)" : "none")
                                 }}
                             >
+                                {/* Resistance Indicator Ring */}
+                                {showResistance && (
+                                    <circle
+                                        r={30 + (resistanceScore * 2)}
+                                        fill="none"
+                                        stroke="#ef4444"
+                                        strokeWidth="1"
+                                        opacity="0.5"
+                                        strokeDasharray="4 4"
+                                        className="animate-spin-slow"
+                                    />
+                                )}
+
                                 <circle
                                     r={isSelected ? 28 : 24}
-                                    fill={isSelected ? "#4f46e5" : "white"}
-                                    stroke={isSelected ? "#4f46e5" : "#94a3b8"}
-                                    strokeWidth="2"
+                                    fill={isSelected ? "#4f46e5" : (showResistance ? "#fee2e2" : "white")}
+                                    stroke={isSelected ? "#4f46e5" : (showResistance ? "#ef4444" : "#94a3b8")}
+                                    strokeWidth={showResistance ? "2" : "2"}
                                     className="transition-all duration-300 shadow-sm"
                                 />
                                 <foreignObject x="-12" y="-12" width="24" height="24" className="pointer-events-none">
-                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : "text-slate-600"}`}>
+                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : (showResistance ? "text-red-700" : "text-slate-600")}`}>
                                         <Icon size={16} />
                                     </div>
                                 </foreignObject>
@@ -383,6 +446,38 @@ export function EcosystemMap({
                         );
                     })}
                 </svg>
+
+                {activeLayers['resistance'] && (
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-2 z-10 w-52 pointer-events-none select-none">
+                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between">
+                            <span>Entangled Analysis</span>
+                            <span className="text-[10px] bg-red-100 text-red-700 px-1 rounded">Active</span>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                                <div className="mt-0.5 w-3 h-3 shrink-0 rounded-full border border-red-500 bg-red-100 ring-2 ring-red-200/50 animate-pulse"></div>
+                                <div>
+                                    <span className="block font-medium text-slate-900">Line of Flight</span>
+                                    <span className="text-[10px] text-slate-500 leading-tight block">High resistance (&gt;5). Disrupts established norms.</span>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <div className="mt-1.5 w-4 h-0 shrink-0 border-t-2 border-dashed border-red-500"></div>
+                                <div>
+                                    <span className="block font-medium text-slate-900">Friction</span>
+                                    <span className="text-[10px] text-slate-500 leading-tight block">Tension between resistant & status quo actors.</span>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <div className="mt-2 w-4 h-0.5 shrink-0 bg-purple-600"></div>
+                                <div>
+                                    <span className="block font-medium text-slate-900">Solidarity</span>
+                                    <span className="text-[10px] text-slate-500 leading-tight block">Alliance between high resistance actors.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
