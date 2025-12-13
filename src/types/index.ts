@@ -164,7 +164,7 @@ export interface EcosystemImpact {
     mechanism: string;
     impact: string;
     type: "Constraint" | "Affordance";
-    interconnection_type?: "Material" | "Discursive" | "Hybrid";
+    interconnection_type?: "Material" | "Discursive" | "Hybrid" | "Interpretive / Meaning-Making";
 }
 
 export interface LegitimacyAnalysis {
@@ -180,15 +180,33 @@ export interface LegitimacyAnalysis {
     justification_logic: string;
     moral_vocabulary: string[];
     conflict_spot: string;
+    system_critique?: {
+        blind_spots: string[];
+        over_interpretation: string;
+        legitimacy_correction: string;
+    };
 }
 
 export interface ComparativeSynthesis {
-    executive_summary: string;
-    cultural_divergence: string;
-    institutional_conflict: string;
-    legitimacy_tensions: string;
-    synthesis_matrix: {
-        dimension: string;
-        comparison: string;
+    synthesis_summary: string;
+    key_divergences: {
+        theme: string;
+        description: string;
+        policy_a_stance: string;
+        policy_b_stance: string;
     }[];
+    institutional_conflict: {
+        conflict_type: string;
+        description: string;
+        policy_a_evidence: string;
+        policy_b_evidence: string;
+    }[];
+    legitimacy_tensions: {
+        tension_type: string;
+        description: string;
+        policy_a_evidence: string;
+        policy_b_evidence: string;
+    }[];
+    coloniality_assessment: string;
+    synthesis_matrix?: never; // Explicitly removed
 }

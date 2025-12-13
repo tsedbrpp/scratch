@@ -81,7 +81,7 @@ export default function SynthesisPage() {
 
     const [isMapping, setIsMapping] = useState(false);
     const [ecosystemImpacts, setEcosystemImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
-    const [interconnectionFilter, setInterconnectionFilter] = useState<"All" | "Material" | "Discursive" | "Hybrid">("All");
+    const [interconnectionFilter, setInterconnectionFilter] = useState<"All" | "Material" | "Discursive" | "Hybrid" | "Interpretive / Meaning-Making">("All");
     const [viewMode, setViewMode] = useState<"list" | "graph">("list");
     const [chartView, setChartView] = useState<"radar" | "bar">("radar");
     const [showGuide, setShowGuide] = useState(true);
@@ -699,6 +699,13 @@ export default function SynthesisPage() {
                                                 onClick={() => setInterconnectionFilter("Hybrid")}
                                             >
                                                 Hybrid
+                                            </Button>
+                                            <Button
+                                                variant={interconnectionFilter === "Interpretive / Meaning-Making" ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setInterconnectionFilter("Interpretive / Meaning-Making")}
+                                            >
+                                                Interpretive
                                             </Button>
                                         </div>
                                     </div>

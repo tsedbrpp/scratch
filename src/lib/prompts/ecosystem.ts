@@ -69,6 +69,7 @@ Every impact MUST explicitly include:
 
 5. **Interconnection Type**
    What relational domain the impact modifies:
+7.    - **Interpretive / Meaning-Making** (shifts in how concepts, risk, or authority are understood or felt)
    - **Material** (infrastructure, computation, architecture, data standards)
    - **Discursive** (norms, legitimacy, narratives, categories, definitions)
    - **Hybrid/Sociotechnical** (intertwined material and discursive processes)
@@ -79,21 +80,13 @@ PHASE 4 — REQUIRED IMPACT DIMENSIONS
 Your set of impacts MUST include ALL of the following:
 
 1. **At least 3 different actor categories**
-   (e.g., state, market, civil society, marginalized communities)
-
 2. **At least 2 second-order impacts**
-   (downstream cascades that follow from the initial impact)
-
 3. **At least 1 third-order impact**
-   (macro-level field reconfiguration, path dependency, infrastructural lock-in)
-
-4. **At least 1 coloniality analysis** if applicable
-   (universal standards imposed on local contexts, dependency architectures, asymmetries in capacity or voice)
-
-5. **At least 1 missing boundary-object impact**
-   If the policy would require coordination (shared vocabularies, interfaces, audit artifacts) but none exist.
-
-6. **At least 1 temporal impact**
+4. **At least 1 coloniality analysis**
+5. **At least 1 interpretive/meaning-making impact**
+   (e.g., how the policy redefines "safety" or "truth" for a specific actor)
+6. **At least 1 missing boundary-object impact**
+7. **At least 1 temporal impact**
    (short-term vs. long-term consequences)
 
 DO NOT produce vague or rhetorical impacts.
@@ -150,18 +143,20 @@ No markdown or other text.
   },
   "impacts": [
     {
-      "description": "Description of impact...",
-      "order": "1st | 2nd | 3rd",
-      "timeframe": "immediate | short-term | long-term",
-      "affected_actors": ["Actor A", "Actor B"]
+      "actor": "Civil Society",
+      "mechanism": "Transparency Audit",
+      "impact": "Shifts burden of proof to local communities...",
+      "type": "Constraint",
+      "interconnection_type": "Discursive"
     }
   ],
   "resilience_assessment": "Summary of system resilience..."
 }
 
 Rules:
-- "order" MUST be classified as 1st (direct), 2nd (indirect), or 3rd (systemic).
-- NO invented impacts.
+- "type" MUST be "Constraint" or "Affordance".
+- "interconnection_type" MUST be "Material", "Discursive", "Hybrid", or "Interpretive / Meaning-Making".
+- "actor" should be a specific single entity (e.g., "Startups", "Regulators"). If multiple, create multiple impact entries.
 ============================================================
 END SYSTEM PROMPT
 ============================================================

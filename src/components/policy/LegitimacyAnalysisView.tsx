@@ -3,6 +3,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale } from "lucide-react";
+import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 
 interface LegitimacyAnalysisViewProps {
     analysis: LegitimacyAnalysis;
@@ -89,6 +90,11 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
                         </p>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* System Critique (Devil's Advocate) */}
+            {analysis.system_critique && (
+                <SystemCritiqueSection critique={analysis.system_critique} />
             )}
         </div>
     );

@@ -533,73 +533,106 @@ export default function ComparisonPage() {
                                             <div>
                                                 <h3 className="text-lg font-semibold text-slate-900 mb-3">Executive Summary</h3>
                                                 <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-lg border border-slate-100">
-                                                    <p className="whitespace-pre-wrap">{synthesisResult.executive_summary}</p>
+                                                    <p className="whitespace-pre-wrap">{synthesisResult.synthesis_summary}</p>
                                                 </div>
                                             </div>
 
-                                            {/* Deep Dive Grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                <Card>
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-base flex items-center gap-2">
-                                                            <Globe2 className="h-4 w-4 text-blue-600" />
-                                                            Cultural Divergence
-                                                        </CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <p className="text-sm text-slate-600">{synthesisResult.cultural_divergence}</p>
-                                                    </CardContent>
-                                                </Card>
-                                                <Card>
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-base flex items-center gap-2">
-                                                            <Building className="h-4 w-4 text-purple-600" />
-                                                            Institutional Conflict
-                                                        </CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <p className="text-sm text-slate-600">{synthesisResult.institutional_conflict}</p>
-                                                    </CardContent>
-                                                </Card>
-                                                <Card>
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-base flex items-center gap-2">
-                                                            <Scale className="h-4 w-4 text-emerald-600" />
-                                                            Legitimacy Tensions
-                                                        </CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <p className="text-sm text-slate-600">{synthesisResult.legitimacy_tensions}</p>
-                                                    </CardContent>
-                                                </Card>
-                                            </div>
-
-                                            {/* Synthesis Matrix */}
+                                            {/* Key Divergences */}
                                             <div>
-                                                <h3 className="text-lg font-semibold text-slate-900 mb-4">Comparative Matrix</h3>
-                                                <div className="border rounded-lg overflow-hidden">
-                                                    <table className="w-full text-sm text-left">
-                                                        <thead className="bg-slate-50 text-slate-700 font-semibold border-b">
-                                                            <tr>
-                                                                <th className="px-6 py-3 w-1/4">Dimension</th>
-                                                                <th className="px-6 py-3">Comparative Analysis</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100">
-                                                            {synthesisResult.synthesis_matrix?.map((row: { dimension: string; comparison: string }, idx: number) => (
-                                                                <tr key={idx} className="hover:bg-slate-50/50">
-                                                                    <td className="px-6 py-4 font-medium text-slate-900 bg-slate-50/30">
-                                                                        {row.dimension}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {row.comparison}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <Globe2 className="h-5 w-5 text-blue-600" />
+                                                    Key Divergences
+                                                </h3>
+                                                <div className="grid gap-4">
+                                                    {synthesisResult.key_divergences?.map((div, i) => (
+                                                        <Card key={i} className="bg-slate-50/50">
+                                                            <CardHeader className="pb-2">
+                                                                <CardTitle className="text-base font-bold text-slate-800">{div.theme}</CardTitle>
+                                                                <CardDescription>{div.description}</CardDescription>
+                                                            </CardHeader>
+                                                            <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
+                                                                <div className="bg-white p-3 rounded border border-slate-100">
+                                                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Policy A</span>
+                                                                    {div.policy_a_stance}
+                                                                </div>
+                                                                <div className="bg-white p-3 rounded border border-slate-100">
+                                                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Policy B</span>
+                                                                    {div.policy_b_stance}
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
                                                 </div>
                                             </div>
+
+                                            {/* Institutional Conflicts */}
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <Building className="h-5 w-5 text-purple-600" />
+                                                    Institutional Conflicts
+                                                </h3>
+                                                <div className="grid gap-4">
+                                                    {synthesisResult.institutional_conflict?.map((conf, i) => (
+                                                        <Card key={i} className="border-purple-100 bg-purple-50/30">
+                                                            <CardHeader className="pb-2">
+                                                                <CardTitle className="text-base font-bold text-purple-900">{conf.conflict_type}</CardTitle>
+                                                                <CardDescription className="text-slate-700">{conf.description}</CardDescription>
+                                                            </CardHeader>
+                                                            <CardContent className="space-y-2 text-sm">
+                                                                <div className="flex gap-2">
+                                                                    <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence A:</span>
+                                                                    <span className="italic text-slate-600">&quot;{conf.policy_a_evidence}&quot;</span>
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence B:</span>
+                                                                    <span className="italic text-slate-600">&quot;{conf.policy_b_evidence}&quot;</span>
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Legitimacy Tensions */}
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <Scale className="h-5 w-5 text-emerald-600" />
+                                                    Legitimacy Tensions
+                                                </h3>
+                                                <div className="grid gap-4">
+                                                    {synthesisResult.legitimacy_tensions?.map((tens, i) => (
+                                                        <Card key={i} className="border-emerald-100 bg-emerald-50/30">
+                                                            <CardHeader className="pb-2">
+                                                                <CardTitle className="text-base font-bold text-emerald-900">{tens.tension_type}</CardTitle>
+                                                                <CardDescription className="text-slate-700">{tens.description}</CardDescription>
+                                                            </CardHeader>
+                                                            <CardContent className="space-y-2 text-sm">
+                                                                <div className="flex gap-2">
+                                                                    <span className="font-semibold text-emerald-700 whitespace-nowrap">Evidence A:</span>
+                                                                    <span className="italic text-slate-600">&quot;{tens.policy_a_evidence}&quot;</span>
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <span className="font-semibold text-emerald-700 whitespace-nowrap">Evidence B:</span>
+                                                                    <span className="italic text-slate-600">&quot;{tens.policy_b_evidence}&quot;</span>
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Coloniality Assessment */}
+                                            {synthesisResult.coloniality_assessment && (
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                                                    <h3 className="text-lg font-bold text-amber-900 mb-2 flex items-center gap-2">
+                                                        <AlertTriangle className="h-5 w-5" />
+                                                        Coloniality Assessment
+                                                    </h3>
+                                                    <p className="text-amber-800 leading-relaxed">
+                                                        {synthesisResult.coloniality_assessment}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </CardContent>

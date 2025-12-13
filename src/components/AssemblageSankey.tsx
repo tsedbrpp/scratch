@@ -25,6 +25,8 @@ export function AssemblageSankey({ data, height = 500 }: AssemblageSankeyProps) 
         };
 
         data.forEach(item => {
+            if (!item.actor || !item.mechanism || !item.impact) return;
+
             const actorIdx = getNodeIndex(item.actor);
             const mechanismIdx = getNodeIndex(item.mechanism);
             const impactIdx = getNodeIndex(item.impact);
@@ -158,6 +160,7 @@ export function AssemblageSankey({ data, height = 500 }: AssemblageSankeyProps) 
 
                         // Truncate text if it's too long
                         const truncateText = (text: string, maxLength: number) => {
+                            if (!text) return "";
                             if (text.length <= maxLength) return text;
                             return text.slice(0, maxLength) + '...';
                         };

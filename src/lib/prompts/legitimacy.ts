@@ -116,7 +116,16 @@ If supported by evidence, identify:
 - asymmetries in whose moral claims “count.”
 
 ============================================================
-IX. ANTI-HALLUCINATION RULES
+X. SYSTEM REFLEXIVITY (DEVIL'S ADVOCATE)
+============================================================
+
+Critique your own analysis:
+1. **Blind Spots**: What aspects of the text might this Orders of Worth framework be missing?
+2. **Over-Interpretation**: Identify one claim you made that might be "forcing" the theory onto the text.
+3. **Legitimacy Correction**: Does the text rely on a form of legitimacy NOT captured by the 6 Orders (e.g., "Dataism", "Security")?
+
+============================================================
+XI. ANTI-HALLUCINATION RULES
 ============================================================
 
 You MUST NOT:
@@ -142,7 +151,12 @@ No markdown or other text.
   "dominant_order": "Market (supported by Industrial)",
   "justification_logic": "The text primarily justifies action through efficiency and competition...",
   "moral_vocabulary": ["efficiency", "transparency", "accountability", "innovation"],
-  "conflict_spot": "Standardization vs. Local Custom (Industrial vs Domestic)"
+  "conflict_spot": "Standardization vs. Local Custom (Industrial vs Domestic)",
+  "system_critique": {
+      "blind_spots": ["The framework misses the 'Security' justification present in Article 5"],
+      "over_interpretation": "Scoring 'Fame' might be an over-read of the transparency requirements",
+      "legitimacy_correction": "The text relies heavily on 'Dataism' which is not a standard Order"
+  }
 }
 
 Rules:
