@@ -1,8 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode } from 'lucide-react';
+import { activeLens } from '@/hooks/useActiveLens'; // Wait, I don't have this.
+import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
+import { generateEdges } from '@/lib/graph-utils';
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -17,6 +20,8 @@ interface EcosystemMapProps {
     onConfigDrag: (configId: string, dx: number, dy: number) => void;
     activeLayers?: Record<string, boolean>;
     toggleLayer?: (layer: string) => void;
+    activeLens?: "None" | "Market" | "Critical" | "Infrastructure";
+    activeScenario?: ScenarioId;
 }
 
 export function EcosystemMap({
@@ -31,11 +36,19 @@ export function EcosystemMap({
     onActorDrag,
     onConfigDrag,
     activeLayers = {},
-    toggleLayer = () => { }
+    toggleLayer = () => { },
+    activeLens = "None",
+    activeScenario = "None"
 }: EcosystemMapProps) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
     const dragStartRef = useRef<{ mouse: { x: number, y: number } } | null>(null);
+
+    // Compute edge multipliers for scenarios
+    const { edgeMultipliers } = useMemo(() => {
+        const edges = generateEdges(actors);
+        return applyScenario(actors, edges, activeScenario);
+    }, [actors, activeScenario]);
 
     const handleMouseDown = (e: React.MouseEvent, actorId: string) => {
         e.stopPropagation();
@@ -195,24 +208,30 @@ export function EcosystemMap({
         }
     };
 
-    const getLinkLabel = (sourceType: string, targetType: string) => {
-        if (sourceType === "Policymaker" && targetType === "Civil Society") return "Consults";
-        if (sourceType === "Startup" && targetType === "Academic") return "Collaborates";
-        if (sourceType === "Policymaker" && targetType === "Startup") return "Regulates";
-        if (sourceType === "Civil Society" && targetType === "Academic") return "Studies";
-        if (sourceType === "Infrastructure" && targetType === "Startup") return "Supports";
-        if (sourceType === "Infrastructure" && targetType === "Policymaker") return "Informs";
-        if (sourceType === "Infrastructure" && targetType === "Academic") return "Provides Data";
+    const getLinkDetails = (sourceType: string, targetType: string) => {
+        if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries and compliance costs." };
+        if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Often marginalizes from decision-making loops." };
+        if (sourceType === "Information" && targetType === "Policymaker") return { label: "Informs", description: "Provides epistemic basis for policy." };
 
-        // Algorithm connections
-        if (sourceType === "Startup" && targetType === "Algorithm") return "Develops";
-        if (sourceType === "Academic" && targetType === "Algorithm") return "Audits";
-        if (sourceType === "Algorithm" && targetType === "Dataset") return "Trained On";
-        if (sourceType === "Policymaker" && targetType === "Algorithm") return "Governs";
-        if (sourceType === "Infrastructure" && targetType === "Algorithm") return "Hosts";
-        if (sourceType === "Infrastructure" && targetType === "Dataset") return "Stores";
+        if (sourceType === "Startup" && targetType === "Academic") return { label: "Enables", description: "Provides tools or data for research." };
+        if (sourceType === "Infrastructure" && targetType === "Startup") return { label: "Enables", description: "Provides computational substrate for operations." };
+        if (sourceType === "Startup" && targetType === "Algorithm") return { label: "Delegates", description: "Offloads decision-making authority to code." };
 
-        return "Relates To";
+        if (sourceType === "Algorithm" && targetType === "Dataset") return { label: "Extracts", description: "Mines patterns from raw data, often without consent." };
+        if (sourceType === "Infrastructure" && targetType === "Dataset") return { label: "Extracts", description: "Accumulates data capital from interactions." };
+
+        if (sourceType === "Academic" && targetType === "Algorithm") return { label: "Audits", description: "Critically examines algorithmic outputs." };
+
+        return { label: "Relates To", description: "Generic connection." };
+    };
+
+    // Lens Filtering Logic
+    const isActorRelevant = (actorSpec: EcosystemActor) => {
+        if (activeLens === "None") return true;
+        if (activeLens === "Market") return ["Policymaker", "Startup"].includes(actorSpec.type);
+        if (activeLens === "Critical") return ["Civil Society", "Academic"].includes(actorSpec.type);
+        if (activeLens === "Infrastructure") return ["Infrastructure", "Algorithm", "Dataset"].includes(actorSpec.type);
+        return true;
     };
 
     return (
@@ -330,7 +349,7 @@ export function EcosystemMap({
 
                             if (!pos1 || !pos2) return null;
 
-                            const label = getLinkLabel(source.type, target.type);
+                            const { label, description } = getLinkDetails(source.type, target.type);
                             const midX = (pos1.x + pos2.x) / 2;
                             const midY = (pos1.y + pos2.y) / 2;
 
@@ -353,8 +372,19 @@ export function EcosystemMap({
                             const lineDash = isFriction ? "2,2" : "4"; // Solidarity is solid
                             const lineClass = isFriction ? "animate-pulse" : "";
 
+                            const isSourceRel = isActorRelevant(source);
+                            const isTargetRel = isActorRelevant(target);
+
+                            let edgeOpacity = 1;
+                            if (activeLens !== "None") {
+                                if (isSourceRel && isTargetRel) edgeOpacity = 1;
+                                else if (isSourceRel || isTargetRel) edgeOpacity = 0.2;
+                                else edgeOpacity = 0.05;
+                            }
+
                             return (
-                                <g key={`${source.id}-${target.id}`}>
+                                <g key={`${source.id}-${target.id}`} className="group hover:opacity-100 transition-opacity cursor-help" style={{ opacity: edgeOpacity }}>
+                                    <title>{label}: {description}</title>
                                     <line
                                         x1={pos1.x}
                                         y1={pos1.y}
@@ -371,16 +401,18 @@ export function EcosystemMap({
                                         width={label.length * 6}
                                         height="16"
                                         fill="white"
-                                        opacity="0.8"
+                                        opacity="0.9"
                                         rx="4"
+                                        className="stroke-slate-200"
+                                        strokeWidth="1"
                                     />
                                     <text
                                         x={midX}
                                         y={midY + 3}
                                         textAnchor="middle"
                                         fontSize="9"
-                                        fill="#64748b"
-                                        className="select-none pointer-events-none font-medium"
+                                        fill="#475569"
+                                        className="select-none pointer-events-none font-bold uppercase tracking-wider"
                                     >
                                         {label}
                                     </text>

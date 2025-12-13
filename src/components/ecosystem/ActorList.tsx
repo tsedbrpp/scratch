@@ -95,7 +95,7 @@ export function ActorList({
                                     <Button variant="outline" onClick={onClearCache}>
                                         Clear Cache
                                     </Button>
-                                    <Button onClick={onSimulate} disabled={isSimulating}>
+                                    <Button onClick={() => onSimulate()} disabled={isSimulating}>
                                         {isSimulating ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -235,6 +235,7 @@ export function ActorList({
                         )}
                         Analyze Holes
                     </Button>
+
                 </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
@@ -248,14 +249,32 @@ export function ActorList({
                 {actors.map(actor => (
                     <div
                         key={actor.id}
-                        className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedActorId === actor.id ? 'bg-indigo-50 border-indigo-200' : 'bg-white hover:bg-slate-50'}`}
+                        className={`p-3 rounded-md border cursor-pointer transition-colors relative ${selectedActorId === actor.id ? 'bg-indigo-50 border-indigo-200' :
+                            actor.source === 'absence_fill' ? 'bg-amber-50/50 border-amber-200 hover:bg-amber-50' : 'bg-white hover:bg-slate-50'}`}
                         onClick={() => onSelectActor(actor.id)}
                     >
+                        {actor.source === 'absence_fill' && (
+                            <div className="absolute -top-1.5 -right-1.5">
+                                <span className="flex h-3 w-3 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                                </span>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm">{actor.name}</span>
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-5">
-                                {actor.type}
-                            </Badge>
+                            <span className={`font-medium text-sm ${actor.source === 'absence_fill' ? 'text-amber-900 group-hover:text-amber-700' : ''}`}>
+                                {actor.name}
+                            </span>
+                            <div className="flex gap-1">
+                                {actor.source === 'absence_fill' && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-5 border-amber-300 text-amber-600 bg-amber-100">
+                                        Recovered
+                                    </Badge>
+                                )}
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-5">
+                                    {actor.type}
+                                </Badge>
+                            </div>
                         </div>
                         <p className="text-xs text-slate-500 line-clamp-2 mb-2">{actor.description}</p>
                         {actor.url && (

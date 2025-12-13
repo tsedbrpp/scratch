@@ -10,6 +10,7 @@ export interface EcosystemActor {
         alignment: number;
         resistance: number;
     };
+    source?: "default" | "simulation" | "absence_fill";
 }
 
 export interface EcosystemConfiguration {
