@@ -4,10 +4,8 @@ import { redis } from '@/lib/redis';
 import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
-import {
-  DSF_SYSTEM_PROMPT,
-  CRITIQUE_SYSTEM_PROMPT
-} from '@/lib/analysis-prompts';
+import { PromptRegistry } from '@/lib/prompts/registry';
+// Removed unused analysis-prompts imports
 import { verifyQuotes } from '@/lib/analysis-utils';
 import { getAnalysisConfig } from '@/lib/analysis-service';
 import { parseAnalysisResponse } from '@/lib/analysis-parser';
@@ -203,8 +201,10 @@ export async function POST(request: NextRequest) {
       apiKey: apiKey,
     });
 
+    // ... imports remain ...
+
     // --- USE ANALYSIS SERVICE TO GET CONFIG ---
-    let { systemPrompt, userContent } = getAnalysisConfig(analysisMode, requestData);
+    let { systemPrompt, userContent } = await getAnalysisConfig(userId, analysisMode, requestData);
 
     // Append calibration context to system prompt for supported modes
     if (['dsf', 'cultural_framing', 'institutional_logics', 'legitimacy'].includes(analysisMode || 'dsf')) {
@@ -251,10 +251,11 @@ export async function POST(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let invAnalysis: any = {};
       if (invertedText) {
+        const dsfPrompt = await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens');
         const invCompletion = await openai.chat.completions.create({
           model: 'gpt-4o',
           messages: [
-            { role: 'system', content: DSF_SYSTEM_PROMPT },
+            { role: 'system', content: dsfPrompt },
             { role: 'user', content: `TEXT CONTENT: \n${invertedText} \n\nAnalyze this text using the Decolonial Situatedness Framework.` }
           ],
           response_format: { type: "json_object" }
@@ -274,11 +275,12 @@ export async function POST(request: NextRequest) {
         console.log('[ANALYSIS] Utilizing EXISTING analysis from client. Skipping re-run.');
       } else {
         console.log('[ANALYSIS] No existing analysis provided. Re-running standard DSF...');
+        const dsfPrompt = await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens');
         const origCompletion = await openai.chat.completions.create({
           model: 'gpt-4o',
           temperature: 0.3, // Lower temperature to ensure valid JSON structure
           messages: [
-            { role: 'system', content: DSF_SYSTEM_PROMPT },
+            { role: 'system', content: dsfPrompt },
             { role: 'user', content: `TEXT CONTENT: \n${text} \n\nAnalyze this text using the Decolonial Situatedness Framework.` }
           ],
           response_format: { type: "json_object" }
@@ -339,7 +341,7 @@ export async function POST(request: NextRequest) {
     if (analysis && typeof analysis === 'object' && analysisMode !== 'critique') { // Prevent infinite recursion
       try {
         console.log('[CRITIQUE] Starting Devil\'s Advocate loop...');
-        const critiquePrompt = CRITIQUE_SYSTEM_PROMPT;
+        const critiquePrompt = await PromptRegistry.getEffectivePrompt(userId, 'critique_panel');
         // Contextualize with the analysis just generated
         const critiqueUserContent = `ORIGINAL SOURCE TEXT(Excerpts): \n${(verificationText || '').substring(0, 1000)}...\n\nGENERATED ANALYSIS: \n${JSON.stringify(analysis, null, 2)} \n\nCritique this analysis.`;
 

@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Clock, ShieldAlert, Users, BrainCircuit, Sparkles, Loader2, ArrowRight, Plus } from 'lucide-react';
+import { AlertCircle, Clock, ShieldAlert, Users, BrainCircuit, Sparkles, Loader2, ArrowRight, Plus, Ghost } from 'lucide-react';
 import { EcosystemActor } from '@/types/ecosystem';
 
 interface AbsencePanelProps {
@@ -126,8 +127,10 @@ export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: A
         <Card className="h-full border-l-4 border-l-slate-400 bg-slate-50/50 flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-semibold flex items-center justify-between text-slate-700">
+
+
                     <div className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5" />
+                        <Ghost className="h-5 w-5 text-indigo-600" />
                         Absence Analysis
                     </div>
                 </CardTitle>
@@ -175,8 +178,8 @@ export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: A
                                 </span>
                                 {aiAnalysis.blindspot_intensity && (
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${aiAnalysis.blindspot_intensity === "High" ? "bg-red-100 text-red-700 border-red-200" :
-                                            aiAnalysis.blindspot_intensity === "Medium" ? "bg-amber-100 text-amber-700 border-amber-200" :
-                                                "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                        aiAnalysis.blindspot_intensity === "Medium" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                                            "bg-emerald-100 text-emerald-700 border-emerald-200"
                                         }`}>
                                         Intensity: {aiAnalysis.blindspot_intensity}
                                     </span>

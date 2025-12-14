@@ -1,25 +1,15 @@
 import { Source } from '@/types';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 
 // Read sources from Redis
 export const getSources = async (userId: string): Promise<Source[]> => {
-    try {
-        const data = await redis.get(`user:${userId}:sources`);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.error('Failed to fetch sources from Redis:', error);
-        return [];
-    }
+    const sources = await StorageService.get<Source[]>(userId, 'sources');
+    return sources || [];
 };
 
 // Save sources to Redis
 export const saveSources = async (userId: string, sources: Source[]): Promise<void> => {
-    try {
-        await redis.set(`user:${userId}:sources`, JSON.stringify(sources));
-    } catch (error) {
-        console.error('Failed to save sources to Redis:', error);
-        throw error;
-    }
+    await StorageService.set(userId, 'sources', sources);
 };
 
 // Add a new source

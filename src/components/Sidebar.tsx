@@ -146,6 +146,17 @@ const NAV_GROUPS: NavGroup[] = [
                 description: "Theoretical framework and key scholarship."
             }
         ]
+    },
+    {
+        title: "Settings",
+        items: [
+            {
+                name: "Tune Prompts",
+                href: "/settings/prompts",
+                icon: Scan,
+                description: "Customize system prompts for analysis and extraction."
+            }
+        ]
     }
 ];
 

@@ -46,7 +46,7 @@ export default function EcosystemPage() {
 
     // Scenario State
     const [activeScenario, setActiveScenario] = useState<ScenarioId>("None");
-    const [sidebarMode, setSidebarMode] = useState<"absence" | "scenario">("scenario");
+    const [sidebarMode, setSidebarMode] = useState<"absence" | "scenario">("absence");
 
     // View & Filter State
     const [viewMode, setViewMode] = useState<"map" | "table">("map");

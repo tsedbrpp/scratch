@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { TRAJECTORY_PROMPT } from '@/lib/prompts/trajectory';
+import { auth } from '@clerk/nextjs/server';
+import { PromptRegistry } from '@/lib/prompts/registry';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -9,7 +10,14 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
     try {
+        let { userId } = await auth();
         const { actors, scenario, prompt_override } = await req.json();
+
+        // Handle demo mode fallback
+        if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            // Basic fallback purely for fetching the prompt if needed,
+            // though this route doesn't strictly check auth for demo mode logic yet other than this.
+        }
 
         if (!actors || !scenario) {
             return NextResponse.json(
@@ -18,7 +26,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const systemPrompt = TRAJECTORY_PROMPT;
+        const safeUserId = userId || 'default';
+        const systemPrompt = await PromptRegistry.getEffectivePrompt(safeUserId, 'trajectory_simulation');
         const userPrompt = `
         SCENARIO: ${scenario.name}
         DESCRIPTION: ${scenario.description}

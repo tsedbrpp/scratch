@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import { auth } from '@clerk/nextjs/server';
 
 export async function GET(request: NextRequest) {
@@ -25,9 +25,8 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const redisKey = `user:${userId}:storage:${key}`;
-        const data = await redis.get(redisKey);
-        return NextResponse.json({ value: data ? JSON.parse(data) : null });
+        const data = await StorageService.get(userId, key);
+        return NextResponse.json({ value: data });
     } catch (error) {
         console.error('Failed to fetch storage item:', error);
         return NextResponse.json({ error: 'Failed to fetch item' }, { status: 500 });
@@ -57,8 +56,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Key is required' }, { status: 400 });
         }
 
-        const redisKey = `user:${userId}:storage:${key}`;
-        await redis.set(redisKey, JSON.stringify(value));
+        await StorageService.set(userId, key, value);
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -1,5 +1,5 @@
 // Assemblage Extraction Prompt
-export const ASSEMBLAGE_EXTRACTION_PROMPT = `
+export const ASSEMBLAGE_PROMPT = `
 You are an expert qualitative researcher and systems theorist.
 Your task is to extract the **Algorithmic Assemblage** described in the user's text.
 
