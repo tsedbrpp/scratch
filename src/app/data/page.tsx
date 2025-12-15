@@ -2,7 +2,19 @@
 
 import { useState, useRef } from "react";
 import { useSources } from "@/hooks/useSources";
-import { Source, LegitimacyAnalysis, PositionalityData, AnalysisResult } from "@/types";
+import { useServerStorage } from "@/hooks/useServerStorage";
+import { ReportData } from "@/types/report";
+import {
+    ResistanceSynthesisResult,
+    EcosystemImpact,
+    AnalysisResult,
+    Source,
+    LegitimacyAnalysis,
+    PositionalityData
+} from "@/types";
+import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
+import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
+import { SynthesisComparisonResult } from "@/types/synthesis";
 import { analyzeDocument, AnalysisMode } from "@/services/analysis";
 import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
@@ -12,16 +24,39 @@ import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
 import { Loader2 } from "lucide-react";
 
 export default function PolicyDocumentsPage() {
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
+
+    // Data for Full Report Aggregation
+    const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+
+    const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+    const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
+    const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
+
+    const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
+    const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
+
+    const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
+    const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
+
+    const [multiLensResults] = useServerStorage<Record<string, AnalysisResult | null>>("multi_lens_results", {
+        dsf: null, cultural_framing: null, institutional_logics: null, legitimacy: null
+    });
+    const [multiLensText] = useServerStorage<string>("multi_lens_text", "");
+
+
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [searchingId, setSearchingId] = useState<string | null>(null);
+
     const [isUploading, setIsUploading] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
     const [editingSource, setEditingSource] = useState<Source | null>(null);
     const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
@@ -275,6 +310,40 @@ export default function PolicyDocumentsPage() {
         );
     }
 
+    const handleExportReport = async () => {
+        setIsExporting(true);
+        try {
+            const reportData: ReportData = {
+                sources: sources,
+                resistance: resistanceSynthesis,
+                ecosystem: {
+                    actors: ecosystemActors,
+                    configurations: ecosystemConfigs,
+                    culturalHoles: culturalHoles
+                },
+                synthesis: {
+                    comparison: synthesisComparison,
+                    ecosystemImpacts: synthesisImpacts
+                },
+                ontology: {
+                    maps: ontologyMaps,
+                    comparison: ontologyComparison
+                },
+                multiLens: {
+                    results: multiLensResults as any,
+                    text: multiLensText
+                }
+            };
+
+            await generateFullReportDOCX(reportData);
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Failed to generate report.");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="space-y-8">
             <DocumentToolbar
@@ -285,6 +354,8 @@ export default function PolicyDocumentsPage() {
                 fileInputRef={fileInputRef}
                 onAddClick={() => setIsAddDialogOpen(true)}
                 onAddUrlClick={() => setIsUrlDialogOpen(true)}
+                onExportReport={handleExportReport}
+                isExporting={isExporting}
             />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

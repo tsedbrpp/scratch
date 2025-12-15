@@ -15,6 +15,45 @@ import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection
 
 export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisResultsProps) {
     const [userImpression] = useState(analysis.user_impression || "");
+    const [isCritiqueLoading, setIsCritiqueLoading] = useState(false);
+    const [critiqueResult, setCritiqueResult] = useState<AnalysisResult['system_critique'] | null>(null);
+    const [critiqueError, setCritiqueError] = useState<string | null>(null);
+
+    const handleRunCritique = async () => {
+        setIsCritiqueLoading(true);
+        setCritiqueError(null);
+        try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    analysisMode: 'critique',
+                    text: sourceTitle || "Source Text", // Context
+                    existingAnalysis: analysis
+                })
+            });
+            const data = await response.json();
+
+            if (data.success && data.analysis?.system_critique) {
+                setCritiqueResult(data.analysis.system_critique);
+                if (onUpdate) {
+                    onUpdate({ system_critique: data.analysis.system_critique });
+                }
+            } else {
+                setCritiqueError(data.error || "Failed to generate critique.");
+            }
+        } catch (err) {
+            setCritiqueError("Network error.");
+            console.error(err);
+        } finally {
+            setIsCritiqueLoading(false);
+        }
+    };
 
 
 
@@ -115,6 +154,17 @@ export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisRes
                 />
             </div>
 
+            {/* [Debug] Raw Data Inspector if Analysis is Missing but Object Exists */}
+            {!analysis.governance_power_accountability && (
+                <div className="mt-4 p-4 rounded-lg bg-slate-100 border border-slate-300">
+                    <h5 className="text-xs font-bold text-slate-700 uppercase mb-2">Debug: Raw Analysis Data & Keys</h5>
+                    <p className="text-xs text-slate-600 mb-2">The analysis seems incomplete. Here is what was received:</p>
+                    <pre className="text-[10px] font-mono bg-white p-2 rounded border border-slate-200 overflow-auto max-h-40">
+                        {JSON.stringify(analysis, null, 2)}
+                    </pre>
+                </div>
+            )}
+
             {/* Legitimacy Dynamics Section */}
             {analysis.legitimacy_claims && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden">
@@ -180,9 +230,48 @@ export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisRes
             )}
 
             {/* Devil's Advocate / Critique Section */}
-            {analysis.system_critique && (
-                <SystemCritiqueSection critique={analysis.system_critique} />
+            {(analysis.system_critique || critiqueResult) && (
+                <SystemCritiqueSection critique={critiqueResult || analysis.system_critique!} />
             )}
+
+            {/* Critique Trigger Button (Always show for re-run/audit capability) */}
+            <div className={`p-6 rounded-xl border border-dashed ${analysis.system_critique || critiqueResult ? 'border-slate-200 bg-slate-50/30' : 'border-slate-300 bg-slate-50/50'} flex flex-col items-center justify-center text-center space-y-3`}>
+                {(!analysis.system_critique && !critiqueResult) && (
+                    <>
+                        <div className="p-3 bg-slate-100 rounded-full">
+                            <ShieldCheck className="h-6 w-6 text-slate-400" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-700">Audit this Analysis</h4>
+                            <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                                Run the "Devil's Advocate" protocol to identify blind spots and over-interpretations.
+                            </p>
+                        </div>
+                    </>
+                )}
+
+                <Button
+                    onClick={handleRunCritique}
+                    disabled={isCritiqueLoading}
+                    variant="outline"
+                    className="gap-2"
+                >
+                    {isCritiqueLoading ? (
+                        <>
+                            <Activity className="h-4 w-4 animate-spin" /> Running Audit...
+                        </>
+                    ) : (
+                        <>{(analysis.system_critique || critiqueResult) ? 'Re-Run System Reflexivity' : 'Run System Reflexivity'}</>
+                    )}
+                </Button>
+
+                {/* Error Message */}
+                {critiqueError && (
+                    <p className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                        Error: {critiqueError}
+                    </p>
+                )}
+            </div>
 
             {/* Consistency Stress-Test */}
             {analysis.stress_test_report && (

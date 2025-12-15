@@ -73,9 +73,11 @@ export interface AnalysisResult {
         context: string;
     }[];
     system_critique?: {
+        critique?: string;
         blind_spots: string[];
-        over_interpretation: string;
-        legitimacy_correction: string;
+        over_interpretation?: string;
+        legitimacy_correction?: string;
+        implications?: string[];
     };
     stress_test_report?: {
         original_score: number;
@@ -179,7 +181,12 @@ export interface LegitimacyAnalysis {
     dominant_order: string;
     justification_logic: string;
     moral_vocabulary: string[];
-    conflict_spot: string;
+    conflict_spot: string | {
+        location: string;
+        description: string;
+        resolution_strategy?: string;
+        course_of_action?: string;
+    };
     system_critique?: {
         blind_spots: string[];
         over_interpretation: string;
@@ -209,4 +216,11 @@ export interface ComparativeSynthesis {
     }[];
     coloniality_assessment: string;
     synthesis_matrix?: never; // Explicitly removed
+}
+
+export interface ResistanceSynthesisResult {
+    executive_summary: string;
+    dominant_strategies: { strategy: string; frequency: string; description: string }[];
+    emerging_themes: string[];
+    implications_for_policy: string;
 }

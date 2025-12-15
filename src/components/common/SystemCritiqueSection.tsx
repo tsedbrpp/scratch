@@ -24,6 +24,17 @@ export function SystemCritiqueSection({ critique }: SystemCritiqueSectionProps) 
                         </ul>
                     </div>
                 )}
+
+                {/* [Robustness] Show generic critique text if present (e.g. from fallback) */}
+                {critique.critique && (
+                    <div>
+                        <h5 className="text-[10px] font-bold text-purple-600 uppercase mb-1">Critique Summary</h5>
+                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                            {critique.critique}
+                        </p>
+                    </div>
+                )}
+
                 {critique.over_interpretation && (
                     <div>
                         <h5 className="text-[10px] font-bold text-purple-600 uppercase mb-1">Risk of Over-Interpretation</h5>

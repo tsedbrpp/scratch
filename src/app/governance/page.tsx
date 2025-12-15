@@ -334,7 +334,7 @@ export default function GovernancePage() {
                         </Badge>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
-                        {[selectedSourceA, selectedSourceB].map((sourceId) => {
+                        {[selectedSourceA, selectedSourceB].map((sourceId, idx) => {
                             const isBaseline = sourceId === "EU" || sourceId === "Brazil";
                             const source = analyzedSources.find(s => s.id === sourceId);
                             const insights = isBaseline
@@ -348,7 +348,7 @@ export default function GovernancePage() {
                                 : source?.title;
 
                             return (
-                                <Card key={sourceId} className="border-purple-100 bg-purple-50/30">
+                                <Card key={`${sourceId}-${idx}`} className="border-purple-100 bg-purple-50/30">
                                     <CardHeader className="pb-2">
                                         <div className="flex items-center space-x-2">
                                             <Sparkles className="h-4 w-4 text-purple-600" />

@@ -54,7 +54,7 @@ Return ONLY a JSON array of search terms, without any markdown formatting or exp
 ["algorithmic bias", "AI regulation", "facial recognition"]`;
 
         const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
@@ -62,8 +62,8 @@ Return ONLY a JSON array of search terms, without any markdown formatting or exp
                 },
                 { role: 'user', content: prompt }
             ],
-            temperature: 0.3,
-            max_tokens: 200
+            // temperature: 0.3, // Removed for fine-tuned compatibility
+            max_completion_tokens: 200
         });
 
         const content = response.choices[0].message.content?.trim() || '[]';

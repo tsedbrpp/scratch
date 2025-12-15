@@ -5,17 +5,16 @@ import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
 import { PromptRegistry } from '@/lib/prompts/registry';
-// Removed unused analysis-prompts imports
 import { verifyQuotes } from '@/lib/analysis-utils';
-import { getAnalysisConfig } from '@/lib/analysis-service';
+import { getAnalysisConfig, runStressTest, runCritiqueLoop } from '@/lib/analysis-service';
 import { parseAnalysisResponse } from '@/lib/analysis-parser';
-import { PositionalityData } from '@/types';
+import { PositionalityData, AnalysisResult } from '@/types';
 
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v18';
+const PROMPT_VERSION = 'v20';
 
 // Helper to generate a deterministic cache key
 function generateCacheKey(mode: string, text: string, sourceType: string): string {
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0} `);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -199,9 +198,22 @@ export async function POST(request: NextRequest) {
     console.log('[ANALYSIS] Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: apiKey,
+      baseURL: process.env.OPENAI_BASE_URL,
     });
 
-    // ... imports remain ...
+    // [Feature] Decoupled Critique Mode
+    if (analysisMode === 'critique') {
+      if (!requestData.existingAnalysis) {
+        return NextResponse.json({ error: "Missing existingAnalysis for critique mode" }, { status: 400 });
+      }
+      console.log('[ANALYSIS] Mode is CRITIQUE. bypassing main generation.');
+      // Run only the critique loop
+      const critique = await runCritiqueLoop(openai, userId, text, requestData.existingAnalysis);
+      return NextResponse.json({
+        success: true,
+        analysis: { system_critique: critique } // Wrap in analysis object for consistency
+      });
+    }
 
     // --- USE ANALYSIS SERVICE TO GET CONFIG ---
     let { systemPrompt, userContent } = await getAnalysisConfig(userId, analysisMode, requestData);
@@ -218,14 +230,12 @@ export async function POST(request: NextRequest) {
     let completion;
     try {
       completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: process.env.OPENAI_MODEL || "gpt-4o",
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }
         ],
-        // Use higher temperature for stress testing to encourage creative inversion
-        temperature: analysisMode === 'stress_test' ? 0.7 : 0.2,
-        max_tokens: 4096,
+        max_completion_tokens: 16384,
         response_format: { type: "json_object" }
       });
       console.log(`[ANALYSIS] OpenAI response received in ${Date.now() - aiStartTime} ms`);
@@ -235,87 +245,16 @@ export async function POST(request: NextRequest) {
     }
 
     const responseText = completion.choices[0]?.message?.content || '';
+    const finishReason = completion.choices[0]?.finish_reason;
     console.log(`[ANALYSIS] Raw OpenAI response(first 500 chars): ${responseText.substring(0, 500)} `);
+    console.log(`[ANALYSIS] Finish Reason: ${finishReason}`);
 
     // --- USE ANALYSIS PARSER ---
-    let analysis = parseAnalysisResponse(responseText, analysisMode);
+    let analysis: AnalysisResult | any = parseAnalysisResponse(responseText, analysisMode);
 
     // --- STRESS TEST LOGIC ---
     if (analysisMode === 'stress_test') {
-      console.log('[ANALYSIS] Running Stress Test sub-analyses...');
-      const stressRes = analysis || {}; // content from first OpenAI call (inverted text)
-      // FIX: The prompt requests "inverted_text_excerpt", so we must read that field.
-      const invertedText = stressRes.inverted_text_excerpt || stressRes.inverted_text;
-
-      // 1. Analyze Inverted Text (only if we got text)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let invAnalysis: any = {};
-      if (invertedText) {
-        const dsfPrompt = await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens');
-        const invCompletion = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            { role: 'system', content: dsfPrompt },
-            { role: 'user', content: `TEXT CONTENT: \n${invertedText} \n\nAnalyze this text using the Decolonial Situatedness Framework.` }
-          ],
-          response_format: { type: "json_object" }
-        });
-        invAnalysis = JSON.parse(invCompletion.choices[0]?.message?.content || '{}');
-      } else {
-        console.warn('[ANALYSIS WARNING] Stress test failed to generate inverted text.');
-      }
-
-      // 2. Analyze Original Text (Standard DSF)
-      // Check if we have an existing analysis passed from client to avoid re-run
-      let origAnalysis = requestData.existingAnalysis;
-
-      console.log('[ANALYSIS DEBUG] Received existingAnalysis:', JSON.stringify(origAnalysis ? { ...origAnalysis, inverted_text: '...truncated...' } : 'NULL'));
-
-      if (origAnalysis && origAnalysis.governance_scores) {
-        console.log('[ANALYSIS] Utilizing EXISTING analysis from client. Skipping re-run.');
-      } else {
-        console.log('[ANALYSIS] No existing analysis provided. Re-running standard DSF...');
-        const dsfPrompt = await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens');
-        const origCompletion = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          temperature: 0.3, // Lower temperature to ensure valid JSON structure
-          messages: [
-            { role: 'system', content: dsfPrompt },
-            { role: 'user', content: `TEXT CONTENT: \n${text} \n\nAnalyze this text using the Decolonial Situatedness Framework.` }
-          ],
-          response_format: { type: "json_object" }
-        });
-
-        const rawContent = origCompletion.choices[0]?.message?.content || '{}';
-        origAnalysis = parseAnalysisResponse(rawContent, 'dsf');
-
-        if (!origAnalysis.governance_scores) {
-          console.warn('[ANALYSIS WARNING] Standard DSF re-run failed to produce governance scores. Parsing likely failed.');
-          // Fallback: Generate random scores if parsing strictly failed, to avoid "No Analysis" UI
-          origAnalysis.governance_scores = {
-            centralization: 50, rights_focus: 50, flexibility: 50, market_power: 50, procedurality: 50
-          };
-        }
-      }
-
-      // 3. Compute Deviation
-      const scoreA = origAnalysis.governance_scores?.market_power || 50;
-      const scoreB = invAnalysis.governance_scores?.market_power || 50;
-      const diff = Math.abs(scoreA - scoreB);
-
-      // 4. Construct Final Object
-      // PRIORITIZE origAnalysis as the base, then overlay stress report
-      analysis = {
-        ...origAnalysis,
-        stress_test_report: {
-          original_score: scoreA,
-          perturbed_score: scoreB,
-          framing_sensitivity: diff > 30 ? "High" : (diff > 15 ? "Medium" : "Low"),
-          shift_explanation: stressRes.shift_explanation || "No explanation provided.",
-          inverted_text_excerpt: invertedText ? (invertedText.substring(0, 300) + "...") : "Generation failed",
-          rhetorical_shifts: stressRes.rhetorical_shifts || []
-        }
-      };
+      analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
     }
 
     let verificationText = text || '';
@@ -328,45 +267,30 @@ export async function POST(request: NextRequest) {
         console.log('[VERIFICATION] Running Fact-Tracer...');
         const verifiedQuotes = verifyQuotes(verificationText, analysis);
         // Inject into analysis object
-        // Use type assertion to avoid strict checks on dynamic analysis object
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (analysis as any).verified_quotes = verifiedQuotes;
+        if (analysis) {
+          analysis.verified_quotes = verifiedQuotes;
+        }
         console.log(`[VERIFICATION] Verified ${verifiedQuotes.length} quotes.`);
       } catch (verError) {
         console.warn('[VERIFICATION] Failed:', verError);
       }
     }
 
-    // --- REFLEXIVITY LOOP (Devil's Advocate) ---
-    if (analysis && typeof analysis === 'object' && analysisMode !== 'critique') { // Prevent infinite recursion
-      try {
-        console.log('[CRITIQUE] Starting Devil\'s Advocate loop...');
-        const critiquePrompt = await PromptRegistry.getEffectivePrompt(userId, 'critique_panel');
-        // Contextualize with the analysis just generated
-        const critiqueUserContent = `ORIGINAL SOURCE TEXT(Excerpts): \n${(verificationText || '').substring(0, 1000)}...\n\nGENERATED ANALYSIS: \n${JSON.stringify(analysis, null, 2)} \n\nCritique this analysis.`;
 
-        const critiqueCompletion = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            { role: 'system', content: critiquePrompt },
-            { role: 'user', content: critiqueUserContent }
-          ],
-          temperature: 0.5,
-          max_tokens: 1000,
-          response_format: { type: "json_object" }
-        });
-
-        const critiqueText = critiqueCompletion.choices[0]?.message?.content || '{}';
-        const critiqueJson = JSON.parse(critiqueText);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (analysis as any).system_critique = critiqueJson;
-        console.log('[CRITIQUE] Completed.');
-      } catch (critiqueError) {
-        console.warn('[CRITIQUE] Failed:', critiqueError);
-      }
-    }
 
     // ---------------------
+    // Cache the result
+    try {
+      if (analysis && typeof analysis === 'object' && !analysis.error) {
+        await redis.set(userCacheKey, JSON.stringify(analysis), 'EX', 86400); // 24 hours
+        console.log(`[ANALYSIS] Saved to cache: ${userCacheKey}`);
+      } else {
+        console.warn(`[ANALYSIS] Skipping cache for failed/partial analysis. Key: ${userCacheKey}`);
+      }
+    } catch (saveError) {
+      console.warn('[ANALYSIS] Failed to save to cache:', saveError);
+    }
+
     console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime} ms`);
 
     return NextResponse.json({

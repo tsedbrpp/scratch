@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useServerStorage } from '@/hooks/useServerStorage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,15 +25,20 @@ const LENSES: { id: LensType; name: string; description: string }[] = [
 ];
 
 export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensAnalysisProps) {
-    const [text, setText] = useState(initialText);
+    // Persist text input
+    const [text, setText] = useServerStorage("multi_lens_text", initialText);
+
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [progress, setProgress] = useState<string>('');
-    const [results, setResults] = useState<Record<LensType, AnalysisResult | null>>({
+
+    // Persist analysis results
+    const [results, setResults] = useServerStorage<Record<LensType, AnalysisResult | null>>("multi_lens_results", {
         dsf: null,
         cultural_framing: null,
         institutional_logics: null,
         legitimacy: null
     });
+
     const [expandedLens, setExpandedLens] = useState<LensType | null>(null);
 
     const handleSourceSelect = (sourceId: string) => {
@@ -81,10 +87,23 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
             case 'cultural_framing':
                 return result.dominant_cultural_logic ? `Dominant Logic: ${result.dominant_cultural_logic}. ${result.state_market_society}` : result.key_insight || 'No cultural insight.';
             case 'institutional_logics':
-                return result.dominant_logic ? `Dominant Logic: ${result.dominant_logic}. ${result.overall_assessment}` : 'No institutional insight.';
+                if (result.dominant_logic) {
+                    return `Dominant Logic: ${result.dominant_logic}. ${result.overall_assessment || ''}`;
+                }
+                return result.overall_assessment || 'No institutional insight.';
             case 'legitimacy':
                 const legitResult = result as unknown as LegitimacyAnalysis;
-                return legitResult.dominant_order ? `Dominant Order: ${legitResult.dominant_order}. Justification: ${legitResult.justification_logic}` : 'No legitimacy insight.';
+                let justification = legitResult.justification_logic as any;
+
+                // Handle case where LLM returns object instead of string
+                if (typeof justification === 'object' && justification !== null) {
+                    justification = justification.summary || justification.text || justification.description || JSON.stringify(justification);
+                }
+
+                if (legitResult.dominant_order) {
+                    return `Dominant Order: ${legitResult.dominant_order}. Justification: ${justification}`;
+                }
+                return justification || 'No legitimacy insight.';
             default:
                 return 'N/A';
         }

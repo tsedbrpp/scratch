@@ -107,7 +107,11 @@ export default function EmpiricalPage() {
         if (confirm('Are you sure you want to delete ALL empirical traces? This action cannot be undone.')) {
             const traceIds = sources.filter(s => s.type === "Trace").map(s => s.id);
             for (const id of traceIds) {
-                await deleteSource(id);
+                try {
+                    await deleteSource(id);
+                } catch (e) {
+                    console.error(`Failed to delete source ${id}:`, e);
+                }
             }
         }
     };

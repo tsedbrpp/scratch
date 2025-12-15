@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         // Use Gemini to generate synthetic ecosystem actors based on the query
         const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(apiKey);
-        const modelName = process.env.GOOGLE_AI_MODEL || "gemini-1.5-flash";
+        const modelName = process.env.GOOGLE_AI_MODEL || "gemini-1.5-flash-latest";
         const model = genAI.getGenerativeModel({ model: modelName });
 
         const prompt = `

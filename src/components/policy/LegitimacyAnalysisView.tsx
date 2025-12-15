@@ -3,7 +3,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale } from "lucide-react";
-import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
+
 
 interface LegitimacyAnalysisViewProps {
     analysis: LegitimacyAnalysis;
@@ -12,13 +12,55 @@ interface LegitimacyAnalysisViewProps {
 export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps) {
     if (!analysis || !analysis.orders) return null;
 
+    // Helper to safely render any weird hallucinated structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const renderSafe = (content: any): React.ReactNode => {
+        if (typeof content === 'string' || typeof content === 'number') return content;
+        if (Array.isArray(content)) return content.map(c => renderSafe(c)).join(", ");
+        if (typeof content === 'object' && content !== null) {
+            // Check if it's a known conflict spot structure
+            if (content.location && content.description) {
+                return (
+                    <div className="space-y-1">
+                        <span className="font-semibold">{renderSafe(content.location)}: </span>
+                        <span>{renderSafe(content.description)}</span>
+                    </div>
+                );
+            }
+            // Fallback for unknown objects
+            return Object.entries(content).map(([k, v]) => (
+                <div key={k} className="text-xs">
+                    <span className="font-semibold capitalize">{k.replace(/_/g, ' ')}:</span> {renderSafe(v)}
+                </div>
+            ));
+        }
+        return JSON.stringify(content);
+    };
+
+    // Helper to extract score from potentially complex object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getScore = (val: any): number => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        if (typeof val === 'object' && val !== null) {
+            // gpt-5.1 likes to return { score: 8, evidence: "..." }
+            if (val.score) return getScore(val.score);
+            if (val.value) return getScore(val.value);
+            if (val.strength) return getScore(val.strength);
+        }
+        return 0;
+    };
+
     const data = [
-        { subject: 'Market', A: analysis.orders.market, fullMark: 10 },
-        { subject: 'Industrial', A: analysis.orders.industrial, fullMark: 10 },
-        { subject: 'Civic', A: analysis.orders.civic, fullMark: 10 },
-        { subject: 'Domestic', A: analysis.orders.domestic, fullMark: 10 },
-        { subject: 'Inspired', A: analysis.orders.inspired, fullMark: 10 },
-        { subject: 'Fame', A: analysis.orders.fame, fullMark: 10 },
+        { subject: 'Market', A: getScore(analysis.orders.market), fullMark: 10 },
+        { subject: 'Industrial', A: getScore(analysis.orders.industrial), fullMark: 10 },
+        { subject: 'Civic', A: getScore(analysis.orders.civic), fullMark: 10 },
+        { subject: 'Domestic', A: getScore(analysis.orders.domestic), fullMark: 10 },
+        { subject: 'Inspired', A: getScore(analysis.orders.inspired), fullMark: 10 },
+        { subject: 'Fame', A: getScore(analysis.orders.fame), fullMark: 10 },
     ];
 
     return (
@@ -52,23 +94,30 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Dominant Order</h4>
                         <div className="flex items-center gap-2">
                             <Scale className="h-5 w-5 text-indigo-600" />
-                            <span className="text-lg font-bold text-slate-900">{analysis.dominant_order}</span>
+                            <span className="text-lg font-bold text-slate-900">
+                                {renderSafe(analysis.dominant_order)}
+                            </span>
                         </div>
                     </div>
 
                     <div>
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Justification Logic</h4>
-                        <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100">
-                            {analysis.justification_logic}
-                        </p>
+                        <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100">
+                            {renderSafe(analysis.justification_logic)}
+                        </div>
                     </div>
 
                     <div>
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Moral Vocabulary</h4>
                         <div className="flex flex-wrap gap-2">
-                            {analysis.moral_vocabulary?.map((term, i) => (
+                            {(Array.isArray(analysis.moral_vocabulary)
+                                ? analysis.moral_vocabulary
+                                : typeof analysis.moral_vocabulary === 'string'
+                                    ? (analysis.moral_vocabulary as string).split(',').map(s => s.trim())
+                                    : []
+                            ).map((term, i) => (
                                 <Badge key={i} variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                                    {term}
+                                    {renderSafe(term)}
                                 </Badge>
                             ))}
                         </div>
@@ -84,18 +133,13 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
                             ⚠️ Conflict Spot
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-amber-900">
-                            {analysis.conflict_spot}
-                        </p>
+                    <CardContent className="text-sm text-amber-900 space-y-2">
+                        {renderSafe(analysis.conflict_spot)}
                     </CardContent>
                 </Card>
             )}
 
-            {/* System Critique (Devil's Advocate) */}
-            {analysis.system_critique && (
-                <SystemCritiqueSection critique={analysis.system_critique} />
-            )}
+
         </div>
     );
 }

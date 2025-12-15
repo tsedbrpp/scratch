@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL, // Optional: For using Local/OpenRouter
 });
 
 export async function POST(req: Request) {
@@ -30,12 +31,11 @@ export async function POST(req: Request) {
         const content = userContent || "Test input content.";
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o", // Use a capable model for testing
+            model: process.env.OPENAI_MODEL || "gpt-4o", // Use configured model
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: content }
             ],
-            temperature: 0.7,
         });
 
         return NextResponse.json({

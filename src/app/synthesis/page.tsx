@@ -13,18 +13,7 @@ import { AssemblageSankey } from "@/components/AssemblageSankey";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Info } from "lucide-react";
 
-interface ComparisonResult {
-    risk: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
-    governance: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
-    rights: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
-    scope: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
-    verified_quotes?: Array<{ text: string; source: string; relevance: string }>;
-    system_critique?: {
-        blind_spots: string[];
-        over_interpretation: string;
-        legitimacy_correction: string;
-    } | string;
-}
+import { SynthesisComparisonResult as ComparisonResult } from "@/types/synthesis";
 
 const SYNTHESIS_FINDINGS = [
     {
@@ -136,8 +125,8 @@ export default function SynthesisPage() {
                 headers: headers,
                 body: JSON.stringify({
                     analysisMode: 'comparison',
-                    sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 50000) || '' },
-                    sourceB: { title: sourceB.title, text: sourceB.extractedText?.substring(0, 50000) || '' },
+                    sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 15000) || '' },
+                    sourceB: { title: sourceB.title, text: sourceB.extractedText?.substring(0, 15000) || '' },
                     force: forceRefresh
                 })
             });
@@ -385,10 +374,10 @@ export default function SynthesisPage() {
                                     <ResponsiveContainer width="100%" height={300}>
                                         {chartView === "radar" ? (
                                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                                                { subject: 'Risk', A: comparisonResult.risk.convergence_score || 0, B: comparisonResult.risk.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Governance', A: comparisonResult.governance.convergence_score || 0, B: comparisonResult.governance.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Rights', A: comparisonResult.rights.convergence_score || 0, B: comparisonResult.rights.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Scope', A: comparisonResult.scope.convergence_score || 0, B: comparisonResult.scope.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Risk', A: comparisonResult?.risk?.convergence_score || 0, B: comparisonResult?.risk?.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Governance', A: comparisonResult?.governance?.convergence_score || 0, B: comparisonResult?.governance?.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Rights', A: comparisonResult?.rights?.convergence_score || 0, B: comparisonResult?.rights?.coloniality_score || 0, fullMark: 10 },
+                                                { subject: 'Scope', A: comparisonResult?.scope?.convergence_score || 0, B: comparisonResult?.scope?.coloniality_score || 0, fullMark: 10 },
                                             ]}>
                                                 <PolarGrid />
                                                 <PolarAngleAxis dataKey="subject" />
@@ -401,10 +390,10 @@ export default function SynthesisPage() {
                                         ) : (
                                             <BarChart
                                                 data={[
-                                                    { subject: 'Risk', Convergence: comparisonResult.risk.convergence_score || 0, Coloniality: comparisonResult.risk.coloniality_score || 0 },
-                                                    { subject: 'Governance', Convergence: comparisonResult.governance.convergence_score || 0, Coloniality: comparisonResult.governance.coloniality_score || 0 },
-                                                    { subject: 'Rights', Convergence: comparisonResult.rights.convergence_score || 0, Coloniality: comparisonResult.rights.coloniality_score || 0 },
-                                                    { subject: 'Scope', Convergence: comparisonResult.scope.convergence_score || 0, Coloniality: comparisonResult.scope.coloniality_score || 0 },
+                                                    { subject: 'Risk', Convergence: comparisonResult?.risk?.convergence_score || 0, Coloniality: comparisonResult?.risk?.coloniality_score || 0 },
+                                                    { subject: 'Governance', Convergence: comparisonResult?.governance?.convergence_score || 0, Coloniality: comparisonResult?.governance?.coloniality_score || 0 },
+                                                    { subject: 'Rights', Convergence: comparisonResult?.rights?.convergence_score || 0, Coloniality: comparisonResult?.rights?.coloniality_score || 0 },
+                                                    { subject: 'Scope', Convergence: comparisonResult?.scope?.convergence_score || 0, Coloniality: comparisonResult?.scope?.coloniality_score || 0 },
                                                 ]}
                                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                             >

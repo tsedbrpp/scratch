@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
-import { executeGoogleSearch, curateResultsWithAI, SearchResult } from '@/lib/search-service';
+import { executeGoogleSearch, curateResultsWithAI, curateResultsWithOpenAI, SearchResult } from '@/lib/search-service';
 
 const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
 
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
+    // if (!userId) userId = "debug_user";
 
     // Rate Limiting
     const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
         console.log(`DEBUG: Received request. PolicyText length: ${policyText?.length}, Query: ${customQuery}`);
 
         // Generate cache key
-        const cacheKey = `user:${userId}:search-traces-v13-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+        const cacheKey = `user:${userId}:search-traces-v20-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
 
         // Check cache
         try {
@@ -110,13 +111,13 @@ export async function POST(request: NextRequest) {
             const openai = new OpenAI({ apiKey: openaiApiKey });
 
             const completion = await openai.chat.completions.create({
-                model: 'gpt-4',
+                model: process.env.OPENAI_MODEL || 'gpt-4',
                 messages: [
                     { role: 'system', content: KEY_TERM_EXTRACTION_PROMPT },
                     { role: 'user', content: `POLICY TEXT:\n${policyText.substring(0, 3000)}` }
                 ],
-                temperature: 0.3,
-                max_tokens: 200,
+                // temperature: 0.3, // Removed for fine-tuned compatibility
+                max_completion_tokens: 200,
             });
 
             const responseText = completion.choices[0]?.message?.content || '';
@@ -232,30 +233,65 @@ export async function POST(request: NextRequest) {
         console.log(`DEBUG: Traces found before AI: ${allTraces.length}`);
 
         if (allTraces.length > 0) {
-            const aiApiKey = process.env.GOOGLE_API_KEY;
-            if (!aiApiKey) {
-                console.error("AI API key missing for curation.");
-            } else {
-                console.log("Starting AI Curation Service...");
-                // Convert Traces back to SearchResult format for service
-                const searchResults: SearchResult[] = allTraces.map(t => ({
-                    title: t.title,
-                    link: t.sourceUrl,
-                    snippet: t.content
-                }));
+            if (allTraces.length > 0) {
+                let curatedFinal: SearchResult[] = [];
+                let curationSource = "None";
 
-                // Use Policy Text or clean Custom Query as the "Subject"
-                let policySubject = "AI Resistance";
-                if (policyText) {
-                    policySubject = policyText.substring(0, 100).split('\n')[0];
-                } else if (customQuery) {
-                    policySubject = customQuery;
+                const googleGenKey = process.env.GOOGLE_API_KEY;
+                const openaiKey = process.env.OPENAI_API_KEY;
+
+                // 1. Try Google Gemini
+                if (googleGenKey) {
+                    console.log("Starting AI Curation Service (Google Gemini)...");
+                    const searchResults: SearchResult[] = allTraces.map(t => ({
+                        title: t.title,
+                        link: t.sourceUrl,
+                        snippet: t.content
+                    }));
+
+                    let policySubject = "AI Resistance";
+                    if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
+                    else if (customQuery) policySubject = customQuery;
+
+                    const results = await curateResultsWithAI(searchResults, policySubject, googleGenKey);
+
+                    // Check if it actually worked (look for strategy on first item)
+                    if (results.length > 0 && results[0].strategy) {
+                        curatedFinal = results;
+                        curationSource = "Google Gemini";
+                    } else {
+                        console.log("Google Gemini returned unclassified results. Falling back...");
+                    }
                 }
 
-                const curatedResults = await curateResultsWithAI(searchResults, policySubject, aiApiKey);
+                // 2. Try OpenAI Fallback (if Google failed or key missing)
+                if (curationSource === "None" && openaiKey) {
+                    console.log("Starting AI Curation Service (OpenAI Fallback)...");
+                    const searchResults: SearchResult[] = allTraces.map(t => ({
+                        title: t.title,
+                        link: t.sourceUrl,
+                        snippet: t.content
+                    }));
 
-                // Merge curation back into Traces
-                finalTraces = curatedResults.map(curated => {
+                    let policySubject = "AI Resistance";
+                    if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
+                    else if (customQuery) policySubject = customQuery;
+
+                    curatedFinal = await curateResultsWithOpenAI(searchResults, policySubject, openaiKey);
+                    curationSource = "OpenAI";
+                }
+
+                if (curatedFinal.length === 0) {
+                    // If both failed, use original
+                    curatedFinal = allTraces.map(t => ({
+                        title: t.title,
+                        link: t.sourceUrl,
+                        snippet: t.content
+                    }));
+                }
+
+                // Merge back
+                finalTraces = curatedFinal.map(curated => {
                     const original = allTraces.find(t => t.sourceUrl === curated.link);
                     return {
                         title: curated.title,
@@ -268,6 +304,7 @@ export async function POST(request: NextRequest) {
                         explanation: curated.explanation
                     };
                 });
+                console.log("Curation Source:", curationSource);
             }
         }
 
@@ -289,7 +326,11 @@ export async function POST(request: NextRequest) {
             console.error('Failed to cache search traces:', error);
         }
 
-        return NextResponse.json(result);
+        return NextResponse.json(result, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0',
+            }
+        });
 
     } catch (error: unknown) {
         console.error('Search error:', error);

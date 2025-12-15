@@ -205,6 +205,8 @@ export default function CulturalAnalysisPage() {
                 </p>
             </div>
 
+            <MultiLensAnalysis sources={sources} />
+
             {/* Introduction Card */}
             <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
                 <CardHeader>
@@ -229,76 +231,6 @@ export default function CulturalAnalysisPage() {
                         <li>Identifies gaps between distant clusters</li>
                         <li>Suggests bridging concepts for policy intervention</li>
                     </ul>
-                </CardContent>
-            </Card>
-
-            {/* Theoretical Lens Selection */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Theoretical Lens</CardTitle>
-                    <CardDescription>
-                        Select a theoretical framework to guide the cultural framing analysis.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {theoreticalLenses.map((lens) => (
-                            <div
-                                key={lens.id}
-                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedLensId === lens.id
-                                    ? "border-indigo-500 bg-indigo-50"
-                                    : "border-slate-200 hover:border-slate-300"
-                                    }`}
-                                onClick={() => setSelectedLensId(lens.id)}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h4 className="font-semibold text-slate-900">
-                                            {lens.name}
-                                        </h4>
-                                        <p className="text-sm text-slate-600 mt-1">
-                                            {lens.description}
-                                        </p>
-                                    </div>
-                                    {selectedLensId === lens.id && (
-                                        <Badge className="bg-indigo-500 text-white">
-                                            Active
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            <MultiLensAnalysis sources={sources} />
-
-            {/* Selected Lens Details */}
-            <Card className="bg-indigo-50/50 border-indigo-100">
-                <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-indigo-600" />
-                        <CardTitle className="text-lg">
-                            Lens Details: {theoreticalLenses.find(l => l.id === selectedLensId)?.name}
-                        </CardTitle>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <h4 className="text-sm font-semibold text-indigo-900 mb-1">Theoretical Explanation</h4>
-                        <p className="text-sm text-slate-700 leading-relaxed">
-                            {theoreticalLenses.find(l => l.id === selectedLensId)?.explanation}
-                        </p>
-                    </div>
-                    <div className="bg-white p-3 rounded-md border border-indigo-100">
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                            <Sparkles className="h-3 w-3" /> API Query Logic
-                        </h4>
-                        <p className="text-xs text-slate-600 font-mono">
-                            {theoreticalLenses.find(l => l.id === selectedLensId)?.apiHint}
-                        </p>
-                    </div>
                 </CardContent>
             </Card>
 

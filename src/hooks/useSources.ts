@@ -96,8 +96,12 @@ export function useSources() {
                 method: 'DELETE',
                 headers: headers
             });
-            if (!response.ok) throw new Error('Failed to delete source');
-            setSources(prev => prev.filter(s => s.id !== id));
+            // If successful OR if 404 (already deleted), update state
+            if (response.ok || response.status === 404) {
+                setSources(prev => prev.filter(s => s.id !== id));
+            } else {
+                throw new Error('Failed to delete source');
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete source');
             throw err;

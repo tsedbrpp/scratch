@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Filter, Loader2, Plus, Search, Upload, Globe } from "lucide-react";
+import { Filter, Loader2, Plus, Search, Upload, Globe, FileDown } from "lucide-react";
 
 interface DocumentToolbarProps {
     searchQuery: string;
@@ -10,6 +10,8 @@ interface DocumentToolbarProps {
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     onAddClick: () => void;
     onAddUrlClick: () => void;
+    onExportReport: () => void;
+    isExporting: boolean;
 }
 
 export function DocumentToolbar({
@@ -19,7 +21,9 @@ export function DocumentToolbar({
     isUploading,
     fileInputRef,
     onAddClick,
-    onAddUrlClick
+    onAddUrlClick,
+    onExportReport,
+    isExporting
 }: DocumentToolbarProps) {
     return (
         <div className="space-y-4">
@@ -82,6 +86,15 @@ export function DocumentToolbar({
                 </div>
                 <Button variant="outline" className="border-slate-200">
                     <Filter className="mr-2 h-4 w-4" /> Filter
+                </Button>
+                <Button
+                    onClick={onExportReport}
+                    disabled={isExporting}
+                    variant="outline"
+                    className="border-slate-200 hover:bg-slate-100 text-slate-700"
+                >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    {isExporting ? "Generating..." : "Export Report"}
                 </Button>
             </div>
         </div>

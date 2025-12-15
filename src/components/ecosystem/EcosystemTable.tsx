@@ -51,7 +51,7 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
     };
 
     return (
-        <div className="rounded-md border bg-white overflow-hidden">
+        <div className="rounded-md border bg-white overflow-y-auto max-h-[600px] shadow-sm">
             <Table>
                 <TableCaption>A list of actors in the current ecosystem.</TableCaption>
                 <TableHeader className="bg-slate-50">

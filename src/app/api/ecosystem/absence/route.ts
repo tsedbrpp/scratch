@@ -8,6 +8,7 @@ import { PromptRegistry } from '@/lib/prompts/registry';
 // Initialize OpenAI client
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
 });
 
 export async function POST(req: Request) {
@@ -64,13 +65,12 @@ export async function POST(req: Request) {
         `;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: process.env.OPENAI_MODEL || "gpt-4o",
             messages: [
                 { role: "system", content: systemPrompt }, // Replaced ABSENCE_PROMPT with systemPrompt
                 { role: "user", content: userContent }
             ],
             response_format: { type: "json_object" },
-            temperature: 0.7,
         });
 
         const content = completion.choices[0].message.content;
