@@ -298,7 +298,15 @@ class ReportGeneratorDOCX {
 
             if (source.legitimacy_analysis.orders) {
                 const o = source.legitimacy_analysis.orders;
-                const scores = `• Market: ${o.market}   • Industrial: ${o.industrial}   • Civic: ${o.civic}\n• Domestic: ${o.domestic}   • Inspired: ${o.inspired}   • Fame: ${o.fame}`;
+
+                const formatScore = (val: any) => {
+                    if (typeof val === 'object' && val !== null) {
+                        return val.score || val.value || val.strength || "N/A";
+                    }
+                    return val;
+                };
+
+                const scores = `• Market: ${formatScore(o.market)}   • Industrial: ${formatScore(o.industrial)}   • Civic: ${formatScore(o.civic)}\n• Domestic: ${formatScore(o.domestic)}   • Inspired: ${formatScore(o.inspired)}   • Fame: ${formatScore(o.fame)}`;
                 this.addText(scores);
             }
 
@@ -612,7 +620,15 @@ class ReportGeneratorDOCX {
         ];
 
         lenses.forEach(lens => {
-            const result = data.results[lens.id as any];
+            const result = data.results[lens.id as any]; // Keeping as any for now to avoid import collision issues if LensType isn't exported as value. 
+            // Actually, LensType is a type, so 'as LensType' works. Let's try to be cleaner but 'as any' is fine if it works. 
+            // Wait, I should just leave it 'as any' if it works, but the lint error compliant was about implicit any. 
+            // If I changed LensType in report.ts, 'as any' silences errors. 
+            // The previous error `Element implicitly has an 'any' type` suggests strict mapping. 
+            // Let's just keep the code as is since I updated the type definition which was the root cause of the mismatch.
+            // But I will verify the fix I made for `formatScore` is there.
+
+            // Actually, I will explicitly perform the replace to be sure.
             if (result) {
                 this.addSubHeader(lens.name);
 

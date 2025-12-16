@@ -3,7 +3,7 @@ import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } f
 import { ComparisonResult as OntologyComparisonResult, OntologyData } from "./ontology";
 import { SynthesisComparisonResult } from "./synthesis";
 
-export type LensType = "structural" | "postcolonial" | "feminist" | "ecological" | "political_economy";
+export type LensType = "dsf" | "cultural_framing" | "institutional_logics" | "legitimacy";
 
 export interface ReportData {
     sources: Source[];
