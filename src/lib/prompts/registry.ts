@@ -12,9 +12,12 @@ import { INSTITUTIONAL_LOGICS_PROMPT } from './institutional-logics';
 import { LEGITIMACY_PROMPT } from './legitimacy';
 // Note: ONTOLOGY_SYSTEM_PROMPT has multiple exports, usually we just need the main one or we can register them separately.
 import { ONTOLOGY_SYSTEM_PROMPT, ONTOLOGY_COMPARISON_SYSTEM_PROMPT } from './ontology';
+import { PERSPECTIVE_SIMULATION_PROMPT } from './perspective-simulation';
 import { RESISTANCE_SYSTEM_PROMPT, RESISTANCE_GENERATION_PROMPT, RESISTANCE_SYNTHESIS_PROMPT } from './resistance';
 import { STRESS_TEST_SYSTEM_PROMPT } from './stress-test';
 import { TRAJECTORY_PROMPT } from './trajectory';
+import { MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE } from './micro-fascism';
+import { LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE } from './liberatory';
 
 export interface PromptDefinition {
     id: string;
@@ -37,7 +40,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         defaultValue: ABSENCE_PROMPT,
         outputSchema: {
             format: 'json',
-            requiredKeys: ['narrative', 'missing_voices', 'structural_voids', 'blindspot_intensity']
+            requiredKeys: ['narrative', 'missing_voices', 'structural_voids', 'blindspot_intensity', 'socio_technical_components', 'policy_mobilities', 'stabilization_mechanisms']
         }
     },
     'assemblage_extraction': {
@@ -99,6 +102,22 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         category: 'Analysis',
         defaultValue: DSF_SYSTEM_PROMPT
     },
+    'micro_fascism_risk': {
+        id: 'micro_fascism_risk',
+        name: 'Micro-Fascism Risk Summary',
+        description: 'Generates the diagnostic narrative for the Risk Index card.',
+        category: 'Analysis',
+        defaultValue: MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE,
+        outputSchema: { format: 'text' }
+    },
+    'liberatory_capacity': {
+        id: 'liberatory_capacity',
+        name: 'Liberatory Capacity Summary',
+        description: 'Generates the diagnostic narrative for the Liberatory Capacity Index (LGCI).',
+        category: 'Analysis',
+        defaultValue: LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE,
+        outputSchema: { format: 'text' }
+    },
     'ecosystem_analysis': {
         id: 'ecosystem_analysis',
         name: 'Ecosystem Impact Mapping',
@@ -133,6 +152,17 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Compares two different ontology maps.',
         category: 'Analysis',
         defaultValue: ONTOLOGY_COMPARISON_SYSTEM_PROMPT
+    },
+    'perspective_simulation': {
+        id: 'perspective_simulation',
+        name: 'Perspective Simulation',
+        description: 'Generates conflicting viewpoints (Market vs Democratic) on a topic.',
+        category: 'Simulation',
+        defaultValue: PERSPECTIVE_SIMULATION_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['perspectiveA', 'perspectiveB']
+        }
     },
     'resistance_analysis': {
         id: 'resistance_analysis',

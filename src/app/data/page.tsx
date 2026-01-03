@@ -1,9 +1,12 @@
 "use client";
+// Force cache refresh
+
 
 import { useState, useRef } from "react";
+import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
-import { ReportData } from "@/types/report";
+import { ReportData, LensType } from "@/types/report";
 import {
     ResistanceSynthesisResult,
     EcosystemImpact,
@@ -20,40 +23,44 @@ import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
 import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
 import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
-import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+// import { EditSourceDialog } from "@/components/policy/EditSourceDialog"; // Unused currently
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
+import { AnalysisResults } from "@/components/policy/AnalysisResults";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
 import { Loader2 } from "lucide-react";
 
 export default function PolicyDocumentsPage() {
+    // ----------------------------------------------------------------------
+    // 1. Hooks & State
+    // ----------------------------------------------------------------------
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
 
     // Data for Full Report Aggregation
     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
-
     const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
     const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
-
+    const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
     const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
-
     const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
     const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
-
     const [multiLensResults] = useServerStorage<Record<string, AnalysisResult | null>>("multi_lens_results", {
         dsf: null, cultural_framing: null, institutional_logics: null, legitimacy: null
     });
     const [multiLensText] = useServerStorage<string>("multi_lens_text", "");
-
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [searchingId, setSearchingId] = useState<string | null>(null);
+    const [focusedSourceId, setFocusedSourceId] = useState<string | null>(null);
 
     const [isUploading, setIsUploading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -63,11 +70,37 @@ export default function PolicyDocumentsPage() {
     const [pendingAnalysis, setPendingAnalysis] = useState<{ sourceId: string, mode: AnalysisMode, force: boolean } | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    // ----------------------------------------------------------------------
+    // 2. Computed Values
+    // ----------------------------------------------------------------------
     const filteredSources = sources.filter(source =>
         source.type !== 'Trace' &&
         (source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             source.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
+
+    const selectedSources = sources.filter(s => selectedIds.includes(s.id));
+
+    // ----------------------------------------------------------------------
+    // 3. Handlers
+    // ----------------------------------------------------------------------
+    const toggleSelection = (id: string, selected: boolean) => {
+        if (selected) {
+            setSelectedIds(prev => [...prev, id]);
+        } else {
+            setSelectedIds(prev => prev.filter(sid => sid !== id));
+        }
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredSources.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredSources.map(s => s.id));
+        }
+    };
 
     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -80,7 +113,7 @@ export default function PolicyDocumentsPage() {
             const newDoc: Source = {
                 id: Date.now().toString(),
                 title: file.name.replace('.pdf', ''),
-                description: `Uploaded ${new Date().toLocaleDateString()}`,
+                description: `Uploaded ${new Date().toLocaleDateString()} `,
                 type: "PDF",
                 addedDate: new Date().toLocaleDateString(),
                 status: "Active Case",
@@ -122,7 +155,7 @@ export default function PolicyDocumentsPage() {
         const newDoc: Source = {
             id: Date.now().toString(),
             title: data.title || url,
-            description: `Fetched from ${new URL(url).hostname}`,
+            description: `Fetched from ${new URL(url).hostname} `,
             type: "Web",
             addedDate: new Date().toLocaleDateString(),
             status: "Active Case",
@@ -164,7 +197,6 @@ export default function PolicyDocumentsPage() {
             return;
         }
 
-        // Check if analysis already exists
         let force = false;
         const hasAnalysis =
             (mode === 'dsf' && source.analysis) ||
@@ -189,7 +221,7 @@ export default function PolicyDocumentsPage() {
         const { sourceId, mode, force } = pendingAnalysis;
         const source = sources.find(s => s.id === sourceId);
 
-        setIsPositionalityDialogOpen(false);
+        setIsPositionalityDialogOpen(false); // Close dialog immediately
 
         if (!source || !source.extractedText) return;
 
@@ -225,7 +257,7 @@ export default function PolicyDocumentsPage() {
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Analysis failed: ${errorMessage}`);
+            alert(`Analysis failed: ${errorMessage} `);
         } finally {
             setAnalyzingId(null);
             setPendingAnalysis(null);
@@ -262,14 +294,15 @@ export default function PolicyDocumentsPage() {
                 // Create trace sources from search results
                 const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string; strategy?: string; explanation?: string }) => ({
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                    title: `[Trace] ${item.title}`,
+                    title: `[Trace] ${item.title} `,
                     description: item.snippet || 'No description available',
                     type: "Trace" as const,
-                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'}`,
+                    extractedText: `${item.snippet} \n\nSource: ${item.link} \n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'} `,
                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
                     status: "Active Case" as const,
                     colorClass: "bg-blue-100",
                     iconClass: "text-blue-600",
+                    policyId: source.id, // Linked to the policy document
                     resistance_analysis: item.strategy ? {
                         strategy_detected: item.strategy,
                         evidence_quote: item.snippet,
@@ -283,14 +316,14 @@ export default function PolicyDocumentsPage() {
                     await addSource(trace);
                 }
 
-                alert(`✅ Found ${newTraces.length} empirical traces!\n\nSearch query: "${result.searchQuery}"\n\nTraces have been added to your sources. Go to the Resistance page to analyze them.`);
+                alert(`✅ Found ${newTraces.length} empirical traces! Added to sources.`);
             } else {
-                alert(`No traces found. ${result.error || 'Try analyzing the document first or check your Google Search API configuration.'}`);
+                alert(`No traces found.${result.error || 'Try analyzing the document first or check your Google Search API configuration.'} `);
             }
         } catch (error: unknown) {
             console.error('Search error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Failed to search for traces: ${errorMessage}\n\nMake sure your Google Search API credentials are configured in .env.local`);
+            alert(`Failed to search for traces: ${errorMessage} \n\nMake sure your Google Search API credentials are configured in .env.local`);
         } finally {
             setSearchingId(null);
         }
@@ -302,14 +335,6 @@ export default function PolicyDocumentsPage() {
         }
     };
 
-    if (isSourcesLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-            </div>
-        );
-    }
-
     const handleExportReport = async () => {
         setIsExporting(true);
         try {
@@ -319,7 +344,8 @@ export default function PolicyDocumentsPage() {
                 ecosystem: {
                     actors: ecosystemActors,
                     configurations: ecosystemConfigs,
-                    culturalHoles: culturalHoles
+                    culturalHoles: culturalHoles,
+                    absenceAnalysis: absenceAnalysis
                 },
                 synthesis: {
                     comparison: synthesisComparison,
@@ -330,7 +356,7 @@ export default function PolicyDocumentsPage() {
                     comparison: ontologyComparison
                 },
                 multiLens: {
-                    results: multiLensResults as any,
+                    results: multiLensResults as Record<LensType, AnalysisResult | null>,
                     text: multiLensText
                 }
             };
@@ -344,37 +370,137 @@ export default function PolicyDocumentsPage() {
         }
     };
 
-    return (
-        <div className="space-y-8">
-            <DocumentToolbar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                onUpload={handlePDFUpload}
-                isUploading={isUploading}
-                fileInputRef={fileInputRef}
-                onAddClick={() => setIsAddDialogOpen(true)}
-                onAddUrlClick={() => setIsUrlDialogOpen(true)}
-                onExportReport={handleExportReport}
-                isExporting={isExporting}
-            />
+    // ----------------------------------------------------------------------
+    // 4. Render
+    // ----------------------------------------------------------------------
+    if (isSourcesLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+        );
+    }
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredSources.map((source) => (
-                    <DocumentCard
-                        key={source.id}
-                        source={source}
-                        isAnalyzing={analyzingId === source.id}
-                        isSearching={searchingId === source.id}
-                        onAnalyze={handleAnalyze}
-                        onDelete={handleDelete}
-                        onEdit={(source) => setEditingSource(source)}
-                        onFindTraces={handleFindTraces}
-                        onView={(source) => setViewingSource(source)}
-                        onUpdateSource={updateSource}
+    return (
+        <div className="container mx-auto p-6 max-w-7xl animate-in fade-in duration-500">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Data & Policy Analysis</h1>
+                    <p className="text-slate-500 mt-1">Manage documents, run diagnostics, and compare frameworks.</p>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <DocumentToolbar
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        onUpload={handlePDFUpload}
+                        isUploading={isUploading}
+                        fileInputRef={fileInputRef}
+                        onAddClick={() => setIsAddDialogOpen(true)}
+                        onAddUrlClick={() => setIsUrlDialogOpen(true)}
+                        onExportReport={handleExportReport}
+                        isExporting={isExporting}
                     />
-                ))}
+                </div>
             </div>
 
+            {/* Main Content Tabs */}
+            <Tabs defaultValue="documents" className="w-full">
+                <div className="flex items-center justify-between mb-6">
+                    <TabsList className="bg-slate-100 p-1">
+                        <TabsTrigger value="documents" className="uppercase text-xs font-bold px-4">My Documents</TabsTrigger>
+                        <TabsTrigger value="compare" className="uppercase text-xs font-bold px-4">
+                            Compare <span className="ml-2 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px]">{selectedIds.length}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="documents" className="space-y-4">
+                    {filteredSources.length === 0 ? (
+                        <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            <div className="bg-white p-4 rounded-full w-16 h-16 mx-auto mb-4 shadow-sm flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-700">No documents found</h3>
+                            <p className="text-slate-500 text-sm mt-1">Upload a PDF or add a URL to get started.</p>
+                        </div>
+                    ) : (
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
+                            {filteredSources.map((source) => (
+                                <DocumentCard
+                                    key={source.id}
+                                    source={source}
+                                    isAnalyzing={analyzingId === source.id}
+                                    isSearching={searchingId === source.id}
+                                    isSelected={selectedIds.includes(source.id)}
+                                    onSelect={(selected) => toggleSelection(source.id, selected)}
+                                    onAnalyze={handleAnalyze}
+                                    onDelete={handleDelete}
+                                    onEdit={(s) => { setEditingSource(s); }}
+                                    onFindTraces={handleFindTraces}
+                                    onView={(s) => setViewingSource(s)}
+                                    onUpdateSource={handleEditSource}
+                                    isFocused={focusedSourceId === source.id}
+                                    onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Focus Mode View */}
+                    {focusedSourceId && (
+                        <div className="fixed inset-0 z-50 bg-white p-6 overflow-auto animate-in slide-in-from-bottom-10">
+                            <div className="container mx-auto max-w-6xl">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold">Focus Mode</h2>
+                                    <Button variant="outline" onClick={() => setFocusedSourceId(null)}>Close Focus</Button>
+                                </div>
+                                <div className="grid grid-cols-1 gap-8">
+                                    <div className="">
+                                        {/* Render the actual Analysis Results Dashboard */}
+                                        {(() => {
+                                            const focusedSource = sources.find(s => s.id === focusedSourceId);
+                                            if (focusedSource?.analysis) {
+                                                return (
+                                                    <AnalysisResults
+                                                        analysis={focusedSource.analysis}
+                                                        sourceTitle={focusedSource.title}
+                                                        onUpdate={async (updates) => {
+                                                            await updateSource(focusedSource.id, {
+                                                                analysis: { ...focusedSource.analysis!, ...updates }
+                                                            });
+                                                        }}
+                                                    />
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                                        <p className="text-slate-500 italic">No analysis data available for this document yet.</p>
+                                                        <Button
+                                                            variant="default"
+                                                            className="mt-4"
+                                                            onClick={() => setFocusedSourceId(null)}
+                                                        >
+                                                            Go back and run analysis
+                                                        </Button>
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="compare">
+                    <PolicyComparisonView sources={selectedSources} />
+                </TabsContent>
+            </Tabs>
+
+            {/* Dialogs */}
             <AddDocumentDialog
                 open={isAddDialogOpen}
                 onOpenChange={setIsAddDialogOpen}
@@ -392,12 +518,8 @@ export default function PolicyDocumentsPage() {
                 onOpenChange={(open) => !open && setViewingSource(null)}
             />
 
-            <EditSourceDialog
-                source={editingSource}
-                open={!!editingSource}
-                onOpenChange={(open) => !open && setEditingSource(null)}
-                onSave={handleEditSource}
-            />
+            {/* Edit Source Dialog (if you have one, or remove if unused) */}
+            {/* <EditSourceDialog ... /> */}
 
             <PositionalityDialog
                 isOpen={isPositionalityDialogOpen}

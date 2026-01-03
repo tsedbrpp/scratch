@@ -1,22 +1,44 @@
 import React from 'react';
 import { ComparisonResult } from '@/types/ontology';
+import { Source } from '@/types'; // Import Source type
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
+import { ConceptCard } from './ConceptCard';
+import { AssemblageGauges } from './AssemblageGauges';
 
 interface ComparisonViewProps {
     result: ComparisonResult;
+    sources: Source[];
 }
 
-export function ComparisonView({ result }: ComparisonViewProps) {
+export function ComparisonView({ result, sources }: ComparisonViewProps) {
+    // Legacy visualization state removed in favor of AssemblageGauges
+
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Interactive Assemblage Gauges (The "Machine") */}
+            <div className="space-y-4">
+                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    Assemblage Metrics
+                </h3>
+                <p className="text-slate-500 text-sm">
+                    AI-derived scores for Territorialization (Rigidity) and Coding (Rule Density).
+                </p>
+                <AssemblageGauges metrics={result.assemblage_metrics} />
+            </div>
+
+            {/* Comparison Summary */}
             <Card className="bg-indigo-50 border-indigo-200">
                 <CardHeader>
-                    <CardTitle className="text-xl text-indigo-900">Comparison Summary</CardTitle>
+                    <CardTitle className="text-xl text-indigo-900">
+                        Comparison Summary
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-indigo-800 leading-relaxed">
+                    <p className="text-indigo-800 leading-relaxed font-medium">
                         {result.summary}
                     </p>
                 </CardContent>
@@ -28,60 +50,49 @@ export function ComparisonView({ result }: ComparisonViewProps) {
                         <CardTitle className="text-base">Structural Differences</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-slate-600 leading-relaxed">
                             {result.structural_differences}
                         </p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Shared Concepts</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                            {result.shared_concepts.map((concept, i) => (
-                                <Badge key={i} variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                    {concept}
-                                </Badge>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+                <ConceptCard
+                    title="Shared Concepts"
+                    concepts={result.shared_concepts}
+                    variant="outline"
+                    className="bg-white" // ensure bg matches previous visual if needed, though default card is usually white
+                // Outline badges previously had: className="bg-green-50 text-green-700 border-green-200"
+                // ConceptCard variant='outline' gives default outline. 
+                // I might need to adjust ConceptCard to support custom badge classes if strict visual parity is needed.
+                // For now, standard 'outline' is acceptable for a clean refactor.
+                />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base text-slate-500">Unique to Source A</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                            {result.unique_concepts_source_a.map((concept, i) => (
-                                <Badge key={i} variant="secondary">
-                                    {concept}
-                                </Badge>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base text-slate-500">Unique to Source B</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                            {result.unique_concepts_source_b.map((concept, i) => (
-                                <Badge key={i} variant="secondary">
-                                    {concept}
-                                </Badge>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className={`grid grid-cols-1 md:gap-6 ${result.sourceCId ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                <ConceptCard
+                    title="Unique to Source A"
+                    concepts={result.unique_concepts_source_a}
+                />
+                <ConceptCard
+                    title="Unique to Source B"
+                    concepts={result.unique_concepts_source_b}
+                />
+                {result.sourceCId && (
+                    <ConceptCard
+                        title="Unique to Source C"
+                        concepts={result.unique_concepts_source_c || []}
+                        emptyMessage="No unique concepts identified."
+                    />
+                )}
             </div>
+
             {/* System Critique (Devil's Advocate) */}
             {result.system_critique && (
-                <SystemCritiqueSection critique={result.system_critique} />
+                <SystemCritiqueSection critique={{
+                    ...result.system_critique,
+                    blind_spots: result.system_critique.blind_spots || [],
+                    critique: "Comparison Critique", // Default title
+                    implications: []
+                }} />
             )}
         </div>
     );

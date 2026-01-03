@@ -575,6 +575,39 @@ class ReportGeneratorDOCX {
                     this.addText(`• Between ${hole.clusterA} & ${hole.clusterB}: ${hole.opportunity}`);
                 });
             }
+
+        }
+
+        // Voices Silenced (Absence Analysis)
+        if (data.absenceAnalysis) {
+            this.addSubHeader("Voices Silenced & Voids");
+            this.addText("Analysis of Epistemic Silencing and Excluded Actors", STYLE.colors.meta);
+
+            // Narrative
+            if (data.absenceAnalysis.narrative) {
+                this.addText("Decolonial Critique:", STYLE.colors.secondary, 0, true);
+                this.addText(data.absenceAnalysis.narrative);
+            }
+
+            // Missing Voices
+            if (data.absenceAnalysis.missing_voices && data.absenceAnalysis.missing_voices.length > 0) {
+                this.addText("Silenced Voices:", STYLE.colors.danger, 0, true);
+                data.absenceAnalysis.missing_voices.forEach(voice => {
+                    this.addText(`• ${voice.name} (${voice.category}): ${voice.reason}`);
+                });
+            }
+
+            // Structural Voids
+            if (data.absenceAnalysis.structural_voids && data.absenceAnalysis.structural_voids.length > 0) {
+                this.addText("Structural Voids:", STYLE.colors.secondary, 0, true);
+                data.absenceAnalysis.structural_voids.forEach(voidItem => {
+                    this.addText(`• ${voidItem}`);
+                });
+            }
+
+            if (data.absenceAnalysis.blindspot_intensity) {
+                this.addText(`Blindspot Intensity: ${data.absenceAnalysis.blindspot_intensity}`, STYLE.colors.primary, 0, true);
+            }
         }
     }
 

@@ -52,6 +52,8 @@ For each Order:
   • **explicit** (direct reference to value)  
   • **implicit** (inferred through mechanism, structure, or obligations)
 
+You MUST collect 1-2 short, verbatim quotes for each Order you score > 0.
+
 ============================================================
 IV. HYBRIDIZATION, SHADOW ORDERS & ABSENCES
 ============================================================
@@ -116,6 +118,12 @@ If supported by evidence, identify:
 - asymmetries in whose moral claims “count.”
 
 ============================================================
+IX. SILENCED VOICES (OUTSIDE THE MORAL ORDER)
+============================================================
+
+Identify groups whose moral worth is completely unrecognized or whose justifications are deemed invalid by the text.
+
+============================================================
 X. SYSTEM REFLEXIVITY (DEVIL'S ADVOCATE)
 ============================================================
 
@@ -148,6 +156,14 @@ No markdown or other text.
     "inspired": 2,
     "fame": 4
   },
+  "evidence_quotes": {
+    "market": ["quote 1...", "quote 2..."],
+    "industrial": ["quote..."],
+    "civic": ["quote..."],
+    "domestic": [],
+    "inspired": [],
+    "fame": ["quote..."]
+  },
   "dominant_order": "Market (supported by Industrial)",
   "justification_logic": "The text primarily justifies action through efficiency and competition...",
   "moral_vocabulary": ["efficiency", "transparency", "accountability", "innovation"],
@@ -156,7 +172,8 @@ No markdown or other text.
       "blind_spots": ["The framework misses the 'Security' justification present in Article 5"],
       "over_interpretation": "Scoring 'Fame' might be an over-read of the transparency requirements",
       "legitimacy_correction": "The text relies heavily on 'Dataism' which is not a standard Order"
-  }
+  },
+  "silenced_voices": ["Group 1", "Group 2"]
 }
 
 Rules:

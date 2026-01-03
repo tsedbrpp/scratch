@@ -26,6 +26,7 @@ export interface ComparisonResult {
     shared_concepts: string[];
     unique_concepts_source_a: string[];
     unique_concepts_source_b: string[];
+    unique_concepts_source_c?: string[]; // Optional 3rd source
     structural_differences: string;
     relationship_divergences: { concept: string; difference: string }[];
     system_critique?: {
@@ -33,6 +34,14 @@ export interface ComparisonResult {
         over_interpretation?: string;
         legitimacy_correction?: string;
     };
+    assemblage_metrics?: {
+        jurisdiction: string;
+        territorialization: number;
+        territorialization_justification: string;
+        coding: number;
+        coding_justification: string;
+    }[];
     sourceAId?: string;
     sourceBId?: string;
+    sourceCId?: string;
 }

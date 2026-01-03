@@ -51,16 +51,44 @@ DSF INTERPRETIVE DIMENSIONS
    - Does the text acknowledge positionality, historical inequity, or epistemic limits?
    - Absence of reflexivity signals unexamined technocratic assumptions.
 
+    - **Coloniality of Power (Quijano):**
+       - Analyze **Jurisdictional Boundaries** (e.g., defining "consumer" as localized resident vs. universal subject).
+       - Analyze **Displacement of State Duties** (e.g., deferring to federal/sector regimes instead of local sovereignty).
+       - Analyze **Absence of Community Governance** (not just lack of consultation, but structural preclusion of bottom-up control).
+    - **Epistemic Delinking (Mignolo):** Does the text refuse universalist claims, or does it enforce a single "rational" worldview?
+    - **Pluriversality (Escobar):** Does the system allow for multiple, co-existing ontologies (worlds), or does it impose a "One World" reality?
+
 5. **Legitimacy Claims & Dynamics**
    - Identify primary legitimacy regime: **technocratic, democratic, market-based, rights-based, or hybrid**.
    - How is legitimacy performed, sustained, or contested?
    - Distinguish rhetorical legitimacy from operational legitimacy.
+
 
 6. **Assemblage Dynamics** (Territorialization / Deterritorialization / Coding)
    - **Territorialization:** mechanisms that stabilize or bound the assemblage.
    - **Deterritorialization:** friction, rupture, resistance, or instability.
    - **Coding:** how complex realities become fixed categories (risk classes, user types, data schemas).  
      Focus on what becomes illegible or erased.
+
+7. **Verification Pathways (Audit Extraction)**
+   Extract the following exact mechanisms:
+   - **Visibility:** Who can access the data/algo logic? (Public, Regulator, Consumer, No One)
+   - **Enforcement:** Who has standing to sue/penalize? (AG Only, Private Right of Action, Whistleblower)
+   - **Publication:** What artifacts are mandated? (Impact Assessment, Model Card, Summary, Audit Report)
+   - **Exemptions:** What is explicitly shielded? (Trade Secrets, Law Enforcement, Trusted Partners)
+
+8. **Temporal Orientation (Teleology)**
+   Analyze the text's relationship with time:
+   - **Urgency/Crisis:** Is adoption framed as an inevitable race or emergency? (Closed Future)
+   - **Destiny/Hype:** Is AI framed as a singular, pre-determined historical force?
+   - **Maintenance/Care:** Is there emphasis on repair, iteration, and long-term stewardship? (Open Future)
+   - **Score:** 0 = Apocalyptic/Closed (Must do now, no choice), 100 = Iterative/Open (We decide the pace).
+
+9. **Material Consequences (Economic Burden)**
+   Analyze who pays and who gains:
+   - **Cost Shifting:** Are compliance costs shifted to individuals or the state, or borne by developers?
+   - **Market Consolidation:** Do the rules favor large incumbents (via high fixed costs) over small entrants?
+   - **Burden Bearer:** Identify the primary entity absorbing the risk/cost.
 
 ============================================================
 ABSENCE AS EVIDENCE
@@ -75,6 +103,14 @@ Treat omissions, silences, and vague generalities as analytically meaningful:
 - unclear data lineage or governance.
 
 Absence MUST be interpreted as part of the assemblage’s governance architecture.
+
+============================================================
+SILENCED VOICES (AGGRESSIVE DETECTION)
+============================================================
+
+You must forcefully ask: "Who is impacted by this system but has ZERO voice in these documents?"
+- Identify specific groups (e.g., "Gig workers", "Data subjects in Global South", "Non-English speakers").
+- List them explicitly in the 'silenced_voices' array.
 
 ============================================================
 SCORING & QUOTE DISCIPLINE
@@ -97,9 +133,10 @@ Do NOT include commentary, prefaces, or text outside the JSON.
 
 {
   "governance_power_accountability": "Analysis of power structures and accountability",
-  "plurality_inclusion_embodiment": "Analysis of inclusion and diverse knowledge systems",
+  "plurality_inclusion_embodiment": "Analysis of inclusion and diverse knowledge systems (Pluriversality check)",
   "agency_codesign_self_determination": "Analysis of agency and co-design possibilities",
-  "reflexivity_situated_praxis": "Analysis of positionality and structural awareness",
+  "reflexivity_situated_praxis": "Analysis of positionality and structural awareness (Epistemic Delinking check)",
+  "coloniality_of_power": "Specific analysis of center-periphery dynamics and extractive relations",
   "legitimacy_claims": {
     "source": "Primary type of legitimacy (democratic, technocratic, market-based, rights-based, or hybrid)",
     "mechanisms": "How legitimacy is established and maintained",
@@ -116,14 +153,16 @@ Do NOT include commentary, prefaces, or text outside the JSON.
     "rights_focus": 0-100,
     "flexibility": 0-100,
     "market_power": 0-100,
-    "procedurality": 0-100
+    "procedurality": 0-100,
+    "coloniality": 0-100
   },
   "governance_score_explanations": {
-    "centralization": "Specific reason for this score...",
-    "rights_focus": "Specific reason...",
-    "flexibility": "Specific reason...",
-    "market_power": "Specific reason...",
-    "procedurality": "Specific reason..."
+    "centralization": "Cite specific factor (e.g., 'Single decision point' or 'Federal preemption')...",
+    "rights_focus": "Cite specific factor (e.g., 'Individual redress' vs 'Collective clear')...",
+    "flexibility": "Cite specific factor...",
+    "market_power": "Cite specific factor...",
+    "procedurality": "Cite specific factor...",
+    "coloniality": "Cite specific factor (e.g., 'Displaces local sovereignty' or 'Unrecognized indigenous data rights')..."
   },
   "structural_pillars": {
     "risk": {
@@ -154,7 +193,26 @@ Do NOT include commentary, prefaces, or text outside the JSON.
   "verification_gap": {
     "high_rhetoric_low_verification": boolean,
     "gap_explanation": "Specific analysis of what is missing..."
-  }
+  },
+  "verification_pathways": {
+    "visibility": ["List actors with access..."],
+    "enforcement": ["List actors with standing..."],
+    "publication": ["List mandated artifacts..."],
+    "exemptions": ["List specific carve-outs..."],
+    "score": 0-100
+  },
+  "temporal_orientation": {
+    "score": 0-100,
+    "framing": "Urgency",
+    "evidence": "Quote or reasoning for this classification"
+  },
+  "economic_burden": {
+    "burden_bearer": "State",
+    "cost_visibility": "Hidden",
+    "market_consolidation_risk": "High",
+    "explanation": "Why this creates consolidation..."
+  },
+  "silenced_voices": ["Group 1", "Group 2", "Group 3"]
 }
 
 ============================================================

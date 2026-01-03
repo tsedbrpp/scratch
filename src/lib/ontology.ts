@@ -118,7 +118,12 @@ export const SEED_ONTOLOGY: OntologyNode[] = [
             "peripheral countries",
             "postcolonial",
             "south-south",
-            "digital colonialism"
+            "digital colonialism",
+            "coloniality of power",
+            "epistemic delinking",
+            "pluriversality",
+            "epistemic violence",
+            "data extractivism"
         ]
     },
 

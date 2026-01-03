@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash } from "lucide-react";
+import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -38,9 +39,16 @@ export default function ResistancePage() {
     const { sources, addSource, updateSource, deleteSource, isLoading } = useSources();
     const [selectedTraceId, setSelectedTraceId] = useServerStorage<string | null>("resistance_selected_trace_id", null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
 
-    // Filter for sources that are explicitly marked as 'Trace' or have text content
-    const traces = sources.filter(s => s.type === 'Trace' || (s.type === 'Text' && s.extractedText));
+    // Identify Policy Documents (Not traces)
+    const policyDocuments = sources.filter(s => s.type !== "Trace");
+
+    // Filter traces based on selection
+    const traces = sources.filter(s =>
+        (s.type === 'Trace' || (s.type === 'Text' && s.extractedText)) &&
+        s.policyId === selectedPolicyId
+    );
 
     const handleAnalyzeTrace = async (trace: Source) => {
         if (!trace.extractedText) return;
@@ -94,9 +102,20 @@ export default function ResistancePage() {
     const [selectedPlatforms, setSelectedPlatforms] = useServerStorage<string[]>("resistance_selected_platforms", ["reddit", "hackernews", "forums"]);
 
     const handleSearchTraces = async () => {
+        if (!selectedPolicyId) {
+            alert("Please select a policy document first.");
+            return;
+        }
+
         // Need either a policy source or custom query
-        if (!searchSource?.extractedText && !customQuery.trim()) {
-            alert("Please select a policy or enter a custom search query.");
+        // If searching with a specific source context, valid. Or just custom query.
+        // But we MUST link result to selectedPolicyId.
+
+        // Find the full source object for the selected policy to use as context if needed
+        const activePolicy = sources.find(s => s.id === selectedPolicyId);
+
+        if (!activePolicy?.extractedText && !customQuery.trim()) {
+            alert("No text in selected policy and no custom query provided.");
             return;
         }
 
@@ -111,7 +130,7 @@ export default function ResistancePage() {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
-                    policyText: searchSource?.extractedText?.substring(0, 3000),
+                    policyText: activePolicy?.extractedText?.substring(0, 3000),
                     customQuery: customQuery.trim() || undefined,
                     platforms: selectedPlatforms
                 })
@@ -131,6 +150,7 @@ export default function ResistancePage() {
                     status: "Active Case",
                     colorClass: "bg-blue-100",
                     iconClass: "text-blue-600",
+                    policyId: selectedPolicyId, // Link to selected policy
                     resistance_analysis: trace.strategy ? {
                         strategy_detected: trace.strategy,
                         evidence_quote: trace.content,
@@ -144,7 +164,7 @@ export default function ResistancePage() {
                     await addSource(trace);
                 }
 
-                toast.success(`Found ${newTraces.length} resistance traces from the web!`);
+                toast.success(`Found ${newTraces.length} resistance traces from the web for ${activePolicy?.title}!`);
                 setCustomQuery(""); // Reset query
             } else {
                 if (response.status === 429 || result.error === "Quota Exceeded") {
@@ -216,7 +236,7 @@ export default function ResistancePage() {
                 setSynthesisResult(result.analysis);
                 toast.success("Synthesis complete!");
             } else {
-                toast.error("Synthesis failed", { description: result.error });
+                toast.error("Synthesis failed", { description: result.details || result.error || "Unknown error" });
             }
         } catch (error) {
             console.error("Synthesis error:", error);
@@ -235,287 +255,322 @@ export default function ResistancePage() {
     }
 
     return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex flex-col gap-6">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Micro-Resistance: Empirical Traces</h2>
-                    <p className="text-slate-500">Analyze empirical traces (forum posts, comments) to identify real-world resistance strategies.</p>
+                    <p className="text-slate-500">Analyze empirical traces linked to specific policy documents.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleSynthesizeFindings}
-                        disabled={isSynthesizing || traces.filter(t => t.resistance_analysis).length < 2}
-                        className="border-purple-200 hover:bg-purple-50 text-purple-700"
-                    >
-                        {isSynthesizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
-                        Synthesize Findings
-                    </Button>
-                    <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-blue-600 text-white hover:bg-blue-700">
-                                <Search className="mr-2 h-4 w-4" /> Search for Traces
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                                <DialogTitle>Search Web for Resistance Traces</DialogTitle>
-                                <DialogDescription>
-                                    Find real forum posts, Reddit threads, and discussions about resistance to AI policies.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 mb-2 block">
-                                        Auto-extract from Policy (Optional)
-                                    </label>
-                                    <select
-                                        className="w-full p-2 border rounded-md text-sm"
-                                        onChange={(e) => {
-                                            const source = sources.find(s => s.id === e.target.value);
-                                            setSearchSource(source || null);
-                                        }}
-                                    >
-                                        <option value="">Select Policy...</option>
-                                        {sources.filter(s => s.type === 'PDF').map(s => (
-                                            <option key={s.id} value={s.id}>{s.title}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-slate-500 mt-1">AI will extract key terms to search for</p>
-                                </div>
 
-                                <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <span className="w-full border-t" />
-                                    </div>
-                                    <div className="relative flex justify-center text-xs uppercase">
-                                        <span className="bg-white px-2 text-slate-500">Or</span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { id: 'reddit', label: 'Reddit' },
-                                        { id: 'hackernews', label: 'Hacker News' },
-                                        { id: 'forums', label: 'Forums' },
-                                        { id: 'twitter', label: 'Twitter/X' },
-                                        { id: 'technews', label: 'Tech News' },
-                                        { id: 'mastodon', label: 'Mastodon' }
-                                    ].map(platform => (
-                                        <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedPlatforms.includes(platform.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedPlatforms([...selectedPlatforms, platform.id]);
-                                                    } else {
-                                                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
-                                                    }
-                                                }}
-                                                className="rounded"
-                                            />
-                                            <span className="text-sm">{platform.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <DialogFooter>
-                                <Button
-                                    onClick={handleSearchTraces}
-                                    disabled={(!searchSource && !customQuery.trim()) || isSearching}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                    {isSearching ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Searching Web...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Search className="mr-2 h-4 w-4" />
-                                            Search
-                                        </>
-                                    )}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
-
-            {synthesisResult && (
-                <Card className="bg-purple-50 border-purple-200">
-                    <CardHeader>
-                        <CardTitle className="text-purple-900 flex items-center">
-                            <Activity className="mr-2 h-5 w-5" /> Synthesis of Findings
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <h4 className="font-semibold text-purple-900 mb-1">Executive Summary</h4>
-                            <p className="text-purple-800 text-sm leading-relaxed">{synthesisResult.executive_summary}</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <h4 className="font-semibold text-purple-900 mb-2">Dominant Strategies</h4>
-                                <ul className="space-y-2">
-                                    {synthesisResult.dominant_strategies?.map((s: { strategy: string; frequency: string; description: string }, i: number) => (
-                                        <li key={i} className="text-sm bg-white p-2 rounded border border-purple-100">
-                                            <span className="font-bold text-purple-700">{s.strategy}</span> ({s.frequency}): {s.description}
-                                        </li>
-                                    ))}
-                                </ul>
+                {/* Policy Selector Section */}
+                <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="p-3 bg-purple-50 rounded-lg">
+                                <FileText className="h-6 w-6 text-purple-600" />
                             </div>
                             <div>
-                                <h4 className="font-semibold text-purple-900 mb-2">Emerging Themes</h4>
-                                <ul className="list-disc list-inside text-sm text-purple-800 space-y-1">
-                                    {synthesisResult.emerging_themes?.map((t: string, i: number) => (
-                                        <li key={i}>{t}</li>
-                                    ))}
-                                </ul>
+                                <h3 className="font-semibold text-slate-900">Active Policy Document</h3>
+                                <p className="text-sm text-slate-500">Select a document to view resistance analysis</p>
                             </div>
                         </div>
-                        <div>
-                            <h4 className="font-semibold text-purple-900 mb-1">Policy Implications</h4>
-                            <p className="text-purple-800 text-sm">{synthesisResult.implications_for_policy}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Trace Selector */}
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-slate-900 flex items-center">
-                        <Activity className="mr-2 h-4 w-4" /> Available Traces
-                    </h3>
-                    <div className="space-y-2">
-                        {traces.length === 0 && (
-                            <Card className="bg-slate-50 border-dashed">
-                                <CardContent className="p-4 text-center text-sm text-slate-500">
-                                    No traces found. Go to Data page to add &quot;Empirical Trace&quot; sources or use &quot;Search for Traces&quot;.
-                                </CardContent>
-                            </Card>
-                        )}
-                        {traces.map(trace => (
-                            <Card
-                                key={trace.id}
-                                className={`transition-all hover:border-purple-400 ${selectedTraceId === trace.id ? 'border-purple-600 ring-1 ring-purple-600' : ''}`}
+                        <div className="w-full md:w-[300px]">
+                            <Select
+                                value={selectedPolicyId || ""}
+                                onValueChange={(val) => setSelectedPolicyId(val)}
                             >
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div
-                                            className="flex-1 min-w-0 pr-2 cursor-pointer"
-                                            onClick={() => setSelectedTraceId(trace.id)}
-                                        >
-                                            <div className="font-medium text-slate-900 break-words">{trace.title}</div>
-                                            <div className="text-xs text-slate-500 mt-1 break-words">{trace.description}</div>
-                                            {trace.resistance_analysis?.strategy_detected ? (
-                                                <Badge variant="secondary" className="mt-2 bg-purple-100 text-purple-700 border-purple-200">
-                                                    {trace.resistance_analysis.strategy_detected}
-                                                </Badge>
-                                            ) : trace.resistance_analysis && (
-                                                <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
-                                                    Analyzed
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteTrace(trace.id);
-                                            }}
-                                        >
-                                            <Trash className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a policy document..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {policyDocuments.length === 0 ? (
+                                        <div className="p-2 text-sm text-slate-500 text-center">No documents found</div>
+                                    ) : (
+                                        policyDocuments.map(doc => (
+                                            <SelectItem key={doc.id} value={doc.id}>
+                                                {doc.title}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
-                {/* Middle Column: Analysis Area */}
-                <div className="lg:col-span-2 space-y-6">
-                    {selectedTrace ? (
-                        <div className="space-y-6">
-                            <Card>
+                {selectedPolicyId ? (
+                    <>
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleSynthesizeFindings}
+                                disabled={isSynthesizing || traces.filter(t => t.resistance_analysis).length < 2}
+                                className="border-purple-200 hover:bg-purple-50 text-purple-700"
+                            >
+                                {isSynthesizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+                                Synthesize Findings
+                            </Button>
+                            <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                                        <Search className="mr-2 h-4 w-4" /> Search for Traces
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[600px]">
+                                    <DialogHeader>
+                                        <DialogTitle>Search Web for Resistance Traces</DialogTitle>
+                                        <DialogDescription>
+                                            Find real forum posts, Reddit threads, and discussions about resistance to {sources.find(s => s.id === selectedPolicyId)?.title}.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                        <div>
+                                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                                                Custom Query (Optional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border rounded-md text-sm"
+                                                placeholder="e.g. 'workarounds'"
+                                                value={customQuery}
+                                                onChange={(e) => setCustomQuery(e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 mt-4">
+                                            {[
+                                                { id: 'reddit', label: 'Reddit' },
+                                                { id: 'hackernews', label: 'Hacker News' },
+                                                { id: 'forums', label: 'Forums' },
+                                                { id: 'twitter', label: 'Twitter/X' },
+                                                { id: 'technews', label: 'Tech News' },
+                                                { id: 'mastodon', label: 'Mastodon' }
+                                            ].map(platform => (
+                                                <label key={platform.id} className="flex items-center gap-2 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedPlatforms.includes(platform.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                                                            } else {
+                                                                setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
+                                                            }
+                                                        }}
+                                                        className="rounded"
+                                                    />
+                                                    <span className="text-sm">{platform.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                        <Button
+                                            onClick={handleSearchTraces}
+                                            disabled={isSearching}
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            {isSearching ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Searching Web...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Search className="mr-2 h-4 w-4" />
+                                                    Search
+                                                </>
+                                            )}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
+                        {synthesisResult && (
+                            <Card className="bg-purple-50 border-purple-200">
                                 <CardHeader>
-                                    <CardTitle className="flex justify-between items-center">
-                                        <span>Analysis: {selectedTrace.title}</span>
-                                        {!currentAnalysis && (
-                                            <Button
-                                                onClick={() => handleAnalyzeTrace(selectedTrace)}
-                                                disabled={isAnalyzing}
-                                                className="bg-purple-600 hover:bg-purple-700"
-                                            >
-                                                {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                                                Analyze Trace
-                                            </Button>
-                                        )}
+                                    <CardTitle className="text-purple-900 flex items-center">
+                                        <Activity className="mr-2 h-5 w-5" /> Synthesis of Findings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    {currentAnalysis ? (
-                                        <div className="space-y-6">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="p-3 bg-purple-100 rounded-full">
-                                                    <Zap className="h-6 w-6 text-purple-600" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm text-slate-500 uppercase tracking-wider font-bold">Strategy Detected</div>
-                                                    <div className="text-2xl font-bold text-slate-900">{currentAnalysis.strategy_detected}</div>
-                                                </div>
-                                                <Badge className={currentAnalysis.confidence === 'High' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                                                    {currentAnalysis.confidence} Confidence
-                                                </Badge>
-                                            </div>
-
-                                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 relative">
-                                                <Quote className="absolute top-2 left-2 h-8 w-8 text-slate-200 -z-0" />
-                                                <p className="text-slate-700 italic relative z-10 pl-6">
-                                                    &quot;{currentAnalysis.evidence_quote}&quot;
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <h4 className="font-semibold text-slate-900 mb-2">Interpretation</h4>
-                                                <p className="text-slate-600 leading-relaxed">
-                                                    {currentAnalysis.interpretation}
-                                                </p>
-                                            </div>
+                                <CardContent className="space-y-4">
+                                    <div>
+                                        <h4 className="font-semibold text-purple-900 mb-1">Executive Summary</h4>
+                                        <p className="text-purple-800 text-sm leading-relaxed">{synthesisResult.executive_summary}</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h4 className="font-semibold text-purple-900 mb-2">Dominant Strategies</h4>
+                                            <ul className="space-y-2">
+                                                {synthesisResult.dominant_strategies?.map((s: { strategy: string; frequency: string; description: string }, i: number) => (
+                                                    <li key={i} className="text-sm bg-white p-2 rounded border border-purple-100">
+                                                        <span className="font-bold text-purple-700">{s.strategy}</span> ({s.frequency}): {s.description}
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                    ) : (
-                                        <div className="text-center py-12 text-slate-500">
-                                            <p>Select &quot;Analyze Trace&quot; to identify resistance strategies using the LLM.</p>
+                                        <div>
+                                            <h4 className="font-semibold text-purple-900 mb-2">Emerging Themes</h4>
+                                            <ul className="list-disc list-inside text-sm text-purple-800 space-y-1">
+                                                {synthesisResult.emerging_themes?.map((t: string, i: number) => (
+                                                    <li key={i}>{t}</li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                    )}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-purple-900 mb-1">Policy Implications</h4>
+                                        <p className="text-purple-800 text-sm">{synthesisResult.implications_for_policy}</p>
+                                    </div>
                                 </CardContent>
                             </Card>
+                        )}
 
-                            {/* Reference Definitions */}
-                            <div className="grid grid-cols-2 gap-4">
-                                {STRATEGY_DEFINITIONS.map(def => (
-                                    <div key={def.title} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
-                                        <div className={`p-2 rounded-full ${def.bg}`}>
-                                            <def.icon className={`h-4 w-4 ${def.color}`} />
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left Column: Trace Selector */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-slate-900 flex items-center">
+                                    <Activity className="mr-2 h-4 w-4" /> Available Traces
+                                </h3>
+                                <div className="space-y-2">
+                                    {traces.length === 0 && (
+                                        <Card className="bg-slate-50 border-dashed">
+                                            <CardContent className="p-4 text-center text-sm text-slate-500">
+                                                No traces found. Use &quot;Search for Traces&quot; to filter public comments and discussions for this policy.
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                    {traces.map(trace => (
+                                        <Card
+                                            key={trace.id}
+                                            className={`transition-all hover:border-purple-400 ${selectedTraceId === trace.id ? 'border-purple-600 ring-1 ring-purple-600' : ''}`}
+                                        >
+                                            <CardContent className="p-4">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div
+                                                        className="flex-1 min-w-0 pr-2 cursor-pointer"
+                                                        onClick={() => setSelectedTraceId(trace.id)}
+                                                    >
+                                                        <div className="font-medium text-slate-900 break-words">{trace.title}</div>
+                                                        <div className="text-xs text-slate-500 mt-1 break-words">{trace.description}</div>
+                                                        {trace.resistance_analysis?.strategy_detected ? (
+                                                            <Badge variant="secondary" className="mt-2 bg-purple-100 text-purple-700 border-purple-200">
+                                                                {trace.resistance_analysis.strategy_detected}
+                                                            </Badge>
+                                                        ) : trace.resistance_analysis && (
+                                                            <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
+                                                                Analyzed
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="shrink-0 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteTrace(trace.id);
+                                                        }}
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Middle Column: Analysis Area */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {selectedTrace ? (
+                                    <div className="space-y-6">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="flex justify-between items-center">
+                                                    <span>Analysis: {selectedTrace.title}</span>
+                                                    {!currentAnalysis && (
+                                                        <Button
+                                                            onClick={() => handleAnalyzeTrace(selectedTrace)}
+                                                            disabled={isAnalyzing}
+                                                            className="bg-purple-600 hover:bg-purple-700"
+                                                        >
+                                                            {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                                                            Analyze Trace
+                                                        </Button>
+                                                    )}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                {currentAnalysis ? (
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className="p-3 bg-purple-100 rounded-full">
+                                                                <Zap className="h-6 w-6 text-purple-600" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm text-slate-500 uppercase tracking-wider font-bold">Strategy Detected</div>
+                                                                <div className="text-2xl font-bold text-slate-900">{currentAnalysis.strategy_detected}</div>
+                                                            </div>
+                                                            <Badge className={currentAnalysis.confidence === 'High' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                                                                {currentAnalysis.confidence} Confidence
+                                                            </Badge>
+                                                        </div>
+
+                                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 relative">
+                                                            <Quote className="absolute top-2 left-2 h-8 w-8 text-slate-200 -z-0" />
+                                                            <p className="text-slate-700 italic relative z-10 pl-6">
+                                                                &quot;{currentAnalysis.evidence_quote}&quot;
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <h4 className="font-semibold text-slate-900 mb-2">Interpretation</h4>
+                                                            <p className="text-slate-600 leading-relaxed">
+                                                                {currentAnalysis.interpretation}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-12 text-slate-500">
+                                                        <p>Select &quot;Analyze Trace&quot; to identify resistance strategies using the LLM.</p>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Reference Definitions */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {STRATEGY_DEFINITIONS.map(def => (
+                                                <div key={def.title} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className={`p-2 rounded-full ${def.bg}`}>
+                                                        <def.icon className={`h-4 w-4 ${def.color}`} />
+                                                    </div>
+                                                    <span className="font-medium text-slate-700">{def.title}</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <span className="font-medium text-slate-700">{def.title}</span>
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-64 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                                        <Activity className="h-10 w-10 text-slate-300 mb-4" />
+                                        <p className="text-slate-500">Select a trace from the left to begin analysis</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-64 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                            <Activity className="h-10 w-10 text-slate-300 mb-4" />
-                            <p className="text-slate-500">Select a trace from the left to begin analysis</p>
+                    </>
+                ) : (
+                    <div className="bg-slate-50 rounded-xl border border-dashed border-slate-200 p-12 text-center">
+                        <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                            <FileText className="h-8 w-8 text-slate-300" />
                         </div>
-                    )}
-                </div>
+                        <h3 className="text-lg font-bold text-slate-700">No Policy Selected</h3>
+                        <p className="text-slate-500 mt-2">Please select a policy document above to view and manage its resistance traces.</p>
+                    </div>
+                )}
             </div>
         </div >
     );

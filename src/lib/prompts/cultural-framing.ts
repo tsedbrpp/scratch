@@ -86,6 +86,9 @@ STRICT REQUIREMENTS
    global governance norms (OECD, EU AI Act styles, UN frameworks).  
    Use ONLY textual evidence.
 
+11. **SILENCED VOICES**
+    Explicitly listed groups or communities that are impacted by the cultural logic but are unheard or unrepresented in the text.
+
 ============================================================
 DIMENSIONS OF ANALYSIS (EACH MUST HAVE 3–5 BULLETS)
 ============================================================
@@ -142,7 +145,8 @@ You MUST output ONLY the following JSON object:
   "enforcement_culture": "• Point 1 (analyzing compliance style)...",
   "cultural_distinctiveness_score": 0.7,
   "cultural_distinctiveness_rationale": "Explanation for why this score was assigned...",
-  "dominant_cultural_logic": "One-phrase summary"
+  "dominant_cultural_logic": "One-phrase summary",
+  "silenced_voices": ["Group 1", "Group 2"]
 }
 
 Rules:

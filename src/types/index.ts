@@ -1,9 +1,36 @@
+export interface TemporalAnalysis {
+    score: number; // 0 (Apocalyptic/Closed) to 100 (Iterative/Open)
+    framing: "Urgency" | "Destiny" | "Hype" | "Maintenance" | "Care";
+    evidence: string;
+}
+
+export interface EconomicAnalysis {
+    burden_bearer: "Individual" | "State" | "Developer" | "Society";
+    cost_visibility: "Hidden" | "Explicit";
+    market_consolidation_risk: "Low" | "Medium" | "High";
+    explanation: string;
+}
+
+export interface UserRebuttal {
+    text: string;
+    timestamp: string;
+    user: string;
+}
+
 export interface AnalysisResult {
+    rebuttals?: Record<string, UserRebuttal>; // Keyed by risk dimension ID (e.g. 'normalization_of_violence')
+    accountability_map?: {
+        signatory?: string;
+        liability_holder?: string;
+        appeals_mechanism?: string;
+        human_in_the_loop?: boolean;
+    };
     legitimacy_claims?: {
         source?: string;
         mechanisms?: string;
         tensions?: string;
     };
+    silenced_voices?: string[];
     key_insight?: string;
     raw_response?: string;
     // Governance Analysis fields
@@ -11,12 +38,14 @@ export interface AnalysisResult {
     plurality_inclusion_embodiment?: string;
     agency_codesign_self_determination?: string;
     reflexivity_situated_praxis?: string;
+    coloniality_of_power?: string; // New field for center-periphery analysis
     governance_scores?: {
         centralization: number;
         rights_focus: number;
         flexibility: number;
         market_power: number;
         procedurality: number;
+        coloniality?: number; // New score
     };
     structural_pillars?: {
         risk?: { title: string; description: string; badge: string; quote?: string };
@@ -30,6 +59,7 @@ export interface AnalysisResult {
         flexibility?: string;
         market_power?: string;
         procedurality?: string;
+        coloniality?: string; // New explanation
     };
     // Assemblage Dynamics
     assemblage_dynamics?: {
@@ -52,6 +82,7 @@ export interface AnalysisResult {
         professional?: LogicAnalysis;
         community?: LogicAnalysis;
     };
+    coloniality?: string; // Added based on the snippet, assuming it's a top-level field
     dominant_logic?: string;
     logic_conflicts?: LogicConflict[];
     overall_assessment?: string;
@@ -59,6 +90,10 @@ export interface AnalysisResult {
         high_rhetoric_low_verification: boolean;
         gap_explanation: string;
     };
+    verification_pathways?: VerificationPathways; // Added new field
+    // Micro-Fascism Risk Components
+    temporal_orientation?: TemporalAnalysis;
+    economic_burden?: EconomicAnalysis;
     user_impression?: string;
     anchor_bias_choice?: "extractive_asymmetrical" | "regenerative_participatory";
     validation_status?: {
@@ -95,13 +130,23 @@ export interface AnalysisResult {
         scores: Record<string, number>;
         prediction_scenarios?: { scenario: string; likelihood: number; indicator: string }[];
     }[];
+    perspectives?: Record<string, string>;
 }
 
+// Core interfaces for analysis
 export interface PositionalityData {
     locus: string;
     discipline: string;
     reflexiveGap: string;
     enableCounterNarrative: boolean;
+}
+
+export interface VerificationPathways {
+    visibility: string[];
+    enforcement: string[];
+    publication: string[];
+    exemptions: string[];
+    score: number;
 }
 
 export interface LogicAnalysis {
@@ -139,6 +184,7 @@ export interface Source {
     institutional_logics?: AnalysisResult;
     resistance_analysis?: ResistanceAnalysis;
     legitimacy_analysis?: LegitimacyAnalysis;
+    policyId?: string; // Links this source (e.g. specialized trace) to a parent policy document
 }
 
 export interface TimelineEvent {
@@ -178,6 +224,7 @@ export interface LegitimacyAnalysis {
         inspired: number;
         fame: number;
     };
+    evidence_quotes?: Record<string, string[]>;
     dominant_order: string;
     justification_logic: string;
     moral_vocabulary: string[];
@@ -202,6 +249,26 @@ export interface ComparativeSynthesis {
         policy_a_stance: string;
         policy_b_stance: string;
     }[];
+    concept_mutations: {
+        concept: string;
+        origin_context: string;
+        local_mutation: string;
+        mechanism: string;
+    }[];
+    assemblage_network: {
+        nodes: string[];
+        edges: { from: string; to: string; type: string }[];
+    };
+    stabilization_mechanisms: {
+        jurisdiction: string;
+        mechanism: string;
+        type: "Bureaucratic" | "Market" | "State" | "Legal";
+    }[];
+    desire_and_friction: {
+        topic: string;
+        friction_point: string;
+        underlying_desire: string;
+    }[];
     institutional_conflict: {
         conflict_type: string;
         description: string;
@@ -215,7 +282,7 @@ export interface ComparativeSynthesis {
         policy_b_evidence: string;
     }[];
     coloniality_assessment: string;
-    synthesis_matrix?: never; // Explicitly removed
+    synthesis_matrix?: never;
 }
 
 export interface ResistanceSynthesisResult {

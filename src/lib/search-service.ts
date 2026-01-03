@@ -140,6 +140,8 @@ Return a JSON array of objects. EXPLANATION IS MANDATORY.
         // Return original results if curation fails or filters everything (safety net)
         return results;
     }
+
+    return results;
 }
 
 /**

@@ -169,18 +169,27 @@ export default function OntologyPage() {
     };
 
     const handleCompareOntologies = async () => {
-        if (selectedForComparison.length !== 2) return;
+        if (selectedForComparison.length < 2 || selectedForComparison.length > 3) return;
         if (isComparisonResultLoading) return; // Prevent run if still loading
 
         const sourceAId = selectedForComparison[0];
         const sourceBId = selectedForComparison[1];
+        const sourceCId = selectedForComparison[2]; // Optional
 
         // Check for existing result
         if (comparisonResult) {
             // Check if the existing result matches the currently selected sources
-            const isSameComparison =
-                (comparisonResult.sourceAId === sourceAId && comparisonResult.sourceBId === sourceBId) ||
-                (comparisonResult.sourceAId === sourceBId && comparisonResult.sourceBId === sourceAId); // Order doesn't matter
+            const currentIds = [...selectedForComparison].sort();
+            const existingIds = [
+                comparisonResult.sourceAId,
+                comparisonResult.sourceBId,
+                comparisonResult.sourceCId
+            ].filter(Boolean) as string[];
+            existingIds.sort();
+
+            // Simple array equality check
+            const isSameComparison = currentIds.length === existingIds.length &&
+                currentIds.every((val, index) => val === existingIds[index]);
 
             if (isSameComparison) {
                 // IDs match! Show the existing result without re-running or asking
@@ -197,10 +206,14 @@ export default function OntologyPage() {
 
         const sourceA = sources.find(s => s.id === sourceAId);
         const sourceB = sources.find(s => s.id === sourceBId);
+        const sourceC = sourceCId ? sources.find(s => s.id === sourceCId) : undefined;
+
         const mapA = ontologyMaps?.[sourceAId];
         const mapB = ontologyMaps?.[sourceBId];
+        const mapC = sourceCId ? ontologyMaps?.[sourceCId] : undefined;
 
         if (!sourceA || !sourceB || !mapA || !mapB) return;
+        if (sourceCId && (!sourceC || !mapC)) return; // If 3rd selected but missing data, abort
 
         setIsComparingLoading(true);
         // setComparisonResult(null); // Keep previous result for better UX during load
@@ -211,15 +224,21 @@ export default function OntologyPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
+            const payload: any = {
+                analysisMode: 'ontology_comparison',
+                sourceA: { title: sourceA.title, data: mapA },
+                sourceB: { title: sourceB.title, data: mapB },
+                force: true
+            };
+
+            if (sourceC && mapC) {
+                payload.sourceC = { title: sourceC.title, data: mapC };
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify({
-                    analysisMode: 'ontology_comparison',
-                    sourceA: { title: sourceA.title, data: mapA },
-                    sourceB: { title: sourceB.title, data: mapB },
-                    force: true
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
@@ -228,7 +247,8 @@ export default function OntologyPage() {
                 const analysisWithIds: ComparisonResult = {
                     ...data.analysis,
                     sourceAId: sourceAId,
-                    sourceBId: sourceBId
+                    sourceBId: sourceBId,
+                    sourceCId: sourceCId
                 };
                 setComparisonResult(analysisWithIds);
             } else {
@@ -246,7 +266,7 @@ export default function OntologyPage() {
         if (selectedForComparison.includes(sourceId)) {
             setSelectedForComparison(prev => prev.filter(id => id !== sourceId));
         } else {
-            if (selectedForComparison.length < 2) {
+            if (selectedForComparison.length < 3) { // Updated limit to 3
                 setSelectedForComparison(prev => [...prev, sourceId]);
             }
         }
@@ -356,7 +376,7 @@ export default function OntologyPage() {
 
             {/* Comparison Result View */}
             {isComparing && comparisonResult && (
-                <ComparisonView result={comparisonResult} />
+                <ComparisonView result={comparisonResult} sources={sources} />
             )}
 
             {/* Main Visualization */}

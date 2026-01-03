@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Loader2, Users } from 'lucide-react';
+import { Zap, Loader2, Users, Landmark } from 'lucide-react';
 import { Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CulturalHolesAnalysisResult, CulturalHole } from '@/types/ecosystem';
 
@@ -137,6 +137,60 @@ export function CulturalHolesAnalysis({ culturalHoles, isAnalyzingHoles, onAnaly
                                         </li>
                                     ))}
                                 </ul>
+                            </div>
+                        )}
+
+                        {/* Cultural Framing Section */}
+                        {culturalHoles.cultural_framing && (
+                            <div className="pt-4 border-t border-slate-200 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Landmark className="h-4 w-4 text-slate-500" />
+                                    <h4 className="font-semibold text-sm text-slate-700">Cultural Framing & Logics</h4>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Dominant Logic</span>
+                                            <span className="text-sm font-bold text-indigo-900">{culturalHoles.cultural_framing.dominant_cultural_logic}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Distinctiveness</span>
+                                            <Badge variant="outline" className="bg-white">
+                                                {(culturalHoles.cultural_framing.cultural_distinctiveness_score * 10).toFixed(1)}/10
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                        <div className="space-y-1">
+                                            <span className="font-bold text-slate-700">State-Market-Society</span>
+                                            <p className="text-slate-600 leading-relaxed">{culturalHoles.cultural_framing.state_market_society}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="font-bold text-slate-700">Technology's Role</span>
+                                            <p className="text-slate-600 leading-relaxed">{culturalHoles.cultural_framing.technology_role}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="font-bold text-slate-700">Rights Conception</span>
+                                            <p className="text-slate-600 leading-relaxed">{culturalHoles.cultural_framing.rights_conception}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="font-bold text-slate-700">Epistemic Authority</span>
+                                            <p className="text-slate-600 leading-relaxed">{culturalHoles.cultural_framing.epistemic_authority}</p>
+                                        </div>
+                                    </div>
+                                    {culturalHoles.cultural_framing.silenced_voices.length > 0 && (
+                                        <div className="mt-4 pt-3 border-t border-slate-200">
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold block mb-1">Silenced Voices</span>
+                                            <div className="flex flex-wrap gap-1">
+                                                {culturalHoles.cultural_framing.silenced_voices.map((voice, i) => (
+                                                    <span key={i} className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-100 rounded text-[10px]">
+                                                        {voice}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

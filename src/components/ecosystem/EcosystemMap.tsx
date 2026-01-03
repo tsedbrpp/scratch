@@ -2,8 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode } from 'lucide-react';
-import { activeLens } from '@/hooks/useActiveLens'; // Wait, I don't have this.
+import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode, Eye, EyeOff, Filter, X } from 'lucide-react';
 import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
 import { generateEdges } from '@/lib/graph-utils';
 
@@ -20,8 +19,9 @@ interface EcosystemMapProps {
     onConfigDrag: (configId: string, dx: number, dy: number) => void;
     activeLayers?: Record<string, boolean>;
     toggleLayer?: (layer: string) => void;
-    activeLens?: "None" | "Market" | "Critical" | "Infrastructure";
+    activeLens?: "None" | "Market" | "Critical" | "Infrastructure" | "Decolonial";
     activeScenario?: ScenarioId;
+    colorMode?: "type" | "epistemic";
 }
 
 export function EcosystemMap({
@@ -38,11 +38,17 @@ export function EcosystemMap({
     activeLayers = {},
     toggleLayer = () => { },
     activeLens = "None",
-    activeScenario = "None"
+    activeScenario = "None",
+    colorMode = "type"
 }: EcosystemMapProps) {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
     const dragStartRef = useRef<{ mouse: { x: number, y: number } } | null>(null);
+    const isDraggingRef = useRef(false);
+
+    // Hermeneutic Instrument State
+    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
     // Compute edge multipliers for scenarios
     const { edgeMultipliers } = useMemo(() => {
@@ -50,9 +56,44 @@ export function EcosystemMap({
         return applyScenario(actors, edges, activeScenario);
     }, [actors, activeScenario]);
 
+    const getNeighbors = (actorId: string) => {
+        const neighbors = new Set<string>();
+        actors.forEach((source, i) => {
+            actors.slice(i + 1).forEach(target => {
+                // Check if connected (reusing connection logic would be better but for now let's just check if they *would* be connected or just assume all are potential?)
+                // We need the actual edges.
+                // Let's use the same logic as the render loop.
+                // Actually, traversing the `actors` array is inefficient.
+                // But for < 50 actors it's fine.
+                const shouldConnect = (
+                    (source.type === "Policymaker" && target.type === "Civil Society") ||
+                    (source.type === "Startup" && target.type === "Academic") ||
+                    (source.type === "Policymaker" && target.type === "Startup") ||
+                    (source.type === "Civil Society" && target.type === "Academic") ||
+                    (source.type === "Infrastructure" && target.type === "Startup") ||
+                    (source.type === "Infrastructure" && target.type === "Policymaker") ||
+                    (source.type === "Infrastructure" && target.type === "Academic") ||
+                    (source.type === "Startup" && target.type === "Algorithm") ||
+                    (source.type === "Academic" && target.type === "Algorithm") ||
+                    (source.type === "Algorithm" && target.type === "Dataset") ||
+                    (source.type === "Policymaker" && target.type === "Algorithm") ||
+                    (source.type === "Infrastructure" && target.type === "Algorithm") ||
+                    (source.type === "Infrastructure" && target.type === "Dataset")
+                );
+
+                if (shouldConnect) {
+                    if (source.id === actorId) neighbors.add(target.id);
+                    if (target.id === actorId) neighbors.add(source.id);
+                }
+            });
+        });
+        return neighbors;
+    };
+
     const handleMouseDown = (e: React.MouseEvent, actorId: string) => {
         e.stopPropagation();
         e.preventDefault();
+        isDraggingRef.current = false;
 
         if (interactionMode === "drag") {
             setDraggingId(actorId);
@@ -82,6 +123,8 @@ export function EcosystemMap({
         if (interactionMode !== "drag") return;
         if (!draggingId && !draggingConfigId) return;
 
+        isDraggingRef.current = true;
+
         const svg = e.currentTarget;
         const pt = svg.createSVGPoint();
         pt.x = e.clientX;
@@ -98,6 +141,17 @@ export function EcosystemMap({
             dragStartRef.current = { mouse: { x: svgP.x, y: svgP.y } };
 
             onConfigDrag(draggingConfigId, dx, dy);
+        }
+    };
+
+    const handleActorClick = (e: React.MouseEvent, actorId: string) => {
+        e.stopPropagation();
+        if (interactionMode === "drag" && !isDraggingRef.current) {
+            if (focusedNodeId === actorId) {
+                setFocusedNodeId(null);
+            } else {
+                setFocusedNodeId(actorId);
+            }
         }
     };
 
@@ -208,6 +262,19 @@ export function EcosystemMap({
         }
     };
 
+    const getActorColorByType = (type: string) => {
+        switch (type) {
+            case "Policymaker": return { fill: "#e0f2fe", stroke: "#0284c7" }; // Sky
+            case "Civil Society": return { fill: "#fef9c3", stroke: "#ca8a04" }; // Yellow
+            case "Startup": return { fill: "#f3e8ff", stroke: "#9333ea" }; // Purple
+            case "Academic": return { fill: "#dbeafe", stroke: "#2563eb" }; // Blue
+            case "Infrastructure": return { fill: "#f1f5f9", stroke: "#475569" }; // Slate
+            case "Algorithm": return { fill: "#fee2e2", stroke: "#dc2626" }; // Red
+            case "Dataset": return { fill: "#dcfce7", stroke: "#16a34a" }; // Green
+            default: return { fill: "#ffffff", stroke: "#94a3b8" };
+        }
+    };
+
     const getLinkDetails = (sourceType: string, targetType: string) => {
         if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries and compliance costs." };
         if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Often marginalizes from decision-making loops." };
@@ -234,70 +301,105 @@ export function EcosystemMap({
         return true;
     };
 
+    // Memoize neighbors of the focused node
+    const activeNeighbors = useMemo(() => {
+        if (!focusedNodeId) return new Set<string>();
+        return getNeighbors(focusedNodeId);
+    }, [focusedNodeId, actors]); // actors dependency needed as getNeighbors depends on it (implicitly via closure, but safe here)
+
     return (
         <Card className="min-h-[400px] flex flex-col">
-            <CardHeader className="z-10 relative">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Network className="h-5 w-5 text-indigo-600" />
-                        <CardTitle>Social Network Graph</CardTitle>
-                    </div>
-
-                    {/* Layer Controls */}
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant={activeLayers['resistance'] ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() => toggleLayer('resistance')}
-                            className="h-7 text-xs gap-1 transition-all"
-                        >
-                            <span className={`block w-2 h-2 rounded-full mr-2 ${activeLayers['resistance'] ? 'bg-white' : 'bg-red-500'}`} />
-                            Resistance Layer
-                        </Button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            <Button
-                                variant={interactionMode === "drag" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => setInteractionMode("drag")}
-                            >
-                                <MousePointer2 className="h-3 w-3 mr-1" />
-                                Drag
-                            </Button>
-                            <Button
-                                variant={interactionMode === "select" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => setInteractionMode("select")}
-                            >
-                                <BoxSelect className="h-3 w-3 mr-1" />
-                                Select
-                            </Button>
+            <CardHeader className="z-10 relative pb-2">
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Network className="h-5 w-5 text-indigo-600" />
+                            <CardTitle>Social Network Graph</CardTitle>
                         </div>
-                        {interactionMode === "select" && selectedForGrouping.length > 0 && (
+
+                        {/* Interaction Controls */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                <Button
+                                    variant={interactionMode === "drag" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setInteractionMode("drag")}
+                                >
+                                    <MousePointer2 className="h-3 w-3 mr-1" />
+                                    Drag
+                                </Button>
+                                <Button
+                                    variant={interactionMode === "select" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => setInteractionMode("select")}
+                                >
+                                    <BoxSelect className="h-3 w-3 mr-1" />
+                                    Select
+                                </Button>
+                            </div>
+                            {interactionMode === "select" && selectedForGrouping.length > 0 && (
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    onClick={onCreateConfiguration}
+                                >
+                                    <Layers className="h-3 w-3 mr-1" />
+                                    Group ({selectedForGrouping.length})
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Hermeneutic Controls (Filters & Focus) */}
+                    <div className="flex items-center justify-between border-t pt-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                                <Filter className="h-3 w-3" />
+                                Concept Filters:
+                            </span>
+                            <div className="flex gap-1">
+                                {["Market", "State", "Civil", "Infra"].map(filter => (
+                                    <Button
+                                        key={filter}
+                                        variant={activeFilter === filter ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
+                                        className={`h-6 text-[10px] px-2 ${activeFilter === filter ? "bg-slate-700 text-white" : "text-slate-600"}`}
+                                    >
+                                        {filter}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {focusedNodeId && (
                             <Button
+                                variant="secondary"
                                 size="sm"
-                                className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                                onClick={onCreateConfiguration}
+                                onClick={() => setFocusedNodeId(null)}
+                                className="h-6 text-[10px] bg-amber-100 text-amber-800 hover:bg-amber-200"
                             >
-                                <Layers className="h-3 w-3 mr-1" />
-                                Group ({selectedForGrouping.length})
+                                <EyeOff className="h-3 w-3 mr-1" />
+                                Clear Focus
                             </Button>
                         )}
                     </div>
                 </div>
-                <CardDescription>
-                    Visualizing ties between actors. Switch to <strong>Select Mode</strong> and <strong>click nodes</strong> to group them.
+                <CardDescription className="mt-2">
+                    {focusedNodeId ? (
+                        <span className="text-amber-700 font-medium">Focus Mode Active: Viewing local assemblage. Click "Clear Focus" to reset.</span>
+                    ) : (
+                        "Click nodes to Focus. Use filters to highlight specific logics."
+                    )}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 bg-slate-50/50 p-6 border-t relative">
                 <svg
                     width="100%"
                     height="400"
-                    className={`border rounded-lg bg-white transition-colors duration-300 ${interactionMode === "drag" ? "cursor-move border-slate-200" : "cursor-crosshair border-indigo-400 ring-2 ring-indigo-100"}`}
+                    className={`border rounded-lg bg-white transition-colors duration-300 ${interactionMode === "drag" ? "cursor-move border-slate-200" : "cursor-pointer border-indigo-400 ring-2 ring-indigo-100"}`}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
@@ -375,15 +477,51 @@ export function EcosystemMap({
                             const isSourceRel = isActorRelevant(source);
                             const isTargetRel = isActorRelevant(target);
 
-                            let edgeOpacity = 1;
-                            if (activeLens !== "None") {
-                                if (isSourceRel && isTargetRel) edgeOpacity = 1;
-                                else if (isSourceRel || isTargetRel) edgeOpacity = 0.2;
-                                else edgeOpacity = 0.05;
+                            // -------------------------
+                            // VISIBILITY LOGIC (Focus & Filter)
+                            // -------------------------
+                            let opacity = 1;
+
+                            // 1. Focus Mode
+                            if (focusedNodeId) {
+                                const isSourceFocused = source.id === focusedNodeId || activeNeighbors.has(source.id);
+                                const isTargetFocused = target.id === focusedNodeId || activeNeighbors.has(target.id);
+
+                                // Show edge only if BOTH are part of the focus group
+                                if (!isSourceFocused || !isTargetFocused) {
+                                    opacity = 0.05;
+                                }
+                            }
+
+                            // 2. Filter Mode
+                            if (activeFilter && opacity > 0.05) {
+                                // Simple mapping for demo
+                                const isSourceMatch =
+                                    (activeFilter === "Market" && ["Startup", "Policymaker"].includes(source.type)) ||
+                                    (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(source.type)) ||
+                                    (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(source.type)) ||
+                                    (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(source.type));
+
+                                const isTargetMatch =
+                                    (activeFilter === "Market" && ["Startup", "Policymaker"].includes(target.type)) ||
+                                    (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(target.type)) ||
+                                    (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(target.type)) ||
+                                    (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(target.type));
+
+                                if (!isSourceMatch && !isTargetMatch) {
+                                    opacity = 0.1;
+                                }
+                            }
+
+                            // 3. Lens Mode
+                            if (activeLens && activeLens !== "None" && opacity > 0.05) {
+                                if (!isSourceRel || !isTargetRel) {
+                                    opacity = 0.05;
+                                }
                             }
 
                             return (
-                                <g key={`${source.id}-${target.id}`} className="group hover:opacity-100 transition-opacity cursor-help" style={{ opacity: edgeOpacity }}>
+                                <g key={`${source.id}-${target.id}`} className="group hover:opacity-100 transition-opacity cursor-help" style={{ opacity }}>
                                     <title>{label}: {description}</title>
                                     <line
                                         x1={pos1.x}
@@ -429,6 +567,66 @@ export function EcosystemMap({
                         const isSelected = selectedForGrouping.includes(actor.id);
                         const Icon = getActorIcon(actor.type);
 
+                        // COLOR LOGIC
+                        let actorFill = "white";
+                        let actorStroke = "#94a3b8";
+
+                        if (isSelected) {
+                            actorFill = "#4f46e5";
+                            actorStroke = "#4f46e5";
+                        } else if (colorMode === "epistemic") {
+                            // Epistemic / Decolonial Coloring
+                            if (actor.region === "Global North") {
+                                actorFill = "#dbeafe"; // Blue 100
+                                actorStroke = "#2563eb"; // Blue 600
+                            } else if (actor.region === "Global South") {
+                                actorFill = "#d1fae5"; // Emerald 100
+                                actorStroke = "#059669"; // Emerald 600
+                            } else if (actor.region === "International") {
+                                actorFill = "#f3e8ff"; // Purple 100
+                                actorStroke = "#9333ea"; // Purple 600
+                            } else {
+                                actorFill = "#f1f5f9"; // Slate 100
+                                actorStroke = "#94a3b8";
+                            }
+                        } else {
+                            // Type Coloring (Default)
+                            const colors = getActorColorByType(actor.type);
+                            actorFill = colors.fill;
+                            actorStroke = colors.stroke;
+                        }
+
+                        // -------------------------
+                        // VISIBILITY LOGIC (Focus & Filter)
+                        // -------------------------
+                        let opacity = 1;
+
+                        // 1. Focus Mode
+                        if (focusedNodeId) {
+                            if (actor.id !== focusedNodeId && !activeNeighbors.has(actor.id)) {
+                                opacity = 0.1;
+                            }
+                        }
+
+                        // 2. Filter Mode
+                        if (activeFilter && opacity > 0.1) {
+                            const isMatch =
+                                (activeFilter === "Market" && ["Startup", "Policymaker"].includes(actor.type)) ||
+                                (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(actor.type)) ||
+                                (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(actor.type)) ||
+                                (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(actor.type));
+
+                            if (!isMatch) opacity = 0.2;
+                        }
+
+                        // 3. Lens Mode
+                        if (activeLens && activeLens !== "None" && opacity > 0.1) {
+                            if (!isActorRelevant(actor)) {
+                                opacity = 0.1;
+                            }
+                        }
+
+
                         // Resistance Layer Visuals
                         const resistanceScore = actor.metrics?.resistance || 0;
                         const isResistanceActive = activeLayers['resistance'];
@@ -439,9 +637,11 @@ export function EcosystemMap({
                                 key={actor.id}
                                 transform={`translate(${pos.x},${pos.y})`}
                                 onMouseDown={(e) => handleMouseDown(e, actor.id)}
+                                onClick={(e) => handleActorClick(e, actor.id)}
                                 className="cursor-pointer transition-all duration-200"
                                 style={{
-                                    filter: isSelected ? "url(#actor-glow)" : (showResistance ? "url(#resistance-glow)" : "none")
+                                    filter: isSelected ? "url(#actor-glow)" : (showResistance ? "url(#resistance-glow)" : "none"),
+                                    opacity
                                 }}
                             >
                                 {/* Resistance Indicator Ring */}
@@ -458,14 +658,14 @@ export function EcosystemMap({
                                 )}
 
                                 <circle
-                                    r={isSelected ? 28 : 24}
-                                    fill={isSelected ? "#4f46e5" : (showResistance ? "#fee2e2" : "white")}
-                                    stroke={isSelected ? "#4f46e5" : (showResistance ? "#ef4444" : "#94a3b8")}
-                                    strokeWidth={showResistance ? "2" : "2"}
+                                    r={isSelected || focusedNodeId === actor.id ? 28 : 24}
+                                    fill={showResistance ? "#fee2e2" : actorFill}
+                                    stroke={showResistance ? "#ef4444" : actorStroke}
+                                    strokeWidth={showResistance || focusedNodeId === actor.id ? "3" : "2"}
                                     className="transition-all duration-300 shadow-sm"
                                 />
                                 <foreignObject x="-12" y="-12" width="24" height="24" className="pointer-events-none">
-                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : (showResistance ? "text-red-700" : "text-slate-600")}`}>
+                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : (showResistance ? "text-red-700" : (actorFill === 'white' || actorFill === '#ffffff' ? "text-slate-600" : "text-slate-800"))}`}>
                                         <Icon size={16} />
                                     </div>
                                 </foreignObject>
@@ -510,7 +710,49 @@ export function EcosystemMap({
                         </div>
                     </div>
                 )}
+
+                {(colorMode === "type" || !colorMode) && (
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-1 z-10 w-36 pointer-events-none select-none">
+                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1">Actor Legend</div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-sky-100 border border-sky-600"></span> Policymaker
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-yellow-100 border border-yellow-600"></span> Civil Society
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-purple-100 border border-purple-600"></span> Startup
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-600"></span> Academic
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-100 border border-slate-600"></span> Infrastructure
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-100 border border-red-600"></span> Algorithm
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-100 border border-green-600"></span> Dataset
+                        </div>
+                    </div>
+                )}
+
+                {colorMode === "epistemic" && (
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-2 z-10 w-44 pointer-events-none select-none">
+                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1">Epistemic Map</div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-600"></span> Global North
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-emerald-100 border border-emerald-600"></span> Global South
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-600"></span> International
+                        </div>
+                    </div>
+                )}
             </CardContent>
-        </Card>
+        </Card >
     );
 }

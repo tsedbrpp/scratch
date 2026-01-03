@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { detectSilences } from '@/lib/ontology';
+import { CULTURAL_FRAMING_PROMPT } from '@/lib/prompts/cultural-framing';
+import { auth } from '@clerk/nextjs/server';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -26,11 +28,6 @@ interface ThemeObject {
     quote: string;
 }
 
-// interface ThemeExtraction removed
-
-
-
-
 interface BridgingConcept {
     concept: string;
     explanation: string;
@@ -41,9 +38,6 @@ interface BridgingData {
     opportunity: string;
     policyImplication: string;
 }
-
-// interface Hole removed
-
 
 // System prompt for bridging concept generation
 const BRIDGING_PROMPT = `You are a sophisticated social theorist and policy architect.
@@ -92,7 +86,12 @@ const LENS_PROMPTS: Record<string, string> = {
     ADOPT AN ACTOR-NETWORK THEORY (ANT) LENS.
     Treat non-human actors (algorithms, databases, standards) as having agency.
     Focus on "translation" processes, "obligatory passage points", and how networks are stabilized or destabilized.
-    Themes should reflect the agency of artifacts and the mechanics of association.`
+    Themes should reflect the agency of artifacts and the mechanics of association.`,
+    dsf_lens: `
+    ADOPT A DECOLONIAL SITUATEDNESS LENS.
+    Focus on "coloniality of power", "epistemic violence", and "center-periphery" dynamics.
+    Identify how universality is imposed and how local, situated knowledges are erased.
+    Themes should reflect power asymmetries, extraction, and epistemic delinking.`
 };
 
 // Helper function to calculate cosine similarity
@@ -179,8 +178,6 @@ function safeJSONParse<T>(text: string, fallback: T): T {
     }
 }
 
-import { auth } from '@clerk/nextjs/server';
-
 export async function POST(request: NextRequest) {
     let { userId } = await auth();
 
@@ -243,21 +240,18 @@ export async function POST(request: NextRequest) {
 
         // Generate a unique key for this analysis request based on source IDs and lens
         const sortedSourceIds = sources.map((s: { id: string }) => s.id).sort().join(',');
-        const cacheKey = `user:${userId}:analysis:${sortedSourceIds}:${lensId}:v5`;
+        const cacheKey = `analysis:${sortedSourceIds}:${lensId}:v5`;
 
         // Check cache first
-        try {
-            const cachedAnalysis = await redis.get(cacheKey);
-            if (cachedAnalysis && !forceRefresh) {
+        if (!forceRefresh) {
+            const cachedAnalysis = await StorageService.getCache(userId, cacheKey);
+            if (cachedAnalysis) {
                 console.log('Returning cached analysis for key:', cacheKey);
                 return NextResponse.json({
                     success: true,
-                    analysis: JSON.parse(cachedAnalysis)
+                    analysis: cachedAnalysis
                 });
             }
-        } catch (error) {
-            console.error('Redis cache check failed:', error);
-            // Continue without cache if Redis fails
         }
 
         // Construct the lens-aware prompt
@@ -464,6 +458,30 @@ export async function POST(request: NextRequest) {
         const silences = detectSilences(combinedText);
         console.log(`Found ${silences.length} silences.`);
 
+        // Step 4c: Analyze Cultural Framing (Assemblage Analysis)
+        // We run this on the combined text to see the framing of the "whole" discourse field
+        let cultural_framing = undefined;
+        if (lensId === 'dsf_lens' || lensId === 'institutional_logics') {
+            console.log('Running Cultural Framing analysis...');
+            try {
+                const framingResponse = await openai.chat.completions.create({
+                    model: 'gpt-4o',
+                    messages: [
+                        { role: 'system', content: CULTURAL_FRAMING_PROMPT },
+                        { role: 'user', content: combinedText.substring(0, 15000) } // Limit text length
+                    ],
+                    temperature: 0.4,
+                    response_format: { type: "json_object" }
+                });
+
+                if (framingResponse.choices[0].message.content) {
+                    cultural_framing = JSON.parse(framingResponse.choices[0].message.content);
+                }
+            } catch (error) {
+                console.error("Error generating cultural framing:", error);
+            }
+        }
+
         // Step 5: Generate overall summary
         console.log('Generating overall summary...');
         let summary = "";
@@ -516,16 +534,13 @@ export async function POST(request: NextRequest) {
             clusters: clustersWithDescriptions,
             holes,
             silences,
+            cultural_framing,
             overall_connectivity_score,
             timestamp: new Date().toISOString(),
         };
 
-        // Cache the result
-        try {
-            await redis.set(cacheKey, JSON.stringify(analysisResult));
-        } catch (error) {
-            console.error('Failed to cache analysis result:', error);
-        }
+        // Cache the result (7 days)
+        await StorageService.setCache(userId, cacheKey, analysisResult, 60 * 60 * 24 * 7);
 
         return NextResponse.json({
             success: true,

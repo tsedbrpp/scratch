@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
         ${JSON.stringify(actors.map((a: any) => ({ id: a.id, name: a.name, type: a.type })), null, 2)}
         
         Analyze the trajectory of this assemblage under these conditions.
+        
+        CRITICAL RULES:
+        1. When listing deltas, use the EXACT FULL IDs provided in the ACTORS list. DO NOT TRUNCATE or shorten them.
+        2. source_id and target_id MUST match one of the provided actor IDs exactly.
+        
         Return ONLY valid JSON.
         `;
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 
 import { auth } from '@clerk/nextjs/server';
@@ -55,17 +55,13 @@ export async function POST(request: Request) {
         }
 
         // Generate cache key
-        const cacheKey = `user:${userId}:ecosystem:simulate:${Buffer.from(query).toString('base64')}`;
+        const cacheKey = `ecosystem:simulate:${Buffer.from(query).toString('base64')}`;
 
         // Check cache
-        try {
-            const cachedData = await redis.get(cacheKey);
-            if (cachedData) {
-                console.log('Returning cached ecosystem simulation');
-                return NextResponse.json(JSON.parse(cachedData));
-            }
-        } catch (error) {
-            console.error('Redis cache check failed:', error);
+        const cachedData = await StorageService.getCache(userId, cacheKey);
+        if (cachedData) {
+            console.log('Returning cached ecosystem simulation');
+            return NextResponse.json(cachedData);
         }
 
         // Use Gemini to generate synthetic ecosystem actors based on the query
@@ -115,11 +111,7 @@ export async function POST(request: Request) {
         const responseData = { success: true, actors: parsedData.actors };
 
         // Cache result (expire in 24 hours)
-        try {
-            await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 60 * 60 * 24);
-        } catch (error) {
-            console.error('Failed to cache ecosystem simulation:', error);
-        }
+        await StorageService.setCache(userId, cacheKey, responseData, 60 * 60 * 24);
 
         return NextResponse.json(responseData);
 

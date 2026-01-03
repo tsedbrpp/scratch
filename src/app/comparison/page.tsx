@@ -8,10 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network } from "lucide-react";
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+import { MutationTable } from "@/components/comparison/MutationTable";
+import { StabilizationCard } from "@/components/comparison/StabilizationCard";
+import { RhizomeNetwork } from "@/components/comparison/RhizomeNetwork";
+import { LensSelector, InterpretationLens } from "@/components/comparison/LensSelector";
+import { RebuttalPopover } from "@/components/comparison/RebuttalPopover";
 
 import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 
@@ -23,15 +28,18 @@ export default function ComparisonPage() {
 
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
+    const [activeLens, setActiveLens] = useState<InterpretationLens>("assemblage");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResult, setSynthesisResult] = useServerStorage<ComparativeSynthesis | null>("comparison_synthesis_result", null);
+    const [synthesisResults, setSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
-    // const [regeneratingIds, setRegeneratingIds] = useState<Record<string, boolean>>({});
 
     // Deep Analysis State
     const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
     const [analyzingSourceId, setAnalyzingSourceId] = useState<string | null>(null);
     const [isDeepAnalyzing, setIsDeepAnalyzing] = useState<Record<string, boolean>>({});
+
+    // Derived state for current lens
+    const currentResult = synthesisResults?.[activeLens] || null;
 
     useEffect(() => {
         if (isLoading) return;
@@ -73,10 +81,9 @@ export default function ComparisonPage() {
             return;
         }
 
-        // Confirmation: Check if persistence data exists
-        if (synthesisResult) {
-            if (!confirm("Existing synthesis found. Do you want to re-run it? This will overwrite the current findings.")) {
-                // If they cancel, we just switch to the tab to show existing results
+        // Confirmation: Check if persistence data exists for THIS lens
+        if (currentResult) {
+            if (!confirm(`Existing ${activeLens} synthesis found. Do you want to re-run it? This will overwrite the current findings.`)) {
                 setActiveTab("synthesis");
                 return;
             }
@@ -88,8 +95,16 @@ export default function ComparisonPage() {
 
         try {
             // Prepare documents for synthesis
-            const result = await synthesizeComparison(selectedSources);
-            setSynthesisResult(result as unknown as ComparativeSynthesis);
+            const result = await synthesizeComparison(selectedSources, activeLens);
+
+            // Update the record
+            setSynthesisResults(prev => {
+                return {
+                    ...prev,
+                    [activeLens]: result as unknown as ComparativeSynthesis
+                }
+            });
+
         } catch (error) {
             console.error("Synthesis failed:", error);
             setSynthesisError("Failed to generate synthesis. Please try again.");
@@ -155,11 +170,40 @@ export default function ComparisonPage() {
 
     // Helper to render the "Run Deep Analysis" button if data is missing
     const renderAnalysisButtonOrContent = (source: Source, type: 'cultural' | 'logics' | 'legitimacy', content: React.ReactNode) => {
-        const hasData = type === 'cultural' ? !!source.cultural_framing :
-            type === 'logics' ? !!source.institutional_logics :
-                !!source.legitimacy_analysis;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = (type === 'cultural' ? source.cultural_framing :
+            type === 'logics' ? source.institutional_logics :
+                source.legitimacy_analysis) as Record<string, any> | undefined;
 
-        if (hasData) return content;
+        // Check if data exists AND has meaningful content (not just empty object)
+        const hasData = data && Object.keys(data).length > 0;
+
+        if (hasData) {
+            return (
+                <div className="relative group">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-0 right-0 z-10 bg-white/50 hover:bg-white backdrop-blur-sm border border-slate-200 shadow-sm gap-2"
+                        title="Re-run Analysis"
+                        onClick={() => initiateDeepAnalysis(source.id)}
+                        disabled={isDeepAnalyzing[source.id]}
+                    >
+                        {isDeepAnalyzing[source.id] ? (
+                            <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
+                        ) : (
+                            <RefreshCw className="h-3 w-3 text-slate-500" />
+                        )}
+                        <span className="text-xs text-slate-500">
+                            {isDeepAnalyzing[source.id] ? "Running..." : "Re-run"}
+                        </span>
+                    </Button>
+                    <div className="pt-8">
+                        {content}
+                    </div>
+                </div>
+            );
+        }
 
         return (
             <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center h-full min-h-[200px]">
@@ -206,8 +250,8 @@ export default function ComparisonPage() {
             />
 
             <div>
-                <h2 className="text-3xl font-bold tracking-tight text-slate-900">Comparative Analysis</h2>
-                <p className="text-slate-500">Compare cultural framing, institutional logics, and legitimacy across jurisdictions.</p>
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900">Policy Assemblages</h2>
+                <p className="text-slate-500">Relational mapping of policy mobilities, mutations, and institutional tensions.</p>
             </div>
 
             {/* Definitions Card */}
@@ -320,18 +364,39 @@ export default function ComparisonPage() {
                             <Scale className="mr-2 h-4 w-4" />
                             Legitimacy
                         </Button>
-                        <Button
-                            variant={activeTab === "synthesis" ? "default" : "outline"}
-                            onClick={handleSynthesize}
-                            className="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
-                        >
-                            {isSynthesizing ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Sparkles className="mr-2 h-4 w-4" />
+                        <div className="flex-1 flex gap-2">
+                            <Button
+                                variant={activeTab === "synthesis" ? "default" : "outline"}
+                                onClick={handleSynthesize}
+                                className="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
+                            >
+                                {isSynthesizing ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                )}
+                                Synthesize
+                            </Button>
+                            {currentResult && (
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                        if (confirm(`Clear cached synthesis for ${activeLens}?`)) {
+                                            setSynthesisResults(prev => {
+                                                const next = { ...prev };
+                                                delete next[activeLens];
+                                                return next;
+                                            });
+                                        }
+                                    }}
+                                    title="Clear Cache"
+                                    className="text-slate-400 hover:text-red-600 shrink-0"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
                             )}
-                            Synthesize
-                        </Button>
+                        </div>
                     </div>
 
                     {synthesisError && (
@@ -512,10 +577,10 @@ export default function ComparisonPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="pt-6">
-                                    {!synthesisResult && !isSynthesizing && (
+                                    {!currentResult && !isSynthesizing && (
                                         <div className="text-center py-12 text-slate-500">
                                             <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                                            <p>Click &quot;Synthesize&quot; to generate a comparative analysis.</p>
+                                            <p>Click "Synthesize" to generate a comparative analysis for the <strong>{activeLens}</strong> lens.</p>
                                         </div>
                                     )}
 
@@ -527,71 +592,100 @@ export default function ComparisonPage() {
                                         </div>
                                     )}
 
-                                    {synthesisResult && (
+                                    {currentResult && (
                                         <div className="space-y-8 animate-in fade-in duration-500">
-                                            {/* Executive Summary */}
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-slate-900 mb-3">Executive Summary</h3>
-                                                <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-lg border border-slate-100">
-                                                    <p className="whitespace-pre-wrap">{synthesisResult.synthesis_summary}</p>
+                                            {/* Top Bar: Lens Selector */}
+                                            <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200">
+                                                <div className="text-sm font-medium text-slate-600">Active Interpretation Lens:</div>
+                                                <LensSelector currentLens={activeLens} onLensChange={setActiveLens} />
+                                            </div>
+
+                                            {/* Executive Summary with Assemblage Tone */}
+                                            <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-xl border border-indigo-100 shadow-sm">
+                                                <h3 className="text-lg font-semibold text-indigo-900 mb-4 flex items-center gap-2">
+                                                    <Sparkles className="h-5 w-5 text-indigo-600" />
+                                                    Relational Summary
+                                                </h3>
+                                                <RebuttalPopover targetId="summary" initialRebuttal="" onSave={(id, txt) => console.log(id, txt)}>
+                                                    <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed cursor-pointer hover:bg-white/50 transition-colors rounded p-2 -ml-2">
+                                                        <p className="whitespace-pre-wrap">{currentResult.synthesis_summary}</p>
+                                                    </div>
+                                                </RebuttalPopover>
+                                            </div>
+
+                                            {/* Network & Stabilization Row */}
+                                            <div className="grid lg:grid-cols-3 gap-6 min-h-[400px]">
+                                                <div className="lg:col-span-2 h-full">
+                                                    {currentResult.assemblage_network && (
+                                                        <RhizomeNetwork network={currentResult.assemblage_network} />
+                                                    )}
+                                                </div>
+                                                <div className="h-full">
+                                                    {currentResult.stabilization_mechanisms && (
+                                                        <StabilizationCard mechanisms={currentResult.stabilization_mechanisms} />
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Key Divergences */}
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                                                    <Globe2 className="h-5 w-5 text-blue-600" />
-                                                    Key Divergences
-                                                </h3>
-                                                <div className="grid gap-4">
-                                                    {synthesisResult.key_divergences?.map((div, i) => (
-                                                        <Card key={i} className="bg-slate-50/50">
-                                                            <CardHeader className="pb-2">
-                                                                <CardTitle className="text-base font-bold text-slate-800">{div.theme}</CardTitle>
-                                                                <CardDescription>{div.description}</CardDescription>
-                                                            </CardHeader>
-                                                            <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
-                                                                <div className="bg-white p-3 rounded border border-slate-100">
-                                                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Policy A</span>
-                                                                    {div.policy_a_stance}
-                                                                </div>
-                                                                <div className="bg-white p-3 rounded border border-slate-100">
-                                                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Policy B</span>
-                                                                    {div.policy_b_stance}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
+                                            {/* Mutation Table */}
+                                            {currentResult.concept_mutations && (
+                                                <div className="mt-8">
+                                                    <MutationTable mutations={currentResult.concept_mutations} />
                                                 </div>
-                                            </div>
+                                            )}
+
+                                            {/* Friction & Desire */}
+                                            {currentResult.desire_and_friction && (
+                                                <div className="mt-8">
+                                                    <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                        Friction & Desire
+                                                    </h3>
+                                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        {currentResult.desire_and_friction.map((item, i) => (
+                                                            <div key={i} className="flex flex-col p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                                                <div className="absolute top-0 left-0 w-1 h-full bg-amber-400 group-hover:w-2 transition-all" />
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-2">{item.topic}</div>
+                                                                <div className="font-semibold text-slate-900 mb-3 leading-snug">{item.friction_point}</div>
+                                                                <div className="mt-auto pt-3 border-t border-slate-100">
+                                                                    <span className="text-xs text-slate-400 uppercase font-semibold">Underlying Desire</span>
+                                                                    <div className="text-sm font-medium text-indigo-700 mt-0.5">{item.underlying_desire}</div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {/* Institutional Conflicts */}
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                                                    <Building className="h-5 w-5 text-purple-600" />
-                                                    Institutional Conflicts
-                                                </h3>
-                                                <div className="grid gap-4">
-                                                    {synthesisResult.institutional_conflict?.map((conf, i) => (
-                                                        <Card key={i} className="border-purple-100 bg-purple-50/30">
-                                                            <CardHeader className="pb-2">
-                                                                <CardTitle className="text-base font-bold text-purple-900">{conf.conflict_type}</CardTitle>
-                                                                <CardDescription className="text-slate-700">{conf.description}</CardDescription>
-                                                            </CardHeader>
-                                                            <CardContent className="space-y-2 text-sm">
-                                                                <div className="flex gap-2">
-                                                                    <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence A:</span>
-                                                                    <span className="italic text-slate-600">&quot;{conf.policy_a_evidence}&quot;</span>
-                                                                </div>
-                                                                <div className="flex gap-2">
-                                                                    <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence B:</span>
-                                                                    <span className="italic text-slate-600">&quot;{conf.policy_b_evidence}&quot;</span>
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
+                                            {currentResult.institutional_conflict && (
+                                                <div className="mt-8">
+                                                    <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                                        <Building className="h-5 w-5 text-purple-600" />
+                                                        Institutional Conflicts
+                                                    </h3>
+                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                        {currentResult.institutional_conflict?.map((conf, i) => (
+                                                            <Card key={i} className="border-purple-100 bg-purple-50/30 hover:bg-purple-50/50 transition-colors">
+                                                                <CardHeader className="pb-2">
+                                                                    <CardTitle className="text-base font-bold text-purple-900">{conf.conflict_type}</CardTitle>
+                                                                    <CardDescription className="text-slate-700">{conf.description}</CardDescription>
+                                                                </CardHeader>
+                                                                <CardContent className="space-y-2 text-sm">
+                                                                    <div className="flex gap-2">
+                                                                        <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence A:</span>
+                                                                        <span className="italic text-slate-600">&quot;{conf.policy_a_evidence}&quot;</span>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence B:</span>
+                                                                        <span className="italic text-slate-600">&quot;{conf.policy_b_evidence}&quot;</span>
+                                                                    </div>
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Legitimacy Tensions */}
                                             <div>
@@ -600,7 +694,7 @@ export default function ComparisonPage() {
                                                     Legitimacy Tensions
                                                 </h3>
                                                 <div className="grid gap-4">
-                                                    {synthesisResult.legitimacy_tensions?.map((tens, i) => (
+                                                    {currentResult.legitimacy_tensions?.map((tens, i) => (
                                                         <Card key={i} className="border-emerald-100 bg-emerald-50/30">
                                                             <CardHeader className="pb-2">
                                                                 <CardTitle className="text-base font-bold text-emerald-900">{tens.tension_type}</CardTitle>
@@ -622,33 +716,33 @@ export default function ComparisonPage() {
                                             </div>
 
                                             {/* Coloniality Assessment */}
-                                            {synthesisResult.coloniality_assessment && (
+                                            {currentResult.coloniality_assessment && (
                                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
                                                     <h3 className="text-lg font-bold text-amber-900 mb-2 flex items-center gap-2">
                                                         <AlertTriangle className="h-5 w-5" />
                                                         Coloniality Assessment
                                                     </h3>
                                                     <p className="text-amber-800 leading-relaxed">
-                                                        {synthesisResult.coloniality_assessment}
+                                                        {currentResult.coloniality_assessment}
                                                     </p>
                                                 </div>
                                             )}
                                         </div>
+                                    )}
+
+                                    {selectedSources.length < 2 && (
+                                        <Card className="bg-slate-50 border-dashed">
+                                            <CardContent className="pt-6 text-center text-slate-500">
+                                                <Globe2 className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                                                <p>Select at least 2 documents above to begin comparing</p>
+                                            </CardContent>
+                                        </Card>
                                     )}
                                 </CardContent>
                             </Card>
                         </div>
                     )}
                 </>
-            )}
-
-            {selectedSources.length < 2 && (
-                <Card className="bg-slate-50 border-dashed">
-                    <CardContent className="pt-6 text-center text-slate-500">
-                        <Globe2 className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                        <p>Select at least 2 documents above to begin comparing</p>
-                    </CardContent>
-                </Card>
             )}
         </div>
     );

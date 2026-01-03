@@ -20,7 +20,7 @@ Extract all meaningful actors. Actors may include:
 - **Human / organizational**: agencies, ministries, startups, research labs, NGOs, communities.
 - **Non-human**: algorithms, datasets, APIs, portals, cloud services, standards, rules, infrastructures.
 
-Actor fields required: name, type, description.
+Required fields: name, type, description, evidence_quotes, region.
 
 Use the following classification heuristics:
 
@@ -29,6 +29,17 @@ Use the following classification heuristics:
 - **Civil Society** → NGOs, advocacy groups, worker organizations, community groups.
 - **Academic** → universities, research institutes, labs producing knowledge.
 - **Infrastructure** → algorithms, models, datasets, cloud platforms, APIs, standards, protocols, automated systems.
+
+REGION CLASSIFICATION:
+- "Global North": US, EU, UK, Canada, Australia, Japan.
+- "Global South": Latin America, Africa, SE Asia, India, Middle East.
+- "International": UN, OECD, Global consortia.
+- "Unknown": If origin cannot be inferred.
+
+EVIDENCE REQUIREMENT:
+For each actor, you MUST extract 1-2 verbatim quotes ("traces") from the text that prove its existence and role.
+- If no quote exists, do not invent one.
+- Quotes must be short and precise.
 
 Rules:
 - Actors MUST come directly from or be unambiguously implied by the text.
@@ -82,7 +93,9 @@ OUTPUT FORMAT (STRICT)
     {
       "name": "Name of the actor",
       "type": "Startup | Policymaker | Civil Society | Academic | Infrastructure",
-      "description": "Brief description of role"
+      "description": "Brief description of role",
+      "region": "Global North | Global South | International | Unknown",
+      "evidence_quotes": ["Quote 1", "Quote 2"]
     }
   ],
   "relations": [

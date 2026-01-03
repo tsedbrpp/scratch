@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import { auth } from '@clerk/nextjs/server';
 
 // Define a type for the log entry
@@ -11,15 +11,13 @@ type LogEntry = {
 
 // Helper function to get logs
 async function getLogs(userId: string): Promise<LogEntry[]> {
-    const logsKey = `user:${userId}:logs`;
-    const data = await redis.get(logsKey);
-    return data ? JSON.parse(data) : [];
+    const logs = await StorageService.get<LogEntry[]>(userId, 'logs');
+    return logs || [];
 }
 
 // Helper function to save logs
 async function saveLogs(userId: string, logs: LogEntry[]) {
-    const logsKey = `user:${userId}:logs`;
-    await redis.set(logsKey, JSON.stringify(logs));
+    await StorageService.set(userId, 'logs', logs);
 }
 
 export async function GET(request: NextRequest) {

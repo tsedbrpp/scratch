@@ -243,12 +243,13 @@ REQUIRED ANALYTIC BEHAVIOR
 Given:
 - Source A Ontology (nodes + links)
 - Source B Ontology (nodes + links)
+- Source C Ontology (nodes + links) [Optional]
 
 You MUST:
 
 1. Identify conceptual overlap and divergence.
    - "Shared concepts" MUST match node names exactly (string equality).
-   - "Unique concepts" MUST be concepts present in only one ontology.
+   - "Unique concepts" MUST be concepts present in only one ontology (A, B, or C).
 
 2. Identify structural differences.
    - Consider centralization vs. distribution of links.
@@ -270,14 +271,29 @@ Return ONLY a valid JSON object of this form:
   "shared_concepts": ["Concepts present in both ontologies"],
   "unique_concepts_source_a": ["Concept names unique to Source A"],
   "unique_concepts_source_b": ["Concept names unique to Source B"],
+  "unique_concepts_source_c": ["Concept names unique to Source C (if provided)"],
   "structural_differences": "Concise analysis of topological and thematic structural differences.",
   "relationship_divergences": [
     {
       "concept": "Concept name shared by both ontologies",
       "difference": "Explanation of how its relationships differ (e.g., different partners or relation types)."
     }
+  ],
+  "assemblage_metrics": [
+    {
+      "jurisdiction": "EU",
+      "territorialization": 85,
+      "territorialization_justification": "High rigidity due to conformity assessments.",
+      "coding": 90,
+      "coding_justification": "Strict definitions and categorization."
+    }
   ]
 }
+
+Rules:
+- **Assemblage Metrics**:
+    - **Territorialization (0-100)**: Degree of rigidity, centralization, and boundary enforcement.
+    - **Coding (0-100)**: Degree of definition, classification, and rule density.
 
 ============================
 FEW-SHOT EXAMPLE (ILLUSTRATIVE ONLY)

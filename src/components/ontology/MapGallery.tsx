@@ -39,7 +39,7 @@ export function MapGallery({
                 {isComparing && (
                     <Button
                         onClick={onCompare}
-                        disabled={selectedForComparison.length !== 2 || isComparingLoading || isComparisonResultLoading}
+                        disabled={(selectedForComparison.length < 2 || selectedForComparison.length > 3) || isComparingLoading || isComparisonResultLoading}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
                     >
                         {isComparingLoading ? (
@@ -61,7 +61,7 @@ export function MapGallery({
                     <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
                     <div className="text-sm text-blue-800">
                         <p className="font-semibold">Comparison Mode Active</p>
-                        <p>Select exactly two maps from the list below to compare their concepts and structures.</p>
+                        <p>Select two or three maps from the list below to compare their concepts and structures.</p>
                     </div>
                 </div>
             )}

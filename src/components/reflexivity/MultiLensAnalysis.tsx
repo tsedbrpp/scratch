@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText } from 'lucide-react';
+import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText, VolumeX } from 'lucide-react';
 import { analyzeDocument, AnalysisMode } from '@/services/analysis';
 import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
 import { SpectralRadar } from './SpectralRadar';
 import { SystemCritiqueSection } from '@/components/common/SystemCritiqueSection';
+import { EvidenceLineageModal } from '@/components/reflexivity/EvidenceLineageModal';
 
 interface MultiLensAnalysisProps {
     initialText?: string;
@@ -30,6 +31,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
 
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [progress, setProgress] = useState<string>('');
+    const [activeEvidence, setActiveEvidence] = useState<{ title: string; type: string; quotes: any[] } | null>(null);
 
     // Persist analysis results
     const [results, setResults] = useServerStorage<Record<LensType, AnalysisResult | null>>("multi_lens_results", {
@@ -204,6 +206,56 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                                                 </p>
                                             </div>
 
+                                            {/* Legitimacy Interactive Orders */}
+                                            {lens.id === 'legitimacy' && results['legitimacy'] && (
+                                                <div className="mt-3">
+                                                    <span className="text-xs font-semibold text-slate-500 block mb-2">Orders of Worth (Click for Evidence)</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {Object.entries((results['legitimacy'] as unknown as LegitimacyAnalysis).orders || {})
+                                                            .filter(([_, score]) => score > 0)
+                                                            .sort(([_, scoreA], [__, scoreB]) => scoreB - scoreA)
+                                                            .map(([order, score]) => (
+                                                                <div
+                                                                    key={order}
+                                                                    className="flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors group"
+                                                                    onClick={() => {
+                                                                        const legAnalysis = results['legitimacy'] as unknown as LegitimacyAnalysis;
+                                                                        const quotes = legAnalysis.evidence_quotes?.[order] || [];
+                                                                        setActiveEvidence({
+                                                                            title: `${order.charAt(0).toUpperCase() + order.slice(1)} Order`,
+                                                                            type: "Order of Worth",
+                                                                            quotes: quotes.map(q => ({ text: q, source: "Policy Text" }))
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <span className="font-medium text-slate-700 group-hover:text-indigo-700 capitalize">{order}</span>
+                                                                    <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full font-bold group-hover:bg-indigo-100 group-hover:text-indigo-700">{score}</span>
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Voices Silenced Section */}
+                                            {results[lens.id]?.silenced_voices && results[lens.id]!.silenced_voices!.length > 0 && (
+                                                <div className="bg-red-50 p-3 rounded-md border border-red-100 relative overflow-hidden group">
+                                                    <div className="absolute right-0 top-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                                        <VolumeX className="h-12 w-12 text-red-900" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-red-600 uppercase tracking-wider block mb-2 flex items-center gap-1">
+                                                        <VolumeX className="h-3 w-3" /> Voices Silenced
+                                                    </span>
+                                                    <ul className="space-y-1 relative z-10">
+                                                        {results[lens.id]!.silenced_voices!.map((voice, idx) => (
+                                                            <li key={idx} className="text-xs text-red-800 font-medium flex items-start gap-2">
+                                                                <span className="block w-1 h-1 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                                                                {voice}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
                                             {expandedLens === lens.id && (
                                                 <div className="mt-4 space-y-2 animate-in fade-in duration-300">
                                                     <h4 className="font-medium text-slate-900">Detailed Analysis</h4>
@@ -229,6 +281,15 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     )}
                 </div>
             )}
+
+            <EvidenceLineageModal
+                isOpen={!!activeEvidence}
+                onClose={() => setActiveEvidence(null)}
+                title={activeEvidence?.title || ""}
+                description="Verbatim text segments that triggered this classification."
+                quotes={activeEvidence?.quotes || []}
+                sourceType={activeEvidence?.type as any || "Trace"}
+            />
         </div>
     );
 }

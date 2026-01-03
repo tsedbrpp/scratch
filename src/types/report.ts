@@ -1,5 +1,5 @@
 import { Source, ResistanceSynthesisResult, AnalysisResult, EcosystemImpact } from "./index";
-import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "./ecosystem";
+import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult, AiAbsenceAnalysis } from "./ecosystem";
 import { ComparisonResult as OntologyComparisonResult, OntologyData } from "./ontology";
 import { SynthesisComparisonResult } from "./synthesis";
 
@@ -12,6 +12,7 @@ export interface ReportData {
         actors: EcosystemActor[];
         configurations: EcosystemConfiguration[];
         culturalHoles: CulturalHolesAnalysisResult | null;
+        absenceAnalysis?: AiAbsenceAnalysis | null;
     };
     synthesis?: {
         comparison: SynthesisComparisonResult | null;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
 import { executeGoogleSearch, curateResultsWithAI, curateResultsWithOpenAI, SearchResult } from '@/lib/search-service';
@@ -69,10 +69,10 @@ export async function POST(request: NextRequest) {
 
         // Check cache
         try {
-            const cachedData = await redis.get(cacheKey);
+            const cachedData = await StorageService.getCache(userId, cacheKey);
             if (cachedData) {
                 console.log('Returning cached search traces');
-                return NextResponse.json(JSON.parse(cachedData));
+                return NextResponse.json(cachedData);
             }
         } catch (error) {
             console.error('Redis cache check failed:', error);
@@ -321,7 +321,7 @@ export async function POST(request: NextRequest) {
 
         // Cache result (expire in 24 hours)
         try {
-            await redis.set(cacheKey, JSON.stringify(result), 'EX', 60 * 60 * 24);
+            await StorageService.setCache(userId, cacheKey, result, 60 * 60 * 24);
         } catch (error) {
             console.error('Failed to cache search traces:', error);
         }

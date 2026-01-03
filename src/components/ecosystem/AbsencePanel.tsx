@@ -12,16 +12,27 @@ interface AbsencePanelProps {
     topic?: string;
 }
 
-interface AiAbsenceAnalysis {
+export interface AiAbsenceAnalysis {
     narrative: string;
     missing_voices: { name: string; reason: string; category: string }[];
     structural_voids: string[];
     blindspot_intensity: "Low" | "Medium" | "High";
 }
 
-export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: AbsencePanelProps) {
+interface AbsencePanelProps {
+    actors: EcosystemActor[];
+    analyzedText?: string;
+    onSimulate?: (query: string, source?: "default" | "simulation" | "absence_fill") => Promise<void>;
+    topic?: string;
+    savedAnalysis?: AiAbsenceAnalysis | null;
+    onSaveAnalysis?: (analysis: AiAbsenceAnalysis) => void;
+}
+
+export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic, savedAnalysis, onSaveAnalysis }: AbsencePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [aiAnalysis, setAiAnalysis] = useState<AiAbsenceAnalysis | null>(null);
+    // Use savedAnalysis if available, otherwise local state (though local state basically ignored if saved provided)
+    const [localAiAnalysis, setLocalAiAnalysis] = useState<AiAbsenceAnalysis | null>(null);
+    const aiAnalysis = savedAnalysis !== undefined ? savedAnalysis : localAiAnalysis;
     const [simulatingIndex, setSimulatingIndex] = useState<number | null>(null);
 
     const handleDeepScan = async () => {
@@ -40,7 +51,11 @@ export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: A
             const data = await response.json();
             console.log("Deep Scan Data Received:", data); // DEBUG LOG
             if (data.success) {
-                setAiAnalysis(data.analysis);
+                if (onSaveAnalysis) {
+                    onSaveAnalysis(data.analysis);
+                } else {
+                    setLocalAiAnalysis(data.analysis);
+                }
             } else {
                 console.error("Deep Scan returned success:false", data);
             }
@@ -131,11 +146,11 @@ export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: A
 
                     <div className="flex items-center gap-2">
                         <Ghost className="h-5 w-5 text-indigo-600" />
-                        Absence Analysis
+                        Voices Silenced & Voids
                     </div>
                 </CardTitle>
                 <CardDescription>
-                    Tracking what is missing, deferred, or silenced.
+                    Tracking who is excluded, what is deferred, and whose knowledge is silenced.
                 </CardDescription>
 
                 {/* AI Trigger */}
@@ -149,17 +164,17 @@ export function AbsencePanel({ actors, analyzedText = "", onSimulate, topic }: A
                         {isAnalyzing ? (
                             <>
                                 <Loader2 className="h-3 w-3 animate-spin" />
-                                Scanning Voids...
+                                Listening for Silences...
                             </>
                         ) : aiAnalysis ? (
                             <>
                                 <BrainCircuit className="h-3 w-3" />
-                                Re-Scan with AI
+                                Re-Analyze Silences
                             </>
                         ) : (
                             <>
                                 <Sparkles className="h-3 w-3" />
-                                Deep Scan
+                                Reveal Silenced Voices
                             </>
                         )}
                     </Button>

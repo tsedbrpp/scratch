@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { redis } from '@/lib/redis';
+import { StorageService } from '@/lib/storage-service';
 import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const requestData = await request.json();
-    const { text, sourceType, analysisMode, sourceA, sourceB, force, documents, documentId, title, positionality } = requestData;
+    const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens } = requestData;
     console.log(`[ANALYSIS] Received request.Text length: ${text?.length || 0}, Mode: ${analysisMode}, Force: ${force}, DocID: ${documentId}, Positionality: ${!!positionality} `);
 
     // Check for API key
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (analysisMode === 'ontology_comparison') {
       if (!sourceA?.data || !sourceB?.data) {
         return NextResponse.json(
-          { error: 'Missing ontology data for comparison.' },
+          { error: 'Missing ontology data for comparison (at least 2 required).' },
           { status: 400 }
         );
       }
@@ -118,31 +118,40 @@ export async function POST(request: NextRequest) {
     } else if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
       // Use titles and summary/node count for cache key to avoid huge JSON strings
       textForCache = `ONTOLOGY_COMPARE:${sourceA.title} (${sourceA.data.nodes.length})| ${sourceB.title} (${sourceB.data.nodes.length})`;
+      if (sourceC) {
+        textForCache += `| ${sourceC.title} (${sourceC.data.nodes.length})`;
+      }
     } else if (analysisMode === 'comparative_synthesis' && documents) {
       textForCache = documents.map((d: { id: string }) => d.id).sort().join(',');
+      if (lens) {
+        textForCache += `| lens:${lens}`;
+      }
     } else if (analysisMode === 'resistance_synthesis' && documents) {
       textForCache = documents.map((d: { title: string }) => d.title).sort().join(',');
     }
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
-    const userCacheKey = `user:${userId}:${cacheKey} `;
-    console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey} `);
+    // const userCacheKey = `user:${userId}:${cacheKey} `; // StorageService handles user prefix
+    // console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey} `); // Simplified logging
 
     try {
       // Skip cache if force is true
       if (!force) {
         console.log('[ANALYSIS] Checking Redis cache...');
-        const cachedResult = await redis.get(userCacheKey);
-        if (cachedResult) {
-          console.log(`[CACHE HIT] Returning cached analysis for key: ${userCacheKey} `);
-          let cachedAnalysis = JSON.parse(cachedResult);
+        let cachedAnalysis = await StorageService.getCache(userId, cacheKey);
+
+        if (cachedAnalysis) {
+          console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey} `);
 
           // [FIX] Ensure cached ecosystem analysis is an array
           if (analysisMode === 'ecosystem' && !Array.isArray(cachedAnalysis)) {
-            if (cachedAnalysis.impacts && Array.isArray(cachedAnalysis.impacts)) {
-              cachedAnalysis = cachedAnalysis.impacts;
-            } else if (cachedAnalysis.analysis && Array.isArray(cachedAnalysis.analysis)) {
-              cachedAnalysis = cachedAnalysis.analysis;
+            // Cast to any to access potential fields if type is weird
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const ca = cachedAnalysis as any;
+            if (ca.impacts && Array.isArray(ca.impacts)) {
+              cachedAnalysis = ca.impacts;
+            } else if (ca.analysis && Array.isArray(ca.analysis)) {
+              cachedAnalysis = ca.analysis;
             } else {
               cachedAnalysis = [cachedAnalysis];
             }
@@ -157,7 +166,7 @@ export async function POST(request: NextRequest) {
         }
         console.log('[ANALYSIS] Cache Miss.');
       } else {
-        console.log(`[CACHE BYPASS] Force refresh requested for key: ${userCacheKey} `);
+        console.log(`[CACHE BYPASS] Force refresh requested for key: ${cacheKey} `);
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
@@ -216,7 +225,9 @@ export async function POST(request: NextRequest) {
     }
 
     // --- USE ANALYSIS SERVICE TO GET CONFIG ---
-    let { systemPrompt, userContent } = await getAnalysisConfig(userId, analysisMode, requestData);
+    const config = await getAnalysisConfig(userId, analysisMode, requestData);
+    let { systemPrompt } = config;
+    const { userContent } = config;
 
     // Append calibration context to system prompt for supported modes
     if (['dsf', 'cultural_framing', 'institutional_logics', 'legitimacy'].includes(analysisMode || 'dsf')) {
@@ -250,6 +261,7 @@ export async function POST(request: NextRequest) {
     console.log(`[ANALYSIS] Finish Reason: ${finishReason}`);
 
     // --- USE ANALYSIS PARSER ---
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let analysis: AnalysisResult | any = parseAnalysisResponse(responseText, analysisMode);
 
     // --- STRESS TEST LOGIC ---
@@ -282,10 +294,10 @@ export async function POST(request: NextRequest) {
     // Cache the result
     try {
       if (analysis && typeof analysis === 'object' && !analysis.error) {
-        await redis.set(userCacheKey, JSON.stringify(analysis), 'EX', 86400); // 24 hours
-        console.log(`[ANALYSIS] Saved to cache: ${userCacheKey}`);
+        await StorageService.setCache(userId, cacheKey, analysis, 86400); // 24 hours
+        console.log(`[ANALYSIS] Saved to cache: ${cacheKey}`);
       } else {
-        console.warn(`[ANALYSIS] Skipping cache for failed/partial analysis. Key: ${userCacheKey}`);
+        console.warn(`[ANALYSIS] Skipping cache for failed/partial analysis. Key: ${cacheKey}`);
       }
     } catch (saveError) {
       console.warn('[ANALYSIS] Failed to save to cache:', saveError);

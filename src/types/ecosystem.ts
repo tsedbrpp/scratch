@@ -11,6 +11,8 @@ export interface EcosystemActor {
         resistance: number;
     };
     source?: "default" | "simulation" | "absence_fill";
+    quotes?: string[];
+    region?: "Global North" | "Global South" | "International" | "Unknown";
 }
 
 export interface EcosystemConfiguration {
@@ -41,10 +43,41 @@ export interface CulturalHole {
     policyImplication: string;
 }
 
+export interface CulturalFraming {
+    state_market_society: string;
+    technology_role: string;
+    rights_conception: string;
+    historical_context: string;
+    epistemic_authority: string;
+    temporal_orientation: string;
+    enforcement_culture: string;
+    cultural_distinctiveness_score: number;
+    cultural_distinctiveness_rationale: string;
+    dominant_cultural_logic: string;
+    silenced_voices: string[];
+}
+
 export interface CulturalHolesAnalysisResult {
     summary: string;
     overall_connectivity_score: number;
     holes: CulturalHole[];
     silences?: { id: string; name: string; category: string; keywords: string[] }[];
     recommendations?: { role: string; action: string }[];
+    cultural_framing?: CulturalFraming;
+}
+
+export interface AssemblageAnalysis {
+    narrative: string;
+    missing_voices: { name: string; reason: string; category: string }[];
+    structural_voids: string[];
+    blindspot_intensity: "Low" | "Medium" | "High";
+    socio_technical_components: {
+        infra: string[];
+        discourse: string[];
+    };
+    policy_mobilities: {
+        origin_concepts: string[];
+        local_mutations: string[];
+    };
+    stabilization_mechanisms: string[];
 }

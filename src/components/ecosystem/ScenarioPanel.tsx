@@ -98,6 +98,28 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario }: Sce
         { id: "ExpandedInclusion", label: "Expanded Inclusion", icon: TrendingUp },
     ];
 
+    // Helper to robustly find actor names given an ID (which might be a name or an ID)
+    const resolveActorName = (identifier: string, fallback: string) => {
+        if (!identifier) return fallback;
+        const exactMatch = actors.find(a => a.id === identifier);
+        if (exactMatch) return exactMatch.name;
+
+        const lowerId = identifier.toLowerCase();
+        const looseMatch = actors.find(a => a.id.toLowerCase() === lowerId || a.name.toLowerCase() === lowerId);
+        if (looseMatch) return looseMatch.name;
+
+        // Partial ID match (if AI truncated the ID or provided a short hash)
+        // Check if the actor ID starts with the identifier, or contains it (if significant length)
+        const partialMatch = actors.find(a =>
+            (identifier.length > 3 && a.id.toLowerCase().includes(lowerId)) ||
+            (a.id.length > 3 && lowerId.includes(a.id.toLowerCase()))
+        );
+        if (partialMatch) return partialMatch.name;
+
+        // If the AI returned the Name directly instead of ID, return that
+        return identifier;
+    };
+
     return (
         <Card className="h-full border-l-4 border-l-indigo-400 bg-slate-50/50 flex flex-col">
             <CardHeader className="pb-2">
@@ -161,13 +183,13 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario }: Sce
                                     {displayDeltas.slice(0, 5).map((d, i) => (
                                         <div key={i} className="flex flex-col bg-white p-2 rounded border shadow-sm text-xs gap-1">
                                             <div className="flex items-center justify-between">
-                                                <span className="font-medium text-slate-700 truncate max-w-[140px]">
+                                                <span className="font-medium text-slate-700 truncate max-w-[200px]">
                                                     {/* If AI, we use ID but might want names. For rule-based, narrative is simpler. 
                                                         Wait, AI result has Source/Target IDs. Rule result has narrative text.
                                                         Let's split the difference visually.
                                                     */}
                                                     {d.id.includes('-') && currentAiResult
-                                                        ? `${actors.find(a => a.id === d.id.split('-')[0])?.name || "Src"} → ${actors.find(a => a.id === d.id.split('-')[1])?.name || "Tgt"}`
+                                                        ? `${resolveActorName(d.id.split('-')[0], "Src")} → ${resolveActorName(d.id.split('-')[1], "Tgt")}`
                                                         : (d.narrative.includes(" ") ? "Reconfiguration" : d.narrative) // Fallback if narrative is long
                                                     }
                                                 </span>

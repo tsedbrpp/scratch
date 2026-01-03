@@ -8,13 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw } from 'lucide-react';
+import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw, Maximize2, Minimize2 } from 'lucide-react';
 
 interface ActorListProps {
     actors: EcosystemActor[];
     selectedActorId: string | null;
     onSelectActor: (id: string) => void;
     onClearAll: () => void;
+
+    // Expansion Props
+    isExpanded?: boolean;
+    onToggleExpand?: () => void;
 
     // Simulation Props
     isSimulating: boolean;
@@ -43,6 +47,8 @@ export function ActorList({
     selectedActorId,
     onSelectActor,
     onClearAll,
+    isExpanded = false,
+    onToggleExpand,
     isSimulating,
     simulationQuery,
     setSimulationQuery,
@@ -65,6 +71,11 @@ export function ActorList({
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">Ecosystem Actors</CardTitle>
                     <div className="flex gap-1">
+                        {onToggleExpand && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={onToggleExpand} title={isExpanded ? "Collapse" : "Expand"}>
+                                {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                            </Button>
+                        )}
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8" title="Simulate Data">
@@ -211,16 +222,27 @@ export function ActorList({
                 </div>
 
                 {/* Explicit Actions Row */}
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={() => setIsDialogOpen(true)}
-                    >
-                        <Globe className="mr-2 h-3 w-3 text-indigo-600" />
-                        Simulate
-                    </Button>
+                <div className="flex flex-col gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => setIsDialogOpen(true)}
+                        >
+                            <Globe className="mr-2 h-3 w-3 text-indigo-600" />
+                            Simulate
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => setIsExtractionDialogOpen(true)}
+                        >
+                            <FileText className="mr-2 h-3 w-3 text-emerald-600" />
+                            Extract
+                        </Button>
+                    </div>
                     <Button
                         variant="outline"
                         size="sm"
@@ -233,9 +255,8 @@ export function ActorList({
                         ) : (
                             <Zap className="mr-2 h-3 w-3 text-amber-600" />
                         )}
-                        Analyze Holes
+                        Analyze Cultural Holes
                     </Button>
-
                 </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
@@ -277,6 +298,23 @@ export function ActorList({
                             </div>
                         </div>
                         <p className="text-xs text-slate-500 line-clamp-2 mb-2">{actor.description}</p>
+
+                        {/* Trace Evidence Display */}
+                        {actor.quotes && actor.quotes.length > 0 && (
+                            <div className="mt-2 mb-2 bg-slate-50 p-2 rounded border border-slate-100">
+                                <p className="text-[10px] font-semibold text-slate-400 mb-1 flex items-center gap-1 uppercase tracking-wider">
+                                    <FileText className="h-3 w-3" /> Empirical Traces
+                                </p>
+                                <ul className="space-y-1">
+                                    {actor.quotes.map((quote, idx) => (
+                                        <li key={idx} className="text-[10px] text-slate-600 italic border-l-2 border-indigo-200 pl-2">
+                                            "{quote}"
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {actor.url && (
                             <a
                                 href={actor.url}

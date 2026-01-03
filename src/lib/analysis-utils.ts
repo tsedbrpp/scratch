@@ -1,76 +1,91 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export function verifyQuotes(text: string, analysis: any): any[] {
-    const quotes: any[] = [];
-    // Improved normalizer: robust against minor punctuation differences
-    const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w ]/g, '').trim();
+import { AnalysisResult } from "@/types";
+
+export interface VerifiedQuote {
+    text: string;
+    verified: boolean;
+    confidence: number;
+    context: string;
+}
+
+// Improved normalizer: robust against minor punctuation differences
+export const normalize = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w ]/g, '').trim();
+
+// Super-Normalize Fallback (Aggressive: "risk-based" == "riskbased")
+// Strips ALL spaces and punctuation, keeping only alphanumeric.
+export const superNormalize = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+export const checkFuzzyMatch = (quote: string, source: string): boolean => {
+    const nQuote = normalize(quote);
+    // 1. Direct match attempt (Standard)
+    if (source.includes(nQuote)) return true;
+
+    // 2. Super-Normalize Fallback
+    const sQuote = superNormalize(quote);
+    const sSource = superNormalize(source);
+    if (sSource.includes(sQuote)) return true;
+
+    // 3. Ellipsis handling: "Start of quote... end of quote"
+    const parts = quote.split(/\.\.\.|…/);
+    if (parts.length > 1) {
+        let lastIndex = 0;
+        return parts.every(part => {
+            if (!part || part.length < 3) return true;
+            // Try standard match first
+            const nPart = normalize(part);
+            const index = source.indexOf(nPart, lastIndex);
+            if (index !== -1) {
+                lastIndex = index + nPart.length;
+                return true;
+            }
+            // Fallback: If standard part fails, we might be out of luck for ellipsis + punctuation diffs.
+            return false;
+        });
+    }
+    return false;
+};
+
+export function verifyQuotes(text: string, analysis: AnalysisResult): VerifiedQuote[] {
+    const quotes: VerifiedQuote[] = [];
     const normalizedText = normalize(text);
 
-    const checkFuzzyMatch = (quote: string, source: string): boolean => {
-        const nQuote = normalize(quote);
-        // 1. Direct match attempt (Standard)
-        if (source.includes(nQuote)) return true;
-
-        // 2. Super-Normalize Fallback (Aggressive: "risk-based" == "riskbased")
-        // Strips ALL spaces and punctuation, keeping only alphanumeric.
-        const superNormalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const sQuote = superNormalize(quote);
-        const sSource = superNormalize(text); // Use original text for super-source to avoid double-process
-        if (sSource.includes(sQuote)) return true;
-
-        // 3. Ellipsis handling: "Start of quote... end of quote"
-        const parts = quote.split(/\.\.\.|…/);
-        if (parts.length > 1) {
-            let lastIndex = 0;
-            return parts.every(part => {
-                if (!part || part.length < 3) return true;
-                // Try standard match first
-                const nPart = normalize(part);
-                const index = source.indexOf(nPart, lastIndex);
-                if (index !== -1) {
-                    lastIndex = index + nPart.length;
-                    return true;
-                }
-                // Try super-match for part
-                const sPart = superNormalize(part);
-                const sSourcePart = superNormalize(text); // Ideally we'd need to track index in super-text...
-                // Complex to track indices across normalizations. 
-                // Simplified: just check if super-part exists?. No, order matters.
-                // Fallback: If standard part fails, we might be out of luck for ellipsis + punctuation diffs.
-                // But let's at least check "super" inclusion for the whole part regardless of order? No, too risky.
-                return false;
-            });
-        }
-        return false;
+    // Helper to process a potential quote
+    const processQuote = (quoteStr: string, path: string) => {
+        const verified = checkFuzzyMatch(quoteStr, normalizedText);
+        // If text is empty/undefined, we can't verify, so verified is false.
+        const isVerified = !!normalizedText && verified;
+        quotes.push({
+            text: quoteStr,
+            verified: isVerified,
+            confidence: isVerified ? 1.0 : 0.0,
+            context: path
+        });
     };
 
-    const traverse = (obj: any, path: string) => {
+    const traverse = (obj: unknown, path: string) => {
         if (!obj) return;
 
-        // Check strings for embedded quotes (heuristic: "..." > 20 chars)
         if (typeof obj === 'string') {
+            // Check strings for embedded quotes (heuristic: "..." > 20 chars)
             const match = obj.match(/"([^"]{20,})"/);
             if (match) {
                 const quoteContent = match[1];
-                const verified = checkFuzzyMatch(quoteContent, normalizedText);
-                if (verified || !normalizedText) {
-                    quotes.push({ text: quoteContent, verified: !!normalizedText && verified, confidence: (!!normalizedText && verified) ? 1.0 : 0.0, context: path });
-                }
+                processQuote(quoteContent, path);
             }
         } else if (typeof obj === 'object') {
+            const record = obj as Record<string, unknown>;
+
             // Check explicit quote fields
-            if ('quote' in obj && typeof obj.quote === 'string') {
-                const verified = checkFuzzyMatch(obj.quote, normalizedText);
-                quotes.push({ text: obj.quote, verified: !!normalizedText && verified, confidence: (!!normalizedText && verified) ? 1.0 : 0.0, context: path + ".quote" });
+            if ('quote' in record && typeof record.quote === 'string') {
+                processQuote(record.quote, path + ".quote");
             }
-            if ('evidence_quote' in obj && typeof obj.evidence_quote === 'string') {
-                const verified = checkFuzzyMatch(obj.evidence_quote, normalizedText);
-                quotes.push({ text: obj.evidence_quote, verified: !!normalizedText && verified, confidence: (!!normalizedText && verified) ? 1.0 : 0.0, context: path + ".evidence_quote" });
+            if ('evidence_quote' in record && typeof record.evidence_quote === 'string') {
+                processQuote(record.evidence_quote, path + ".evidence_quote");
             }
 
             // Recurse
-            for (const key in obj) {
+            for (const key in record) {
                 if (key !== 'quote' && key !== 'evidence_quote' && key !== 'verified_quotes') {
-                    traverse(obj[key], path ? `${path}.${key}` : key);
+                    traverse(record[key], path ? `${path}.${key}` : key);
                 }
             }
         }

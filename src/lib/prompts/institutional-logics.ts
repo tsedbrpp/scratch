@@ -133,7 +133,13 @@ If applicable, identify how logics reproduce:
 This MUST be included if supported by textual evidence.
 
 ============================================================
-IX. ASSEMBLAGE-LEVEL SYNTHESIS
+IX. SILENCED VOICES (LOGIC-DEPRIVED ACTORS)
+============================================================
+
+Identify specific actors or groups who are subjected to these logics but have no role in defining them.
+
+============================================================
+X. ASSEMBLAGE-LEVEL SYNTHESIS
 ============================================================
 
 In the final assessment, synthesize how the constellation of logics:
@@ -181,7 +187,8 @@ No markdown or other text.
       "resolution_strategy": "How text attempts to resolve (if at all)"
     }
   ],
-  "overall_assessment": "2-3 sentence synthesis of institutional complexity"
+  "overall_assessment": "2-3 sentence synthesis of institutional complexity",
+  "silenced_voices": ["Group 1", "Group 2"]
 }
 
 This structure MUST NOT change.

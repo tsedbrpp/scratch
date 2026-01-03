@@ -22,7 +22,7 @@ export async function checkRateLimit(
     userId: string,
     defaultLimit: number = 25,
     windowSeconds: number = 60,
-    defaultCap: number = 100
+    defaultCap: number = 5000
 ): Promise<RateLimitResult> {
     const key = `ratelimit:user:${userId}`;
     const configKey = `config:ratelimit:user:${userId}:limit`;

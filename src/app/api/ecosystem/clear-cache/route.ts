@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
     try {
         // Get all keys matching the ecosystem simulation pattern for this user
-        const keys = await redis.keys(`user:${userId}:ecosystem:simulate:*`);
+        const keys = await redis.keys(`user:${userId}:cache:ecosystem:simulate:*`);
 
         if (keys.length > 0) {
             await redis.del(...keys);

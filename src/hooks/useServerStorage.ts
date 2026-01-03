@@ -20,8 +20,8 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.value !== null && isMounted) {
-                        setStoredValue(data.value);
+                    if (isMounted) {
+                        setStoredValue(data.value ?? initialValue);
                     }
                 }
             } catch (error) {
