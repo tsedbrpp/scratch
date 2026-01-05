@@ -98,19 +98,32 @@ const GaugePanel = ({ metric, allMetrics }: { metric: Metric, allMetrics: Metric
                     />
                 </div>
 
-                {/* AI Rationale Display */}
-                <div className="bg-slate-50/50 rounded-lg p-3 text-xs text-slate-600 border border-slate-100/80">
-                    <div className="font-semibold text-slate-400 mb-2 flex items-center gap-1.5 uppercase tracking-widest text-[9px]">
-                        AI Rationale
+                {/* Score Computation Logic */}
+                <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-700 border border-slate-200 shadow-sm mt-4">
+                    <div className="font-bold text-slate-900 mb-3 flex items-center gap-2 uppercase tracking-wide text-xs">
+                        <Info className="h-3 w-3 text-slate-500" />
+                        Score Computation Logic
                     </div>
-                    <div className="space-y-3">
-                        <div className="relative pl-3 border-l-2 border-red-100">
-                            <span className="block font-bold text-red-900 mb-0.5 text-[10px] uppercase">Territorialization</span>
-                            <span className="italic leading-snug">"{metric.territorialization_justification || 'No data'}"</span>
+
+                    <div className="space-y-4">
+                        <div className="relative pl-3 border-l-2 border-red-500">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <span className="font-bold text-red-900 text-xs uppercase">Territorialization (Rigidity)</span>
+                                <span className="text-[10px] text-slate-500">How strictly are boundaries defined?</span>
+                            </div>
+                            <p className="italic text-slate-600 leading-relaxed text-xs">
+                                "{metric.territorialization_justification || 'No data'}"
+                            </p>
                         </div>
-                        <div className="relative pl-3 border-l-2 border-indigo-100">
-                            <span className="block font-bold text-indigo-900 mb-0.5 text-[10px] uppercase">Coding</span>
-                            <span className="italic leading-snug">"{metric.coding_justification || 'No data'}"</span>
+
+                        <div className="relative pl-3 border-l-2 border-indigo-500">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <span className="font-bold text-indigo-900 text-xs uppercase">Coding (Formalization)</span>
+                                <span className="text-[10px] text-slate-500">How dense are the rules/definitions?</span>
+                            </div>
+                            <p className="italic text-slate-600 leading-relaxed text-xs">
+                                "{metric.coding_justification || 'No data'}"
+                            </p>
                         </div>
                     </div>
                 </div>

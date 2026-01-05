@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { LiberatoryCapacity } from "@/lib/liberatory-calculator";
 import { AnalysisResult } from "@/types";
-import { Sprout, RefreshCw, Hand, Scale, MessageSquare, History, HeartHandshake, Loader2, Sparkles, Feather } from "lucide-react";
+import { Sprout, RefreshCw, Hand, Scale, MessageSquare, History, HeartHandshake, Loader2, Sparkles, Feather, ChevronDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { interpretCapacityNarrative } from "@/lib/narrative-interpreters";
 
 interface LiberatoryCapacityCardProps {
     capacity: LiberatoryCapacity;
@@ -129,52 +131,77 @@ export function LiberatoryCapacityCard({ capacity, analysis, sourceTitle, classN
                 </div>
             </CardHeader>
             <CardContent>
-                <div className={`flex items-center gap-4 ${compact ? 'mb-4' : 'mb-6'}`}>
-                    <div className={`${compact ? 'text-2xl' : 'text-4xl'} font-black text-slate-800`}>
-                        {capacity.score}<span className="text-lg text-slate-400 font-normal">/8</span>
-                    </div>
-                    <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full transition-all duration-500 ${getBarColor(capacity.score)}`}
-                            style={{ width: `${(capacity.score / 8) * 100}%` }}
-                        />
-                    </div>
+                {/* Lead with Narrative Interpretation */}
+                <div className="mb-6 bg-emerald-50/30 p-4 rounded-lg border border-emerald-200">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                        {interpretCapacityNarrative({ score: capacity.score, level: capacity.level, signals: capacity.signals })}
+                    </p>
                 </div>
 
-                {/* Narrative Summary Section */}
-                <div className="mb-6">
-                    {!narrative ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleGenerateSummary}
-                            disabled={isLoading}
-                            className="w-full border-dashed border-emerald-200 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 hover:border-emerald-300"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Assessing Liberatory Potential...
-                                </>
-                            ) : (
-                                <>
-                                    <Sprout className="mr-2 h-4 w-4" />
-                                    Generate Executive Diagnostic
-                                </>
-                            )}
-                        </Button>
-                    ) : (
-                        <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 animate-in fade-in zoom-in-95 duration-300">
-                            <h5 className="text-xs font-bold text-emerald-700 uppercase mb-2 flex items-center gap-2">
-                                <Sprout className="h-3 w-3" />
-                                Liberatory Potential Assessment
-                            </h5>
-                            <p className="text-sm text-slate-800 leading-relaxed font-medium">
-                                {narrative}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                {/* Optional Extended Diagnostic */}
+                {!compact && (
+                    <div className="mb-6">
+                        {!narrative ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGenerateSummary}
+                                disabled={isLoading}
+                                className="w-full border-dashed border-emerald-200 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 hover:border-emerald-300"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generating Extended Assessment...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sprout className="mr-2 h-4 w-4" />
+                                        Generate Extended Diagnostic
+                                    </>
+                                )}
+                            </Button>
+                        ) : (
+                            <div className="bg-emerald-50/50 p-4 rounded-lg border border-emerald-100 animate-in fade-in zoom-in-95 duration-300">
+                                <h5 className="text-xs font-bold text-emerald-700 uppercase mb-2 flex items-center gap-2">
+                                    <Sprout className="h-3 w-3" />
+                                    Extended Assessment
+                                </h5>
+                                <p className="text-sm text-slate-800 leading-relaxed">
+                                    {narrative}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Parametric Data - Collapsible */}
+                <Accordion type="single" collapsible className="mb-6">
+                    <AccordionItem value="metrics" className="border-none">
+                        <AccordionTrigger className="text-xs text-emerald-600 hover:text-emerald-800 py-2 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <ChevronDown className="h-3 w-3" />
+                                View Parametric Data
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <div className="flex items-center gap-4 pt-2 pb-4">
+                                <div className="text-2xl font-black text-emerald-600">
+                                    {capacity.score}<span className="text-sm text-slate-400 font-normal">/8</span>
+                                </div>
+                                <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${getBarColor(capacity.score)}`}
+                                        style={{ width: `${(capacity.score / 8) * 100}%` }}
+                                    />
+                                </div>
+                                <Badge className={`text-xs ${getScoreColor(capacity.score)}`}>
+                                    {capacity.level}
+                                </Badge>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
 
                 <div className={`grid ${compact ? 'grid-cols-1 gap-2' : 'md:grid-cols-2 gap-4'}`}>
                     {signals.map((sig) => (

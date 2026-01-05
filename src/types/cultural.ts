@@ -36,6 +36,11 @@ export interface CulturalAnalysisResult {
     summary?: string;
     clusters: DiscourseCluster[];
     holes: CulturalHole[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    silences?: any[]; // Keep flexible for now or import from ontology
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cultural_framing?: any; // Keep flexible
+    overall_connectivity_score?: number;
     timestamp: string;
 }
 
@@ -44,4 +49,15 @@ export interface ThemeExtraction {
     sourceTitle: string;
     themes: string[];
     embeddings: number[][];
+}
+
+export interface ThemeObject {
+    theme: string;
+    quote: string;
+}
+
+export interface BridgingData {
+    bridgingConcepts: BridgingConcept[];
+    opportunity: string;
+    policyImplication: string;
 }

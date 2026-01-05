@@ -10,4 +10,8 @@ export interface SynthesisComparisonResult {
         over_interpretation: string;
         legitimacy_correction: string;
     } | string;
+    assemblage_network?: {
+        nodes: string[];
+        edges: { from: string; to: string; type: string }[];
+    };
 }

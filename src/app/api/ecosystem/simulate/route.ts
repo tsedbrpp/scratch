@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
-
+import { createRateLimitResponse, createUnauthorizedResponse, createErrorResponse } from '@/lib/api-helpers';
 import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: Request) {
@@ -16,23 +16,13 @@ export async function POST(request: Request) {
     }
 
     if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return createUnauthorizedResponse();
     }
 
     // Rate Limiting
     const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
     if (!rateLimit.success) {
-        return NextResponse.json(
-            { error: rateLimit.error || "Too Many Requests" },
-            {
-                status: 429,
-                headers: {
-                    'X-RateLimit-Limit': rateLimit.limit.toString(),
-                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-                    'X-RateLimit-Reset': rateLimit.reset.toString()
-                }
-            }
-        );
+        return createRateLimitResponse(rateLimit);
     }
 
     // Credit Check
@@ -51,7 +41,7 @@ export async function POST(request: Request) {
         const apiKey = process.env.GOOGLE_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({ success: false, error: "Missing GOOGLE_API_KEY in .env.local" }, { status: 500 });
+            return createErrorResponse(new Error("Missing GOOGLE_API_KEY"), "Server Configuration Error");
         }
 
         // Generate cache key
@@ -116,10 +106,6 @@ export async function POST(request: Request) {
         return NextResponse.json(responseData);
 
     } catch (error) {
-        console.error("Simulation error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : "Failed to simulate ecosystem"
-        }, { status: 500 });
+        return createErrorResponse(error, "Failed to simulate ecosystem");
     }
 }

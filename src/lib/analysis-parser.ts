@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { computeDeLandaMetrics } from "@/lib/delanda-service";
 
 export interface AnalysisParserResult {
     analysis: any;
@@ -113,9 +114,26 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
             }];
         } else if (analysisMode === 'assemblage_extraction') {
             analysis = {
-                assemblage: { name: "Extraction Failed", description: "Could not parse response", properties: { stability: "Low", generativity: "Low" } },
+                assemblage: {
+                    name: "Extraction Failed",
+                    description: "Could not parse response",
+                    properties: { stability: "Low", generativity: "Low", territorialization_score: 0, coding_intensity_score: 0 }
+                },
                 actors: [],
                 relations: [],
+                narrative: "Analysis failed to parse.",
+                missing_voices: [],
+                structural_voids: [],
+                socio_technical_components: { infra: [], discourse: [] },
+                policy_mobilities: { origin_concepts: [], local_mutations: [] },
+                stabilization_mechanisms: [],
+                traces: [],
+                computed_metrics: {
+                    territorialization_score: 0,
+                    coding_intensity_score: 0,
+                    territorialization_audit: ["Analysis Failed"],
+                    coding_audit: ["Analysis Failed"]
+                },
                 raw_response: responseText
             };
         } else if (analysisMode === 'cultural_holes') {
@@ -170,6 +188,28 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
         } else {
             // If it's a single object, wrap it
             analysis = [analysis];
+        }
+    }
+
+    // [Feature] Trace-Based Metrics Computation
+    // Check both root-level and nested (assemblage.traces) to be robust
+    const extractedTraces = analysis.traces || (analysis.assemblage && analysis.assemblage.traces);
+
+    if (analysisMode === 'assemblage_extraction' && extractedTraces) {
+        const metrics = computeDeLandaMetrics(extractedTraces);
+
+        // Inject computed scores into the assemblage properties for UI compatibility
+        if (analysis.assemblage && analysis.assemblage.properties) {
+            analysis.assemblage.properties.territorialization_score = metrics.territorialization_score;
+            analysis.assemblage.properties.coding_intensity_score = metrics.coding_intensity_score;
+        }
+
+        // Attach full audit trail to the root so UI can find it
+        analysis.computed_metrics = metrics;
+
+        // Ensure traces are exposed at the root for easier access if they were nested
+        if (!analysis.traces) {
+            analysis.traces = extractedTraces;
         }
     }
 

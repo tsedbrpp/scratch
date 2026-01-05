@@ -10,6 +10,7 @@ import {
     AlertTriangle, Sprout, Scale, Sparkles, Gavel, ShieldAlert, EyeOff, Zap, History, Ban,
     RefreshCw, Hand, HeartHandshake, Feather, MessageSquare, Info
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface PolicyComparisonViewProps {
@@ -111,7 +112,39 @@ export function PolicyComparisonView({ sources }: PolicyComparisonViewProps) {
                                 {/* --- High Level Scores --- */}
                                 <TableRow className="bg-slate-50/30">
                                     <TableCell className="font-semibold text-slate-600 sticky left-0 z-40 bg-slate-50/95 backdrop-blur border-r border-slate-200 pl-6">
-                                        Overall Risk Index
+                                        <div className="flex items-center gap-2">
+                                            Overall Risk Index
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Info className="h-4 w-4 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer" />
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-80 p-4 shadow-xl border-indigo-100" side="right" align="start">
+                                                    <div className="space-y-3">
+                                                        <div className="border-b border-indigo-100 pb-2 mb-2">
+                                                            <h4 className="font-bold text-indigo-900 flex items-center gap-2">
+                                                                <Gavel className="h-4 w-4" />
+                                                                Risk Calculation Logic
+                                                            </h4>
+                                                            <p className="text-xs text-slate-500 mt-1">Sum of 6 weighted micro-fascism signals (0-6 scale).</p>
+                                                        </div>
+                                                        <ul className="space-y-2 text-sm text-slate-600">
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-red-50 text-red-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Power</span>
+                                                                <span>Centralization &gt; 75% or rigid procedure.</span>
+                                                            </li>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-red-50 text-red-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Agency</span>
+                                                                <span>Rights Focus &lt; 35% (collapse).</span>
+                                                            </li>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-red-50 text-red-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Truth</span>
+                                                                <span>Coloniality &gt; 60% or high silence.</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </TableCell>
                                     {comparisons.map((c) => (
                                         <TableHead key={c.source.id} className="border-l border-slate-100 p-2 text-left">
@@ -128,7 +161,43 @@ export function PolicyComparisonView({ sources }: PolicyComparisonViewProps) {
                                 </TableRow>
                                 <TableRow className="bg-slate-50/30">
                                     <TableCell className="font-semibold text-slate-600 sticky left-0 z-40 bg-slate-50/95 backdrop-blur border-r border-slate-200 pl-6">
-                                        Liberatory Potential
+                                        <div className="flex items-center gap-2">
+                                            Liberatory Potential
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Info className="h-4 w-4 text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer" />
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-80 p-4 shadow-xl border-emerald-100" side="right" align="start">
+                                                    <div className="space-y-3">
+                                                        <div className="border-b border-emerald-100 pb-2 mb-2">
+                                                            <h4 className="font-bold text-emerald-900 flex items-center gap-2">
+                                                                <Sprout className="h-4 w-4" />
+                                                                Liberatory Logic
+                                                            </h4>
+                                                            <p className="text-xs text-slate-500 mt-1">Sum of 8 capacity signals based on governance metrics (0-8 scale).</p>
+                                                        </div>
+                                                        <ul className="space-y-2 text-sm text-slate-600">
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Revokes</span>
+                                                                <span>Centralization &lt; 40% (reversible).</span>
+                                                            </li>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Codesign</span>
+                                                                <span>Rights Focus &gt; 65% or explicit codesign.</span>
+                                                            </li>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Refusal</span>
+                                                                <span>Explicit exit rights or opt-out.</span>
+                                                            </li>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="font-bold text-xs uppercase bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded shrink-0 mt-0.5">Repair</span>
+                                                                <span>Verification of maintenance/care labor.</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </TableCell>
                                     {comparisons.map((c) => (
                                         <TableHead key={c.source.id} className="border-l border-slate-100 p-2 text-left">

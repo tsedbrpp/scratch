@@ -46,8 +46,9 @@ export async function DELETE(
     // Check for demo user if not authenticated
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
         const demoUserId = request.headers.get('x-demo-user-id');
-        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            userId = demoUserId;
+        const validDemoId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+        if (demoUserId === validDemoId || (!demoUserId && !process.env.NEXT_PUBLIC_DEMO_USER_ID)) {
+            userId = validDemoId;
         }
     }
 

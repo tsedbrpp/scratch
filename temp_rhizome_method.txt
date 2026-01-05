@@ -1,0 +1,25 @@
+private renderAssemblageRhizome(network: any) {
+    if (!network || !network.nodes || network.nodes.length === 0) return;
+    
+    this.addSubHeader("Assemblage Rhizome (Policy Network)");
+    this.addText("Mapping shared ancestry and inter-referential citations across policy documents.");
+    this.addSpacer();
+    
+    // Nodes
+    this.addText("Network Nodes:", STYLE.colors.secondary, 0, true);
+    network.nodes.forEach((node: string) => {
+        this.addText(`• ${node}`, undefined, 1);
+    });
+    this.addSpacer();
+    
+    // Edges (Relationships)
+    if(network.edges && network.edges.length > 0) {
+        this.addText("Network Relationships:", STYLE.colors.secondary, 0, true);
+        network.edges.forEach((edge: any) => {
+            this.addText(`• ${edge.from} → ${edge.to} (${edge.type})`, undefined, 1);
+        });
+        this.addSpacer();
+    }
+    
+    this.addText("Note: Visual network diagram available in the web interface.", STYLE.colors.subtle, 0, false);
+}

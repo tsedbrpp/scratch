@@ -2,10 +2,12 @@ import { useState } from "react";
 import { MicroFascismRisk } from "@/lib/risk-calculator";
 import { AnalysisResult, UserRebuttal } from "@/types";
 import { RebuttalButton } from "@/components/policy/RebuttalButton";
-import { AlertTriangle, ShieldAlert, Zap, EyeOff, Gavel, History, Ban, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Zap, EyeOff, Gavel, History, Ban, Sparkles, Loader2, ChevronDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { interpretRiskNarrative } from "@/lib/narrative-interpreters";
 
 interface MicroFascismRiskCardProps {
     risk: MicroFascismRisk;
@@ -136,52 +138,77 @@ export function MicroFascismRiskCard({ risk, analysis, sourceTitle, onUpdate, cl
                 </div>
             </CardHeader>
             <CardContent>
-                <div className={`flex items-center gap-4 ${compact ? 'mb-4' : 'mb-6'}`}>
-                    <div className={`${compact ? 'text-2xl' : 'text-4xl'} font-black text-slate-800`}>
-                        {risk.score}<span className="text-lg text-slate-400 font-normal">/6</span>
-                    </div>
-                    <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full transition-all duration-500 ${getBarColor(risk.score)}`}
-                            style={{ width: `${(risk.score / 6) * 100}%` }}
-                        />
-                    </div>
+                {/* Lead with Narrative Interpretation */}
+                <div className="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                        {interpretRiskNarrative({ score: risk.score, level: risk.level, flags: risk.flags })}
+                    </p>
                 </div>
 
-                {/* Narrative Summary Section */}
-                <div className="mb-6">
-                    {!narrative ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleGenerateSummary}
-                            disabled={isLoading}
-                            className="w-full border-dashed text-slate-500 hover:text-slate-800 hover:border-slate-400"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Analyzing Risk Convergence...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Generate Deep Diagnostic Assessment
-                                </>
-                            )}
-                        </Button>
-                    ) : (
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 animate-in fade-in zoom-in-95 duration-300">
-                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
-                                <Sparkles className="h-3 w-3 text-purple-500" />
-                                Diagnostic Assessment
-                            </h5>
-                            <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                {narrative}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                {/* Optional Extended Diagnostic */}
+                {!compact && (
+                    <div className="mb-6">
+                        {!narrative ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGenerateSummary}
+                                disabled={isLoading}
+                                className="w-full border-dashed text-slate-500 hover:text-slate-800 hover:border-slate-400"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generating Extended Analysis...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        Generate Extended Diagnostic
+                                    </>
+                                )}
+                            </Button>
+                        ) : (
+                            <div className="bg-purple-50/50 p-4 rounded-lg border border-purple-100 animate-in fade-in zoom-in-95 duration-300">
+                                <h5 className="text-xs font-bold text-purple-700 uppercase mb-2 flex items-center gap-2">
+                                    <Sparkles className="h-3 w-3" />
+                                    Extended Diagnostic
+                                </h5>
+                                <p className="text-sm text-slate-800 leading-relaxed">
+                                    {narrative}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Parametric Data - Collapsible */}
+                <Accordion type="single" collapsible className="mb-6">
+                    <AccordionItem value="metrics" className="border-none">
+                        <AccordionTrigger className="text-xs text-slate-500 hover:text-slate-700 py-2 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <ChevronDown className="h-3 w-3" />
+                                View Parametric Data
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <div className="flex items-center gap-4 pt-2 pb-4">
+                                <div className="text-2xl font-black text-slate-600">
+                                    {risk.score}<span className="text-sm text-slate-400 font-normal">/6</span>
+                                </div>
+                                <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${getBarColor(risk.score)}`}
+                                        style={{ width: `${(risk.score / 6) * 100}%` }}
+                                    />
+                                </div>
+                                <Badge className={`text-xs ${getScoreColor(risk.score)}`}>
+                                    {risk.level}
+                                </Badge>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
 
                 <div className={`grid ${compact ? 'grid-cols-1 gap-2' : 'md:grid-cols-2 gap-4'}`}>
                     {dimensions.map((dim) => (

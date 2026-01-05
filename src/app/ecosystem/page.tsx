@@ -59,6 +59,7 @@ export default function EcosystemPage() {
     const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
     const [newConfigName, setNewConfigName] = useState("");
     const [newConfigDesc, setNewConfigDesc] = useState("");
+    const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null); // Unification State
 
     // Extraction State
     const [isExtractionDialogOpen, setIsExtractionDialogOpen] = useState(false);
@@ -178,6 +179,14 @@ export default function EcosystemPage() {
             const data = await response.json();
             if (data.success && data.analysis) {
                 setCulturalHoles(data.analysis);
+                // Scroll to the results
+                setTimeout(() => {
+                    const element = document.getElementById('cultural-holes-section');
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            } else {
             }
         } catch (error) {
             console.error("Holes analysis error:", error);
@@ -206,8 +215,12 @@ export default function EcosystemPage() {
             });
 
             const data = await response.json();
+            console.log("DEBUG: Extraction Response", data); // DEBUG
             if (data.success && data.analysis) {
                 const { assemblage, actors: newActorsList } = data.analysis;
+                console.log("DEBUG: Assemblage Object", assemblage); // DEBUG
+                console.log("DEBUG: Computed Metrics", data.analysis.computed_metrics); // DEBUG
+                console.log("DEBUG: Traces", data.analysis.traces); // DEBUG
                 const memberIds: string[] = [];
                 const currentActors = [...actors];
 
@@ -222,7 +235,8 @@ export default function EcosystemPage() {
                         influence: "Medium",
                         metrics: { influence: 5, alignment: 5, resistance: 5 },
                         quotes: newActor.evidence_quotes || [],
-                        region: newActor.region || "Unknown"
+                        region: newActor.region || "Unknown",
+                        role_type: newActor.role_type
                     });
                     memberIds.push(id);
                     setPositions(prev => ({ ...prev, [id]: { x: Math.random() * 600 + 100, y: Math.random() * 300 + 50 } }));
@@ -236,10 +250,22 @@ export default function EcosystemPage() {
                         name: assemblage.name || "New Assemblage",
                         description: assemblage.description || "Extracted from text",
                         memberIds,
-                        properties: { stability: "Medium", generativity: "Medium" },
+                        properties: {
+                            stability: assemblage.properties.stability || "Medium",
+                            generativity: assemblage.properties.generativity || "Medium",
+                            territorialization_score: assemblage.properties.territorialization_score,
+                            coding_intensity_score: assemblage.properties.coding_intensity_score
+                        },
+                        // Store the full analysis result (including traces/metrics) for the details panel
+                        analysisData: data.analysis,
                         color: `hsl(${Math.random() * 360}, 70%, 80%)`
                     };
                     setConfigurations(prev => [...prev, newConfig]);
+
+                    // Auto-select the new assemblage and open the panel
+                    setSelectedConfigId(newConfig.id);
+                    setSidebarMode("absence");
+                    setShowRightPanel(true);
                 }
                 setIsExtractionDialogOpen(false);
                 setExtractionText("");
@@ -325,6 +351,12 @@ export default function EcosystemPage() {
         });
     };
 
+    const handleConfigClick = (configId: string) => {
+        setSelectedConfigId(configId);
+        setShowRightPanel(true);
+        setSidebarMode("absence");
+    };
+
     const toggleLayer = (layer: string) => {
         setActiveLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
     };
@@ -346,8 +378,8 @@ export default function EcosystemPage() {
 
             <div className="flex flex-col gap-6">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Field-Level Ecosystem</h2>
-                    <p className="text-slate-500">Mapping the social structure, network ties, and cultural holes in the AI governance field.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Assemblage Diagram</h2>
+                    <p className="text-slate-500">Tracing the territories, flows, and coding intensities of the governance regime.</p>
                 </div>
 
                 {/* Policy Selector Section */}
@@ -429,6 +461,7 @@ export default function EcosystemPage() {
                                 setIsExtractionDialogOpen={setIsExtractionDialogOpen}
                                 isAnalyzingHoles={isAnalyzingHoles}
                                 onAnalyze={handleAnalyzeHoles}
+                                onClose={() => setShowLeftPanel(false)}
                             />
                         </div>
                     )}
@@ -571,6 +604,7 @@ export default function EcosystemPage() {
                                 activeLens={activeLens}
                                 activeScenario={activeScenario}
                                 colorMode={colorMode}
+                                onConfigClick={handleConfigClick}
                             />
                         ) : (
                             <EcosystemTable
@@ -583,11 +617,15 @@ export default function EcosystemPage() {
 
                         {
                             viewMode === "map" && (
-                                <CulturalHolesAnalysis
-                                    culturalHoles={culturalHoles}
-                                    isAnalyzingHoles={isAnalyzingHoles}
-                                    onAnalyze={handleAnalyzeHoles}
-                                />
+                                viewMode === "map" && (
+                                    <div id="cultural-holes-section" className="border-t-4 border-amber-400 pt-6 mt-6">
+                                        <CulturalHolesAnalysis
+                                            culturalHoles={culturalHoles}
+                                            isAnalyzingHoles={isAnalyzingHoles}
+                                            onAnalyze={handleAnalyzeHoles}
+                                        />
+                                    </div>
+                                )
                             )
                         }
                     </div>
@@ -617,12 +655,32 @@ export default function EcosystemPage() {
                                     analyzedText={extractionText}
                                     onSimulate={handleSimulate}
                                     savedAnalysis={absenceAnalysis}
-                                    onSaveAnalysis={setAbsenceAnalysis}
-                                    isExpanded={isRightExpanded}
+                                    onSaveAnalysis={(analysis) => {
+                                        if (selectedConfigId) {
+                                            setConfigurations(prev => prev.map(c =>
+                                                c.id === selectedConfigId ? { ...c, analysisData: analysis } : c
+                                            ));
+                                        } else {
+                                            setAbsenceAnalysis(analysis);
+                                        }
+                                    }}
                                     onToggleExpand={() => setIsRightExpanded(!isRightExpanded)}
+                                    selectedConfig={configurations.find(c => c.id === selectedConfigId)}
+                                    onClose={() => {
+                                        setShowRightPanel(false);
+                                        setSelectedConfigId(null);
+                                    }}
                                 />
                             ) : (
-                                <ScenarioPanel actors={actors} activeScenario={activeScenario} setActiveScenario={setActiveScenario} />
+                                <ScenarioPanel
+                                    actors={actors}
+                                    activeScenario={activeScenario}
+                                    setActiveScenario={setActiveScenario}
+                                    onClose={() => {
+                                        setShowRightPanel(false);
+                                        setSelectedConfigId(null);
+                                    }}
+                                />
                             )}
                         </div>
                     )}

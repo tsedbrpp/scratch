@@ -125,6 +125,25 @@ SCORING & QUOTE DISCIPLINE
 - NEVER fabricate quotes.
 
 ============================================================
+NARRATIVE INTERPRETATION REQUIREMENT
+============================================================
+
+In addition to structural analysis, you MUST generate rich, qualitative narrative interpretations that prioritize meaning over metrics.
+
+For EACH of the following dimensions, provide a 2-3 sentence interpretive narrative that:
+- Uses concrete, non-jargon language to describe governance dynamics
+- Links micro-level mechanisms to macro-level power structures
+- Avoids simply stating scores; instead, narrate what those scores reveal about assemblage configuration
+- Grounds interpretation in specific textual evidence
+
+Required narrative fields:
+- **centralization_narrative**: Describe how authority flows and concentrates (or distributes) through the assemblage
+- **territorialization_narrative**: Describe stabilization/destabilization dynamics
+- **material_flow_narrative**: Describe how resources, data, or power circulate
+
+These narratives are the PRIMARY OUTPUT for interpretive scholarship. Scores are merely tools for your analysis, not the end product.
+
+============================================================
 STRICT OUTPUT FORMAT
 ============================================================
 
@@ -132,11 +151,20 @@ You MUST output ONLY a valid JSON object with EXACTLY the following structure an
 Do NOT include commentary, prefaces, or text outside the JSON.
 
 {
+  "centralization_narrative": "2-3 sentence interpretation of how authority flows through the assemblage, linking specific mechanisms to power concentration or distribution",
+  "territorialization_narrative": "2-3 sentence interpretation of stabilization and destabilization dynamics, highlighting what gets locked in place and what creates friction",
+  "material_flow_narrative": "2-3 sentence interpretation of how resources, data, or power circulate, and what dependencies or asymmetries this creates",
   "governance_power_accountability": "Analysis of power structures and accountability",
   "plurality_inclusion_embodiment": "Analysis of inclusion and diverse knowledge systems (Pluriversality check)",
   "agency_codesign_self_determination": "Analysis of agency and co-design possibilities",
   "reflexivity_situated_praxis": "Analysis of positionality and structural awareness (Epistemic Delinking check)",
   "coloniality_of_power": "Specific analysis of center-periphery dynamics and extractive relations",
+  "accountability_map": {
+    "signatory": "Name of the entity/person formally signing off OR the primary organization deploying the system (infer if necessary)",
+    "liability_holder": "Entity legally or financially responsible for harms (e.g., 'City of X', 'Vendor Y'). If unclear, state 'Unspecified' but guess based on context.",
+    "appeals_mechanism": "Process for challenging decisions (e.g. 'Human Review', 'Court Appeal', 'Ombudsman'). If absent, state 'None Defined'.",
+    "human_in_the_loop": boolean // true if a human makes the final decision, false if fully automated
+  },
   "legitimacy_claims": {
     "source": "Primary type of legitimacy (democratic, technocratic, market-based, rights-based, or hybrid)",
     "mechanisms": "How legitimacy is established and maintained",

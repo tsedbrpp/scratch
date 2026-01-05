@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, TrendingUp, TrendingDown, RefreshCcw, BrainCircuit, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, RefreshCcw, BrainCircuit, Loader2, X } from 'lucide-react';
 import { EcosystemActor } from '@/types/ecosystem';
 import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
 import { generateEdges } from '@/lib/graph-utils';
@@ -11,6 +11,7 @@ interface ScenarioPanelProps {
     actors: EcosystemActor[];
     activeScenario: ScenarioId;
     setActiveScenario: (id: ScenarioId) => void;
+    onClose?: () => void;
 }
 
 interface AiTrajectoryResult {
@@ -25,7 +26,7 @@ interface AiTrajectoryResult {
     losers?: string[];
 }
 
-export function ScenarioPanel({ actors, activeScenario, setActiveScenario }: ScenarioPanelProps) {
+export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClose }: ScenarioPanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiResults, setAiResults] = useState<Record<string, AiTrajectoryResult>>({});
 
@@ -126,6 +127,13 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario }: Sce
                 <CardTitle className="text-lg font-semibold flex items-center gap-2 text-indigo-900">
                     <Sparkles className="h-5 w-5" />
                     Trajectory Explorer
+                    {onClose && (
+                        <div className="ml-auto">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 bg-red-100 text-red-600 hover:bg-red-200" onClick={onClose} title="Close Panel">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
                 </CardTitle>
                 <CardDescription>
                     Simulate how specific governance conditions reconfigure the assemblage.

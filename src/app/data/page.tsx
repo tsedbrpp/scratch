@@ -13,9 +13,11 @@ import {
     AnalysisResult,
     Source,
     LegitimacyAnalysis,
+    ComparativeSynthesis,
     PositionalityData
 } from "@/types";
 import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
+import { CulturalAnalysisResult } from "@/types/cultural";
 import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
 import { SynthesisComparisonResult } from "@/types/synthesis";
 import { analyzeDocument, AnalysisMode } from "@/services/analysis";
@@ -27,12 +29,18 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
+import { PolicyFocusView } from "@/components/policy/PolicyFocusView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
 import { Loader2 } from "lucide-react";
+import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
+import { ReportSectionSelection } from "@/types/report";
+import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
+import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifactView";
+import { ResistanceArtifact } from "@/types/resistance";
 
 export default function PolicyDocumentsPage() {
     // ----------------------------------------------------------------------
@@ -42,11 +50,13 @@ export default function PolicyDocumentsPage() {
 
     // Data for Full Report Aggregation
     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
-    const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+    const [ecosystemActors, setEcosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
     const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
     const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
+    const [comparativeSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
+    const [culturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
     const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
     const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
     const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
@@ -58,6 +68,7 @@ export default function PolicyDocumentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+    const [isExportReportDialogOpen, setIsExportReportDialogOpen] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [searchingId, setSearchingId] = useState<string | null>(null);
     const [focusedSourceId, setFocusedSourceId] = useState<string | null>(null);
@@ -71,6 +82,7 @@ export default function PolicyDocumentsPage() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
 
     // ----------------------------------------------------------------------
     // 2. Computed Values
@@ -335,20 +347,77 @@ export default function PolicyDocumentsPage() {
         }
     };
 
-    const handleExportReport = async () => {
+    // Helper to manually fetch storage data (since hooks can't be used inside the handler)
+    const fetchServerStorage = async <T,>(key: string): Promise<T | null> => {
+        try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+            const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, { headers });
+            if (response.ok) {
+                const data = await response.json();
+                return data.value as T;
+            }
+        } catch (error) {
+            console.error(`Failed to fetch storage key "${key}":`, error);
+        }
+        return null;
+    };
+
+    const handleGenerateReport = async (selection: ReportSectionSelection) => {
         setIsExporting(true);
         try {
+            // Determine Context for Ecosystem Data
+            // Priority:
+            // 1. First selected document (if comparing or selecting)
+            // 2. Focused document
+            // 3. Fallback to global/temp keys (current behavior)
+
+            const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
+
+            let finalActors = ecosystemActors;
+            let finalConfigs = ecosystemConfigs;
+            let finalHoles = culturalHoles;
+            let finalAbsence = absenceAnalysis;
+
+            if (contextId) {
+                console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
+                const [actorsData, configsData, holesData, absenceData] = await Promise.all([
+                    fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
+                    fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
+                    fetchServerStorage<CulturalHolesAnalysisResult>(`ecosystem_cultural_holes_${contextId}`),
+                    fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
+                ]);
+
+                if (actorsData) finalActors = actorsData;
+                if (configsData) finalConfigs = configsData;
+                if (holesData) finalHoles = holesData;
+                if (absenceData) finalAbsence = absenceData;
+
+                console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
+            } else {
+                console.warn('No contextId found for ecosystem data - using global state (likely empty)');
+            }
+
+            // Fetch methodological logs
+            const methodLogs = await fetchServerStorage<any[]>('methodological_logs') || [];
+
+            // Fetch resistance artifacts
+            const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
+
             const reportData: ReportData = {
-                sources: sources,
+                sources: sources, // Or just selectedSources? The generator filters internally based on 'analyzedSources' logic anyway.
                 resistance: resistanceSynthesis,
                 ecosystem: {
-                    actors: ecosystemActors,
-                    configurations: ecosystemConfigs,
-                    culturalHoles: culturalHoles,
-                    absenceAnalysis: absenceAnalysis
+                    actors: finalActors,
+                    configurations: finalConfigs,
+                    culturalHoles: finalHoles,
+                    absenceAnalysis: finalAbsence,
+                    assemblage: finalAbsence as any
                 },
                 synthesis: {
-                    comparison: synthesisComparison,
+                    comparison: (comparativeSynthesisResults['assemblage'] as any) || synthesisComparison,
                     ecosystemImpacts: synthesisImpacts
                 },
                 ontology: {
@@ -358,10 +427,13 @@ export default function PolicyDocumentsPage() {
                 multiLens: {
                     results: multiLensResults as Record<LensType, AnalysisResult | null>,
                     text: multiLensText
-                }
+                },
+                cultural: culturalAnalysis,
+                logs: methodLogs,
+                resistanceArtifacts: resistanceArtifacts
             };
 
-            await generateFullReportDOCX(reportData);
+            await generateFullReportDOCX(reportData, selection);
         } catch (error) {
             console.error("Export error:", error);
             alert("Failed to generate report.");
@@ -399,7 +471,7 @@ export default function PolicyDocumentsPage() {
                         fileInputRef={fileInputRef}
                         onAddClick={() => setIsAddDialogOpen(true)}
                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
-                        onExportReport={handleExportReport}
+                        onExportReport={() => setIsExportReportDialogOpen(true)}
                         isExporting={isExporting}
                     />
                 </div>
@@ -410,6 +482,7 @@ export default function PolicyDocumentsPage() {
                 <div className="flex items-center justify-between mb-6">
                     <TabsList className="bg-slate-100 p-1">
                         <TabsTrigger value="documents" className="uppercase text-xs font-bold px-4">My Documents</TabsTrigger>
+                        <TabsTrigger value="resistance" className="uppercase text-xs font-bold px-4">Resistance</TabsTrigger>
                         <TabsTrigger value="compare" className="uppercase text-xs font-bold px-4">
                             Compare <span className="ml-2 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px]">{selectedIds.length}</span>
                         </TabsTrigger>
@@ -449,49 +522,33 @@ export default function PolicyDocumentsPage() {
                     )}
 
                     {/* Focus Mode View */}
-                    {focusedSourceId && (
-                        <div className="fixed inset-0 z-50 bg-white p-6 overflow-auto animate-in slide-in-from-bottom-10">
-                            <div className="container mx-auto max-w-6xl">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold">Focus Mode</h2>
-                                    <Button variant="outline" onClick={() => setFocusedSourceId(null)}>Close Focus</Button>
-                                </div>
-                                <div className="grid grid-cols-1 gap-8">
-                                    <div className="">
-                                        {/* Render the actual Analysis Results Dashboard */}
-                                        {(() => {
-                                            const focusedSource = sources.find(s => s.id === focusedSourceId);
-                                            if (focusedSource?.analysis) {
-                                                return (
-                                                    <AnalysisResults
-                                                        analysis={focusedSource.analysis}
-                                                        sourceTitle={focusedSource.title}
-                                                        onUpdate={async (updates) => {
-                                                            await updateSource(focusedSource.id, {
-                                                                analysis: { ...focusedSource.analysis!, ...updates }
-                                                            });
-                                                        }}
-                                                    />
-                                                );
-                                            } else {
-                                                return (
-                                                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                                        <p className="text-slate-500 italic">No analysis data available for this document yet.</p>
-                                                        <Button
-                                                            variant="default"
-                                                            className="mt-4"
-                                                            onClick={() => setFocusedSourceId(null)}
-                                                        >
-                                                            Go back and run analysis
-                                                        </Button>
-                                                    </div>
-                                                );
-                                            }
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {focusedSourceId && (() => {
+                        const focusedSource = sources.find(s => s.id === focusedSourceId);
+                        if (!focusedSource) return null;
+
+                        return (
+                            <PolicyFocusView
+                                source={focusedSource}
+                                onUpdateSource={async (updates) => {
+                                    await updateSource(focusedSource.id, updates);
+                                }}
+                                onClose={() => setFocusedSourceId(null)}
+                            />
+                        );
+                    })()}
+                </TabsContent>
+
+                <TabsContent value="resistance" className="mt-0">
+                    {selectedArtifact ? (
+                        <ResistanceArtifactView
+                            artifact={selectedArtifact}
+                            onBack={() => setSelectedArtifact(null)}
+                            onUpdate={setSelectedArtifact}
+                        />
+                    ) : (
+                        <ArtifactRepository
+                            onSelectArtifact={setSelectedArtifact}
+                        />
                     )}
                 </TabsContent>
 
@@ -525,6 +582,13 @@ export default function PolicyDocumentsPage() {
                 isOpen={isPositionalityDialogOpen}
                 onClose={() => setIsPositionalityDialogOpen(false)}
                 onConfirm={proceedWithAnalysis}
+            />
+
+            <ExportReportDialog
+                open={isExportReportDialogOpen}
+                onOpenChange={setIsExportReportDialogOpen}
+                onGenerate={handleGenerateReport}
+                isGenerating={isExporting}
             />
         </div>
     );

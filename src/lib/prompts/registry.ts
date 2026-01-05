@@ -5,6 +5,8 @@ import { COMPARATIVE_SYNTHESIS_PROMPT } from './comparative-synthesis';
 import { COMPARISON_SYSTEM_PROMPT } from './comparison';
 import { CRITIQUE_SYSTEM_PROMPT } from './critique';
 import { CULTURAL_FRAMING_PROMPT } from './cultural-framing';
+import { THEME_EXTRACTION_PROMPT, BRIDGING_PROMPT, LENS_PROMPTS } from './cultural-analysis';
+import { KEY_TERM_EXTRACTION_PROMPT, SUBJECT_IDENTIFICATION_PROMPT, RESISTANCE_CURATION_PROMPT } from './search-traces';
 import { CULTURAL_HOLES_PROMPT } from './cultural-holes';
 import { DSF_SYSTEM_PROMPT } from './dsf';
 import { ECOSYSTEM_SYSTEM_PROMPT } from './ecosystem';
@@ -198,6 +200,85 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Simulates structural shifts in the ecosystem under different governance scenarios.',
         category: 'Simulation',
         defaultValue: TRAJECTORY_PROMPT
+    },
+    'theme_extraction': {
+        id: 'theme_extraction',
+        name: 'Theme Extraction (Grounded Theory)',
+        description: 'Extracts emic themes from policy documents.',
+        category: 'Extraction',
+        defaultValue: THEME_EXTRACTION_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['theme', 'quote']
+        }
+    },
+    'bridging_concepts': {
+        id: 'bridging_concepts',
+        name: 'Bridging Concepts',
+        description: 'Generates theoretical bridges for structural holes.',
+        category: 'Analysis',
+        defaultValue: BRIDGING_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['bridgingConcepts', 'opportunity', 'policyImplication']
+        }
+    },
+    'cultural_lens_institutional_logics': {
+        id: 'cultural_lens_institutional_logics',
+        name: 'Lens: Institutional Logics',
+        description: 'Lens addition for analyzing institutional logics.',
+        category: 'Analysis',
+        defaultValue: LENS_PROMPTS['institutional_logics']
+    },
+    'cultural_lens_critical_data_studies': {
+        id: 'cultural_lens_critical_data_studies',
+        name: 'Lens: Critical Data Studies',
+        description: 'Lens addition for critical data studies.',
+        category: 'Analysis',
+        defaultValue: LENS_PROMPTS['critical_data_studies']
+    },
+    'cultural_lens_actor_network_theory': {
+        id: 'cultural_lens_actor_network_theory',
+        name: 'Lens: Actor-Network Theory',
+        description: 'Lens addition for ANT.',
+        category: 'Analysis',
+        defaultValue: LENS_PROMPTS['actor_network_theory']
+    },
+    'cultural_lens_dsf_lens': {
+        id: 'cultural_lens_dsf_lens',
+        name: 'Lens: DSF (Short)',
+        description: 'Lens addition for Decolonial Situatedness Framework.',
+        category: 'Analysis',
+        defaultValue: LENS_PROMPTS['dsf_lens']
+    },
+    'key_term_extraction': {
+        id: 'key_term_extraction',
+        name: 'Key Term Extraction',
+        description: 'Extracts searchable terms from policy documents.',
+        category: 'Extraction',
+        defaultValue: KEY_TERM_EXTRACTION_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: []
+        }
+    },
+    'subject_identification': {
+        id: 'subject_identification',
+        name: 'Subject Identification',
+        description: 'Identifies the policy/entity name from text.',
+        category: 'Extraction',
+        defaultValue: SUBJECT_IDENTIFICATION_PROMPT
+    },
+    'resistance_curation': {
+        id: 'resistance_curation',
+        name: 'Resistance Curation',
+        description: 'Classifies search results into resistance typologies.',
+        category: 'Analysis',
+        defaultValue: RESISTANCE_CURATION_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['items']
+        }
     }
 };
 

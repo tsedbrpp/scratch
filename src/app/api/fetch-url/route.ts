@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as cheerio from 'cheerio';
-import { auth } from '@clerk/nextjs/server';
+import { ContentExtractor } from '@/lib/content-extractor';
+import { getAuthenticatedUserId } from '@/lib/auth-helper';
 import { checkRateLimit } from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
-    let { userId } = await auth();
-
-    // Check for demo user if not authenticated
-    if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-        const demoUserId = request.headers.get('x-demo-user-id');
-        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            userId = demoUserId;
-        }
-    }
+    const userId = await getAuthenticatedUserId(request);
 
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,33 +37,13 @@ export async function POST(request: NextRequest) {
             throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
         }
 
-        const html = await response.text();
-        const $ = cheerio.load(html);
-
-        // Remove scripts, styles, and other non-content elements
-        $('script, style, noscript, iframe, svg, header, footer, nav').remove();
-
-        // Extract title
-        const title = $('title').text().trim() || url;
-
-        // Extract text content
-        // We look for main content areas first, or fall back to body
-        const contentSelector = 'main, article, #content, .content, body';
-        let text = $(contentSelector).first().text();
-
-        // Clean up whitespace
-        text = text.replace(/\s+/g, ' ').trim();
-
-        // Limit text length to avoid overwhelming the analysis
-        const maxLength = 50000;
-        if (text.length > maxLength) {
-            text = text.substring(0, maxLength) + '... (truncated)';
-        }
+        const extracted = await ContentExtractor.extract(response, url);
 
         return NextResponse.json({
             success: true,
-            title,
-            content: text,
+            title: extracted.title,
+            text: extracted.text, // Frontend expects 'text'
+            content: extracted.text, // Backward compatibility
             url
         });
 

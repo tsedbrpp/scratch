@@ -31,6 +31,11 @@ An assemblage is not just a collection of parts, but a dynamic arrangement of he
 - How does this assemblage hold together?
 - E.g., **Funding pipelines**, **Visa regimes**, **Legal definitions**, **Standardization**, **Fear/Hype cycles**.
 
+### 5. Relations of Exteriority (Mobility)
+- **Detachable**: Components that can be moved (standard parts).
+- **Embedded**: Components stuck in this context.
+- **Mobility Score**: High/Medium/Low.
+
 ---
 
 ## Output Format (JSON)
@@ -47,6 +52,13 @@ An assemblage is not just a collection of parts, but a dynamic arrangement of he
     "origin_concepts": ["Risk-based approach (EU)", "Agile governance (WEF)"],
     "local_mutations": ["Risk redefined as national security", "Agile as minimal compliance"]
   },
-  "stabilization_mechanisms": ["State funding for champions", "Corporate lobbying access"]
+    "local_mutations": ["Risk redefined as national security", "Agile as minimal compliance"]
+  },
+  "stabilization_mechanisms": ["State funding for champions", "Corporate lobbying access"],
+  "relations_of_exteriority": {
+    "detachable": ["Standard component"],
+    "embedded": ["Contextual component"],
+    "mobility_score": "High"
+  }
 }
 `;

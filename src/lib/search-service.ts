@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import { PromptRegistry, PROMPT_DEFINITIONS } from '@/lib/prompts/registry';
+import { safeJSONParse } from '@/lib/analysis-utils';
 
 export interface SearchResult {
     title: string;
@@ -33,6 +35,56 @@ export async function executeGoogleSearch(query: string, apiKey: string, cx: str
 }
 
 /**
+ * Helper to process the raw JSON response from any AI model into curates results.
+ */
+function processCurationResponse(content: string, originalResults: SearchResult[]): SearchResult[] {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const validItems = safeJSONParse<any[]>(content, []);
+
+    if (Array.isArray(validItems) && validItems.length > 0) {
+        const curatedResults: SearchResult[] = [];
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        validItems.forEach((item: any) => {
+            let index = -1;
+            let strategy = "Unclassified";
+            let explanation = "";
+
+            // Handle 'id' vs 'index' confusion
+            const rawIndex = item.index !== undefined ? item.index : item.id;
+
+            if (typeof item === 'number') {
+                index = item;
+            } else if (typeof item === 'object' && item !== null && (typeof rawIndex === 'number' || typeof rawIndex === 'string')) {
+                index = parseInt(String(rawIndex));
+                if (item.strategy) strategy = item.strategy;
+                if (item.explanation) explanation = item.explanation;
+                else if (item.context) explanation = item.context;
+                else if (item.reason) explanation = item.reason;
+            }
+
+            if (index >= 0 && originalResults[index]) {
+                // Fallback generation if AI failed
+                if (!explanation || explanation === "Automated classification from Search") {
+                    explanation = `AI identified this as ${strategy} based on keywords in the text.`;
+                }
+
+                curatedResults.push({
+                    ...originalResults[index],
+                    strategy: strategy,
+                    explanation: explanation
+                });
+            }
+        });
+
+        if (curatedResults.length > 0) {
+            return curatedResults;
+        }
+    }
+    return [];
+}
+
+/**
  * Curates and classifies search results using Google Generative AI.
  * Enforces "Mandatory Explanation" validation.
  */
@@ -40,7 +92,8 @@ export async function curateResultsWithAI(
     results: SearchResult[],
     policyText: string,
     apiKey: string,
-    modelName: string = "gemini-1.5-flash-001"
+    modelName: string = "gemini-1.5-flash-001",
+    userId?: string
 ): Promise<SearchResult[]> {
     if (results.length === 0) return [];
 
@@ -48,93 +101,38 @@ export async function curateResultsWithAI(
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
+        // Fetch prompts
+        let subjectPromptTemplate = PROMPT_DEFINITIONS['subject_identification'].defaultValue;
+        let curationPromptTemplate = PROMPT_DEFINITIONS['resistance_curation'].defaultValue;
+
+        if (userId) {
+            subjectPromptTemplate = await PromptRegistry.getEffectivePrompt(userId, 'subject_identification');
+            curationPromptTemplate = await PromptRegistry.getEffectivePrompt(userId, 'resistance_curation');
+        }
+
         // EXTRACT SUBJECT ENTITY FIRST (Crucial for relevance)
-        const subjectPrompt = `Identify the SPECIFIC Policy, Act, Bill, Platform, or Company this text describes. 
-        Text: "${policyText.substring(0, 1000)}"
-        Return ONLY the name (e.g. "EU AI Act"). If unclear, return "AI Governance Policy".`;
+        const subjectPrompt = subjectPromptTemplate.replace('${text}', policyText.substring(0, 1000));
 
         const subjectResult = await model.generateContent(subjectPrompt);
         const policySubject = subjectResult.response.text().trim().replace(/['"]/g, '');
         console.log("Extracted Policy Subject:", policySubject);
 
-        const curationPrompt = `You are a helpful Research Assistant filtering for relevance.
-
-TARGET SUBJECT: "${policySubject}"
-
-WE ARE LOOKING FOR 4 TYPES OF RESISTANCE (Broadly interpreted):
-1. **Gambiarra**: Creative workarounds, hacks, or tricks to bypass the system.
-2. **Obfuscation**: Hiding data, using fake GPS, or confusing the algorithm.
-3. **Solidarity**: Collective action, unions, strikes, or helping other workers.
-4. **Refusal**: Quitting, opting out, or refusing to accept tasks.
-
-INSTRUCTIONS:
-1. **Relevance Check**: Keep items related to the subject or general AI/Algo resistance.
-2. **Typology Match**: Classify into one of the 4 types. If unsure, use "Refusal" or "Solidarity" if it fits loosely.
-3. **Inclusion Goal**: Try to keep at least 50% of the relevant results.
-
-INPUT LIST:
-${JSON.stringify(results.map((r, i) => ({ id: i, text: r.title + " " + r.snippet })))}
-
-OUTPUT:
-Return a JSON array of objects. EXPLANATION IS MANDATORY.
-[
-  { "index": 0, "strategy": "Gambiarra", "explanation": "Brief context of the workaround." },
-  { "index": 5, "strategy": "Refusal", "explanation": "Why this counts as refusal." }
-]`;
+        const curationPrompt = curationPromptTemplate
+            .replace('${policySubject}', policySubject)
+            .replace('${items}', JSON.stringify(results.map((r, i) => ({ id: i, text: r.title + " " + r.snippet }))));
 
         const result = await model.generateContent(curationPrompt);
         const content = result.response.text().trim();
-        const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
-        const match = cleanContent.match(/\[[\s\S]*\]/);
 
-        if (match) {
-            const validItems = JSON.parse(match[0]);
+        const curatedResults = processCurationResponse(content, results);
 
-            if (Array.isArray(validItems)) {
-                const curatedResults: SearchResult[] = [];
-
-                validItems.forEach((item: any) => {
-                    let index = -1;
-                    let strategy = "Unclassified";
-                    let explanation = ""; // Start empty to trigger fallback
-
-                    // Handle 'id' vs 'index' confusion
-                    const rawIndex = item.index !== undefined ? item.index : item.id;
-
-                    if (typeof item === 'number') {
-                        index = item;
-                    } else if (typeof item === 'object' && item !== null && typeof rawIndex === 'number') {
-                        index = rawIndex;
-                        if (item.strategy) strategy = item.strategy;
-
-                        // Robust parsing for explanation synonyms
-                        if (item.explanation) explanation = item.explanation;
-                        else if (item.context) explanation = item.context;
-                        else if (item.reason) explanation = item.reason;
-                    }
-
-                    if (index >= 0 && results[index]) {
-                        // Fallback generation if AI failed
-                        if (!explanation || explanation === "Automated classification from Search") {
-                            explanation = `AI identified this as ${strategy} based on keywords in the text.`;
-                        }
-
-                        curatedResults.push({
-                            ...results[index],
-                            strategy: strategy,
-                            explanation: explanation
-                        });
-                    }
-                });
-
-                if (curatedResults.length > 0) {
-                    console.log(`AI Curation: Kept ${curatedResults.length} classified traces.`);
-                    return curatedResults;
-                } else {
-                    console.log("AI Curation: Filtered all. Falling back to raw results.");
-                }
-            }
+        if (curatedResults.length > 0) {
+            console.log(`AI Curation: Kept ${curatedResults.length} classified traces.`);
+            return curatedResults;
+        } else {
+            console.log("AI Curation: Filtered all. Falling back to raw results.");
         }
+
     } catch (e) {
         console.warn("Google AI Curation failed (will attempt fallback):", (e as Error).message);
         // Return original results if curation fails or filters everything (safety net)
@@ -151,17 +149,25 @@ export async function curateResultsWithOpenAI(
     results: SearchResult[],
     policyText: string,
     apiKey: string,
-    modelName: string = "gpt-4o"
+    modelName: string = "gpt-4o",
+    userId?: string
 ): Promise<SearchResult[]> {
     if (results.length === 0) return [];
 
     try {
         const openai = new OpenAI({ apiKey: apiKey });
 
+        // Fetch prompts
+        let subjectPromptTemplate = PROMPT_DEFINITIONS['subject_identification'].defaultValue;
+        let curationPromptTemplate = PROMPT_DEFINITIONS['resistance_curation'].defaultValue;
+
+        if (userId) {
+            subjectPromptTemplate = await PromptRegistry.getEffectivePrompt(userId, 'subject_identification');
+            curationPromptTemplate = await PromptRegistry.getEffectivePrompt(userId, 'resistance_curation');
+        }
+
         // EXTRACT SUBJECT ENTITY FIRST
-        const subjectPrompt = `Identify the SPECIFIC Policy, Act, Bill, Platform, or Company this text describes. 
-        Text: "${policyText.substring(0, 1000)}"
-        Return ONLY the name (e.g. "EU AI Act"). If unclear, return "AI Governance Policy".`;
+        const subjectPrompt = subjectPromptTemplate.replace('${text}', policyText.substring(0, 1000));
 
         const subjectCompletion = await openai.chat.completions.create({
             model: modelName,
@@ -172,36 +178,10 @@ export async function curateResultsWithOpenAI(
         const policySubject = subjectCompletion.choices[0]?.message?.content?.trim().replace(/['"]/g, '') || "AI Governance Policy";
         console.log("Extracted Policy Subject (OpenAI):", policySubject);
 
-        const curationPrompt = `You are a helpful Research Assistant classifying search results for an AI Resistance project.
-            
-Target Policy/Subject: "${policySubject}"
-
-YOUR GOAL: Identify and classify traces of resistance from the search results.
-CRITICAL: You MUST attempt to classify as many items as possible. Do not filter aggressively. We need data.
-
-CLASSIFICATION CATEGORIES (Strategies):
-1. **Gambiarra**: Creative workarounds, hacks, using tools in unintended ways.
-2. **Obfuscation**: Hiding data, noise injection, burner accounts, VPNs, camouflaging.
-3. **Solidarity**: Collective action, unions, forums, sharing tips, strikes.
-4. **Refusal**: Opting out, quitting, blocking, non-compliance, uninstalling.
-
-INSTRUCTIONS:
-1. **Analyze** each search result snippet.
-2. **Classify** it into one of the 4 strategies. If it fits multiple, pick the dominant one.
-3. **Balanced Mix**: Strive to find examples for ALL 4 categories if possible.
-4. **Relevance**: If it mentions the subject OR general algorithmic resistance/frustration, INCLUDE IT.
-5. **Output Format**: JSON Object with a "items" array.
-
-INPUT LIST:
-${JSON.stringify(results.map((r, i) => ({ id: i, text: r.title + " \n " + r.snippet })))}
-
-OUTPUT JSON STRUCTURE:
-{
-  "items": [
-    { "index": 0, "strategy": "Gambiarra", "explanation": "User describes using a script to bypass..." },
-    { "index": 1, "strategy": "Refusal", "explanation": "Workers are refusing to log in..." }
-  ]
-}`;
+        // CURATE
+        const curationPrompt = curationPromptTemplate
+            .replace('${policySubject}', policySubject)
+            .replace('${items}', JSON.stringify(results.map((r, i) => ({ id: i, text: r.title + " \n " + r.snippet }))));
 
         const curationCompletion = await openai.chat.completions.create({
             model: modelName,
@@ -212,65 +192,13 @@ OUTPUT JSON STRUCTURE:
 
         const content = curationCompletion.choices[0]?.message?.content || '{}';
 
-        let validItems: any[] = [];
-        try {
-            const parsed = JSON.parse(content);
-            // Handle if it returns { items: [...] } or just [...]
-            validItems = Array.isArray(parsed) ? parsed : (parsed.items || []);
+        const curatedResults = processCurationResponse(content, results);
 
-            // If empty, try to see if the root object has keys that look like an array index
-            if (!Array.isArray(validItems) && parsed && typeof parsed === 'object') {
-                // sometimes models return { "0": {...}, "1": {...} }
-                validItems = Object.values(parsed);
-            }
-        } catch (e) {
-            console.error("OpenAI JSON parse failed. Content was:", content);
-            console.error(e);
-        }
-
-        if (validItems.length === 0) {
-            // No valid items found
-        } else if (Array.isArray(validItems)) {
-            const curatedResults: SearchResult[] = [];
-            // ... existing loop ...
-            validItems.forEach((item: any) => {
-                let index = -1;
-                let strategy = "Unclassified";
-                let explanation = "";
-
-                const rawIndex = item.index !== undefined ? item.index : item.id;
-
-                if (typeof item === 'number') {
-                    index = item;
-                } else if (typeof item === 'object' && item !== null && (typeof rawIndex === 'number' || typeof rawIndex === 'string')) {
-                    index = parseInt(String(rawIndex));
-                    if (item.strategy) strategy = item.strategy;
-                    if (item.explanation) explanation = item.explanation;
-                    else if (item.context) explanation = item.context;
-                    else if (item.reason) explanation = item.reason;
-                }
-
-                if (index >= 0 && results[index]) {
-                    if (!explanation || explanation === "Automated classification from Search") {
-                        explanation = `AI identified this as ${strategy} based on keywords in the text.`;
-                    }
-
-                    // Ensure we aren't overwriting if multiple classifications hit same item?
-                    // For now just push.
-                    curatedResults.push({
-                        ...results[index],
-                        strategy: strategy,
-                        explanation: explanation
-                    });
-                }
-            });
-
-            if (curatedResults.length > 0) {
-                console.log(`AI Curation (OpenAI): Kept ${curatedResults.length} classified traces.`);
-                return curatedResults;
-            } else {
-                console.log("AI Curation (OpenAI): Filtered all. Falling back to raw results.");
-            }
+        if (curatedResults.length > 0) {
+            console.log(`AI Curation (OpenAI): Kept ${curatedResults.length} classified traces.`);
+            return curatedResults;
+        } else {
+            console.log("AI Curation (OpenAI): Filtered all. Falling back to raw results.");
         }
 
     } catch (e) {

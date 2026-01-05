@@ -31,8 +31,8 @@ export const analyzeDocument = async (
 ): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
         console.log('analyzeDocument headers:', headers);
 
@@ -67,8 +67,8 @@ export const analyzeDocument = async (
 export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage"): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
 
         const response = await fetch('/api/analyze', {
@@ -97,8 +97,8 @@ export const synthesizeComparison = async (documents: Source[], lens: string = "
 export const generateSearchTerms = async (insight: string): Promise<string[]> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
 
         const response = await fetch('/api/generate-search-terms', {

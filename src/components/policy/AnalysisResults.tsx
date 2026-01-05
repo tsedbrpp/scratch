@@ -21,17 +21,41 @@ import { AccountabilitySection } from "./analysis/AccountabilitySection";
 import { InterpretationLensSelector } from "./analysis/InterpretationLensSelector";
 import { DEFAULT_PERSPECTIVE_A, DEFAULT_PERSPECTIVE_B } from "@/lib/perspectives";
 import { BASELINE_SOURCES } from '@/lib/data/baselines';
+import { MaterializeDialog } from "@/components/policy/MaterializeDialog";
+import { EcosystemActor } from "@/types/ecosystem";
 
 interface AnalysisResultsProps {
-    analysis: AnalysisResult;
+    analysis: NonNullable<AnalysisResult>;
     sourceTitle?: string;
-    onUpdate?: (updates: Partial<AnalysisResult>) => void;
+    sourceId?: string; // Need ID for linking
+    onUpdate?: (updates: Partial<AnalysisResult>) => Promise<void>;
+    onAddActor?: (entity: EcosystemActor) => Promise<void>;
+    ecosystemActors?: EcosystemActor[]; // List of existing actors for de-duplication
+    onViewActor?: (name: string) => void;
 }
 
-export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisResultsProps) {
+type InterpretationLens = 'default' | string; // 'default' or perspective ID
+
+export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onAddActor, ecosystemActors = [], onViewActor }: AnalysisResultsProps) {
     // FALLBACK: Inject baseline data for demo logic if missing from props
     const baselineMatch = BASELINE_SOURCES.find(b => b.title === sourceTitle);
+
+    // Materialization State
+    const [materializeDialog, setMaterializeDialog] = useState<{
+        isOpen: boolean;
+        name: string;
+        detail: string;
+        context: "accountability" | "legitimacy" | "trace";
+    }>({
+        isOpen: false,
+        name: "",
+        detail: "",
+        context: "accountability"
+    });
     const effectiveAnalysis = { ...analysis };
+
+    // Helper to get list of existing actor names for checking duplicates
+    const existingActorNames = ecosystemActors.map(a => a.name);
 
     if (baselineMatch) {
         if (!effectiveAnalysis.accountability_map && baselineMatch.analysis?.accountability_map) {
@@ -166,10 +190,53 @@ export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisRes
         }
     };
 
+    // Data Presence Checks
+    // Force accountability section to show (even if empty) by defaulting to an empty object
+    const accountabilityData = effectiveAnalysis.accountability_map || {
+        signatory: "",
+        liability_holder: "",
+        appeals_mechanism: "",
+        human_in_the_loop: undefined
+    };
+
+    const hasAccountability = true; // Always show now
+
+    const hasGovernanceScores = !!(
+        effectiveAnalysis.governance_scores &&
+        typeof effectiveAnalysis.governance_scores.rights_focus === 'number' &&
+        typeof effectiveAnalysis.governance_scores.procedurality === 'number'
+    );
+
+
+    const hasUserImpression = !!(userImpression && userImpression.trim().length > 0);
+
     return (
         <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* --- TOP LEVEL CONTEXT (Always Visible) --- */}
+
+            {onAddActor && (
+                <MaterializeDialog
+                    isOpen={materializeDialog.isOpen}
+                    onClose={() => setMaterializeDialog(prev => ({ ...prev, isOpen: false }))}
+                    initialName={materializeDialog.name}
+                    initialDescription={`Identified in ${materializeDialog.context} analysis of ${sourceTitle}.`}
+                    sourceContext={{
+                        sourceId: sourceId || "unknown",
+                        type: materializeDialog.context,
+                        detail: materializeDialog.detail
+                    }}
+                    onConfirm={async (actorData) => {
+                        if (onAddActor) {
+                            const newActor: EcosystemActor = {
+                                ...actorData, // Spread the Omit<EcosystemActor, "id"> properties
+                                id: `temp-${Date.now()}`,
+                            };
+                            await onAddActor(newActor);
+                        }
+                    }}
+                />
+            )}
 
             {/* Interpretation Lens Selector */}
             <InterpretationLensSelector
@@ -240,38 +307,56 @@ export function AnalysisResults({ analysis, sourceTitle, onUpdate }: AnalysisRes
                 <TabsContent value="diagnostic" className="space-y-6 mt-4 animate-in fade-in-50 duration-300">
 
                     {/* User's Impression & Governance Compass */}
-                    <div className="grid md:grid-cols-2 gap-6 items-start">
-                        {userImpression && (
-                            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2 h-full">
-                                <div className="flex items-center justify-between">
-                                    <h5 className="text-xs font-bold text-slate-500 uppercase">Your Initial Anchor</h5>
-                                    {effectiveAnalysis.anchor_bias_choice && (
-                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${effectiveAnalysis.anchor_bias_choice === 'extractive_asymmetrical' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                            {effectiveAnalysis.anchor_bias_choice.replace('_', ' ')}
-                                        </span>
-                                    )}
+                    {(hasUserImpression || hasGovernanceScores) && (
+                        <div className="grid md:grid-cols-2 gap-6 items-start">
+                            {hasUserImpression && (
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <h5 className="text-xs font-bold text-slate-500 uppercase">Your Initial Anchor</h5>
+                                        {effectiveAnalysis.anchor_bias_choice && (
+                                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${effectiveAnalysis.anchor_bias_choice === 'extractive_asymmetrical' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                {effectiveAnalysis.anchor_bias_choice.replace('_', ' ')}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm text-slate-800 italic">&quot;{userImpression}&quot;</p>
                                 </div>
-                                <p className="text-sm text-slate-800 italic">&quot;{userImpression}&quot;</p>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Governance Compass */}
-                        {effectiveAnalysis.governance_scores && (
-                            <div className="h-full">
-                                <GovernanceCompass
-                                    rhetoricScore={effectiveAnalysis.governance_scores.rights_focus}
-                                    realityScore={effectiveAnalysis.governance_scores.procedurality}
-                                    driftExplanation={effectiveAnalysis.verification_gap?.gap_explanation}
-                                    scoreExplanations={effectiveAnalysis.governance_score_explanations}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* DR3: Decision Ownership / Accountability Map */}
-                    {effectiveAnalysis.accountability_map && (
-                        <AccountabilitySection accountability={effectiveAnalysis.accountability_map} />
+                            {/* Governance Compass */}
+                            {hasGovernanceScores && effectiveAnalysis.governance_scores && (
+                                <div className="h-full">
+                                    <GovernanceCompass
+                                        rhetoricScore={effectiveAnalysis.governance_scores.rights_focus}
+                                        realityScore={effectiveAnalysis.governance_scores.procedurality}
+                                        driftExplanation={effectiveAnalysis.verification_gap?.gap_explanation}
+                                        scoreExplanations={effectiveAnalysis.governance_score_explanations}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     )}
+
+                    {/* Always render Accountability Section (with defaults if needed) */}
+                    <AccountabilitySection
+                        accountability={accountabilityData}
+                        onMaterialize={(entity) => setMaterializeDialog({
+                            isOpen: true,
+                            name: entity.name,
+                            detail: entity.detail,
+                            context: "accountability"
+                        })}
+                        existingActors={existingActorNames}
+                        onViewActor={onViewActor}
+                    />
+
+                    {/* Empty State */}
+                    {!hasUserImpression && !hasGovernanceScores && !hasAccountability && (
+                        <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                            <p className="text-slate-500 italic">No diagnostic signals detected. Try running a deeper analysis or checking a different document.</p>
+                        </div>
+                    )}
+
 
                 </TabsContent>
 

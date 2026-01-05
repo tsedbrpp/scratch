@@ -13,8 +13,8 @@ export function useSources() {
     const fetchSources = async () => {
         try {
             const headers: HeadersInit = {};
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
             }
 
             const response = await fetch('/api/sources', {
@@ -34,8 +34,8 @@ export function useSources() {
     const addSource = async (source: Source) => {
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
             }
 
             const response = await fetch('/api/sources', {
@@ -56,8 +56,8 @@ export function useSources() {
     const updateSource = async (id: string, updates: Partial<Source>) => {
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
             }
 
             const response = await fetch(`/api/sources/${id}`, {
@@ -88,8 +88,8 @@ export function useSources() {
     const deleteSource = async (id: string) => {
         try {
             const headers: HeadersInit = {};
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
             }
 
             const response = await fetch(`/api/sources/${id}`, {

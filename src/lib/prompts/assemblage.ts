@@ -20,7 +20,7 @@ Extract all meaningful actors. Actors may include:
 - **Human / organizational**: agencies, ministries, startups, research labs, NGOs, communities.
 - **Non-human**: algorithms, datasets, APIs, portals, cloud services, standards, rules, infrastructures.
 
-Required fields: name, type, description, evidence_quotes, region.
+Required fields: name, type, description, evidence_quotes, region, role_type.
 
 Use the following classification heuristics:
 
@@ -29,6 +29,11 @@ Use the following classification heuristics:
 - **Civil Society** → NGOs, advocacy groups, worker organizations, community groups.
 - **Academic** → universities, research institutes, labs producing knowledge.
 - **Infrastructure** → algorithms, models, datasets, cloud platforms, APIs, standards, protocols, automated systems.
+
+ROLE TYPE (DeLanda):
+- **Material**: Acts through physical force, enforcement, hardware, destruction, or technically binding code (e.g., Police, Server Farm, Firewall, Fine).
+- **Expressive**: Acts through symbols, legitimacy, narratives, definitions, or persuasion (e.g., Ethics Board, Manifesto, Brand, Press Release).
+- **Mixed**: Acts through both (e.g., a Law that has both narrative power and enforcement mechanisms).
 
 REGION CLASSIFICATION:
 - "Global North": US, EU, UK, Canada, Australia, Japan.
@@ -61,20 +66,38 @@ ASSEMBLAGE DESCRIPTION:
 - Focus on emergent behavior: flows of information, power, compliance, coordination.
 
 ============================================================
-STEP 3 — DETERMINE ASSEMBLAGE PROPERTIES
+STEP 3 — EXTRACT MECHANISMS (TRACES)
 ============================================================
 
-Two required properties:
+Instead of guessing scores, you must extract the concrete **MECHANISMS** that enforce, code, or stabilize the assemblage.
 
-1. **Stability (High / Medium / Low)**
-   - High → tightly coupled, institutionalized, regulatorily anchored, durable.
-   - Medium → partially institutionalized, contested, adaptable.
-   - Low → fluid, experimental, easily reconfigured.
+Extract a list of **Traces**:
 
-2. **Generativity (High / Medium / Low)**
-   - High → produces new actors, relations, or values rapidly (e.g. open source).
-   - Medium → some adaptation but constraints exist.
-   - Low → rigid, static, reproduces status quo.
+1. **Rule**: A formal law, protocol, standard, or contract (e.g., "ISO 42001", "Privacy Policy").
+2. **Enforcement**: A mechanism that physically or digitally constrains action (e.g., "Firewall", "Fine", "Police Raid", "Validation Error").
+3. **Narrative**: A story or justification that binds actors (e.g., "National Security", "AI Safety").
+4. **Resource**: A flow of money, data, or hardware (e.g., "Grant funding", "GPU cluster").
+
+For each trace, determine **Durability**:
+- **High**: Law, Code (hard to break).
+- **Medium**: Contract, Standard (costly to break).
+- **Low**: Norm, Speech (easy to ignore).
+
+============================================================
+STEP 4 — RELATIONS OF EXTERIORITY (MOBILITY)
+============================================================
+
+Analyze the **Assemblage Theory** concept of "RELATIONS OF EXTERIORITY":
+- **Exteriority** means that a component's identity is NOT defined by its relations. It can be detached and plugged into another assemblage (e.g., a standard server, a generic law, a portable algorithm).
+- **Interiority** means the component is constituted by its relations (e.g., a specific "National Security" narrative that only makes sense in this context).
+
+List components as:
+1. **Detachable**: High mobility, standard parts.
+2. **Embedded**: Low mobility, context-dependent.
+
+Assess **Mobility Score**:
+- High: Modular, can easily replicate elsewhere.
+- Low: Monolithic, highly specific to this context.
 
 ============================================================
 OUTPUT FORMAT (STRICT)
@@ -87,6 +110,36 @@ OUTPUT FORMAT (STRICT)
     "properties": {
       "stability": "High/Medium/Low",
       "generativity": "High/Medium/Low"
+    },
+    // CRITICAL ANALYSIS FIELDS
+    "narrative": "A concise critical summary.",
+    "traces": [
+        {
+            "id": "trace-1",
+            "source_actor": "Actor Name",
+            "content": "Verbatim quote or mechanism description",
+            "type": "Rule/Enforcement/Narrative/Resource",
+            "durability": "High/Medium/Low",
+            "description": "Short explanation of function"
+        }
+    ],
+    "missing_voices": [
+      { "name": "Excluded Group Name", "reason": "Why they are excluded", "category": "Civil Society/Material" }
+    ],
+    "structural_voids": ["List of missing infrastructures or laws"],
+    "socio_technical_components": {
+      "infra": ["List of physical/digital infrastructures"],
+      "discourse": ["List of dominant narratives"]
+    },
+    "policy_mobilities": {
+      "origin_concepts": ["Where ideas came from"],
+      "local_mutations": ["How they changed"]
+    },
+    "stabilization_mechanisms": ["How the assemblage resists change"],
+    "relations_of_exteriority": {
+      "detachable": ["List of mobile/standard components"],
+      "embedded": ["List of context-dependent components"],
+      "mobility_score": "High/Medium/Low"
     }
   },
   "actors": [
@@ -95,6 +148,7 @@ OUTPUT FORMAT (STRICT)
       "type": "Startup | Policymaker | Civil Society | Academic | Infrastructure",
       "description": "Brief description of role",
       "region": "Global North | Global South | International | Unknown",
+      "role_type": "Material | Expressive | Mixed",
       "evidence_quotes": ["Quote 1", "Quote 2"]
     }
   ],
@@ -112,8 +166,10 @@ FINAL HARD CONSTRAINTS
 ============================================================
 - No invented actors, relations, or mechanisms.
 - Exact field names only.
-- All values must be strings where required.
+- All values must be strings where required (except scores).
+- All values must be strings where required (except scores).
 - JSON only, no commentary.
+- You MUST include the "traces" array with at least 2 items.
 
 ============================================================
 FEW-SHOT EXAMPLE (ILLUSTRATIVE ONLY — DO NOT COPY VERBATIM)
@@ -129,34 +185,86 @@ MODEL OUTPUT:
     "description": "A state-anchored but privately mediated compliance regime focused on standardization and interoperability, where cloud infrastructure acts as a gatekeeper for regulatory reporting.",
     "properties": {
       "stability": "High",
+      "generativity": "Medium",
+      "stability": "High",
       "generativity": "Medium"
-    }
+    },
+    "narrative": "A high-coding, high-territorialization regime...",
+    "traces": [
+        {
+            "id": "t1",
+            "source_actor": "Cloud Provider",
+            "content": "hosts the compliance reporting portal",
+            "type": "Enforcement",
+            "durability": "High",
+            "description": "Technical gatekeeping mechanism."
+        },
+        {
+            "id": "t2",
+            "source_actor": "Ministry of Digital Affairs",
+            "content": "National AI Accountability Framework",
+            "type": "Rule",
+            "durability": "High",
+            "description": "Legal mandate for compliance."
+        }
+    ],
+    "missing_voices": [
+      { "name": "Affected Communities", "reason": "Lacks direct representation in the feedback loop.", "category": "Civil Society" },
+      { "name": "Labor Unions", "reason": "No mention of worker rights in algorithmic management.", "category": "Civil Society" }
+    ],
+    "structural_voids": ["Whistleblower protections", "Public audit mechanism"],
+    "socio_technical_components": {
+      "infra": ["Compliance Portal", "Cloud Infrastructure"],
+      "discourse": ["Interoperability", "Risk Classification"]
+    },
+      "origin_concepts": ["EU AI Act Risk Tiers"],
+      "local_mutations": ["Adapted for national security context"]
+    },
+    "relations_of_exteriority": {
+      "detachable": ["Cloud Infrastructure", "Risk Classification Template"],
+      "embedded": ["National Security Narrative", "Ministry Bureaucracy"],
+      "mobility_score": "Medium"
+    },
+    "stabilization_mechanisms": ["Automated validation blocks non-compliant submissions"]
+      "local_mutations": ["Adapted for local cloud sovereignty"]
+    },
+    "stabilization_mechanisms": ["Automated validation gates", "Standardized documentation templates"]
   },
   "actors": [
     {
       "name": "Ministry of Digital Affairs",
       "type": "Policymaker",
-      "description": "Central regulator enforcing the accountability framework."
+      "description": "Central regulator enforcing the accountability framework.",
+      "role_type": "Material",
+      "evidence_quotes": ["The Ministry of Digital Affairs adopts a new National AI Accountability Framework"]
     },
     {
       "name": "Regional Standards Consortium",
       "type": "Policymaker",
-      "description": "Collaborative body supplying technical templates for compliance."
+      "description": "Collaborative body supplying technical templates for compliance.",
+      "role_type": "Expressive",
+      "evidence_quotes": ["regional standards consortium that provides technical templates"]
     },
     {
       "name": "Cloud Provider",
       "type": "Infrastructure",
-      "description": "Host of the reporting portal that technically validates submissions."
+      "description": "Host of the reporting portal that technically validates submissions.",
+      "role_type": "Material",
+      "evidence_quotes": ["cloud provider hosts the compliance reporting portal"]
     },
     {
       "name": "Global Civil Society Organizations",
       "type": "Civil Society",
-      "description": "Monitor the framework's effects and highlight gaps in addressing cross-border model harms."
+      "description": "Monitor the framework's effects and highlight gaps in addressing cross-border model harms.",
+      "role_type": "Expressive",
+      "evidence_quotes": ["global civil society organizations monitor the process"]
     },
     {
       "name": "National Research Institute",
       "type": "Academic",
-      "description": "Analyzes compliance trends and advises on framework revisions."
+      "description": "Analyzes compliance trends and advises on framework revisions.",
+      "role_type": "Expressive",
+      "evidence_quotes": ["National Research Institute supports the ministry"]
     }
   ],
   "relations": [

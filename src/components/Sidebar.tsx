@@ -82,10 +82,10 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Assemblage Mapping",
         items: [
             {
-                name: "Ecosystem Analysis",
+                name: "Assemblage Diagram",
                 href: "/ecosystem",
-                icon: Users,
-                description: "Map actors, detect cultural holes, and visualize social networks."
+                icon: Network,
+                description: "Trace territories, flows, and coding intensities of the assemblage."
             },
             {
                 name: "Cross-Case Analysis",

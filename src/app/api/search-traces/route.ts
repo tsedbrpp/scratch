@@ -4,18 +4,11 @@ import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
 import { executeGoogleSearch, curateResultsWithAI, curateResultsWithOpenAI, SearchResult } from '@/lib/search-service';
+import { createRateLimitResponse, createUnauthorizedResponse, createErrorResponse } from '@/lib/api-helpers';
+import { PromptRegistry } from '@/lib/prompts/registry';
+import { safeJSONParse } from '@/lib/analysis-utils';
 
-const KEY_TERM_EXTRACTION_PROMPT = `You are an expert researcher analyzing policy documents to identify key terms for web searches.
-
-Your task is to extract 3-5 specific, searchable terms or phrases from the policy text that would help find real-world discussions about resistance, criticism, or adaptation to this policy.
-
-Focus on:
-- Specific mechanisms or requirements (e.g., "facial recognition ban", "high-risk AI systems")
-- Controversial or burdensome aspects
-- Terms that affected communities would use (e.g., "gig worker surveillance", "algorithm transparency")
-
-Return ONLY a JSON array of strings, nothing else:
-["term 1", "term 2", "term 3"]`;
+// Removed KEY_TERM_EXTRACTION_PROMPT - moved to registry
 
 interface Trace {
     title: string;
@@ -38,24 +31,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userId) {
-        return new NextResponse("Unauthorized", { status: 401 });
+        return createUnauthorizedResponse();
     }
     // if (!userId) userId = "debug_user";
 
     // Rate Limiting
     const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
     if (!rateLimit.success) {
-        return NextResponse.json(
-            { error: rateLimit.error || "Too Many Requests" },
-            {
-                status: 429,
-                headers: {
-                    'X-RateLimit-Limit': rateLimit.limit.toString(),
-                    'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-                    'X-RateLimit-Reset': rateLimit.reset.toString()
-                }
-            }
-        );
+        return createRateLimitResponse(rateLimit);
     }
 
 
@@ -84,13 +67,7 @@ export async function POST(request: NextRequest) {
         const openaiApiKey = process.env.OPENAI_API_KEY;
 
         if (!googleApiKey || !searchEngineId) {
-            return NextResponse.json(
-                {
-                    error: 'Google Search API not configured',
-                    details: 'Please add GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX to .env.local'
-                },
-                { status: 500 }
-            );
+            return createErrorResponse(new Error("Google Search API not configured"), "Server Configuration Error");
         }
 
         let searchQueries: string[] = [];
@@ -102,18 +79,16 @@ export async function POST(request: NextRequest) {
         // Otherwise, extract key terms from policy text
         else if (policyText) {
             if (!openaiApiKey) {
-                return NextResponse.json(
-                    { error: 'OpenAI API key required for automatic term extraction' },
-                    { status: 500 }
-                );
+                return createErrorResponse(new Error("OpenAI API key required for automatic term extraction"), "Server Configuration Error");
             }
 
             const openai = new OpenAI({ apiKey: openaiApiKey });
 
+            const keyTermPrompt = await PromptRegistry.getEffectivePrompt(userId, 'key_term_extraction');
             const completion = await openai.chat.completions.create({
                 model: process.env.OPENAI_MODEL || 'gpt-4',
                 messages: [
-                    { role: 'system', content: KEY_TERM_EXTRACTION_PROMPT },
+                    { role: 'system', content: keyTermPrompt },
                     { role: 'user', content: `POLICY TEXT:\n${policyText.substring(0, 3000)}` }
                 ],
                 // temperature: 0.3, // Removed for fine-tuned compatibility
@@ -121,12 +96,7 @@ export async function POST(request: NextRequest) {
             });
 
             const responseText = completion.choices[0]?.message?.content || '';
-            try {
-                searchQueries = JSON.parse(responseText);
-            } catch {
-                // Fallback if parsing fails
-                searchQueries = ['AI policy resistance', 'algorithm criticism'];
-            }
+            searchQueries = safeJSONParse<string[]>(responseText, ['AI policy resistance', 'algorithm criticism']);
         } else {
             return NextResponse.json(
                 { error: 'Either policyText or customQuery must be provided' },
@@ -240,20 +210,21 @@ export async function POST(request: NextRequest) {
                 const googleGenKey = process.env.GOOGLE_API_KEY;
                 const openaiKey = process.env.OPENAI_API_KEY;
 
+                // [Refactor] Centralized Policy Subject Logic
+                let policySubject = "AI Resistance";
+                if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
+                else if (customQuery) policySubject = customQuery;
+
+                const searchResults: SearchResult[] = allTraces.map(t => ({
+                    title: t.title,
+                    link: t.sourceUrl,
+                    snippet: t.content
+                }));
+
                 // 1. Try Google Gemini
                 if (googleGenKey) {
                     console.log("Starting AI Curation Service (Google Gemini)...");
-                    const searchResults: SearchResult[] = allTraces.map(t => ({
-                        title: t.title,
-                        link: t.sourceUrl,
-                        snippet: t.content
-                    }));
-
-                    let policySubject = "AI Resistance";
-                    if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
-                    else if (customQuery) policySubject = customQuery;
-
-                    const results = await curateResultsWithAI(searchResults, policySubject, googleGenKey);
+                    const results = await curateResultsWithAI(searchResults, policySubject, googleGenKey, 'gemini-1.5-flash-001', userId);
 
                     // Check if it actually worked (look for strategy on first item)
                     if (results.length > 0 && results[0].strategy) {
@@ -267,17 +238,7 @@ export async function POST(request: NextRequest) {
                 // 2. Try OpenAI Fallback (if Google failed or key missing)
                 if (curationSource === "None" && openaiKey) {
                     console.log("Starting AI Curation Service (OpenAI Fallback)...");
-                    const searchResults: SearchResult[] = allTraces.map(t => ({
-                        title: t.title,
-                        link: t.sourceUrl,
-                        snippet: t.content
-                    }));
-
-                    let policySubject = "AI Resistance";
-                    if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
-                    else if (customQuery) policySubject = customQuery;
-
-                    curatedFinal = await curateResultsWithOpenAI(searchResults, policySubject, openaiKey);
+                    curatedFinal = await curateResultsWithOpenAI(searchResults, policySubject, openaiKey, 'gpt-4o', userId);
                     curationSource = "OpenAI";
                 }
 
@@ -333,13 +294,6 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: unknown) {
-        console.error('Search error:', error);
-        return NextResponse.json(
-            {
-                error: 'Search failed',
-                details: (error as Error).message || 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return createErrorResponse(error, 'Search failed');
     }
 }

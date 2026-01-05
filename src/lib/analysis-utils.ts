@@ -94,3 +94,22 @@ export function verifyQuotes(text: string, analysis: AnalysisResult): VerifiedQu
     traverse(analysis, 'analysis');
     return quotes;
 }
+
+// Helper function to safely parse JSON from AI responses
+export function safeJSONParse<T>(text: string, fallback: T): T {
+    try {
+        // Remove markdown code blocks if present
+        let cleaned = text.trim();
+        if (cleaned.startsWith('```json')) {
+            cleaned = cleaned.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+        } else if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/```\n?/g, '');
+        }
+        cleaned = cleaned.trim();
+
+        return JSON.parse(cleaned);
+    } catch (error) {
+        console.error('JSON parse error:', error, 'Text:', text);
+        return fallback;
+    }
+}

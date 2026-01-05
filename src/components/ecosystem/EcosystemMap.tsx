@@ -2,7 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode, Eye, EyeOff, Filter, X } from 'lucide-react';
+import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode, Eye, EyeOff, Filter, X, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
 import { generateEdges } from '@/lib/graph-utils';
 
@@ -22,6 +22,8 @@ interface EcosystemMapProps {
     activeLens?: "None" | "Market" | "Critical" | "Infrastructure" | "Decolonial";
     activeScenario?: ScenarioId;
     colorMode?: "type" | "epistemic";
+    onConfigClick?: (configId: string) => void;
+    culturalHoles?: import('@/types/ecosystem').CulturalHolesAnalysisResult | null;
 }
 
 export function EcosystemMap({
@@ -39,16 +41,30 @@ export function EcosystemMap({
     toggleLayer = () => { },
     activeLens = "None",
     activeScenario = "None",
-    colorMode = "type"
+    colorMode = "type",
+    onConfigClick,
+    culturalHoles
 }: EcosystemMapProps) {
+    const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+
+    // Restore missing drag state
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
     const dragStartRef = useRef<{ mouse: { x: number, y: number } } | null>(null);
     const isDraggingRef = useRef(false);
 
-    // Hermeneutic Instrument State
-    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-    const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    // Legend Collapse States
+    const [collapsedLegends, setCollapsedLegends] = useState<Record<string, boolean>>({
+        actor: false,
+        resistance: false,
+        epistemic: false,
+        metrics: false
+    });
+
+    const toggleLegend = (key: string) => {
+        setCollapsedLegends(prev => ({ ...prev, [key]: !prev[key] }));
+    };
 
     // Compute edge multipliers for scenarios
     const { edgeMultipliers } = useMemo(() => {
@@ -106,6 +122,7 @@ export function EcosystemMap({
         if (interactionMode !== "drag") return;
         e.stopPropagation();
         e.preventDefault();
+        isDraggingRef.current = false; // Reset drag state
 
         const svg = (e.target as Element).closest('svg');
         if (!svg) return;
@@ -159,6 +176,7 @@ export function EcosystemMap({
         setDraggingId(null);
         setDraggingConfigId(null);
         dragStartRef.current = null;
+        setTimeout(() => { isDraggingRef.current = false; }, 0); // Defer reset to allow Click event to fire first
     };
 
     // Convex Hull Algorithm
@@ -216,11 +234,23 @@ export function EcosystemMap({
                 centroid.y /= hull.length;
             }
 
+            const tScore = typeof config.properties.territorialization_score === 'number' ? config.properties.territorialization_score : 5;
+            const cScore = typeof config.properties.coding_intensity_score === 'number' ? config.properties.coding_intensity_score : 5;
+
+            // Visual Mapping Rules
+            // T-Score (Territorialization): High = Solid Border (Rigid), Low = Dashed (Porous)
+            const strokeDash = tScore >= 7 ? "0" : "10,20";
+
+            // C-Score (Coding Intensity): High = High Opacity (Codified), Low = Low Opacity (Informal)
+            // Base 0.1, Max added 0.5 -> Range 0.1 to 0.6
+            const fillOpacity = 0.1 + (cScore / 20);
+
             return (
                 <g
                     key={config.id}
                     onMouseDown={(e) => handleConfigMouseDown(e, config.id)}
-                    className={interactionMode === "drag" ? "cursor-grab active:cursor-grabbing" : ""}
+                    onClick={(e) => handleConfigClick(e, config.id)}
+                    className={interactionMode === "drag" ? "cursor-grab active:cursor-grabbing hover:opacity-90" : ""}
                     style={{ pointerEvents: 'all' }}
                 >
                     <path
@@ -230,7 +260,8 @@ export function EcosystemMap({
                         strokeWidth={memberPoints.length > 2 ? "40" : "60"}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        opacity="0.4"
+                        strokeDasharray={strokeDash}
+                        opacity={fillOpacity.toFixed(2)}
                         className="transition-all duration-300"
                     />
                     <text
@@ -243,6 +274,11 @@ export function EcosystemMap({
                         className="pointer-events-none select-none"
                     >
                         {config.name}
+                        {(config.properties.territorialization_score !== undefined || config.properties.coding_intensity_score !== undefined) && (
+                            <tspan x={centroid.x} dy="1.2em" fontSize="10" fontWeight="normal">
+                                T:{config.properties.territorialization_score ?? '-'} / C:{config.properties.coding_intensity_score ?? '-'}
+                            </tspan>
+                        )}
                     </text>
                 </g>
             );
@@ -307,6 +343,13 @@ export function EcosystemMap({
         return getNeighbors(focusedNodeId);
     }, [focusedNodeId, actors]); // actors dependency needed as getNeighbors depends on it (implicitly via closure, but safe here)
 
+    const handleConfigClick = (e: React.MouseEvent, configId: string) => {
+        e.stopPropagation();
+        if (interactionMode === "drag" && !isDraggingRef.current) {
+            onConfigClick?.(configId);
+        }
+    };
+
     return (
         <Card className="min-h-[400px] flex flex-col">
             <CardHeader className="z-10 relative pb-2">
@@ -314,7 +357,7 @@ export function EcosystemMap({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Network className="h-5 w-5 text-indigo-600" />
-                            <CardTitle>Social Network Graph</CardTitle>
+                            <CardTitle>Assemblage Diagram</CardTitle>
                         </div>
 
                         {/* Interaction Controls */}
@@ -680,78 +723,131 @@ export function EcosystemMap({
                 </svg>
 
                 {activeLayers['resistance'] && (
-                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-2 z-10 w-52 pointer-events-none select-none">
-                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between">
-                            <span>Entangled Analysis</span>
-                            <span className="text-[10px] bg-red-100 text-red-700 px-1 rounded">Active</span>
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-52 select-none transition-all duration-300">
+                        <div
+                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
+                            onClick={() => toggleLegend('resistance')}
+                        >
+                            <span className="flex items-center gap-2">
+                                Entangled Analysis
+                                <span className="text-[10px] bg-red-100 text-red-700 px-1 rounded">Active</span>
+                            </span>
+                            {collapsedLegends['resistance'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                                <div className="mt-0.5 w-3 h-3 shrink-0 rounded-full border border-red-500 bg-red-100 ring-2 ring-red-200/50 animate-pulse"></div>
-                                <div>
-                                    <span className="block font-medium text-slate-900">Line of Flight</span>
-                                    <span className="text-[10px] text-slate-500 leading-tight block">High resistance (&gt;5). Disrupts established norms.</span>
+
+                        {!collapsedLegends['resistance'] && (
+                            <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                    <div className="mt-0.5 w-3 h-3 shrink-0 rounded-full border border-red-500 bg-red-100 ring-2 ring-red-200/50 animate-pulse"></div>
+                                    <div>
+                                        <span className="block font-medium text-slate-900">Line of Flight</span>
+                                        <span className="text-[10px] text-slate-500 leading-tight block">High resistance (&gt;5). Disrupts established norms.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <div className="mt-1.5 w-4 h-0 shrink-0 border-t-2 border-dashed border-red-500"></div>
+                                    <div>
+                                        <span className="block font-medium text-slate-900">Friction</span>
+                                        <span className="text-[10px] text-slate-500 leading-tight block">Tension between resistant & status quo actors.</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <div className="mt-2 w-4 h-0.5 shrink-0 bg-purple-600"></div>
+                                    <div>
+                                        <span className="block font-medium text-slate-900">Solidarity</span>
+                                        <span className="text-[10px] text-slate-500 leading-tight block">Alliance between high resistance actors.</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-2">
-                                <div className="mt-1.5 w-4 h-0 shrink-0 border-t-2 border-dashed border-red-500"></div>
-                                <div>
-                                    <span className="block font-medium text-slate-900">Friction</span>
-                                    <span className="text-[10px] text-slate-500 leading-tight block">Tension between resistant & status quo actors.</span>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                                <div className="mt-2 w-4 h-0.5 shrink-0 bg-purple-600"></div>
-                                <div>
-                                    <span className="block font-medium text-slate-900">Solidarity</span>
-                                    <span className="text-[10px] text-slate-500 leading-tight block">Alliance between high resistance actors.</span>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
 
                 {(colorMode === "type" || !colorMode) && (
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-1 z-10 w-36 pointer-events-none select-none">
-                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1">Actor Legend</div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-sky-100 border border-sky-600"></span> Policymaker
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-36 select-none transition-all duration-300">
+                        <div
+                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
+                            onClick={() => toggleLegend('actor')}
+                        >
+                            Actor Legend
+                            {collapsedLegends['actor'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-yellow-100 border border-yellow-600"></span> Civil Society
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-purple-100 border border-purple-600"></span> Startup
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-600"></span> Academic
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-slate-100 border border-slate-600"></span> Infrastructure
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-100 border border-red-600"></span> Algorithm
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-100 border border-green-600"></span> Dataset
-                        </div>
+
+                        {!collapsedLegends['actor'] && (
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-sky-100 border border-sky-600"></span> Policymaker
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-yellow-100 border border-yellow-600"></span> Civil Society
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-purple-100 border border-purple-600"></span> Startup
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-600"></span> Academic
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-slate-100 border border-slate-600"></span> Infrastructure
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-100 border border-red-600"></span> Algorithm
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-100 border border-green-600"></span> Dataset
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {colorMode === "epistemic" && (
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs space-y-2 z-10 w-44 pointer-events-none select-none">
-                        <div className="font-semibold text-slate-900 border-b pb-1 mb-1">Epistemic Map</div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-600"></span> Global North
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-44 select-none transition-all duration-300">
+                        <div
+                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
+                            onClick={() => toggleLegend('epistemic')}
+                        >
+                            Epistemic Map
+                            {collapsedLegends['epistemic'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-emerald-100 border border-emerald-600"></span> Global South
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-600"></span> International
-                        </div>
+
+                        {!collapsedLegends['epistemic'] && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-600"></span> Global North
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-emerald-100 border border-emerald-600"></span> Global South
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-600"></span> International
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-48 select-none transition-all duration-300">
+                    <div
+                        className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
+                        onClick={() => toggleLegend('metrics')}
+                    >
+                        Assemblage Metrics
+                        {collapsedLegends['metrics'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </div>
+
+                    {!collapsedLegends['metrics'] && (
+                        <div className="space-y-1">
+                            <div>
+                                <span className="font-bold text-indigo-700">T (Territorialization)</span>
+                                <p className="text-[10px] text-slate-500 leading-tight">Internal homogeneity & border rigidity (1-10).</p>
+                            </div>
+                            <div>
+                                <span className="font-bold text-indigo-700">C (Coding Intensity)</span>
+                                <p className="text-[10px] text-slate-500 leading-tight">Role of language, laws & protocols (1-10).</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card >
     );

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw, Maximize2, Minimize2 } from 'lucide-react';
+import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw, Maximize2, Minimize2, X } from 'lucide-react';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -40,6 +40,7 @@ interface ActorListProps {
     // Analysis Props
     isAnalyzingHoles: boolean;
     onAnalyze: () => void;
+    onClose?: () => void;
 }
 
 export function ActorList({
@@ -63,17 +64,23 @@ export function ActorList({
     isExtractionDialogOpen,
     setIsExtractionDialogOpen,
     isAnalyzingHoles,
-    onAnalyze
+    onAnalyze,
+    onClose
 }: ActorListProps) {
     return (
         <Card className="h-[500px] lg:h-full flex flex-col">
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Ecosystem Actors</CardTitle>
+                    <CardTitle className="text-lg">Assemblage Actors</CardTitle>
                     <div className="flex gap-1">
                         {onToggleExpand && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={onToggleExpand} title={isExpanded ? "Collapse" : "Expand"}>
                                 {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                            </Button>
+                        )}
+                        {onClose && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 bg-slate-100 text-slate-500 hover:bg-slate-200" onClick={onClose} title="Close Panel">
+                                <X className="h-4 w-4" />
                             </Button>
                         )}
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -295,6 +302,11 @@ export function ActorList({
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 h-5">
                                     {actor.type}
                                 </Badge>
+                                {actor.role_type && (
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5 bg-slate-100 text-slate-600 border border-slate-200">
+                                        {actor.role_type}
+                                    </Badge>
+                                )}
                             </div>
                         </div>
                         <p className="text-xs text-slate-500 line-clamp-2 mb-2">{actor.description}</p>

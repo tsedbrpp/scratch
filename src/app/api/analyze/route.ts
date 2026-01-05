@@ -1,41 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
-import crypto from 'crypto';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { auth } from '@clerk/nextjs/server';
-import { PromptRegistry } from '@/lib/prompts/registry';
-import { verifyQuotes } from '@/lib/analysis-utils';
-import { getAnalysisConfig, runStressTest, runCritiqueLoop } from '@/lib/analysis-service';
-import { parseAnalysisResponse } from '@/lib/analysis-parser';
-import { PositionalityData, AnalysisResult } from '@/types';
+import { getAuthenticatedUserId } from '@/lib/auth-helper';
+import {
+  getAnalysisConfig,
+  runCritiqueLoop,
+  performAnalysis,
+  generateCacheKey
+} from '@/lib/analysis-service';
+import { AnalysisResult } from '@/types';
 
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v20';
-
-// Helper to generate a deterministic cache key
-function generateCacheKey(mode: string, text: string, sourceType: string): string {
-  const hash = crypto.createHash('sha256').update(text).digest('hex');
-  return `analysis:${mode}:${sourceType}:${PROMPT_VERSION}:${hash}`;
-}
+const PROMPT_VERSION = 'v23';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
 
-  let { userId } = await auth();
-
-  // Check for demo user if not authenticated
-  if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-    const demoUserId = request.headers.get('x-demo-user-id');
-    console.log('[ANALYSIS] Demo auth check - Header:', demoUserId, 'Expected:', process.env.NEXT_PUBLIC_DEMO_USER_ID);
-    if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-      userId = demoUserId;
-    }
-  }
+  const userId = await getAuthenticatedUserId(request);
 
   if (!userId) {
     console.log('[ANALYSIS] Unauthorized. Headers:', Object.fromEntries(request.headers));
@@ -130,9 +116,7 @@ export async function POST(request: NextRequest) {
       textForCache = documents.map((d: { title: string }) => d.title).sort().join(',');
     }
 
-    const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown');
-    // const userCacheKey = `user:${userId}:${cacheKey} `; // StorageService handles user prefix
-    // console.log(`[ANALYSIS] Cache Key generated: ${userCacheKey} `); // Simplified logging
+    const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown', PROMPT_VERSION);
 
     try {
       // Skip cache if force is true
@@ -165,44 +149,11 @@ export async function POST(request: NextRequest) {
           });
         }
         console.log('[ANALYSIS] Cache Miss.');
-      } else {
-        console.log(`[CACHE BYPASS] Force refresh requested for key: ${cacheKey} `);
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
     }
     // --- CACHING LOGIC END ---
-
-    // Inject Positionality Calibration
-    let calibrationContext = "";
-    if (positionality && typeof positionality === 'object') {
-      const { locus, discipline, reflexiveGap, enableCounterNarrative } = positionality as PositionalityData;
-
-      calibrationContext = `
-### *** DYNAMIC POSITIONALITY OVERLAY ***
-** USER CONTEXT:** The human analyst identifies as ** ${locus}** with a ** ${discipline}** lens.
-** RISK FACTOR:** They have flagged a potential blind spot regarding ** ${reflexiveGap}**.
-
-### YOUR PRIME DIRECTIVES(CALIBRATED):
-1. ** COUNTER - BIAS PROTOCOL:**
-  ${locus.includes('Global North') ? `Because the analyst is from the Global North, you must NOT accept standard Western legal definitions of "privacy" or "ownership" as default.
-    * *Action:* If the text mentions "Data Ownership," immediately query: "Does this imply individual property (Western) or sovereign stewardship (Indigenous)?"` : ''}
-    ${discipline.includes('Legal') ? `Because the analyst uses a Legal lens, you must explicitly highlight technical or sociological implications they might miss.` : ''}
-
-2. ** BLIND SPOT WATCHDOG:**
-  The analyst fears missing ** ${reflexiveGap}**.
-    * * Action:* Scan the document specifically for concepts related to this gap.If these terms are absent, flag a "Critical Silence".
-
-3. ** ADVERSARIAL SUMMARY:**
-  ${enableCounterNarrative ? `After your standard summary, you must generate a "Counter-Narrative" written from the perspective of the most marginalized actors identified (or silenced) in the text, critiquing the policy's reliance on dominant standards.` : ''}
-`;
-    } else if (positionality && typeof positionality === 'string') {
-      calibrationContext = `
-        *** ANALYST POSITIONALITY STATEMENT ***
-          The analyst has provided the following positionality statement: "${positionality}"
-      INSTRUCTION: Use this statement to contextualize your analysis.Flag any concepts in the text that might conflict with or be invisible to this specific worldview.
-`;
-    }
 
     console.log('[ANALYSIS] Initializing OpenAI client...');
     const openai = new OpenAI({
@@ -224,71 +175,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // --- USE ANALYSIS SERVICE TO GET CONFIG ---
-    const config = await getAnalysisConfig(userId, analysisMode, requestData);
-    let { systemPrompt } = config;
-    const { userContent } = config;
-
-    // Append calibration context to system prompt for supported modes
-    if (['dsf', 'cultural_framing', 'institutional_logics', 'legitimacy'].includes(analysisMode || 'dsf')) {
-      systemPrompt += calibrationContext;
-    }
-
-    console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode} `);
-    const aiStartTime = Date.now();
-
-    // Call OpenAI API
-    let completion;
-    try {
-      completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent }
-        ],
-        max_completion_tokens: 16384,
-        response_format: { type: "json_object" }
-      });
-      console.log(`[ANALYSIS] OpenAI response received in ${Date.now() - aiStartTime} ms`);
-    } catch (openaiError) {
-      console.error('[ANALYSIS CRITICAL ERROR] OpenAI API call failed:', openaiError);
-      throw openaiError;
-    }
-
-    const responseText = completion.choices[0]?.message?.content || '';
-    const finishReason = completion.choices[0]?.finish_reason;
-    console.log(`[ANALYSIS] Raw OpenAI response(first 500 chars): ${responseText.substring(0, 500)} `);
-    console.log(`[ANALYSIS] Finish Reason: ${finishReason}`);
-
-    // --- USE ANALYSIS PARSER ---
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let analysis: AnalysisResult | any = parseAnalysisResponse(responseText, analysisMode);
-
-    // --- STRESS TEST LOGIC ---
-    if (analysisMode === 'stress_test') {
-      analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
-    }
-
-    let verificationText = text || '';
-    if (analysisMode === 'comparison' && sourceA?.text && sourceB?.text) {
-      verificationText = sourceA.text + ' ' + sourceB.text;
-    }
-
-    if (verificationText && analysis && typeof analysis === 'object') {
-      try {
-        console.log('[VERIFICATION] Running Fact-Tracer...');
-        const verifiedQuotes = verifyQuotes(verificationText, analysis);
-        // Inject into analysis object
-        if (analysis) {
-          analysis.verified_quotes = verifiedQuotes;
-        }
-        console.log(`[VERIFICATION] Verified ${verifiedQuotes.length} quotes.`);
-      } catch (verError) {
-        console.warn('[VERIFICATION] Failed:', verError);
-      }
-    }
-
-
+    // --- PERFORM ANALYSIS VIA SERVICE ---
+    const { analysis, usage } = await performAnalysis(openai, userId, requestData);
 
     // ---------------------
     // Cache the result
@@ -308,7 +196,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       analysis,
-      usage: completion.usage
+      usage
     });
 
   } catch (error: unknown) {

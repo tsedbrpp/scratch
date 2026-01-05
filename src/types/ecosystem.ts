@@ -13,6 +13,12 @@ export interface EcosystemActor {
     source?: "default" | "simulation" | "absence_fill";
     quotes?: string[];
     region?: "Global North" | "Global South" | "International" | "Unknown";
+    role_type?: "Material" | "Expressive" | "Mixed";
+    materialized_from?: {
+        source_id: string;
+        context_type: "accountability" | "legitimacy" | "cultural_absence" | "trace";
+        context_detail: string;
+    };
 }
 
 export interface EcosystemConfiguration {
@@ -23,9 +29,10 @@ export interface EcosystemConfiguration {
     properties: {
         stability: "High" | "Medium" | "Low";
         generativity: "High" | "Medium" | "Low";
-        [key: string]: string;
+        [key: string]: string | number;
     };
     color: string;
+    analysisData?: any; // To store full AssemblageExtractionResult
 }
 
 export interface BridgingConcept {
@@ -80,4 +87,18 @@ export interface AssemblageAnalysis {
         local_mutations: string[];
     };
     stabilization_mechanisms: string[];
+    relations_of_exteriority?: {
+        detachable: string[];
+        embedded: string[];
+        mobility_score: "High" | "Medium" | "Low";
+    };
+}
+
+export interface AiAbsenceAnalysis {
+    narrative: string;
+    missing_voices: { name: string; reason: string; category: string }[];
+    structural_voids: string[];
+    blindspot_intensity: "Low" | "Medium" | "High";
+    recommendations?: string[];
+    blindspots?: string[]; // Legacy field support
 }
