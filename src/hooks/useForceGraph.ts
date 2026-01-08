@@ -1,0 +1,169 @@
+import { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import { EcosystemActor } from '@/types/ecosystem';
+
+interface SimulationNode extends d3.SimulationNodeDatum {
+    id: string;
+    type: string;
+    radius: number;
+    x?: number;
+    y?: number;
+    vx?: number;
+    vy?: number;
+}
+
+interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
+    source: string | SimulationNode;
+    target: string | SimulationNode;
+    type: string;
+}
+
+export function useForceGraph(
+    actors: EcosystemActor[],
+    width: number,
+    height: number,
+    configurations: { id: string; memberIds: string[] }[] = [],
+    links: { source: string; target: string; type: string }[] = [],
+    enableClustering: boolean = false,
+    isPaused: boolean = false
+) {
+    const [nodes, setNodes] = useState<SimulationNode[]>([]);
+    const simulationRef = useRef<d3.Simulation<SimulationNode, SimulationLink> | null>(null);
+
+    // Initialize Nodes
+    useEffect(() => {
+        setNodes(prevNodes => {
+            const newNodes: SimulationNode[] = actors.map(actor => {
+                const existing = prevNodes.find(n => n.id === actor.id);
+                return {
+                    id: actor.id,
+                    type: actor.type,
+                    radius: 30,
+                    x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 50,
+                    y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 50,
+                    vx: existing ? existing.vx : 0,
+                    vy: existing ? existing.vy : 0
+                };
+            });
+            return newNodes;
+        });
+    }, [actors, width, height]);
+
+    // Run Simulation
+    useEffect(() => {
+        if (!nodes.length || isPaused) {
+            simulationRef.current?.stop();
+            return;
+        }
+
+        if (simulationRef.current) simulationRef.current.stop();
+
+        // 1. Initialize Simulation (Base Forces)
+        const simulation = d3.forceSimulation(nodes)
+            .force("collide", d3.forceCollide().radius((d: any) => d.radius + 10).iterations(2));
+
+        // 2. Configure Layout Specific Forces
+        if (enableClustering) {
+            // Nested Assemblage Layout (Radial Rings)
+            const getRadialRadius = (type: string) => {
+                const t = type.toLowerCase();
+                const minDim = Math.min(width, height);
+                // Center (0) reserved for Policy Object if it exists
+                if (t === 'legalobject' || t === 'regulation' || t === 'law') return 0; // Ring 0 (Center)
+                if (t === 'policymaker' || t === 'government' || t === 'regulator') return minDim * 0.15; // Ring 1
+                if (t === 'civilsociety' || t === 'academic' || t === 'ngo') return minDim * 0.25; // Ring 2
+                if (t === 'startup' || t === 'private' || t === 'market' || t === 'corporation') return minDim * 0.35; // Ring 3
+                return minDim * 0.45; // Ring 4 (Outer: Infra, Algo, etc)
+            };
+
+            simulation
+                .force("radial", d3.forceRadial((d: any) => getRadialRadius(d.type), width / 2, height / 2).strength(0.8))
+                .force("charge", d3.forceManyBody().strength(-300)) // Weaker repulsion for rings
+                .force("center", null)
+                .force("x", null)
+                .force("y", null);
+        } else {
+            // Standard Force Layout
+            simulation
+                .force("radial", null)
+                .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05))
+                .force("x", d3.forceX(width / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05))
+                .force("charge", d3.forceManyBody().strength(-800)); // Strong repulsion for spread
+        }
+
+        // 3. Configure Links
+        if (links.length > 0) {
+            const nodeIds = new Set(nodes.map(n => n.id));
+            const validLinks = links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target))
+                .map(l => ({ ...l }));
+
+            if (validLinks.length > 0) {
+                // Tighter links in radial mode to keep rings coherent
+                simulation.force("link", d3.forceLink(validLinks).id((d: any) => d.id).distance(enableClustering ? 100 : 150));
+            }
+        }
+
+        // 4. Custom Grouping (Configuration) Force - Radially Separates Macro Groups
+        const groupForce = (alpha: number) => {
+            configurations.forEach((config, i) => {
+                const members = nodes.filter(n => config.memberIds.includes(n.id));
+                if (members.length < 1) return;
+
+                // Calculate a target "home" for this configuration based on index
+                const totalConfigs = configurations.length;
+
+                let targetX = width / 2;
+                let targetY = height / 2;
+
+                if (totalConfigs > 1) {
+                    const radius = Math.min(width, height) * 0.35; // Use 35% of view dimension
+                    const angle = (i / totalConfigs) * 2 * Math.PI - (Math.PI / 2); // Start at top
+                    targetX = (width / 2) + Math.cos(angle) * radius;
+                    targetY = (height / 2) + Math.sin(angle) * radius;
+                }
+
+                members.forEach(d => {
+                    d.vx! += (targetX - d.x!) * alpha * 0.15;
+                    d.vy! += (targetY - d.y!) * alpha * 0.15;
+                });
+            });
+        };
+
+        simulation.alphaDecay(0.02);
+
+        simulation.on("tick", () => {
+            groupForce(simulation.alpha());
+            setNodes([...nodes]);
+        });
+
+        simulationRef.current = simulation;
+
+        return () => {
+            simulation.stop();
+        };
+    }, [nodes.length, links.length, width, height, configurations.length, enableClustering, isPaused]);
+
+    const drag = (node: SimulationNode) => {
+        const dragStarted = (event: any) => {
+            if (!event.active) simulationRef.current?.alphaTarget(0.3).restart();
+            node.fx = node.x;
+            node.fy = node.y;
+        };
+
+        const dragged = (event: any) => {
+            node.fx = event.x;
+            node.fy = event.y;
+        };
+
+        const dragEnded = (event: any) => {
+            if (!event.active) simulationRef.current?.alphaTarget(0);
+            node.fx = null;
+            node.fy = null;
+        };
+
+        return { dragStarted, dragged, dragEnded };
+    };
+
+    return { nodes, simulation: simulationRef.current, drag };
+}

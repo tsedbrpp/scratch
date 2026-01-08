@@ -156,8 +156,8 @@ ${text}
 Please identify cultural holes in this text.`
     }),
 
-    assemblage_extraction: async (userId, { text }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'assemblage_extraction'),
+    assemblage_extraction_v3: async (userId, { text }) => ({
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'assemblage_extraction_v3'),
         userContent: `TEXT CONTENT:
 ${text}
 

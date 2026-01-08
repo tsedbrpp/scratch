@@ -15,7 +15,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v23';
+const PROMPT_VERSION = 'v24';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();

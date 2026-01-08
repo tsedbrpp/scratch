@@ -14,15 +14,17 @@ import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
 import { ScenarioPanel } from "@/components/ecosystem/ScenarioPanel";
 import { ScenarioId } from "@/lib/scenario-engine";
 import { EcosystemTable } from "@/components/ecosystem/EcosystemTable";
-import { Network, List, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, FileText, Loader2 } from "lucide-react";
+import { AssemblageCompass } from "@/components/ecosystem/AssemblageCompass";
+import { Network, List, Compass, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, FileText, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function EcosystemPage() {
     // Sources for policy selection
     const { sources, isLoading: isSourcesLoading } = useSources();
-    const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
+    const [selectedPolicyId, setSelectedPolicyId] = useServerStorage<string | null>("ecosystem_active_policy_id", null);
     const policyDocuments = sources.filter(s => s.type !== "Trace");
 
     // Dynamic Storage Keys
@@ -44,8 +46,8 @@ export default function EcosystemPage() {
     const [absenceAnalysis, setAbsenceAnalysis] = useServerStorage<AssemblageAnalysis | null>(absenceKey, null);
 
     // Layout State (Zen Mode + Expansion)
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     const [isLeftExpanded, setIsLeftExpanded] = useState(false);
     const [isRightExpanded, setIsRightExpanded] = useState(false);
 
@@ -74,13 +76,15 @@ export default function EcosystemPage() {
     const [sidebarMode, setSidebarMode] = useState<"absence" | "scenario">("absence");
 
     // View & Filter State
-    const [viewMode, setViewMode] = useState<"map" | "table">("map");
+    const [viewMode, setViewMode] = useState<"map" | "table" | "compass">("map");
     const [colorMode, setColorMode] = useState<"type" | "epistemic">("type");
     const [filterType, setFilterType] = useState<EcosystemActor["type"] | "All">("All");
 
     const filteredActors = actors.filter(actor =>
         filterType === "All" ? true : actor.type === filterType
     );
+
+
 
     // Graph interaction state
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
@@ -121,7 +125,8 @@ export default function EcosystemPage() {
 
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            // Always try to send demo ID if available (handles client/server env mismatch)
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
@@ -167,7 +172,7 @@ export default function EcosystemPage() {
             }));
 
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
@@ -200,7 +205,7 @@ export default function EcosystemPage() {
         setIsExtracting(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
@@ -209,31 +214,59 @@ export default function EcosystemPage() {
                 headers: headers,
                 body: JSON.stringify({
                     text: extractionText,
-                    analysisMode: 'assemblage_extraction',
+                    analysisMode: 'assemblage_extraction_v3',
                     sourceType: 'User Input'
                 })
             });
 
             const data = await response.json();
-            console.log("DEBUG: Extraction Response", data); // DEBUG
+
             if (data.success && data.analysis) {
                 const { assemblage, actors: newActorsList } = data.analysis;
-                console.log("DEBUG: Assemblage Object", assemblage); // DEBUG
-                console.log("DEBUG: Computed Metrics", data.analysis.computed_metrics); // DEBUG
-                console.log("DEBUG: Traces", data.analysis.traces); // DEBUG
                 const memberIds: string[] = [];
                 const currentActors = [...actors];
 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                newActorsList.forEach((newActor: any) => {
+                newActorsList.forEach((newActor: any, index: number) => {
+
+                    // Compute Dimensional Scores
+                    const m = newActor.metrics || {};
+
+                    // Influence = Average of (Territoriality + Coding + Centrality)
+                    let influenceScore = 5;
+                    if (m.territoriality !== undefined && m.coding !== undefined && m.centrality !== undefined) {
+                        influenceScore = Math.round((m.territoriality + m.coding + m.centrality) / 3);
+                    } else if (m.influence !== undefined) {
+                        influenceScore = m.influence; // Fallback to prompt output if direct score provided
+                    }
+
+                    // Resistance = Max of (Counter-Conduct, Discursive Opposition)
+                    let resistanceScore = 5;
+                    if (m.counter_conduct !== undefined && m.discursive_opposition !== undefined) {
+                        resistanceScore = Math.max(m.counter_conduct, m.discursive_opposition);
+                    } else if (m.resistance !== undefined) {
+                        resistanceScore = m.resistance; // Fallback
+                    }
+
                     const id = crypto.randomUUID();
                     currentActors.push({
                         id,
                         name: newActor.name,
                         type: newActor.type || "Civil Society",
                         description: newActor.description || "",
-                        influence: "Medium",
-                        metrics: { influence: 5, alignment: 5, resistance: 5 },
+                        influence: "Medium", // Legacy field
+                        metrics: {
+                            influence: influenceScore,
+                            alignment: m.alignment || 5,
+                            resistance: resistanceScore,
+                            rationale: m.rationale || "No rationale provided.",
+                            // Store dimensions for tooltip
+                            territoriality: m.territoriality,
+                            coding: m.coding,
+                            centrality: m.centrality,
+                            counter_conduct: m.counter_conduct,
+                            discursive_opposition: m.discursive_opposition
+                        },
                         quotes: newActor.evidence_quotes || [],
                         region: newActor.region || "Unknown",
                         role_type: newActor.role_type
@@ -289,7 +322,7 @@ export default function EcosystemPage() {
     const handleClearCache = async () => {
         try {
             const headers: HeadersInit = {};
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
             await fetch('/api/ecosystem/clear-cache', { method: 'POST', headers });
@@ -374,33 +407,65 @@ export default function EcosystemPage() {
     }
 
     return (
-        <div className="flex flex-col h-full gap-6">
+        <div className="flex flex-col h-full gap-4">
 
-            <div className="flex flex-col gap-6">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Assemblage Diagram</h2>
-                    <p className="text-slate-500">Tracing the territories, flows, and coding intensities of the governance regime.</p>
+            <div className="flex flex-col gap-4 shrink-0">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Assemblage Diagram</h2>
+                        <p className="text-slate-500">Tracing the territories, flows, and coding intensities of the governance regime.</p>
+                    </div>
                 </div>
 
                 {/* Policy Selector Section */}
                 <Card className="bg-white border-slate-200 shadow-sm">
-                    <CardContent className="p-6">
+                    <CardContent className="p-4">
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                             <div className="flex items-center gap-4 w-full md:w-auto">
-                                <div className="p-3 bg-blue-50 rounded-lg">
-                                    <FileText className="h-6 w-6 text-blue-600" />
+                                <div className="p-2 bg-blue-50 rounded-lg">
+                                    <FileText className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-slate-900">Active Policy Document</h3>
-                                    <p className="text-sm text-slate-500">Select a policy to view its ecosystem analysis</p>
+                                    <h3 className="font-semibold text-slate-900 text-sm">Active Policy Document</h3>
                                 </div>
                             </div>
                             <div className="w-full md:w-[300px]">
                                 <Select
                                     value={selectedPolicyId || ""}
-                                    onValueChange={(val) => setSelectedPolicyId(val)}
+                                    onValueChange={async (val) => {
+                                        // Migration Logic: If we are in "Temp" mode (no policy) and have actors,
+                                        // carry them over to the new policy context so the user doesn't lose their work.
+                                        if (!selectedPolicyId && actors.length > 0) {
+                                            const confirmMigrate = window.confirm("You have actors in the scratchpad. Do you want to move them to this policy?");
+                                            if (confirmMigrate) {
+                                                try {
+                                                    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                                                    if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                                                        headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                                                    }
+
+                                                    // Manually save current state to the NEW keys
+                                                    await Promise.all([
+                                                        fetch('/api/storage', {
+                                                            method: 'POST',
+                                                            headers,
+                                                            body: JSON.stringify({ key: `ecosystem_actors_${val}`, value: actors }),
+                                                        }),
+                                                        fetch('/api/storage', {
+                                                            method: 'POST',
+                                                            headers,
+                                                            body: JSON.stringify({ key: `ecosystem_configurations_${val}`, value: configurations }),
+                                                        })
+                                                    ]);
+                                                } catch (err) {
+                                                    console.error("Migration failed:", err);
+                                                }
+                                            }
+                                        }
+                                        setSelectedPolicyId(val);
+                                    }}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-9 text-sm">
                                         <SelectValue placeholder="Select a policy document..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -435,255 +500,238 @@ export default function EcosystemPage() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col lg:flex-row h-full gap-6 flex-1 overflow-hidden">
-                    {/* Sidebar */}
-                    {showLeftPanel && (
-                        <div className={`flex flex-col gap-4 shrink-0 transition-all duration-300 overflow-y-auto ${isLeftExpanded ? 'w-full lg:w-[600px] xl:w-[700px] z-20 shadow-xl' : 'w-full lg:w-80'}`}>
-                            <ActorList
-                                actors={actors}
-                                selectedActorId={selectedActorId}
-                                onSelectActor={setSelectedActorId}
-                                onClearAll={handleClearAll}
-                                isExpanded={isLeftExpanded}
-                                onToggleExpand={() => setIsLeftExpanded(!isLeftExpanded)}
-                                isSimulating={isSimulating}
-                                simulationQuery={simulationQuery}
-                                setSimulationQuery={setSimulationQuery}
-                                onSimulate={handleSimulate}
-                                isDialogOpen={isDialogOpen}
-                                setIsDialogOpen={setIsDialogOpen}
-                                onClearCache={handleClearCache}
-                                isExtracting={isExtracting}
-                                extractionText={extractionText}
-                                setExtractionText={setExtractionText}
-                                onExtract={handleExtractAssemblage}
-                                isExtractionDialogOpen={isExtractionDialogOpen}
-                                setIsExtractionDialogOpen={setIsExtractionDialogOpen}
-                                isAnalyzingHoles={isAnalyzingHoles}
-                                onAnalyze={handleAnalyzeHoles}
-                                onClose={() => setShowLeftPanel(false)}
-                            />
-                        </div>
-                    )}
+                <Tabs defaultValue="map" className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center px-1 shrink-0">
+                        <TabsList className="bg-slate-100">
+                            <TabsTrigger value="map" className="gap-2">
+                                <Network className="h-4 w-4" /> Visual Assemblage
+                            </TabsTrigger>
+                            <TabsTrigger value="table" className="gap-2">
+                                <List className="h-4 w-4" /> Table View
+                            </TabsTrigger>
+                            <TabsTrigger value="compass" className="gap-2">
+                                <Compass className="h-4 w-4" /> Assemblage Compass
+                            </TabsTrigger>
+                            <TabsTrigger value="holes" className="gap-2">
+                                <FileText className="h-4 w-4" /> Cultural Holes
+                            </TabsTrigger>
+                        </TabsList>
 
-                    {/* Main Content */}
-                    <div className="flex-1 flex flex-col gap-6 overflow-y-auto pb-10 transition-all duration-300">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                {!showLeftPanel && (
-                                    <button
-                                        onClick={() => setShowLeftPanel(true)}
-                                        className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-                                        title="Show Actor List"
-                                    >
-                                        <PanelLeftOpen size={20} />
-                                    </button>
-                                )}
-                                {showLeftPanel && (
-                                    <button
-                                        onClick={() => setShowLeftPanel(false)}
-                                        className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-                                        title="Hide Actor List"
-                                    >
-                                        <PanelLeftClose size={20} />
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-2 items-end">
-                                <div className="flex items-center gap-2">
-                                    {/* View & Filter Controls */}
-                                    <div className="flex items-center gap-2 bg-white p-1 rounded-lg border shadow-sm">
-                                        <div className="flex bg-slate-100 p-0.5 rounded mr-2">
-                                            <button
-                                                onClick={() => setViewMode("map")}
-                                                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all flex items-center gap-1 ${viewMode === "map" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                                            >
-                                                <Network className="h-3 w-3" />
-                                                Graph
-                                            </button>
-                                            <button
-                                                onClick={() => setViewMode("table")}
-                                                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all flex items-center gap-1 ${viewMode === "table" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                                            >
-                                                <List className="h-3 w-3" />
-                                                Table
-                                            </button>
-                                        </div>
-
-                                        {/* Color Mode Toggle (Only for Map) */}
-                                        {viewMode === "map" && (
-                                            <div className="flex bg-slate-100 p-0.5 rounded mr-2 border-l pl-2 ml-2">
-                                                <button
-                                                    onClick={() => setColorMode("type")}
-                                                    className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${colorMode === "type" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
-                                                >
-                                                    Type
-                                                </button>
-                                                <button
-                                                    onClick={() => setColorMode("epistemic")}
-                                                    className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all flex items-center gap-1 ${colorMode === "epistemic" ? "bg-white shadow text-emerald-700" : "text-slate-500 hover:text-slate-700"}`}
-                                                >
-                                                    Epistemic Map
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        <select
-                                            className="text-xs border-none bg-transparent font-medium text-slate-600 focus:ring-0 cursor-pointer"
-                                            value={filterType}
-                                            onChange={(e) => setFilterType(e.target.value as EcosystemActor["type"] | "All")}
-                                        >
-                                            <option value="All">All Types</option>
-                                            <option value="Policymaker">Policymakers</option>
-                                            <option value="Startup">Startups</option>
-                                            <option value="Civil Society">Civil Society</option>
-                                            <option value="Academic">Academics</option>
-                                            <option value="Infrastructure">Infrastructure</option>
-                                            <option value="Algorithm">Algorithms</option>
-                                            <option value="Dataset">Datasets</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Right Panel Toggle */}
-                                    {!showRightPanel && (
-                                        <button
-                                            onClick={() => setShowRightPanel(true)}
-                                            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors bg-white border shadow-sm h-full"
-                                            title="Show Analysis Panel"
-                                        >
-                                            <PanelRightOpen size={16} />
-                                        </button>
-                                    )}
-                                    {showRightPanel && (
-                                        <button
-                                            onClick={() => setShowRightPanel(false)}
-                                            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors bg-white border shadow-sm h-full"
-                                            title="Hide Analysis Panel"
-                                        >
-                                            <PanelRightClose size={16} />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Lens Selector (Only relevant for Graph) */}
-                                {viewMode === "map" && (
-                                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border shadow-sm scale-90 origin-right">
-                                        <span className="text-xs font-semibold text-slate-500 uppercase px-2">Lenses:</span>
-                                        {(["None", "Market", "Critical", "Infrastructure"] as const).map(lens => (
-                                            <button
-                                                key={lens}
-                                                onClick={() => setActiveLens(lens)}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeLens === lens
-                                                    ? "bg-slate-900 text-white shadow"
-                                                    : "text-slate-600 hover:bg-slate-100"
-                                                    }`}
-                                            >
-                                                {lens}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {viewMode === "map" ? (
-                            <EcosystemMap
-                                actors={filteredActors}
-                                configurations={configurations}
-                                positions={positions}
-                                interactionMode={interactionMode}
-                                setInteractionMode={setInteractionMode}
-                                selectedForGrouping={selectedForGrouping}
-                                onToggleSelection={toggleSelection}
-                                onCreateConfiguration={handleCreateConfiguration}
-                                onActorDrag={handleActorDrag}
-                                onConfigDrag={handleConfigDrag}
-                                activeLayers={activeLayers}
-                                toggleLayer={toggleLayer}
-                                activeLens={activeLens}
-                                activeScenario={activeScenario}
-                                colorMode={colorMode}
-                                onConfigClick={handleConfigClick}
-                            />
-                        ) : (
-                            <EcosystemTable
-                                actors={filteredActors}
-                                onSelectActor={setSelectedActorId}
-                                selectedActorId={selectedActorId}
-                            />
-                        )
-                        }
-
-                        {
-                            viewMode === "map" && (
-                                viewMode === "map" && (
-                                    <div id="cultural-holes-section" className="border-t-4 border-amber-400 pt-6 mt-6">
-                                        <CulturalHolesAnalysis
-                                            culturalHoles={culturalHoles}
-                                            isAnalyzingHoles={isAnalyzingHoles}
-                                            onAnalyze={handleAnalyzeHoles}
-                                        />
-                                    </div>
-                                )
-                            )
-                        }
+                        {/* Global Actions (like Clear Cache) could go here */}
                     </div>
 
-                    {/* Right Sidebar */}
-                    {showRightPanel && (
-                        <div className={`shrink-0 flex flex-col gap-4 transition-all duration-300 overflow-y-auto ${isRightExpanded ? 'w-full lg:w-[600px] xl:w-[700px] z-20 shadow-xl' : 'w-full lg:w-72'}`}>
-                            {/* Sidebar Toggle */}
-                            <div className="flex rounded-md bg-slate-100 p-1">
-                                <button
-                                    onClick={() => setSidebarMode("absence")}
-                                    className={`flex-1 text-xs font-medium py-1.5 rounded-sm transition-all ${sidebarMode === "absence" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    Absences
-                                </button>
-                                <button
-                                    onClick={() => setSidebarMode("scenario")}
-                                    className={`flex-1 text-xs font-medium py-1.5 rounded-sm transition-all ${sidebarMode === "scenario" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    Scenarios
-                                </button>
+                    {/* TAB 1: VISUAL ASSEMBLAGE (FULL MAP) */}
+                    <TabsContent value="map" className="flex-1 flex overflow-hidden mt-4 gap-6 data-[state=inactive]:hidden">
+
+                        {/* Map View - Retaining Sidebar Logic for Selection/Simulation, but defaults can be managed */}
+                        <div className="flex flex-col lg:flex-row h-full gap-6 flex-1 overflow-hidden">
+                            {/* Left Panel (Actor List) */}
+                            {showLeftPanel && (
+                                <div className={`flex flex-col gap-4 shrink-0 transition-all duration-300 overflow-y-auto ${isLeftExpanded ? 'w-full lg:w-[600px] xl:w-[700px] z-20 shadow-xl' : 'w-full lg:w-80'}`}>
+                                    <ActorList
+                                        actors={actors}
+                                        selectedActorId={selectedActorId}
+                                        onSelectActor={setSelectedActorId}
+                                        onClearAll={handleClearAll}
+                                        isExpanded={isLeftExpanded}
+                                        onToggleExpand={() => setIsLeftExpanded(!isLeftExpanded)}
+                                        isSimulating={isSimulating}
+                                        simulationQuery={simulationQuery}
+                                        setSimulationQuery={setSimulationQuery}
+                                        onSimulate={handleSimulate}
+                                        isDialogOpen={isDialogOpen}
+                                        setIsDialogOpen={setIsDialogOpen}
+                                        onClearCache={handleClearCache}
+                                        isExtracting={isExtracting}
+                                        extractionText={extractionText}
+                                        setExtractionText={setExtractionText}
+                                        onExtract={handleExtractAssemblage}
+                                        isExtractionDialogOpen={isExtractionDialogOpen}
+                                        setIsExtractionDialogOpen={setIsExtractionDialogOpen}
+                                        isAnalyzingHoles={isAnalyzingHoles}
+                                        onAnalyze={handleAnalyzeHoles}
+                                        onClose={() => setShowLeftPanel(false)}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Center (The Map) */}
+                            <div className="flex-1 flex flex-col gap-4 overflow-hidden relative transition-all duration-300">
+                                {/* Map Header / Toolbar */}
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-10 pointer-events-none">
+                                    <div className="flex items-center gap-3 pointer-events-auto">
+                                        {!showLeftPanel && (
+                                            <button onClick={() => setShowLeftPanel(true)} className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shadow-sm border border-slate-200" title="Show Actor List">
+                                                <PanelLeftOpen size={20} />
+                                            </button>
+                                        )}
+                                        {showLeftPanel && (
+                                            <button onClick={() => setShowLeftPanel(false)} className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shadow-sm border border-slate-200" title="Hide Actor List">
+                                                <PanelLeftClose size={20} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 items-end pointer-events-auto">
+                                        <div className="flex items-center gap-2">
+                                            {/* Color Mode Toggle */}
+                                            <div className="flex bg-slate-100 p-0.5 rounded mr-2 border shadow-sm">
+                                                <button onClick={() => setColorMode("type")} className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${colorMode === "type" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}>Type</button>
+                                                <button onClick={() => setColorMode("epistemic")} className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all flex items-center gap-1 ${colorMode === "epistemic" ? "bg-white shadow text-emerald-700" : "text-slate-500 hover:text-slate-700"}`}>Epistemic</button>
+                                            </div>
+
+                                            {/* Filter Checkbox/Select */}
+                                            <div className="bg-slate-100 p-0.5 rounded border shadow-sm">
+                                                <select
+                                                    className="text-xs border-none bg-transparent font-medium text-slate-600 focus:ring-0 cursor-pointer h-7"
+                                                    value={filterType}
+                                                    onChange={(e) => setFilterType(e.target.value as EcosystemActor["type"] | "All")}
+                                                >
+                                                    <option value="All">All Types</option>
+                                                    <option value="Policymaker">Policymakers</option>
+                                                    <option value="Startup">Startups</option>
+                                                    <option value="Civil Society">Civil Society</option>
+                                                    <option value="Academic">Academics</option>
+                                                    <option value="Infrastructure">Infrastructure</option>
+                                                    <option value="Algorithm">Algorithms</option>
+                                                    <option value="Dataset">Datasets</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Right Panel Toggle */}
+                                            {!showRightPanel && (
+                                                <button onClick={() => setShowRightPanel(true)} className="p-1.5 rounded bg-white hover:bg-slate-50 text-slate-600 transition-colors border shadow-sm" title="Show Details">
+                                                    <PanelRightOpen size={18} />
+                                                </button>
+                                            )}
+                                            {showRightPanel && (
+                                                <button onClick={() => setShowRightPanel(false)} className="p-1.5 rounded bg-white hover:bg-slate-50 text-slate-600 transition-colors border shadow-sm" title="Hide Details">
+                                                    <PanelRightClose size={18} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Lens Selector */}
+                                        <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border shadow-sm scale-90 origin-right">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase px-2">Lenses:</span>
+                                            {(["None", "Market", "Critical", "Infrastructure"] as const).map(lens => (
+                                                <button
+                                                    key={lens}
+                                                    onClick={() => setActiveLens(lens)}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeLens === lens ? "bg-slate-900 text-white shadow" : "text-slate-600 hover:bg-slate-100"}`}
+                                                >
+                                                    {lens}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actual Map Component */}
+                                <div className="flex-1 min-h-0 border rounded-xl overflow-hidden shadow-sm relative">
+                                    <EcosystemMap
+                                        actors={filteredActors}
+                                        configurations={configurations}
+                                        positions={positions}
+                                        interactionMode={interactionMode}
+                                        setInteractionMode={setInteractionMode}
+                                        selectedForGrouping={selectedForGrouping}
+                                        onToggleSelection={toggleSelection}
+                                        onCreateConfiguration={handleCreateConfiguration}
+                                        onActorDrag={handleActorDrag}
+                                        onConfigDrag={handleConfigDrag}
+                                        activeLayers={activeLayers}
+                                        toggleLayer={toggleLayer}
+                                        activeLens={activeLens}
+                                        colorMode={colorMode}
+                                        onConfigClick={handleConfigClick}
+                                        absenceAnalysis={absenceAnalysis}
+                                    />
+                                    {/* Removed CulturalHolesAnalysis from here */}
+                                </div>
                             </div>
 
-                            {sidebarMode === "absence" ? (
-                                <AssemblagePanel
-                                    actors={actors}
-                                    analyzedText={extractionText}
-                                    onSimulate={handleSimulate}
-                                    savedAnalysis={absenceAnalysis}
-                                    onSaveAnalysis={(analysis) => {
-                                        if (selectedConfigId) {
-                                            setConfigurations(prev => prev.map(c =>
-                                                c.id === selectedConfigId ? { ...c, analysisData: analysis } : c
-                                            ));
-                                        } else {
-                                            setAbsenceAnalysis(analysis);
-                                        }
-                                    }}
-                                    onToggleExpand={() => setIsRightExpanded(!isRightExpanded)}
-                                    selectedConfig={configurations.find(c => c.id === selectedConfigId)}
-                                    onClose={() => {
-                                        setShowRightPanel(false);
-                                        setSelectedConfigId(null);
-                                    }}
-                                />
-                            ) : (
-                                <ScenarioPanel
-                                    actors={actors}
-                                    activeScenario={activeScenario}
-                                    setActiveScenario={setActiveScenario}
-                                    onClose={() => {
-                                        setShowRightPanel(false);
-                                        setSelectedConfigId(null);
-                                    }}
-                                />
+                            {/* Right Panel (Details/Inspector) */}
+                            {showRightPanel && (
+                                <div className={`shrink-0 flex flex-col gap-4 transition-all duration-300 overflow-y-auto ${isRightExpanded ? 'w-full lg:w-[800px] xl:w-[1000px] z-20 shadow-xl' : 'w-full lg:w-72'}`}>
+                                    {/* Sidebar Toggle */}
+                                    <div className="flex rounded-md bg-slate-100 p-1">
+                                        <button onClick={() => setSidebarMode("absence")} className={`flex-1 text-xs font-medium py-1.5 rounded-sm transition-all ${sidebarMode === "absence" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Absences</button>
+                                        <button onClick={() => setSidebarMode("scenario")} className={`flex-1 text-xs font-medium py-1.5 rounded-sm transition-all ${sidebarMode === "scenario" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>Scenarios</button>
+                                    </div>
+
+                                    {sidebarMode === "absence" ? (
+                                        <AssemblagePanel
+                                            actors={actors}
+                                            analyzedText={extractionText}
+                                            onSimulate={handleSimulate}
+                                            savedAnalysis={absenceAnalysis}
+                                            onSaveAnalysis={(analysis) => {
+                                                if (selectedConfigId) {
+                                                    setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
+                                                } else {
+                                                    setAbsenceAnalysis(analysis);
+                                                }
+                                            }}
+                                            onToggleExpand={() => setIsRightExpanded(!isRightExpanded)}
+                                            isExpanded={isRightExpanded} // Pass state specifically if component supports it (AssemblagePanel might not use it yet visually but good to pass if interface allows, otherwise ignore)
+                                            selectedConfig={configurations.find(c => c.id === selectedConfigId)}
+                                            onClose={() => { setShowRightPanel(false); setSelectedConfigId(null); }}
+                                        />
+                                    ) : (
+                                        <ScenarioPanel
+                                            actors={actors}
+                                            activeScenario={activeScenario}
+                                            setActiveScenario={setActiveScenario}
+                                            onClose={() => { setShowRightPanel(false); setSelectedConfigId(null); }}
+                                            onToggleExpand={() => setIsRightExpanded(!isRightExpanded)}
+                                            isExpanded={isRightExpanded}
+                                        />
+                                    )}
+                                </div>
                             )}
                         </div>
-                    )}
+                    </TabsContent>
+
+                    {/* TAB 2: TABLE VIEW */}
+                    <TabsContent value="table" className="flex-1 overflow-hidden mt-4 p-4 data-[state=inactive]:hidden">
+                        <Card className="h-full border-slate-200">
+                            <CardContent className="p-0 h-full overflow-hidden">
+                                <EcosystemTable
+                                    actors={filteredActors}
+                                    onSelectActor={setSelectedActorId}
+                                    selectedActorId={selectedActorId}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* TAB 3: ASSEMBLAGE COMPASS */}
+                    <TabsContent value="compass" className="flex-1 overflow-auto mt-4 p-4 data-[state=inactive]:hidden">
+                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col">
+                            <h3 className="text-lg font-semibold mb-4 text-slate-800 flex items-center shrink-0">
+                                <Compass className="w-5 h-5 mr-2 text-indigo-600" /> Epistemic Compass
+                            </h3>
+                            <div className="flex-1 min-h-0">
+                                <AssemblageCompass
+                                    actors={filteredActors}
+                                    onSelectActor={setSelectedActorId}
+                                    selectedActorId={selectedActorId}
+                                />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* TAB 4: CULTURAL HOLES */}
+                    <TabsContent value="holes" className="flex-1 overflow-auto mt-4 p-6 data-[state=inactive]:hidden">
+                        <div id="cultural-holes-section" className="bg-amber-50/50 p-6 rounded-xl border border-amber-100 min-h-full">
+                            <CulturalHolesAnalysis
+                                culturalHoles={culturalHoles}
+                                isAnalyzingHoles={isAnalyzingHoles}
+                                onAnalyze={handleAnalyzeHoles}
+                            />
+                        </div>
+                    </TabsContent>
 
                     <ConfigurationDialog
                         isOpen={isConfigDialogOpen}
@@ -694,7 +742,7 @@ export default function EcosystemPage() {
                         setDescription={setNewConfigDesc}
                         onConfirm={confirmCreateConfiguration}
                     />
-                </div>
+                </Tabs>
             )}
         </div>
     );

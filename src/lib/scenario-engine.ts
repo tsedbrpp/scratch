@@ -1,6 +1,35 @@
 import { EcosystemActor } from "@/types/ecosystem";
+import { Sparkles, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, LucideIcon } from 'lucide-react';
 
-export type ScenarioId = "None" | "WeakEnforcement" | "PrivateStandards" | "ExpandedInclusion";
+export type ScenarioId = "None" | "WeakEnforcement" | "PrivateStandards" | "ExpandedInclusion" | "RegulatoryCascade";
+
+export const SCENARIO_METADATA: Record<ScenarioId, { label: string, icon: LucideIcon, description: string }> = {
+    "None": {
+        label: "Baseline",
+        icon: RefreshCcw,
+        description: "Standard ecosystem interactions."
+    },
+    "WeakEnforcement": {
+        label: "Weak Enforcement",
+        icon: TrendingDown,
+        description: "Formal regulatory power dissolves. Corporate self-regulation and harm externalization intensify."
+    },
+    "PrivateStandards": {
+        label: "Private Standards",
+        icon: Sparkles,
+        description: "Compliance shifts from law to private certification. Standards bodies gain centrality."
+    },
+    "ExpandedInclusion": {
+        label: "Expanded Inclusion",
+        icon: TrendingUp,
+        description: "Marginalized actors gain power. Accountability loops strengthen; extraction is contested."
+    },
+    "RegulatoryCascade": {
+        label: "Compliance Cascade",
+        icon: AlertTriangle,
+        description: "Simulating the 'singularity' where subtle legal changes trigger rapid state flips across the network."
+    }
+};
 
 export interface ScenarioDelta {
     id: string; // Source-Target
@@ -76,7 +105,7 @@ export function applyScenario(
             }
 
             // Rule 3: Information -> Policymaker ("Informs") strengthens (Lobbying via standards)
-            if (source.type === "Information" && target.type === "Policymaker") {
+            if (source.type === "Dataset" && target.type === "Policymaker") {
                 multiplier = 1.4;
                 narrative = "Technical standards become the primary source of policy truth.";
             }

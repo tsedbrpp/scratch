@@ -28,10 +28,16 @@ export function AssemblagePanel({ actors, analyzedText = "", onSimulate, topic, 
     const [simulatingIndex, setSimulatingIndex] = useState<number | null>(null);
 
     const handleDeepScan = async () => {
+        if (actors.length === 0 && !analyzedText) {
+            alert("Please add actors or text source before analyzing.");
+            return;
+        }
+
         setIsAnalyzing(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            // Always try to send demo ID if available (handles client/server env mismatch)
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
@@ -40,6 +46,13 @@ export function AssemblagePanel({ actors, analyzedText = "", onSimulate, topic, 
                 headers: headers,
                 body: JSON.stringify({ actors, text: analyzedText })
             });
+
+            if (!response.ok) {
+                console.error("Assemblage Analysis failed:", response.status, response.statusText);
+                alert(`Analysis failed: Server returned ${response.status}`);
+                return;
+            }
+
             const data = await response.json();
             if (data.success && onSaveAnalysis) {
                 if (data.success && onSaveAnalysis) {
@@ -63,6 +76,7 @@ export function AssemblagePanel({ actors, analyzedText = "", onSimulate, topic, 
             }
         } catch (error) {
             console.error("Assemblage Analysis failed", error);
+            alert("Failed to analyze assemblage. Please check your connection.");
         } finally {
             setIsAnalyzing(false);
         }

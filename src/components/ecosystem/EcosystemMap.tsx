@@ -1,15 +1,25 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import * as d3 from 'd3';
+import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers, Landmark, Users, Rocket, GraduationCap, Server, Database, Cpu, FileCode, Eye, EyeOff, Filter, X, Info, ChevronDown, ChevronUp } from 'lucide-react';
-import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
+import { Network, MousePointer2, BoxSelect, Layers, EyeOff, ChevronDown, ChevronUp, Loader2, ZoomIn, ZoomOut, Maximize, Minimize } from 'lucide-react';
+import { useForceGraph } from '@/hooks/useForceGraph';
 import { generateEdges } from '@/lib/graph-utils';
+import { TranslationChain } from './TranslationChain';
+import dynamic from 'next/dynamic';
+import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
+import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor } from '@/lib/ecosystem-utils';
+
+const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
+    ssr: false,
+    loading: () => <div className="h-full flex items-center justify-center bg-slate-50 text-slate-400">Loading 3D Engine...</div>
+});
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
     configurations: EcosystemConfiguration[];
-    positions: Record<string, { x: number, y: number }>;
+    positions?: Record<string, { x: number, y: number }>;
     interactionMode: "drag" | "select";
     setInteractionMode: (mode: "drag" | "select") => void;
     selectedForGrouping: string[];
@@ -19,836 +29,686 @@ interface EcosystemMapProps {
     onConfigDrag: (configId: string, dx: number, dy: number) => void;
     activeLayers?: Record<string, boolean>;
     toggleLayer?: (layer: string) => void;
-    activeLens?: "None" | "Market" | "Critical" | "Infrastructure" | "Decolonial";
-    activeScenario?: ScenarioId;
+    activeLens?: string;
     colorMode?: "type" | "epistemic";
     onConfigClick?: (configId: string) => void;
-    culturalHoles?: import('@/types/ecosystem').CulturalHolesAnalysisResult | null;
+    absenceAnalysis?: AssemblageAnalysis | AiAbsenceAnalysis | null;
 }
+
+// --- Swiss Design System Constants ---
+// Moved to @/lib/ecosystem-utils
+
+const HULL_STYLES = {
+    opacity: 0.15,
+    strokeDash: "6 4",
+    strokeWidth: 2
+};
 
 export function EcosystemMap({
     actors,
     configurations,
-    positions,
     interactionMode,
     setInteractionMode,
     selectedForGrouping,
     onToggleSelection,
     onCreateConfiguration,
-    onActorDrag,
-    onConfigDrag,
-    activeLayers = {},
-    toggleLayer = () => { },
     activeLens = "None",
-    activeScenario = "None",
-    colorMode = "type",
     onConfigClick,
-    culturalHoles
+    absenceAnalysis
 }: EcosystemMapProps) {
-    const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null); // Ref for zoom behavior
+    const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
+    const [isLegendOpen, setIsLegendOpen] = useState(false);
+    const [isNestedMode, setIsNestedMode] = useState(false);
+    const [isStratumMode, setIsStratumMode] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [is3DMode, setIs3DMode] = useState(false);
 
-    // Restore missing drag state
-    const [draggingId, setDraggingId] = useState<string | null>(null);
-    const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
-    const dragStartRef = useRef<{ mouse: { x: number, y: number } } | null>(null);
-    const isDraggingRef = useRef(false);
+    const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
 
-    // Legend Collapse States
-    const [collapsedLegends, setCollapsedLegends] = useState<Record<string, boolean>>({
-        actor: false,
-        resistance: false,
-        epistemic: false,
-        metrics: false
-    });
+    // Zoom/Pan State
+    const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
 
-    const toggleLegend = (key: string) => {
-        setCollapsedLegends(prev => ({ ...prev, [key]: !prev[key] }));
+    // Merged Actors with Ghosts
+    const mergedActors = useMemo(() => {
+        return mergeGhostNodes(actors, absenceAnalysis || null);
+    }, [actors, absenceAnalysis]);
+
+    // Helper to determine if an actor belongs to a hovered stage
+    const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
+        // ... (Logic remains same)
+        if (!stageId) return true;
+        const t = actor.type.toLowerCase();
+
+        switch (stageId) {
+            case 'problem':
+                return ['civilsociety', 'ngo', 'academic', 'activist', 'public'].some(k => t.includes(k));
+            case 'regulation':
+                return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law'].some(k => t.includes(k));
+            case 'inscription':
+                return ['standard', 'algorithm', 'technologist', 'expert', 'scientist'].some(k => t.includes(k));
+            case 'delegation':
+                return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal'].some(k => t.includes(k));
+            case 'market':
+                return ['startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
+            default:
+                return true;
+        }
     };
 
-    // Compute edge multipliers for scenarios
-    const { edgeMultipliers } = useMemo(() => {
-        const edges = generateEdges(actors);
-        return applyScenario(actors, edges, activeScenario);
-    }, [actors, activeScenario]);
+    // ... (logic remains)
+    const links = useMemo(() => {
+        const generated = generateEdges(mergedActors); // Use merged actors for edges (though ghosts likely have none)
+        return generated.map(e => ({
+            source: e.source.id,
+            target: e.target.id,
+            type: e.label
+        }));
+    }, [mergedActors]);
 
-    const getNeighbors = (actorId: string) => {
-        const neighbors = new Set<string>();
-        actors.forEach((source, i) => {
-            actors.slice(i + 1).forEach(target => {
-                // Check if connected (reusing connection logic would be better but for now let's just check if they *would* be connected or just assume all are potential?)
-                // We need the actual edges.
-                // Let's use the same logic as the render loop.
-                // Actually, traversing the `actors` array is inefficient.
-                // But for < 50 actors it's fine.
-                const shouldConnect = (
-                    (source.type === "Policymaker" && target.type === "Civil Society") ||
-                    (source.type === "Startup" && target.type === "Academic") ||
-                    (source.type === "Policymaker" && target.type === "Startup") ||
-                    (source.type === "Civil Society" && target.type === "Academic") ||
-                    (source.type === "Infrastructure" && target.type === "Startup") ||
-                    (source.type === "Infrastructure" && target.type === "Policymaker") ||
-                    (source.type === "Infrastructure" && target.type === "Academic") ||
-                    (source.type === "Startup" && target.type === "Algorithm") ||
-                    (source.type === "Academic" && target.type === "Algorithm") ||
-                    (source.type === "Algorithm" && target.type === "Dataset") ||
-                    (source.type === "Policymaker" && target.type === "Algorithm") ||
-                    (source.type === "Infrastructure" && target.type === "Algorithm") ||
-                    (source.type === "Infrastructure" && target.type === "Dataset")
-                );
+    // Force Physics
+    const { nodes, simulation, drag } = useForceGraph(
+        mergedActors, // Use merged actors
+        dimensions.width,
+        dimensions.height,
+        configurations.map(c => ({ id: c.id, memberIds: c.memberIds })),
+        links,
+        isNestedMode,
+        is3DMode
+    );
 
-                if (shouldConnect) {
-                    if (source.id === actorId) neighbors.add(target.id);
-                    if (target.id === actorId) neighbors.add(source.id);
-                }
+    // Zoom Behavior Setup
+    useEffect(() => {
+        if (!svgRef.current) return;
+
+        const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                setTransform(event.transform);
             });
-        });
-        return neighbors;
-    };
 
-    const handleMouseDown = (e: React.MouseEvent, actorId: string) => {
-        e.stopPropagation();
-        e.preventDefault();
-        isDraggingRef.current = false;
+        zoomBehaviorRef.current = zoomBehavior; // Store in ref
 
-        if (interactionMode === "drag") {
-            setDraggingId(actorId);
-        } else if (interactionMode === "select") {
-            onToggleSelection(actorId);
-        }
-    };
+        const svgSelection = d3.select(svgRef.current);
+        svgSelection.call(zoomBehavior);
 
-    const handleConfigMouseDown = (e: React.MouseEvent, configId: string) => {
-        if (interactionMode !== "drag") return;
-        e.stopPropagation();
-        e.preventDefault();
-        isDraggingRef.current = false; // Reset drag state
+        return () => {
+            svgSelection.on(".zoom", null);
+        };
+    }, [is3DMode]);
 
-        const svg = (e.target as Element).closest('svg');
-        if (!svg) return;
-
-        const pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
-        dragStartRef.current = { mouse: { x: svgP.x, y: svgP.y } };
-        setDraggingConfigId(configId);
-    };
-
-    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        if (interactionMode !== "drag") return;
-        if (!draggingId && !draggingConfigId) return;
-
-        isDraggingRef.current = true;
-
-        const svg = e.currentTarget;
-        const pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
-        if (draggingId) {
-            onActorDrag(draggingId, svgP.x, svgP.y);
-        } else if (draggingConfigId && dragStartRef.current) {
-            const dx = svgP.x - dragStartRef.current.mouse.x;
-            const dy = svgP.y - dragStartRef.current.mouse.y;
-
-            // Update start ref for next delta
-            dragStartRef.current = { mouse: { x: svgP.x, y: svgP.y } };
-
-            onConfigDrag(draggingConfigId, dx, dy);
-        }
-    };
-
-    const handleActorClick = (e: React.MouseEvent, actorId: string) => {
-        e.stopPropagation();
-        if (interactionMode === "drag" && !isDraggingRef.current) {
-            if (focusedNodeId === actorId) {
-                setFocusedNodeId(null);
-            } else {
-                setFocusedNodeId(actorId);
+    // Full Screen Escape Listener
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && isFullScreen) {
+                setIsFullScreen(false);
             }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isFullScreen]);
+
+
+    // Resize Observer
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+            for (const entry of entries) {
+                setDimensions({
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height
+                });
+            }
+        });
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+
+
+    const getNodePos = (id: string) => {
+        const node = nodes.find(n => n.id === id);
+        return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
+    };
+
+    const handleMouseDown = (e: React.MouseEvent, node: any) => {
+        e.stopPropagation(); // Prevent Zoom/Pan start
+        if (interactionMode === "drag") {
+            setDraggingNodeId(node.id);
+            drag(node).dragStarted({ active: true, x: node.x, y: node.y });
+        } else {
+            onToggleSelection(node.id);
         }
+    };
+
+    const getTransformedPoint = (clientX: number, clientY: number) => {
+        if (!svgRef.current) return { x: 0, y: 0 };
+        const svg = svgRef.current;
+        const pt = svg.createSVGPoint();
+        pt.x = clientX;
+        pt.y = clientY;
+        const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+        return {
+            x: (svgP.x - transform.x) / transform.k,
+            y: (svgP.y - transform.y) / transform.k
+        };
+    };
+
+    const handleSvgMouseMove = (e: React.MouseEvent) => {
+        if (!draggingNodeId || interactionMode !== "drag") return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const worldP = getTransformedPoint(e.clientX, e.clientY);
+        const node = nodes.find(n => n.id === draggingNodeId);
+
+        if (node) drag(node).dragged({ x: worldP.x, y: worldP.y });
     };
 
     const handleMouseUp = () => {
-        setDraggingId(null);
-        setDraggingConfigId(null);
-        dragStartRef.current = null;
-        setTimeout(() => { isDraggingRef.current = false; }, 0); // Defer reset to allow Click event to fire first
+        if (draggingNodeId) {
+            const node = nodes.find(n => n.id === draggingNodeId);
+            if (node) drag(node).dragEnded({ active: false });
+            setDraggingNodeId(null);
+        }
     };
 
-    // Convex Hull Algorithm
-    const getConvexHull = (points: { x: number, y: number }[]) => {
-        if (points.length < 3) return points;
+    // Zoom Controls
+    const resetZoom = () => {
+        if (!svgRef.current || !zoomBehaviorRef.current) return;
+        // Use the stored behavior to trigger the reset
+        d3.select(svgRef.current)
+            .transition()
+            .duration(750)
+            .call(zoomBehaviorRef.current.transform, d3.zoomIdentity);
+    };
+
+    const toggleFullScreen = () => {
+        setIsFullScreen(!isFullScreen);
+    };
+
+    const getHullPath = (points: { x: number, y: number }[]) => {
+        if (points.length < 3) return "";
         points.sort((a, b) => a.x - b.x || a.y - b.y);
-
-        const cross = (o: { x: number, y: number }, a: { x: number, y: number }, b: { x: number, y: number }) => {
-            return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-        };
-
+        const cross = (o: { x: number, y: number }, a: { x: number, y: number }, b: { x: number, y: number }) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
         const lower = [];
         for (let i = 0; i < points.length; i++) {
-            while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) {
-                lower.pop();
-            }
+            while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) lower.pop();
             lower.push(points[i]);
         }
-
         const upper = [];
         for (let i = points.length - 1; i >= 0; i--) {
-            while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) {
-                upper.pop();
-            }
+            while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) upper.pop();
             upper.push(points[i]);
         }
-
-        upper.pop();
-        lower.pop();
-        return lower.concat(upper);
+        upper.pop(); lower.pop();
+        const hull = lower.concat(upper);
+        return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
     };
 
-    const renderConfigurationShapes = () => {
-        return configurations.map(config => {
-            const memberPoints = config.memberIds
-                .map(id => positions[id])
-                .filter(p => p !== undefined);
+    const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-            if (memberPoints.length < 2) return null;
-
-            let pathData = "";
-            let centroid = { x: 0, y: 0 };
-
-            if (memberPoints.length === 2) {
-                pathData = `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}`;
-                centroid = {
-                    x: (memberPoints[0].x + memberPoints[1].x) / 2,
-                    y: (memberPoints[0].y + memberPoints[1].y) / 2
-                };
-            } else {
-                const hull = getConvexHull(memberPoints);
-                pathData = `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
-                centroid = hull.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-                centroid.x /= hull.length;
-                centroid.y /= hull.length;
-            }
-
-            const tScore = typeof config.properties.territorialization_score === 'number' ? config.properties.territorialization_score : 5;
-            const cScore = typeof config.properties.coding_intensity_score === 'number' ? config.properties.coding_intensity_score : 5;
-
-            // Visual Mapping Rules
-            // T-Score (Territorialization): High = Solid Border (Rigid), Low = Dashed (Porous)
-            const strokeDash = tScore >= 7 ? "0" : "10,20";
-
-            // C-Score (Coding Intensity): High = High Opacity (Codified), Low = Low Opacity (Informal)
-            // Base 0.1, Max added 0.5 -> Range 0.1 to 0.6
-            const fillOpacity = 0.1 + (cScore / 20);
-
-            return (
-                <g
-                    key={config.id}
-                    onMouseDown={(e) => handleConfigMouseDown(e, config.id)}
-                    onClick={(e) => handleConfigClick(e, config.id)}
-                    className={interactionMode === "drag" ? "cursor-grab active:cursor-grabbing hover:opacity-90" : ""}
-                    style={{ pointerEvents: 'all' }}
-                >
-                    <path
-                        d={pathData}
-                        fill={memberPoints.length > 2 ? config.color : "none"}
-                        stroke={config.color}
-                        strokeWidth={memberPoints.length > 2 ? "40" : "60"}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeDasharray={strokeDash}
-                        opacity={fillOpacity.toFixed(2)}
-                        className="transition-all duration-300"
-                    />
-                    <text
-                        x={centroid.x}
-                        y={centroid.y}
-                        textAnchor="middle"
-                        fill="#475569"
-                        fontSize="12"
-                        fontWeight="bold"
-                        className="pointer-events-none select-none"
-                    >
-                        {config.name}
-                        {(config.properties.territorialization_score !== undefined || config.properties.coding_intensity_score !== undefined) && (
-                            <tspan x={centroid.x} dy="1.2em" fontSize="10" fontWeight="normal">
-                                T:{config.properties.territorialization_score ?? '-'} / C:{config.properties.coding_intensity_score ?? '-'}
-                            </tspan>
-                        )}
-                    </text>
-                </g>
-            );
-        });
-    };
-
-    const getActorIcon = (type: string) => {
-        switch (type) {
-            case "Policymaker": return Landmark;
-            case "Civil Society": return Users;
-            case "Startup": return Rocket;
-            case "Academic": return GraduationCap;
-            case "Infrastructure": return Server;
-            case "Algorithm": return Cpu;
-            case "Dataset": return Database;
-            default: return FileCode;
+    // Node Event Handlers
+    const handleNodeHover = (e: React.MouseEvent, actor: EcosystemActor) => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+            setTooltipPos({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
         }
-    };
-
-    const getActorColorByType = (type: string) => {
-        switch (type) {
-            case "Policymaker": return { fill: "#e0f2fe", stroke: "#0284c7" }; // Sky
-            case "Civil Society": return { fill: "#fef9c3", stroke: "#ca8a04" }; // Yellow
-            case "Startup": return { fill: "#f3e8ff", stroke: "#9333ea" }; // Purple
-            case "Academic": return { fill: "#dbeafe", stroke: "#2563eb" }; // Blue
-            case "Infrastructure": return { fill: "#f1f5f9", stroke: "#475569" }; // Slate
-            case "Algorithm": return { fill: "#fee2e2", stroke: "#dc2626" }; // Red
-            case "Dataset": return { fill: "#dcfce7", stroke: "#16a34a" }; // Green
-            default: return { fill: "#ffffff", stroke: "#94a3b8" };
-        }
-    };
-
-    const getLinkDetails = (sourceType: string, targetType: string) => {
-        if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries and compliance costs." };
-        if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Often marginalizes from decision-making loops." };
-        if (sourceType === "Information" && targetType === "Policymaker") return { label: "Informs", description: "Provides epistemic basis for policy." };
-
-        if (sourceType === "Startup" && targetType === "Academic") return { label: "Enables", description: "Provides tools or data for research." };
-        if (sourceType === "Infrastructure" && targetType === "Startup") return { label: "Enables", description: "Provides computational substrate for operations." };
-        if (sourceType === "Startup" && targetType === "Algorithm") return { label: "Delegates", description: "Offloads decision-making authority to code." };
-
-        if (sourceType === "Algorithm" && targetType === "Dataset") return { label: "Extracts", description: "Mines patterns from raw data, often without consent." };
-        if (sourceType === "Infrastructure" && targetType === "Dataset") return { label: "Extracts", description: "Accumulates data capital from interactions." };
-
-        if (sourceType === "Academic" && targetType === "Algorithm") return { label: "Audits", description: "Critically examines algorithmic outputs." };
-
-        return { label: "Relates To", description: "Generic connection." };
-    };
-
-    // Lens Filtering Logic
-    const isActorRelevant = (actorSpec: EcosystemActor) => {
-        if (activeLens === "None") return true;
-        if (activeLens === "Market") return ["Policymaker", "Startup"].includes(actorSpec.type);
-        if (activeLens === "Critical") return ["Civil Society", "Academic"].includes(actorSpec.type);
-        if (activeLens === "Infrastructure") return ["Infrastructure", "Algorithm", "Dataset"].includes(actorSpec.type);
-        return true;
-    };
-
-    // Memoize neighbors of the focused node
-    const activeNeighbors = useMemo(() => {
-        if (!focusedNodeId) return new Set<string>();
-        return getNeighbors(focusedNodeId);
-    }, [focusedNodeId, actors]); // actors dependency needed as getNeighbors depends on it (implicitly via closure, but safe here)
-
-    const handleConfigClick = (e: React.MouseEvent, configId: string) => {
-        e.stopPropagation();
-        if (interactionMode === "drag" && !isDraggingRef.current) {
-            onConfigClick?.(configId);
-        }
+        setHoveredNode(actor);
     };
 
     return (
-        <Card className="min-h-[400px] flex flex-col">
-            <CardHeader className="z-10 relative pb-2">
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Network className="h-5 w-5 text-indigo-600" />
-                            <CardTitle>Assemblage Diagram</CardTitle>
-                        </div>
+        <div className="relative w-full h-full">
+            <Card
+                className={`flex flex-col shadow-none border border-slate-200 bg-white transition-all duration-300 relative ${isFullScreen ? 'fixed inset-0 z-50 h-screen w-screen rounded-none' : 'h-[800px]'}`}
+                ref={containerRef}
+            >
+                {/* ... (Header remains) */}
+                <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white z-10 relative">
+                    <div>
+                        <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Actor Network Modeling</CardTitle>
+                        <CardDescription className="text-xs text-slate-500 font-normal">
+                            {is3DMode ? "3D WebGL Visualization" : (isNestedMode ? "Nested Assemblage (Actor → Collective → Regime)" : "Hierarchical view of assemblage clusters")}
+                        </CardDescription>
+                    </div>
 
-                        {/* Interaction Controls */}
-                        <div className="flex items-center gap-2">
-                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                    {/* Modern Toolbar */}
+                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200">
+                        <Button
+                            variant="ghost" size="sm"
+                            onClick={() => {
+                                const newMode = !is3DMode;
+                                setIs3DMode(newMode);
+                                if (newMode) setIsStratumMode(true);
+                            }}
+                            className={`h-7 px-2.5 text-xs font-medium ${is3DMode ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+                        >
+                            <Network className="h-3 w-3 mr-1" /> {is3DMode ? "3D View" : "2D View"}
+                        </Button>
+
+                        {!is3DMode ? (
+                            <>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
                                 <Button
-                                    variant={interactionMode === "drag" ? "secondary" : "ghost"}
-                                    size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    variant="ghost" size="sm"
+                                    onClick={() => setIsNestedMode(!isNestedMode)}
+                                    className={`h-7 px-2.5 text-xs font-medium ${isNestedMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                >
+                                    <Layers className="h-3 w-3 mr-1" /> {isNestedMode ? "Nested Map" : "Force Layout"}
+                                </Button>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <Button
+                                    variant="ghost" size="sm"
+                                    className={`h-7 px-2.5 text-xs font-medium ${interactionMode === "drag" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                                     onClick={() => setInteractionMode("drag")}
                                 >
-                                    <MousePointer2 className="h-3 w-3 mr-1" />
-                                    Drag
+                                    <MousePointer2 className="h-3 w-3 mr-1" /> Move Actor
                                 </Button>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
                                 <Button
-                                    variant={interactionMode === "select" ? "secondary" : "ghost"}
-                                    size="sm"
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => setInteractionMode("select")}
+                                    variant="ghost" size="sm"
+                                    className="h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900"
+                                    onClick={resetZoom}
                                 >
-                                    <BoxSelect className="h-3 w-3 mr-1" />
-                                    Select
+                                    <ZoomIn className="h-3 w-3 mr-1" /> Reset View
                                 </Button>
-                            </div>
-                            {interactionMode === "select" && selectedForGrouping.length > 0 && (
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
                                 <Button
-                                    size="sm"
-                                    className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                                    onClick={onCreateConfiguration}
+                                    variant="ghost" size="sm"
+                                    onClick={() => setIsStratumMode(!isStratumMode)}
+                                    className={`h-7 px-2.5 text-xs font-medium ${isStratumMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                    title="Visualize Law as a Stratum over the Meshwork"
                                 >
-                                    <Layers className="h-3 w-3 mr-1" />
-                                    Group ({selectedForGrouping.length})
+                                    <Layers className="h-3 w-3 mr-1" /> {isStratumMode ? "Stratum Active" : "Legal Stratum"}
+                                </Button>
+                            </>
+                        )}
+
+                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                        <Button
+                            variant="ghost" size="sm"
+                            className={`h-7 px-2.5 text-xs font-medium ${isFullScreen ? "bg-red-50 text-red-600" : "text-slate-500 hover:text-slate-900"}`}
+                            onClick={toggleFullScreen}
+                        >
+                            {isFullScreen ? (
+                                <><Minimize className="h-3 w-3 mr-1" /> Exit Full Screen</>
+                            ) : (
+                                <><Maximize className="h-3 w-3 mr-1" /> Full Screen</>
+                            )}
+                        </Button>
+                    </div>
+                </CardHeader>
+
+                <CardContent className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]">
+                    {is3DMode ? (
+                        <EcosystemMap3D
+                            actors={actors}
+                            configurations={configurations}
+                            selectedForGrouping={selectedForGrouping}
+                            onToggleSelection={onToggleSelection}
+                            focusedNodeId={focusedNodeId}
+                            width={dimensions.width}
+                            height={dimensions.height}
+                            isStratumMode={isStratumMode}
+                        />
+                    ) : (
+                        <>
+                            <svg
+                                ref={svgRef}
+                                width="100%" height="100%"
+                                className="cursor-move"
+                                onMouseMove={handleSvgMouseMove}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={handleMouseUp}
+                                style={{ fontFamily: 'Inter, sans-serif' }}
+                            >
+                                <defs>
+                                    <marker id="arrow" viewBox="0 0 10 10" refX="20" refY="5"
+                                        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8" />
+                                    </marker>
+                                </defs>
+
+                                <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
+
+                                    {/* 0. REGIME LAYER (Background for Nested Mode) */}
+                                    {isNestedMode && (
+                                        <g className="opacity-0 animate-in fade-in duration-1000 pointer-events-none">
+                                            {/* Outer Field: Policy Regime */}
+                                            <circle
+                                                cx={dimensions.width / 2} cy={dimensions.height / 2}
+                                                r={Math.min(dimensions.width, dimensions.height) * 0.45}
+                                                fill="none"
+                                                stroke="#E2E8F0"
+                                                strokeWidth="2"
+                                                strokeDasharray="8 8"
+                                            />
+                                            <text
+                                                x={dimensions.width / 2} y={dimensions.height / 2 - Math.min(dimensions.width, dimensions.height) * 0.45 - 10}
+                                                textAnchor="middle"
+                                                className="text-[10px] font-bold fill-slate-400 uppercase tracking-[0.2em]"
+                                            >
+                                                Governance Regime Boundary
+                                            </text>
+
+                                            {/* Policy Object Center */}
+                                            <circle cx={dimensions.width / 2} cy={dimensions.height / 2} r={10} fill="#6366F1" opacity="0.1" />
+                                            <text x={dimensions.width / 2} y={dimensions.height / 2} dy={3} textAnchor="middle" className="text-[6px] font-bold fill-indigo-400 uppercase">Policy</text>
+                                        </g>
+                                    )}
+
+                                    {/* 1. HULLS (Background Layers) */}
+                                    {configurations.map(config => {
+                                        const memberPoints = config.memberIds
+                                            .map(id => getNodePos(id))
+                                            .filter(p => p.x !== 0 && p.y !== 0);
+
+                                        if (memberPoints.length < 2) return null;
+
+                                        const centroid = memberPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                                        centroid.x /= memberPoints.length;
+                                        centroid.y /= memberPoints.length;
+
+                                        return (
+                                            <g key={config.id} className="transition-all duration-500 ease-out" opacity={highlightedStage ? 0.1 : 1}>
+                                                <path
+                                                    d={memberPoints.length === 2
+                                                        ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}`
+                                                        : getHullPath(memberPoints)}
+                                                    fill={config.color}
+                                                    fillOpacity={HULL_STYLES.opacity}
+                                                    stroke={config.color}
+                                                    strokeWidth={HULL_STYLES.strokeWidth}
+                                                    strokeDasharray={HULL_STYLES.strokeDash} // Porous boundaries
+                                                    strokeLinejoin="round"
+                                                    strokeLinecap="round"
+                                                />
+                                                {/* Label Background Pill */}
+                                                <rect
+                                                    x={centroid.x - (config.name.length * 3 + 8)}
+                                                    y={centroid.y - 32}
+                                                    width={config.name.length * 6 + 16}
+                                                    height={18}
+                                                    rx={9}
+                                                    fill={config.color}
+                                                    fillOpacity={0.9}
+                                                    stroke="white"
+                                                    strokeWidth={1.5}
+                                                    className="drop-shadow-sm"
+                                                />
+                                                <text
+                                                    x={centroid.x} y={centroid.y - 20}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    className="text-[10px] font-bold fill-white uppercase tracking-wider"
+                                                    style={{ pointerEvents: 'none' }}
+                                                >
+                                                    {config.name}
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+
+                                    {/* 2. LINKS (Translation Intensity) */}
+                                    {links.map((link, i) => {
+                                        const s = getNodePos(link.source as string);
+                                        const t = getNodePos(link.target as string);
+                                        if (s.x === 0 || t.x === 0) return null;
+
+                                        const isFocused = focusedNodeId && (link.source === focusedNodeId || link.target === focusedNodeId);
+
+                                        // Line thickness = Translation Intensity
+                                        let strokeWidth = 1;
+                                        if (link.type === "Regulates" || link.type === "Governs") strokeWidth = 2.5;
+                                        if (link.type === "Excludes") strokeWidth = 1.5;
+
+                                        if (isFocused) strokeWidth += 1;
+
+                                        return (
+                                            <line
+                                                key={i}
+                                                x1={s.x} y1={s.y}
+                                                x2={t.x} y2={t.y}
+                                                stroke={isFocused ? "#64748B" : "#CBD5E1"}
+                                                strokeWidth={strokeWidth}
+                                                strokeOpacity={highlightedStage ? 0.1 : (isFocused ? 0.9 : 0.5)}
+                                                strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"}
+                                                markerEnd={!highlightedStage ? "url(#arrow)" : ""}
+                                                className="transition-all duration-300"
+                                                pointerEvents="none"
+                                            />
+                                        );
+                                    })}
+
+                                    {/* 3. NODES */}
+                                    {nodes.map(node => {
+                                        const actor = mergedActors.find(a => a.id === node.id); // Use mergedActors
+                                        if (!actor) return null;
+
+                                        const color = getActorColor(actor.type);
+                                        const isSelected = selectedForGrouping.includes(actor.id);
+                                        const isFocused = focusedNodeId === actor.id;
+                                        const isRelevant = isActorRelevant(actor, highlightedStage);
+                                        const isGhost = actor.isGhost;
+
+                                        // Highlight Logic
+                                        let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
+                                        if (isGhost) opacity *= 0.6; // Reduced opacity for ghosts
+
+                                        const scale = highlightedStage && isRelevant ? 1.2 : 1;
+
+                                        const r = isFocused || isSelected ? 8 : 6;
+                                        const strokeDash = isGhost ? "3 2" : "none"; // Dotted outline for ghosts
+
+                                        return (
+                                            <g
+                                                key={node.id}
+                                                transform={`translate(${node.x},${node.y}) scale(${scale})`}
+                                                onMouseDown={(e) => handleMouseDown(e, node)}
+                                                onMouseEnter={(e) => handleNodeHover(e, actor)}
+                                                onMouseLeave={() => setHoveredNode(null)}
+                                                // Stop propagation on clicks to avoid pan start
+                                                onClick={(e) => { e.stopPropagation(); setFocusedNodeId(isFocused ? null : actor.id); }}
+                                                className="group cursor-pointer"
+                                                style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}
+                                            >
+                                                {/* Shape Render Logic */}
+                                                {/* Selection Halo */}
+                                                {isSelected && (
+                                                    getActorShape(actor.type) === 'square' ? (
+                                                        <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
+                                                    ) : getActorShape(actor.type) === 'triangle' ? (
+                                                        <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
+                                                    ) : getActorShape(actor.type) === 'rect' ? (
+                                                        <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
+                                                    ) : (
+                                                        <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
+                                                    )
+                                                )}
+
+                                                {/* Main Node Body */}
+                                                {getActorShape(actor.type) === 'square' ? (
+                                                    <rect
+                                                        x={-r} y={-r} width={r * 2} height={r * 2}
+                                                        fill={isGhost ? "white" : color} // Hollow/White fill for ghost
+                                                        className="drop-shadow-sm transition-all duration-200"
+                                                        stroke={color}
+                                                        strokeWidth={1.5}
+                                                        strokeDasharray={strokeDash}
+                                                    />
+                                                ) : getActorShape(actor.type) === 'triangle' ? (
+                                                    <polygon
+                                                        points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`}
+                                                        fill={isGhost ? "white" : color}
+                                                        className="drop-shadow-sm transition-all duration-200"
+                                                        stroke={color}
+                                                        strokeWidth={1.5}
+                                                        strokeDasharray={strokeDash}
+                                                    />
+                                                ) : getActorShape(actor.type) === 'rect' ? (
+                                                    <rect
+                                                        x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2}
+                                                        fill={isGhost ? "white" : color}
+                                                        className="drop-shadow-sm transition-all duration-200"
+                                                        stroke={color}
+                                                        strokeWidth={1.5}
+                                                        strokeDasharray={strokeDash}
+                                                    />
+                                                ) : (
+                                                    <circle
+                                                        r={r}
+                                                        fill={isGhost ? "white" : color}
+                                                        className="drop-shadow-sm transition-all duration-200"
+                                                        stroke={color}
+                                                        strokeWidth={1.5}
+                                                        strokeDasharray={strokeDash}
+                                                    />
+                                                )}
+
+                                                <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
+                                                    <div className={`
+                flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px]
+                transform transition-opacity duration-200
+                ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}
+            `}>
+                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-400 italic" : "text-slate-700"}`}>
+                                                            {actor.name} {isGhost && "(Missing)"}
+                                                        </span>
+                                                    </div>
+                                                </foreignObject>
+                                            </g>
+                                        );
+                                    })}
+                                </g>
+                            </svg>
+
+                            {/* HOVER TOOLTIP */}
+                            {hoveredNode && (
+                                <div
+                                    className="absolute z-50 pointer-events-none"
+                                    style={{
+                                        left: tooltipPos.x + 10,
+                                        top: tooltipPos.y + 10,
+                                    }}
+                                >
+                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 max-w-[250px] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="font-semibold mb-0.5 flex items-center gap-2">
+                                            {(hoveredNode as GhostActor).isGhost && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                            )}
+                                            {hoveredNode.name}
+                                        </div>
+                                        <div className="text-slate-400 text-[10px] mb-1">{hoveredNode.type}</div>
+                                        {hoveredNode.description && (
+                                            <div className="text-slate-300 border-t border-slate-700/50 pt-1 mt-1 leading-relaxed">
+                                                {(hoveredNode as GhostActor).isGhost ? `MISSING: ${hoveredNode.description}` : hoveredNode.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* NEW INSET PROCESS VIEW */}
+                            {isNestedMode && (
+                                <div className="animate-in slide-in-from-bottom-5 duration-700">
+                                    <TranslationChain
+                                        actors={actors}
+                                        onHoverStage={setHighlightedStage}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Floating Legend Card (Existing) */}
+                            {isLegendOpen && (
+                                /* ... (Legend Content remains) ... */
+                                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-10 max-h-[600px] overflow-y-auto">
+                                    {/* ... logic ... */}
+                                    <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
+                                        <span className="font-semibold text-slate-800">Actor Types</span>
+                                        <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
+                                            <ChevronDown className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-1.5">
+                                        {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => (
+                                            <div key={key} className="flex items-center gap-2">
+                                                <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
+                                                <span className="capitalize text-slate-600">{key.replace("civilsociety", "Civil Society")}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Macro Assemblages Legend */}
+                                    {configurations.length > 0 && (
+                                        <div className="mt-3 pt-2 border-t border-slate-100">
+                                            <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
+                                            <div className="space-y-1.5">
+                                                {configurations.map(config => (
+                                                    <div key={config.id} className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80"
+                                                            style={{ backgroundColor: config.color }}
+                                                        />
+                                                        <span className="text-slate-600 truncate">{config.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Nested Map Legend Addition */}
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
+                                        <p className="mb-1"><span className="font-bold">─</span> Strong Ties</p>
+                                        <p><span className="font-bold">- -</span> Absent / Virtual (Ghost)</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ... (Close Legend Button) ... */}
+                            {!isLegendOpen && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute top-4 right-4 h-8 bg-white shadow-sm text-xs"
+                                    onClick={() => setIsLegendOpen(true)}
+                                >
+                                    Show Legend
                                 </Button>
                             )}
-                        </div>
-                    </div>
 
-                    {/* Hermeneutic Controls (Filters & Focus) */}
-                    <div className="flex items-center justify-between border-t pt-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                                <Filter className="h-3 w-3" />
-                                Concept Filters:
-                            </span>
-                            <div className="flex gap-1">
-                                {["Market", "State", "Civil", "Infra"].map(filter => (
+                            {focusedNodeId && (
+                                <div className="absolute bottom-4 left-4">
                                     <Button
-                                        key={filter}
-                                        variant={activeFilter === filter ? "default" : "outline"}
+                                        variant="secondary"
                                         size="sm"
-                                        onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
-                                        className={`h-6 text-[10px] px-2 ${activeFilter === filter ? "bg-slate-700 text-white" : "text-slate-600"}`}
+                                        className="text-xs shadow-sm bg-white hover:bg-slate-50 border border-slate-200"
+                                        onClick={() => setFocusedNodeId(null)}
                                     >
-                                        {filter}
+                                        <EyeOff className="h-3 w-3 mr-1.5 text-slate-500" /> Reset Focus
                                     </Button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {focusedNodeId && (
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setFocusedNodeId(null)}
-                                className="h-6 text-[10px] bg-amber-100 text-amber-800 hover:bg-amber-200"
-                            >
-                                <EyeOff className="h-3 w-3 mr-1" />
-                                Clear Focus
-                            </Button>
-                        )}
-                    </div>
-                </div>
-                <CardDescription className="mt-2">
-                    {focusedNodeId ? (
-                        <span className="text-amber-700 font-medium">Focus Mode Active: Viewing local assemblage. Click "Clear Focus" to reset.</span>
-                    ) : (
-                        "Click nodes to Focus. Use filters to highlight specific logics."
-                    )}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 bg-slate-50/50 p-6 border-t relative">
-                <svg
-                    width="100%"
-                    height="400"
-                    className={`border rounded-lg bg-white transition-colors duration-300 ${interactionMode === "drag" ? "cursor-move border-slate-200" : "cursor-pointer border-indigo-400 ring-2 ring-indigo-100"}`}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                >
-                    <defs>
-                        <marker id="actor-arrow" markerWidth="8" markerHeight="8" refX="20" refY="4" orient="auto">
-                            <polygon points="0 0, 8 4, 0 8" fill="#94a3b8" />
-                        </marker>
-                        <filter id="actor-glow" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur stdDeviation="3" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                        <filter id="resistance-glow" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur stdDeviation="4" result="blur" />
-                            <feFlood floodColor="#ef4444" floodOpacity="0.6" result="color" />
-                            <feComposite in="color" in2="blur" operator="in" result="shadow" />
-                            <feComposite in="SourceGraphic" in2="shadow" operator="over" />
-                        </filter>
-                    </defs>
-
-                    {/* Render Configuration Super-Nodes (Background) */}
-                    {renderConfigurationShapes()}
-
-                    {/* Generate connections based on actor types */}
-                    {/* Connections */}
-                    {actors.map((source, i) =>
-                        actors.slice(i + 1).map((target, j) => {
-                            const shouldConnect = (
-                                (source.type === "Policymaker" && target.type === "Civil Society") ||
-                                (source.type === "Startup" && target.type === "Academic") ||
-                                (source.type === "Policymaker" && target.type === "Startup") ||
-                                (source.type === "Civil Society" && target.type === "Academic") ||
-                                (source.type === "Infrastructure" && target.type === "Startup") ||
-                                (source.type === "Infrastructure" && target.type === "Policymaker") ||
-                                (source.type === "Infrastructure" && target.type === "Academic") ||
-                                // Algorithm connections
-                                (source.type === "Startup" && target.type === "Algorithm") ||
-                                (source.type === "Academic" && target.type === "Algorithm") ||
-                                (source.type === "Algorithm" && target.type === "Dataset") ||
-                                (source.type === "Policymaker" && target.type === "Algorithm") ||
-                                (source.type === "Infrastructure" && target.type === "Algorithm") ||
-                                (source.type === "Infrastructure" && target.type === "Dataset")
-                            );
-
-                            if (!shouldConnect) return null;
-
-                            const pos1 = positions[source.id];
-                            const pos2 = positions[target.id];
-
-                            if (!pos1 || !pos2) return null;
-
-                            const { label, description } = getLinkDetails(source.type, target.type);
-                            const midX = (pos1.x + pos2.x) / 2;
-                            const midY = (pos1.y + pos2.y) / 2;
-
-                            // Resistance Layer Logic
-                            const isResistanceLayer = activeLayers['resistance'];
-                            const sourceRes = source.metrics?.resistance || 0;
-                            const targetRes = target.metrics?.resistance || 0;
-
-                            // Solidarity: Two resistant actors connecting (Alliance)
-                            const isSolidarity = isResistanceLayer && sourceRes > 6 && targetRes > 6;
-
-                            // Friction: Resistant actor connecting to status quo (Conflict)
-                            const isFriction = isResistanceLayer && (
-                                (sourceRes > 6 && targetRes < 4) ||
-                                (sourceRes < 4 && targetRes > 6)
-                            );
-
-                            const lineColor = isSolidarity ? "#9333ea" : (isFriction ? "#ef4444" : "#cbd5e1");
-                            const lineWidth = (isSolidarity || isFriction) ? "2" : "1";
-                            const lineDash = isFriction ? "2,2" : "4"; // Solidarity is solid
-                            const lineClass = isFriction ? "animate-pulse" : "";
-
-                            const isSourceRel = isActorRelevant(source);
-                            const isTargetRel = isActorRelevant(target);
-
-                            // -------------------------
-                            // VISIBILITY LOGIC (Focus & Filter)
-                            // -------------------------
-                            let opacity = 1;
-
-                            // 1. Focus Mode
-                            if (focusedNodeId) {
-                                const isSourceFocused = source.id === focusedNodeId || activeNeighbors.has(source.id);
-                                const isTargetFocused = target.id === focusedNodeId || activeNeighbors.has(target.id);
-
-                                // Show edge only if BOTH are part of the focus group
-                                if (!isSourceFocused || !isTargetFocused) {
-                                    opacity = 0.05;
-                                }
-                            }
-
-                            // 2. Filter Mode
-                            if (activeFilter && opacity > 0.05) {
-                                // Simple mapping for demo
-                                const isSourceMatch =
-                                    (activeFilter === "Market" && ["Startup", "Policymaker"].includes(source.type)) ||
-                                    (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(source.type)) ||
-                                    (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(source.type)) ||
-                                    (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(source.type));
-
-                                const isTargetMatch =
-                                    (activeFilter === "Market" && ["Startup", "Policymaker"].includes(target.type)) ||
-                                    (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(target.type)) ||
-                                    (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(target.type)) ||
-                                    (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(target.type));
-
-                                if (!isSourceMatch && !isTargetMatch) {
-                                    opacity = 0.1;
-                                }
-                            }
-
-                            // 3. Lens Mode
-                            if (activeLens && activeLens !== "None" && opacity > 0.05) {
-                                if (!isSourceRel || !isTargetRel) {
-                                    opacity = 0.05;
-                                }
-                            }
-
-                            return (
-                                <g key={`${source.id}-${target.id}`} className="group hover:opacity-100 transition-opacity cursor-help" style={{ opacity }}>
-                                    <title>{label}: {description}</title>
-                                    <line
-                                        x1={pos1.x}
-                                        y1={pos1.y}
-                                        x2={pos2.x}
-                                        y2={pos2.y}
-                                        stroke={lineColor}
-                                        strokeWidth={lineWidth}
-                                        strokeDasharray={lineDash}
-                                        className={lineClass}
-                                    />
-                                    <rect
-                                        x={midX - (label.length * 3)}
-                                        y={midY - 8}
-                                        width={label.length * 6}
-                                        height="16"
-                                        fill="white"
-                                        opacity="0.9"
-                                        rx="4"
-                                        className="stroke-slate-200"
-                                        strokeWidth="1"
-                                    />
-                                    <text
-                                        x={midX}
-                                        y={midY + 3}
-                                        textAnchor="middle"
-                                        fontSize="9"
-                                        fill="#475569"
-                                        className="select-none pointer-events-none font-bold uppercase tracking-wider"
-                                    >
-                                        {label}
-                                    </text>
-                                </g>
-                            );
-                        })
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    {/* Render Actors */}
-                    {actors.map(actor => {
-                        const pos = positions[actor.id];
-                        if (!pos) return null;
+                    {/* Legal Stratum Legend - Visible in Stratum Mode */}
+                    {is3DMode && isStratumMode && <StratumLegend />}
 
-                        const isSelected = selectedForGrouping.includes(actor.id);
-                        const Icon = getActorIcon(actor.type);
-
-                        // COLOR LOGIC
-                        let actorFill = "white";
-                        let actorStroke = "#94a3b8";
-
-                        if (isSelected) {
-                            actorFill = "#4f46e5";
-                            actorStroke = "#4f46e5";
-                        } else if (colorMode === "epistemic") {
-                            // Epistemic / Decolonial Coloring
-                            if (actor.region === "Global North") {
-                                actorFill = "#dbeafe"; // Blue 100
-                                actorStroke = "#2563eb"; // Blue 600
-                            } else if (actor.region === "Global South") {
-                                actorFill = "#d1fae5"; // Emerald 100
-                                actorStroke = "#059669"; // Emerald 600
-                            } else if (actor.region === "International") {
-                                actorFill = "#f3e8ff"; // Purple 100
-                                actorStroke = "#9333ea"; // Purple 600
-                            } else {
-                                actorFill = "#f1f5f9"; // Slate 100
-                                actorStroke = "#94a3b8";
-                            }
-                        } else {
-                            // Type Coloring (Default)
-                            const colors = getActorColorByType(actor.type);
-                            actorFill = colors.fill;
-                            actorStroke = colors.stroke;
-                        }
-
-                        // -------------------------
-                        // VISIBILITY LOGIC (Focus & Filter)
-                        // -------------------------
-                        let opacity = 1;
-
-                        // 1. Focus Mode
-                        if (focusedNodeId) {
-                            if (actor.id !== focusedNodeId && !activeNeighbors.has(actor.id)) {
-                                opacity = 0.1;
-                            }
-                        }
-
-                        // 2. Filter Mode
-                        if (activeFilter && opacity > 0.1) {
-                            const isMatch =
-                                (activeFilter === "Market" && ["Startup", "Policymaker"].includes(actor.type)) ||
-                                (activeFilter === "State" && ["Policymaker", "Infrastructure"].includes(actor.type)) ||
-                                (activeFilter === "Civil" && ["Civil Society", "Academic"].includes(actor.type)) ||
-                                (activeFilter === "Infra" && ["Infrastructure", "Algorithm", "Dataset"].includes(actor.type));
-
-                            if (!isMatch) opacity = 0.2;
-                        }
-
-                        // 3. Lens Mode
-                        if (activeLens && activeLens !== "None" && opacity > 0.1) {
-                            if (!isActorRelevant(actor)) {
-                                opacity = 0.1;
-                            }
-                        }
-
-
-                        // Resistance Layer Visuals
-                        const resistanceScore = actor.metrics?.resistance || 0;
-                        const isResistanceActive = activeLayers['resistance'];
-                        const showResistance = isResistanceActive && resistanceScore > 5;
-
-                        return (
-                            <g
-                                key={actor.id}
-                                transform={`translate(${pos.x},${pos.y})`}
-                                onMouseDown={(e) => handleMouseDown(e, actor.id)}
-                                onClick={(e) => handleActorClick(e, actor.id)}
-                                className="cursor-pointer transition-all duration-200"
-                                style={{
-                                    filter: isSelected ? "url(#actor-glow)" : (showResistance ? "url(#resistance-glow)" : "none"),
-                                    opacity
-                                }}
-                            >
-                                {/* Resistance Indicator Ring */}
-                                {showResistance && (
-                                    <circle
-                                        r={30 + (resistanceScore * 2)}
-                                        fill="none"
-                                        stroke="#ef4444"
-                                        strokeWidth="1"
-                                        opacity="0.5"
-                                        strokeDasharray="4 4"
-                                        className="animate-spin-slow"
-                                    />
-                                )}
-
-                                <circle
-                                    r={isSelected || focusedNodeId === actor.id ? 28 : 24}
-                                    fill={showResistance ? "#fee2e2" : actorFill}
-                                    stroke={showResistance ? "#ef4444" : actorStroke}
-                                    strokeWidth={showResistance || focusedNodeId === actor.id ? "3" : "2"}
-                                    className="transition-all duration-300 shadow-sm"
-                                />
-                                <foreignObject x="-12" y="-12" width="24" height="24" className="pointer-events-none">
-                                    <div className={`flex items-center justify-center w-full h-full ${isSelected ? "text-white" : (showResistance ? "text-red-700" : (actorFill === 'white' || actorFill === '#ffffff' ? "text-slate-600" : "text-slate-800"))}`}>
-                                        <Icon size={16} />
-                                    </div>
-                                </foreignObject>
-                                <foreignObject x="-40" y="28" width="80" height="40">
-                                    <div className="text-center text-[10px] font-medium text-slate-700 leading-tight line-clamp-2 bg-white/80 px-1 rounded">
-                                        {actor.name}
-                                    </div>
-                                </foreignObject>
-                            </g>
-                        );
-                    })}
-                </svg>
-
-                {activeLayers['resistance'] && (
-                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-52 select-none transition-all duration-300">
-                        <div
-                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
-                            onClick={() => toggleLegend('resistance')}
-                        >
-                            <span className="flex items-center gap-2">
-                                Entangled Analysis
-                                <span className="text-[10px] bg-red-100 text-red-700 px-1 rounded">Active</span>
-                            </span>
-                            {collapsedLegends['resistance'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        </div>
-
-                        {!collapsedLegends['resistance'] && (
-                            <div className="space-y-2">
-                                <div className="flex items-start gap-2">
-                                    <div className="mt-0.5 w-3 h-3 shrink-0 rounded-full border border-red-500 bg-red-100 ring-2 ring-red-200/50 animate-pulse"></div>
-                                    <div>
-                                        <span className="block font-medium text-slate-900">Line of Flight</span>
-                                        <span className="text-[10px] text-slate-500 leading-tight block">High resistance (&gt;5). Disrupts established norms.</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <div className="mt-1.5 w-4 h-0 shrink-0 border-t-2 border-dashed border-red-500"></div>
-                                    <div>
-                                        <span className="block font-medium text-slate-900">Friction</span>
-                                        <span className="text-[10px] text-slate-500 leading-tight block">Tension between resistant & status quo actors.</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <div className="mt-2 w-4 h-0.5 shrink-0 bg-purple-600"></div>
-                                    <div>
-                                        <span className="block font-medium text-slate-900">Solidarity</span>
-                                        <span className="text-[10px] text-slate-500 leading-tight block">Alliance between high resistance actors.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {(colorMode === "type" || !colorMode) && (
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-36 select-none transition-all duration-300">
-                        <div
-                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
-                            onClick={() => toggleLegend('actor')}
-                        >
-                            Actor Legend
-                            {collapsedLegends['actor'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        </div>
-
-                        {!collapsedLegends['actor'] && (
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-sky-100 border border-sky-600"></span> Policymaker
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-yellow-100 border border-yellow-600"></span> Civil Society
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-purple-100 border border-purple-600"></span> Startup
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-600"></span> Academic
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-slate-100 border border-slate-600"></span> Infrastructure
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-red-100 border border-red-600"></span> Algorithm
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-100 border border-green-600"></span> Dataset
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {colorMode === "epistemic" && (
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-44 select-none transition-all duration-300">
-                        <div
-                            className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
-                            onClick={() => toggleLegend('epistemic')}
-                        >
-                            Epistemic Map
-                            {collapsedLegends['epistemic'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        </div>
-
-                        {!collapsedLegends['epistemic'] && (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-600"></span> Global North
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full bg-emerald-100 border border-emerald-600"></span> Global South
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-600"></span> International
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border shadow-lg text-xs z-10 w-48 select-none transition-all duration-300">
-                    <div
-                        className="font-semibold text-slate-900 border-b pb-1 mb-1 flex items-center justify-between cursor-pointer hover:text-indigo-600"
-                        onClick={() => toggleLegend('metrics')}
-                    >
-                        Assemblage Metrics
-                        {collapsedLegends['metrics'] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    </div>
-
-                    {!collapsedLegends['metrics'] && (
-                        <div className="space-y-1">
-                            <div>
-                                <span className="font-bold text-indigo-700">T (Territorialization)</span>
-                                <p className="text-[10px] text-slate-500 leading-tight">Internal homogeneity & border rigidity (1-10).</p>
-                            </div>
-                            <div>
-                                <span className="font-bold text-indigo-700">C (Coding Intensity)</span>
-                                <p className="text-[10px] text-slate-500 leading-tight">Role of language, laws & protocols (1-10).</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card >
+                    {/* Simple View Type Legend - Visible in Standard 3D Mode */}
+                    {is3DMode && !isStratumMode && <ViewTypeLegend />}
+                </CardContent>
+            </Card >
+        </div >
     );
 }

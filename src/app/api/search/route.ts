@@ -46,7 +46,7 @@ export async function POST(req: Request) {
                 Return ONLY the name (e.g. "EU AI Act"). If unclear, return "AI Governance Policy".`;
 
                 const subjectResult = await model.generateContent(subjectPrompt);
-                let policySubject = subjectResult.response.text().trim().replace(/['"]/g, '');
+                const policySubject = subjectResult.response.text().trim().replace(/['"]/g, '');
                 console.log("Extracted Policy Subject:", policySubject);
 
                 const prompt = `You are an expert investigative researcher. 
@@ -135,7 +135,7 @@ Example: ["${policySubject} workaround reddit", "${policySubject} bypass trick f
             if (!uniqueMap.has(r.link)) uniqueMap.set(r.link, r);
         });
 
-        let results = Array.from(uniqueMap.values());
+        const results = Array.from(uniqueMap.values());
         console.log(`Aggregated ${results.length} unique raw results.`);
 
         // Final check for empty

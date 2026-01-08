@@ -19,6 +19,9 @@ export async function POST(request: Request) {
     try {
         // Get all keys matching the ecosystem simulation pattern for this user
         const keys = await redis.keys(`user:${userId}:cache:ecosystem:simulate:*`);
+        // Force clear the assemblage extraction prompt override to ensure updates take effect
+        const overrideKey = `user:${userId}:store:prompt_override:assemblage_extraction`;
+        keys.push(overrideKey);
 
         if (keys.length > 0) {
             await redis.del(...keys);

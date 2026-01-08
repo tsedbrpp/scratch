@@ -216,7 +216,7 @@ class ReportGenerator {
         const paragraphs = cleanContent.split('\n');
 
         paragraphs.forEach((paragraph) => {
-            let content = paragraph.replace(/\s+/g, " ").trim();
+            const content = paragraph.replace(/\s+/g, " ").trim();
             if (!content) return;
 
             // Simplified: No special bullet logic, just render the text

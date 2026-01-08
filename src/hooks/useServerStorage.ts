@@ -11,18 +11,22 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         const fetchValue = async () => {
             try {
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                // Send demo user ID if configured (relaxed check to match EcosystemPage)
+                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                     headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
                 }
 
                 const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
                     headers: headers
                 });
+
                 if (response.ok) {
                     const data = await response.json();
                     if (isMounted) {
                         setStoredValue(data.value ?? initialValue);
                     }
+                } else {
+                    console.warn(`[useServerStorage] Failed to fetch ${key}: ${response.status} ${response.statusText}`);
                 }
             } catch (error) {
                 console.error(`Failed to fetch storage key "${key}":`, error);
@@ -50,7 +54,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
 
                 // Save to server
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                     headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
                 }
 

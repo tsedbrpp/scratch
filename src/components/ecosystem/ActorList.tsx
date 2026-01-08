@@ -71,7 +71,7 @@ export function ActorList({
         <Card className="h-[500px] lg:h-full flex flex-col">
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Assemblage Actors</CardTitle>
+                    <CardTitle className="text-lg">Assemblage Actors ({actors.length})</CardTitle>
                     <div className="flex gap-1">
                         {onToggleExpand && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={onToggleExpand} title={isExpanded ? "Collapse" : "Expand"}>

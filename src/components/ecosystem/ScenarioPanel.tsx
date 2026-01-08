@@ -2,16 +2,19 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, TrendingUp, TrendingDown, RefreshCcw, BrainCircuit, Loader2, X } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, RefreshCcw, BrainCircuit, Loader2, X, AlertTriangle } from 'lucide-react';
 import { EcosystemActor } from '@/types/ecosystem';
-import { ScenarioId, applyScenario } from '@/lib/scenario-engine';
+import { ScenarioId, applyScenario, SCENARIO_METADATA } from '@/lib/scenario-engine';
 import { generateEdges } from '@/lib/graph-utils';
+import { ComplianceTimeline } from '../simulation/ComplianceTimeline';
 
 interface ScenarioPanelProps {
     actors: EcosystemActor[];
     activeScenario: ScenarioId;
     setActiveScenario: (id: ScenarioId) => void;
     onClose?: () => void;
+    onToggleExpand?: () => void;
+    isExpanded?: boolean;
 }
 
 interface AiTrajectoryResult {
@@ -26,9 +29,10 @@ interface AiTrajectoryResult {
     losers?: string[];
 }
 
-export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClose }: ScenarioPanelProps) {
+export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClose, onToggleExpand, isExpanded }: ScenarioPanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [aiResults, setAiResults] = useState<Record<string, AiTrajectoryResult>>({});
+    const [cascadeTimeline, setCascadeTimeline] = useState<any[]>([]); // DSR Timeline State
 
     // 1. Rule-Based Calculation (Fast, Default)
     const { deltas: ruleDeltas, narrative: ruleNarrative } = useMemo(() => {
@@ -58,31 +62,53 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClo
         if (activeScenario === "None") return;
         setIsAnalyzing(true);
         try {
-            const scenarioDescriptions = {
-                "WeakEnforcement": "Formal regulatory power dissolves. Corporate self-regulation and harm externalization intensify.",
-                "PrivateStandards": "Compliance shifts from law to private certification. Standards bodies gain centrality.",
-                "ExpandedInclusion": "Marginalized actors gain power. Accountability loops strengthen; extraction is contested."
-            };
+            if (activeScenario === "RegulatoryCascade") {
+                // DSR: Compliance Cascade Simulation
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
 
-            const response = await fetch('/api/ecosystem/trajectory', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    actors,
-                    scenario: {
-                        name: activeScenario,
-                        description: scenarioDescriptions[activeScenario as keyof typeof scenarioDescriptions] || activeScenario
-                    }
-                })
-            });
-            const data = await response.json();
-            if (data.success) {
-                setAiResults(prev => ({
-                    ...prev,
-                    [activeScenario]: data.analysis
-                }));
+                const response = await fetch('/api/ecosystem/simulate', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        query: "Strict Enforcement of AI Act Article 10 & 5", // Default trigger event
+                        mode: 'cascade',
+                        actors: actors.map(a => ({ name: a.name, type: a.type }))
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    setCascadeTimeline(data.timeline);
+                }
             } else {
-                alert("AI Simulation failed: " + data.error);
+                // Standard Trajectory Simulation
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
+
+                const response = await fetch('/api/ecosystem/trajectory', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        actors,
+                        scenario: {
+                            name: activeScenario,
+                            description: SCENARIO_METADATA[activeScenario].description
+                        }
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    setAiResults(prev => ({
+                        ...prev,
+                        [activeScenario]: data.analysis
+                    }));
+                } else {
+                    alert("AI Simulation failed: " + data.error);
+                }
             }
         } catch (error) {
             console.error(error);
@@ -91,13 +117,6 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClo
             setIsAnalyzing(false);
         }
     };
-
-    const scenarios: { id: ScenarioId; label: string; icon: any }[] = [
-        { id: "None", label: "Baseline", icon: RefreshCcw },
-        { id: "WeakEnforcement", label: "Weak Enforcement", icon: TrendingDown },
-        { id: "PrivateStandards", label: "Private Standards", icon: Sparkles },
-        { id: "ExpandedInclusion", label: "Expanded Inclusion", icon: TrendingUp },
-    ];
 
     // Helper to robustly find actor names given an ID (which might be a name or an ID)
     const resolveActorName = (identifier: string, fallback: string) => {
@@ -127,13 +146,18 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClo
                 <CardTitle className="text-lg font-semibold flex items-center gap-2 text-indigo-900">
                     <Sparkles className="h-5 w-5" />
                     Trajectory Explorer
-                    {onClose && (
-                        <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1">
+                        {onToggleExpand && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={onToggleExpand} title={isExpanded ? "Collapse" : "Expand"}>
+                                {isExpanded ? <TrendingDown className="h-4 w-4 rotate-45" /> : <TrendingUp className="h-4 w-4 rotate-45" />}
+                            </Button>
+                        )}
+                        {onClose && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 bg-red-100 text-red-600 hover:bg-red-200" onClick={onClose} title="Close Panel">
                                 <X className="h-4 w-4" />
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </CardTitle>
                 <CardDescription>
                     Simulate how specific governance conditions reconfigure the assemblage.
@@ -143,26 +167,49 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClo
 
                 {/* Scenario Toggles */}
                 <div className="grid grid-cols-1 gap-2">
-                    {scenarios.map(s => {
-                        const Icon = s.icon;
+                    {(Object.keys(SCENARIO_METADATA) as ScenarioId[]).map(id => {
+                        const meta = SCENARIO_METADATA[id];
+                        const Icon = meta.icon;
                         return (
                             <Button
-                                key={s.id}
-                                variant={activeScenario === s.id ? "default" : "outline"}
-                                className={`justify-start gap-2 h-auto py-2 ${activeScenario === s.id ? "bg-indigo-600 hover:bg-indigo-700" : "hover:bg-indigo-50 text-slate-600"}`}
-                                onClick={() => setActiveScenario(s.id)}
+                                key={id}
+                                variant={activeScenario === id ? "default" : "outline"}
+                                className={`justify-start gap-2 h-auto py-2 ${activeScenario === id ? "bg-indigo-600 hover:bg-indigo-700" : "hover:bg-indigo-50 text-slate-600"}`}
+                                onClick={() => setActiveScenario(id)}
                             >
                                 <Icon className="h-4 w-4 shrink-0" />
                                 <div className="flex flex-col items-start">
-                                    <span className="text-sm font-medium">{s.label}</span>
+                                    <span className="text-sm font-medium">{meta.label}</span>
                                 </div>
                             </Button>
                         );
                     })}
                 </div>
 
-                {/* Narrative & Deltas */}
-                {activeScenario !== "None" && (
+                {/* Content Area */}
+                {activeScenario === "RegulatoryCascade" ? (
+                    <div className="flex-1 overflow-hidden flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-amber-900 text-xs text-justify">
+                            <span className="font-bold block mb-1">DSR Feature: Phase Transition</span>
+                            Simulating the &quot;singularity&quot; where subtle legal changes trigger rapid state flips across the network (e.g., from &apos;Compliant&apos; to &apos;High Risk&apos;).
+                        </div>
+
+                        {!cascadeTimeline.length && (
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+                                onClick={handleAiAnalysis}
+                                disabled={isAnalyzing}
+                            >
+                                {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <AlertTriangle className="h-3 w-3 mr-2" />}
+                                {isAnalyzing ? "Simulating Cascade..." : "Trigger Regulatory Shock"}
+                            </Button>
+                        )}
+
+                        {cascadeTimeline.length > 0 && <ComplianceTimeline timeline={cascadeTimeline} />}
+                    </div>
+                ) : activeScenario !== "None" && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
                         {/* AI Trigger */}
@@ -181,7 +228,7 @@ export function ScenarioPanel({ actors, activeScenario, setActiveScenario, onClo
 
                         <div className={`p-3 rounded-md border text-xs leading-relaxed italic ${currentAiResult ? "bg-purple-50 border-purple-200 text-purple-900" : "bg-indigo-50 border-indigo-100 text-indigo-800"}`}>
                             {currentAiResult && <div className="flex items-center gap-1 mb-1 not-italic font-bold text-purple-600"><BrainCircuit className="h-3 w-3" /> AI Analysis</div>}
-                            "{displayNarrative}"
+                            &quot;{displayNarrative}&quot;
                         </div>
 
                         <div>

@@ -112,7 +112,7 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
                 description: "Could not parse generated traces.",
                 content: responseText
             }];
-        } else if (analysisMode === 'assemblage_extraction') {
+        } else if (analysisMode === 'assemblage_extraction_v3') {
             analysis = {
                 assemblage: {
                     name: "Extraction Failed",
@@ -195,7 +195,7 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
     // Check both root-level and nested (assemblage.traces) to be robust
     const extractedTraces = analysis.traces || (analysis.assemblage && analysis.assemblage.traces);
 
-    if (analysisMode === 'assemblage_extraction' && extractedTraces) {
+    if (analysisMode === 'assemblage_extraction_v3' && extractedTraces) {
         const metrics = computeDeLandaMetrics(extractedTraces);
 
         // Inject computed scores into the assemblage properties for UI compatibility

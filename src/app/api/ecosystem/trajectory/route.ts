@@ -11,7 +11,7 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
     try {
-        let { userId } = await auth();
+        const { userId } = await auth();
         const { actors, scenario, prompt_override } = await req.json();
 
         // Handle demo mode fallback

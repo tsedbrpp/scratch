@@ -170,7 +170,7 @@ export default function ComparisonPage() {
 
     // Helper to render the "Run Deep Analysis" button if data is missing
     const renderAnalysisButtonOrContent = (source: Source, type: 'cultural' | 'logics' | 'legitimacy', content: React.ReactNode) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const data = (type === 'cultural' ? source.cultural_framing :
             type === 'logics' ? source.institutional_logics :
                 source.legitimacy_analysis) as Record<string, any> | undefined;

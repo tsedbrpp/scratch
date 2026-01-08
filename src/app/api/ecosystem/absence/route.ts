@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-    let { userId } = await auth();
+    const { userId } = await auth();
     console.log("Absence Analysis API Called at " + new Date().toISOString());
 
     // if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {

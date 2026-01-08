@@ -1,7 +1,7 @@
 export interface EcosystemActor {
     id: string;
     name: string;
-    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset";
+    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
     description: string;
     influence: "High" | "Medium" | "Low";
     url?: string;
@@ -9,6 +9,13 @@ export interface EcosystemActor {
         influence: number;
         alignment: number;
         resistance: number;
+        rationale?: string;
+        // Dimensional Breakdown (V3)
+        territoriality?: number; // Power to enforce (1-10)
+        coding?: number;        // Power to define (1-10)
+        centrality?: number;    // Network reach (1-10)
+        counter_conduct?: number;    // Active subversion (1-10)
+        discursive_opposition?: number; // Critical speech (1-10)
     };
     source?: "default" | "simulation" | "absence_fill";
     quotes?: string[];

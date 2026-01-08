@@ -100,6 +100,24 @@ Assess **Mobility Score**:
 - Low: Monolithic, highly specific to this context.
 
 ============================================================
+STEP 5 — ASSESS POWER METRICS (DIMENSIONAL SCORING)
+============================================================
+
+You must calculate scores based on specific DIMENSIONS (1-10). Do not provide aggregate scores yet; provide the dimensions.
+
+1. **INFLUENCE DIMENSIONS**:
+   - **Territoriality**: Power to enforce limits, punish, or physically constrain (e.g., Police, Firewall, Fine = 10; Standard Body = 5; User = 1).
+   - **Coding**: Power to define categories, standards, or language (e.g., Lawmaker, algorithm designer = 9; Critic = 6; User = 2).
+   - **Centrality**: Network reach and dependency (e.g., Cloud Platform = 9; Local NGO = 4).
+
+2. **RESISTANCE DIMENSIONS**:
+   - **Counter-Conduct**: Active subversion, hacking, bypassing, or building alternatives (e.g., Darknet, Union Strike = 10).
+   - **Discursive Opposition**: Public critique, narrative delegitimization (e.g., Op-Ed, Manifesto = 8).
+
+3. **ALIGNMENT**:
+   - **Logic Fit**: How well the actor's goals match the assemblage's primary logic (1 = Opposed, 10 = Aligned).
+
+============================================================
 OUTPUT FORMAT (STRICT)
 ============================================================
 
@@ -149,7 +167,16 @@ OUTPUT FORMAT (STRICT)
       "description": "Brief description of role",
       "region": "Global North | Global South | International | Unknown",
       "role_type": "Material | Expressive | Mixed",
-      "evidence_quotes": ["Quote 1", "Quote 2"]
+      "evidence_quotes": ["Quote 1", "Quote 2"],
+      "metrics": {
+          "territoriality": 8,
+          "coding": 9,
+          "centrality": 7,
+          "counter_conduct": 1,
+          "discursive_opposition": 2,
+          "alignment": 9,
+          "rationale": "High influence due to regulatory power (Coding) and enforcement (Territoriality)."
+      }
     }
   ],
   "relations": [
@@ -217,54 +244,87 @@ MODEL OUTPUT:
       "infra": ["Compliance Portal", "Cloud Infrastructure"],
       "discourse": ["Interoperability", "Risk Classification"]
     },
+    "policy_mobilities": {
       "origin_concepts": ["EU AI Act Risk Tiers"],
       "local_mutations": ["Adapted for national security context"]
     },
+    "stabilization_mechanisms": ["Automated validation gates", "Standardized documentation templates"],
     "relations_of_exteriority": {
       "detachable": ["Cloud Infrastructure", "Risk Classification Template"],
       "embedded": ["National Security Narrative", "Ministry Bureaucracy"],
       "mobility_score": "Medium"
-    },
-    "stabilization_mechanisms": ["Automated validation blocks non-compliant submissions"]
-      "local_mutations": ["Adapted for local cloud sovereignty"]
-    },
-    "stabilization_mechanisms": ["Automated validation gates", "Standardized documentation templates"]
+    }
   },
   "actors": [
     {
       "name": "Ministry of Digital Affairs",
       "type": "Policymaker",
       "description": "Central regulator enforcing the accountability framework.",
+      "region": "Global North",
       "role_type": "Material",
-      "evidence_quotes": ["The Ministry of Digital Affairs adopts a new National AI Accountability Framework"]
+      "evidence_quotes": ["The Ministry of Digital Affairs adopts a new National AI Accountability Framework"],
+      "metrics": {
+          "influence": 9,
+          "resistance": 1,
+          "alignment": 10,
+          "rationale": "Sovereign regulator defining the rules."
+      }
     },
     {
       "name": "Regional Standards Consortium",
       "type": "Policymaker",
       "description": "Collaborative body supplying technical templates for compliance.",
+      "region": "International",
       "role_type": "Expressive",
-      "evidence_quotes": ["regional standards consortium that provides technical templates"]
+      "evidence_quotes": ["regional standards consortium that provides technical templates"],
+       "metrics": {
+          "influence": 6,
+          "resistance": 2,
+          "alignment": 9,
+          "rationale": "Sets standards but lacks enforcement power."
+      }
     },
     {
       "name": "Cloud Provider",
       "type": "Infrastructure",
       "description": "Host of the reporting portal that technically validates submissions.",
+      "region": "Global North",
       "role_type": "Material",
-      "evidence_quotes": ["cloud provider hosts the compliance reporting portal"]
+      "evidence_quotes": ["cloud provider hosts the compliance reporting portal"],
+       "metrics": {
+          "influence": 7,
+          "resistance": 3,
+          "alignment": 8,
+          "rationale": "Critical infrastructure partner, high operational power."
+      }
     },
     {
       "name": "Global Civil Society Organizations",
       "type": "Civil Society",
       "description": "Monitor the framework's effects and highlight gaps in addressing cross-border model harms.",
+      "region": "International",
       "role_type": "Expressive",
-      "evidence_quotes": ["global civil society organizations monitor the process"]
+      "evidence_quotes": ["global civil society organizations monitor the process"],
+       "metrics": {
+          "influence": 3,
+          "resistance": 8,
+          "alignment": 2,
+          "rationale": "External critique, actively highlighting gaps."
+      }
     },
     {
       "name": "National Research Institute",
       "type": "Academic",
       "description": "Analyzes compliance trends and advises on framework revisions.",
+      "region": "Global North",
       "role_type": "Expressive",
-      "evidence_quotes": ["National Research Institute supports the ministry"]
+      "evidence_quotes": ["National Research Institute supports the ministry"],
+       "metrics": {
+          "influence": 5,
+          "resistance": 2,
+          "alignment": 9,
+          "rationale": "Advisory role, aligned with state goals."
+      }
     }
   ],
   "relations": [

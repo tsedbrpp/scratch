@@ -20,6 +20,7 @@ import { STRESS_TEST_SYSTEM_PROMPT } from './stress-test';
 import { TRAJECTORY_PROMPT } from './trajectory';
 import { MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE } from './micro-fascism';
 import { LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE } from './liberatory';
+import { ECOSYSTEM_GENERATION_PROMPT_TEMPLATE, COMPLIANCE_CASCADE_PROMPT_TEMPLATE } from './ecosystem-simulation';
 
 export interface PromptDefinition {
     id: string;
@@ -45,8 +46,8 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
             requiredKeys: ['narrative', 'missing_voices', 'structural_voids', 'blindspot_intensity', 'socio_technical_components', 'policy_mobilities', 'stabilization_mechanisms']
         }
     },
-    'assemblage_extraction': {
-        id: 'assemblage_extraction',
+    'assemblage_extraction_v3': {
+        id: 'assemblage_extraction_v3',
         name: 'Assemblage Extraction',
         description: 'Extracts actors, mechanisms, and relations from raw text using Assemblage Theory.',
         category: 'Extraction',
@@ -278,6 +279,28 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         outputSchema: {
             format: 'json',
             requiredKeys: ['items']
+        }
+    },
+    'ecosystem_generation': {
+        id: 'ecosystem_generation',
+        name: 'Ecosystem Actor Generation',
+        description: 'Generates relevant actors based on a user query.',
+        category: 'Simulation',
+        defaultValue: ECOSYSTEM_GENERATION_PROMPT_TEMPLATE,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['actors']
+        }
+    },
+    'compliance_cascade': {
+        id: 'compliance_cascade',
+        name: 'Compliance Cascade Simulation',
+        description: 'Simulates phase transitions in the ecosystem triggered by an event.',
+        category: 'Simulation',
+        defaultValue: COMPLIANCE_CASCADE_PROMPT_TEMPLATE,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['timeline']
         }
     }
 };

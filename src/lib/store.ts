@@ -17,7 +17,7 @@ export const getSources = async (userId: string): Promise<Source[]> => {
     const patchedSources = sources.map(source => {
         const baseline = BASELINE_SOURCES.find(b => b.id === source.id);
         if (baseline) {
-            let patched = { ...source };
+            const patched = { ...source };
             // Check for missing accountability_map (DR3)
             if (baseline.analysis?.accountability_map && !source.analysis?.accountability_map) {
                 patched.analysis = {

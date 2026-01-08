@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { EcosystemActor } from "@/types/ecosystem";
 import { Loader2, Network } from "lucide-react";
@@ -33,6 +34,7 @@ export function MaterializeDialog({
     const [description, setDescription] = useState(initialDescription);
     const [type, setType] = useState<EcosystemActor["type"]>("Policymaker");
     const [roleType, setRoleType] = useState<EcosystemActor["role_type"]>("Mixed");
+    const [mode, setMode] = useState<"actor" | "constraint">("actor");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset form when dialog opens with new data
@@ -55,8 +57,8 @@ export function MaterializeDialog({
             await onConfirm({
                 name,
                 description,
-                type,
-                role_type: roleType,
+                type: mode === "constraint" ? "LegalObject" : type,
+                role_type: mode === "constraint" ? "Expressive" : roleType,
                 influence: "Medium", // Default
                 source: "default",
                 materialized_from: {
@@ -104,7 +106,11 @@ export function MaterializeDialog({
                         <Label htmlFor="type" className="text-right">
                             Actor Type
                         </Label>
-                        <Select value={type} onValueChange={(val: EcosystemActor["type"]) => setType(val)}>
+                        <Select
+                            value={mode === "constraint" ? "LegalObject" : type}
+                            onValueChange={(val: EcosystemActor["type"]) => setType(val)}
+                            disabled={mode === "constraint"}
+                        >
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="Select type" />
                             </SelectTrigger>
@@ -116,6 +122,8 @@ export function MaterializeDialog({
                                 <SelectItem value="Startup">Startup</SelectItem>
                                 <SelectItem value="Academic">Academic</SelectItem>
                                 <SelectItem value="Dataset">Dataset</SelectItem>
+                                <SelectItem value="AlgorithmicAgent">Algorithmic Agent (AI)</SelectItem>
+                                <SelectItem value="LegalObject">Legal Object (Regulation)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -124,7 +132,11 @@ export function MaterializeDialog({
                         <Label htmlFor="role" className="text-right">
                             Ontology
                         </Label>
-                        <Select value={roleType} onValueChange={(val) => setRoleType(val as EcosystemActor["role_type"])}>
+                        <Select
+                            value={mode === "constraint" ? "Expressive" : roleType}
+                            onValueChange={(val) => setRoleType(val as EcosystemActor["role_type"])}
+                            disabled={mode === "constraint"}
+                        >
                             <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="Role Type" />
                             </SelectTrigger>
@@ -145,7 +157,18 @@ export function MaterializeDialog({
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             className="col-span-3 h-20 text-xs"
+                            placeholder={mode === "constraint" ? "Paste the legal text or requirement here..." : "Describe the actor..."}
                         />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Mode</Label>
+                        <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="col-span-3">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="actor">Actor / Assemblage</TabsTrigger>
+                                <TabsTrigger value="constraint">Code / Law</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </div>
 
                     <div className="bg-slate-50 p-3 rounded text-xs text-slate-500 flex gap-2 border border-slate-100 italic">
