@@ -10,6 +10,7 @@ export interface EcosystemActor {
         alignment: number;
         resistance: number;
         rationale?: string;
+        dynamic_power?: number; // Calculated via centrality/pagerank
         // Dimensional Breakdown (V3)
         territoriality?: number; // Power to enforce (1-10)
         coding?: number;        // Power to define (1-10)
@@ -36,9 +37,12 @@ export interface EcosystemConfiguration {
     properties: {
         stability: "High" | "Medium" | "Low";
         generativity: "High" | "Medium" | "Low";
-        [key: string]: string | number;
+        calculated_stability?: number; // 0-1 (Internal density)
+        porosity_index?: number; // 0-1 (External connections / Total connections)
+        [key: string]: string | number | undefined;
     };
     color: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     analysisData?: any; // To store full AssemblageExtractionResult
 }
 
@@ -109,3 +113,27 @@ export interface AiAbsenceAnalysis {
     recommendations?: string[];
     blindspots?: string[]; // Legacy field support
 }
+
+export interface TranslationStage {
+    id: string;
+    label: string;
+    description: string;
+    actors: string[];
+    ontology: "social" | "regulatory" | "technical" | "market";
+    required_actor_types?: string[]; // Types of actors expected in this stage (e.g. ['Policy', 'NGO'])
+    fidelity_score?: number; // 0-1, calculated dynamically
+    betrayal_type?: "Simplification" | "Displacement" | "None";
+    active_actor_count?: number; // The logic-based count of actors present in this stage
+}
+
+export interface AssemblageExplanationHull {
+    id: string;
+    classification: "Fortress" | "Sieve" | "Meshwork" | string;
+    interpretation: string;
+}
+
+export interface AssemblageExplanation {
+    narrative: string;
+    hulls: AssemblageExplanationHull[];
+}
+

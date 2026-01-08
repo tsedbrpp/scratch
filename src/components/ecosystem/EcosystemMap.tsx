@@ -1,15 +1,16 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import * as d3 from 'd3';
-import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis } from '@/types/ecosystem';
+import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, BoxSelect, Layers, EyeOff, ChevronDown, ChevronUp, Loader2, ZoomIn, ZoomOut, Maximize, Minimize } from 'lucide-react';
+import { Network, MousePointer2, Layers, EyeOff, ChevronDown, Loader2, ZoomIn, Maximize, Minimize, MessageSquare, X } from 'lucide-react';
 import { useForceGraph } from '@/hooks/useForceGraph';
 import { generateEdges } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
 import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor } from '@/lib/ecosystem-utils';
+import { SimulationService } from '@/lib/simulation-service';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
@@ -51,7 +52,9 @@ export function EcosystemMap({
     setInteractionMode,
     selectedForGrouping,
     onToggleSelection,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onCreateConfiguration,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     activeLens = "None",
     onConfigClick,
     absenceAnalysis
@@ -78,9 +81,40 @@ export function EcosystemMap({
         return mergeGhostNodes(actors, absenceAnalysis || null);
     }, [actors, absenceAnalysis]);
 
-    // Helper to determine if an actor belongs to a hovered stage
+    // Assemblage Explanation State
+    const [isExplaining, setIsExplaining] = useState(false);
+    const [explanation, setExplanation] = useState<AssemblageExplanation | null>(null);
+
+    const handleExplainMap = async () => {
+        setIsExplaining(true);
+        try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+            }
+
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    analysisMode: 'assemblage_explanation',
+                    configurations: configurations, // Pass metrics implicitly via configs
+                    text: 'Assess Hull Metrics' // Dummy text
+                })
+            });
+            const data = await response.json();
+            if (data.analysis) {
+                setExplanation(data.analysis);
+                setIsLegendOpen(false); // Close legend to show explanation
+            }
+        } catch (error) {
+            console.error("Explanation failed:", error);
+        } finally {
+            setIsExplaining(false);
+        }
+    };
+
     const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
-        // ... (Logic remains same)
         if (!stageId) return true;
         const t = actor.type.toLowerCase();
 
@@ -100,9 +134,8 @@ export function EcosystemMap({
         }
     };
 
-    // ... (logic remains)
     const links = useMemo(() => {
-        const generated = generateEdges(mergedActors); // Use merged actors for edges (though ghosts likely have none)
+        const generated = generateEdges(mergedActors);
         return generated.map(e => ({
             source: e.source.id,
             target: e.target.id,
@@ -110,9 +143,17 @@ export function EcosystemMap({
         }));
     }, [mergedActors]);
 
+    // Calculate Dynamic Power Live
+    const hydratedActors = useMemo(() => {
+        // We pass the raw link structure to the service
+        // The service needs { source: string, target: string }
+        return SimulationService.calculateDynamicPower(mergedActors, links);
+    }, [mergedActors, links]);
+
     // Force Physics
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nodes, simulation, drag } = useForceGraph(
-        mergedActors, // Use merged actors
+        hydratedActors, // Use hydrated actors with dynamic power
         dimensions.width,
         dimensions.height,
         configurations.map(c => ({ id: c.id, memberIds: c.memberIds })),
@@ -175,6 +216,7 @@ export function EcosystemMap({
         return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleMouseDown = (e: React.MouseEvent, node: any) => {
         e.stopPropagation(); // Prevent Zoom/Pan start
         if (interactionMode === "drag") {
@@ -249,6 +291,17 @@ export function EcosystemMap({
         const hull = lower.concat(upper);
         return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
     };
+
+    // --- Simulation Mechanics (Hulls) --- //
+    // 2. Calculate Hull Metrics (Stability/Porosity) using existing hydratedActors and links
+    const hydratedConfigs = useMemo(() => {
+        if (!links.length) return configurations;
+        // The service might expect links with objects if it calculates via memory refs, 
+        // but our service implementation handles IDs.
+        // Let's verify SimulationService.calculateHullMetrics signature: (configs, actors, links)
+        // Ensure links match expected shape { source: string|obj, target: string|obj }
+        return SimulationService.calculateHullMetrics(configurations, hydratedActors, links);
+    }, [configurations, hydratedActors, links]);
 
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -338,6 +391,16 @@ export function EcosystemMap({
                         <div className="w-px h-3 bg-slate-300 mx-0.5" />
                         <Button
                             variant="ghost" size="sm"
+                            className={`h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-indigo-600 ${isExplaining ? "animate-pulse" : ""}`}
+                            onClick={handleExplainMap}
+                            disabled={isExplaining}
+                        >
+                            {isExplaining ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />}
+                            {isExplaining ? "Analyzing..." : "Explain Map"}
+                        </Button>
+                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                        <Button
+                            variant="ghost" size="sm"
                             className={`h-7 px-2.5 text-xs font-medium ${isFullScreen ? "bg-red-50 text-red-600" : "text-slate-500 hover:text-slate-900"}`}
                             onClick={toggleFullScreen}
                         >
@@ -351,6 +414,7 @@ export function EcosystemMap({
                 </CardHeader>
 
                 <CardContent className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]">
+                    {/* ... (Existing Map Content) ... */}
                     {is3DMode ? (
                         <EcosystemMap3D
                             actors={actors}
@@ -364,6 +428,7 @@ export function EcosystemMap({
                         />
                     ) : (
                         <>
+                            {/* ... (SVG Content) ... */}
                             <svg
                                 ref={svgRef}
                                 width="100%" height="100%"
@@ -373,6 +438,7 @@ export function EcosystemMap({
                                 onMouseLeave={handleMouseUp}
                                 style={{ fontFamily: 'Inter, sans-serif' }}
                             >
+                                {/* ... (Defs, G, Hulls, Links, Nodes) ... */}
                                 <defs>
                                     <marker id="arrow" viewBox="0 0 10 10" refX="20" refY="5"
                                         markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -381,210 +447,71 @@ export function EcosystemMap({
                                 </defs>
 
                                 <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
-
-                                    {/* 0. REGIME LAYER (Background for Nested Mode) */}
                                     {isNestedMode && (
                                         <g className="opacity-0 animate-in fade-in duration-1000 pointer-events-none">
-                                            {/* Outer Field: Policy Regime */}
-                                            <circle
-                                                cx={dimensions.width / 2} cy={dimensions.height / 2}
-                                                r={Math.min(dimensions.width, dimensions.height) * 0.45}
-                                                fill="none"
-                                                stroke="#E2E8F0"
-                                                strokeWidth="2"
-                                                strokeDasharray="8 8"
-                                            />
-                                            <text
-                                                x={dimensions.width / 2} y={dimensions.height / 2 - Math.min(dimensions.width, dimensions.height) * 0.45 - 10}
-                                                textAnchor="middle"
-                                                className="text-[10px] font-bold fill-slate-400 uppercase tracking-[0.2em]"
-                                            >
-                                                Governance Regime Boundary
-                                            </text>
-
-                                            {/* Policy Object Center */}
+                                            <circle cx={dimensions.width / 2} cy={dimensions.height / 2} r={Math.min(dimensions.width, dimensions.height) * 0.45} fill="none" stroke="#E2E8F0" strokeWidth="2" strokeDasharray="8 8" />
+                                            <text x={dimensions.width / 2} y={dimensions.height / 2 - Math.min(dimensions.width, dimensions.height) * 0.45 - 10} textAnchor="middle" className="text-[10px] font-bold fill-slate-400 uppercase tracking-[0.2em]">Governance Regime Boundary</text>
                                             <circle cx={dimensions.width / 2} cy={dimensions.height / 2} r={10} fill="#6366F1" opacity="0.1" />
                                             <text x={dimensions.width / 2} y={dimensions.height / 2} dy={3} textAnchor="middle" className="text-[6px] font-bold fill-indigo-400 uppercase">Policy</text>
                                         </g>
                                     )}
 
-                                    {/* 1. HULLS (Background Layers) */}
-                                    {configurations.map(config => {
-                                        const memberPoints = config.memberIds
-                                            .map(id => getNodePos(id))
-                                            .filter(p => p.x !== 0 && p.y !== 0);
-
+                                    {hydratedConfigs.map(config => {
+                                        const memberPoints = config.memberIds.map(id => getNodePos(id)).filter(p => p.x !== 0 && p.y !== 0);
                                         if (memberPoints.length < 2) return null;
-
                                         const centroid = memberPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
                                         centroid.x /= memberPoints.length;
                                         centroid.y /= memberPoints.length;
-
+                                        const porosity = config.properties.porosity_index || 0;
+                                        const strokeDash = porosity > 0.6 ? "6 4" : (porosity > 0.3 ? "10 2" : "none");
+                                        const stability = config.properties.calculated_stability || 0.1;
+                                        const fillOpacity = Math.max(0.05, Math.min(0.3, stability * 0.4));
                                         return (
                                             <g key={config.id} className="transition-all duration-500 ease-out" opacity={highlightedStage ? 0.1 : 1}>
                                                 <path
-                                                    d={memberPoints.length === 2
-                                                        ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}`
-                                                        : getHullPath(memberPoints)}
-                                                    fill={config.color}
-                                                    fillOpacity={HULL_STYLES.opacity}
-                                                    stroke={config.color}
-                                                    strokeWidth={HULL_STYLES.strokeWidth}
-                                                    strokeDasharray={HULL_STYLES.strokeDash} // Porous boundaries
-                                                    strokeLinejoin="round"
-                                                    strokeLinecap="round"
+                                                    d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
+                                                    fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
                                                 />
-                                                {/* Label Background Pill */}
-                                                <rect
-                                                    x={centroid.x - (config.name.length * 3 + 8)}
-                                                    y={centroid.y - 32}
-                                                    width={config.name.length * 6 + 16}
-                                                    height={18}
-                                                    rx={9}
-                                                    fill={config.color}
-                                                    fillOpacity={0.9}
-                                                    stroke="white"
-                                                    strokeWidth={1.5}
-                                                    className="drop-shadow-sm"
-                                                />
-                                                <text
-                                                    x={centroid.x} y={centroid.y - 20}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                    className="text-[10px] font-bold fill-white uppercase tracking-wider"
-                                                    style={{ pointerEvents: 'none' }}
-                                                >
-                                                    {config.name}
-                                                </text>
+                                                <rect x={centroid.x - (config.name.length * 3 + 8)} y={centroid.y - 32} width={config.name.length * 6 + 16} height={18} rx={9} fill={config.color} fillOpacity={0.9} stroke="white" strokeWidth={1.5} className="drop-shadow-sm" />
+                                                <text x={centroid.x} y={centroid.y - 20} textAnchor="middle" dominantBaseline="middle" className="text-[10px] font-bold fill-white uppercase tracking-wider" style={{ pointerEvents: 'none' }}>{config.name}</text>
                                             </g>
                                         );
                                     })}
 
-                                    {/* 2. LINKS (Translation Intensity) */}
                                     {links.map((link, i) => {
                                         const s = getNodePos(link.source as string);
                                         const t = getNodePos(link.target as string);
                                         if (s.x === 0 || t.x === 0) return null;
-
                                         const isFocused = focusedNodeId && (link.source === focusedNodeId || link.target === focusedNodeId);
-
-                                        // Line thickness = Translation Intensity
                                         let strokeWidth = 1;
                                         if (link.type === "Regulates" || link.type === "Governs") strokeWidth = 2.5;
                                         if (link.type === "Excludes") strokeWidth = 1.5;
-
                                         if (isFocused) strokeWidth += 1;
-
-                                        return (
-                                            <line
-                                                key={i}
-                                                x1={s.x} y1={s.y}
-                                                x2={t.x} y2={t.y}
-                                                stroke={isFocused ? "#64748B" : "#CBD5E1"}
-                                                strokeWidth={strokeWidth}
-                                                strokeOpacity={highlightedStage ? 0.1 : (isFocused ? 0.9 : 0.5)}
-                                                strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"}
-                                                markerEnd={!highlightedStage ? "url(#arrow)" : ""}
-                                                className="transition-all duration-300"
-                                                pointerEvents="none"
-                                            />
-                                        );
+                                        return <line key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y} stroke={isFocused ? "#64748B" : "#CBD5E1"} strokeWidth={strokeWidth} strokeOpacity={highlightedStage ? 0.1 : (isFocused ? 0.9 : 0.5)} strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"} markerEnd={!highlightedStage ? "url(#arrow)" : ""} className="transition-all duration-300" pointerEvents="none" />;
                                     })}
 
-                                    {/* 3. NODES */}
                                     {nodes.map(node => {
-                                        const actor = mergedActors.find(a => a.id === node.id); // Use mergedActors
+                                        const actor = hydratedActors.find(a => a.id === node.id);
                                         if (!actor) return null;
-
                                         const color = getActorColor(actor.type);
                                         const isSelected = selectedForGrouping.includes(actor.id);
                                         const isFocused = focusedNodeId === actor.id;
                                         const isRelevant = isActorRelevant(actor, highlightedStage);
-                                        const isGhost = actor.isGhost;
-
-                                        // Highlight Logic
+                                        const isGhost = 'isGhost' in actor ? (actor as EcosystemActor & { isGhost?: boolean }).isGhost : false;
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
-                                        if (isGhost) opacity *= 0.6; // Reduced opacity for ghosts
-
+                                        if (isGhost) opacity *= 0.6;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
-
-                                        const r = isFocused || isSelected ? 8 : 6;
-                                        const strokeDash = isGhost ? "3 2" : "none"; // Dotted outline for ghosts
-
+                                        const power = actor.metrics?.dynamic_power || 0;
+                                        const baseR = 5 + (power * 1.5);
+                                        const r = isFocused || isSelected ? baseR + 2 : baseR;
+                                        const strokeDash = isGhost ? "3 2" : "none";
                                         return (
-                                            <g
-                                                key={node.id}
-                                                transform={`translate(${node.x},${node.y}) scale(${scale})`}
-                                                onMouseDown={(e) => handleMouseDown(e, node)}
-                                                onMouseEnter={(e) => handleNodeHover(e, actor)}
-                                                onMouseLeave={() => setHoveredNode(null)}
-                                                // Stop propagation on clicks to avoid pan start
-                                                onClick={(e) => { e.stopPropagation(); setFocusedNodeId(isFocused ? null : actor.id); }}
-                                                className="group cursor-pointer"
-                                                style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}
-                                            >
-                                                {/* Shape Render Logic */}
-                                                {/* Selection Halo */}
-                                                {isSelected && (
-                                                    getActorShape(actor.type) === 'square' ? (
-                                                        <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
-                                                    ) : getActorShape(actor.type) === 'triangle' ? (
-                                                        <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
-                                                    ) : getActorShape(actor.type) === 'rect' ? (
-                                                        <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
-                                                    ) : (
-                                                        <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
-                                                    )
-                                                )}
-
-                                                {/* Main Node Body */}
-                                                {getActorShape(actor.type) === 'square' ? (
-                                                    <rect
-                                                        x={-r} y={-r} width={r * 2} height={r * 2}
-                                                        fill={isGhost ? "white" : color} // Hollow/White fill for ghost
-                                                        className="drop-shadow-sm transition-all duration-200"
-                                                        stroke={color}
-                                                        strokeWidth={1.5}
-                                                        strokeDasharray={strokeDash}
-                                                    />
-                                                ) : getActorShape(actor.type) === 'triangle' ? (
-                                                    <polygon
-                                                        points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`}
-                                                        fill={isGhost ? "white" : color}
-                                                        className="drop-shadow-sm transition-all duration-200"
-                                                        stroke={color}
-                                                        strokeWidth={1.5}
-                                                        strokeDasharray={strokeDash}
-                                                    />
-                                                ) : getActorShape(actor.type) === 'rect' ? (
-                                                    <rect
-                                                        x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2}
-                                                        fill={isGhost ? "white" : color}
-                                                        className="drop-shadow-sm transition-all duration-200"
-                                                        stroke={color}
-                                                        strokeWidth={1.5}
-                                                        strokeDasharray={strokeDash}
-                                                    />
-                                                ) : (
-                                                    <circle
-                                                        r={r}
-                                                        fill={isGhost ? "white" : color}
-                                                        className="drop-shadow-sm transition-all duration-200"
-                                                        stroke={color}
-                                                        strokeWidth={1.5}
-                                                        strokeDasharray={strokeDash}
-                                                    />
-                                                )}
-
+                                            <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => { e.stopPropagation(); setFocusedNodeId(isFocused ? null : actor.id); }} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
+                                                {isSelected && (getActorShape(actor.type) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />)}
+                                                {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} />}
                                                 <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
-                                                    <div className={`
-                flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px]
-                transform transition-opacity duration-200
-                ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}
-            `}>
-                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-400 italic" : "text-slate-700"}`}>
-                                                            {actor.name} {isGhost && "(Missing)"}
-                                                        </span>
+                                                    <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
+                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-400 italic" : "text-slate-700"}`}>{actor.name} {isGhost && "(Missing)"}</span>
                                                     </div>
                                                 </foreignObject>
                                             </g>
@@ -593,47 +520,41 @@ export function EcosystemMap({
                                 </g>
                             </svg>
 
-                            {/* HOVER TOOLTIP */}
-                            {hoveredNode && (
-                                <div
-                                    className="absolute z-50 pointer-events-none"
-                                    style={{
-                                        left: tooltipPos.x + 10,
-                                        top: tooltipPos.y + 10,
-                                    }}
-                                >
-                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 max-w-[250px] animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="font-semibold mb-0.5 flex items-center gap-2">
-                                            {(hoveredNode as GhostActor).isGhost && (
-                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                                            )}
-                                            {hoveredNode.name}
-                                        </div>
-                                        <div className="text-slate-400 text-[10px] mb-1">{hoveredNode.type}</div>
-                                        {hoveredNode.description && (
-                                            <div className="text-slate-300 border-t border-slate-700/50 pt-1 mt-1 leading-relaxed">
-                                                {(hoveredNode as GhostActor).isGhost ? `MISSING: ${hoveredNode.description}` : hoveredNode.description}
-                                            </div>
-                                        )}
+                            {/* EXPLANATION OVERLAY */}
+                            {explanation && (
+                                <div className="absolute top-16 right-4 left-4 sm:left-auto sm:w-96 bg-white/95 backdrop-blur-md shadow-xl border border-slate-200 rounded-lg overflow-hidden animate-in slide-in-from-top-5 duration-300 z-50">
+                                    <div className="bg-slate-50 border-b border-slate-100 p-3 flex justify-between items-center">
+                                        <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                            <MessageSquare className="h-4 w-4 text-indigo-500" /> Assemblage Analysis
+                                        </h3>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={() => setExplanation(null)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                </div>
-                            )}
+                                    <div className="p-4 max-h-[60vh] overflow-y-auto">
+                                        <p className="text-sm text-slate-600 leading-relaxed mb-4">{explanation.narrative}</p>
 
-                            {/* NEW INSET PROCESS VIEW */}
-                            {isNestedMode && (
-                                <div className="animate-in slide-in-from-bottom-5 duration-700">
-                                    <TranslationChain
-                                        actors={actors}
-                                        onHoverStage={setHighlightedStage}
-                                    />
+                                        <div className="space-y-3">
+                                            {(explanation.hulls || []).map((hull, i: number) => (
+                                                <div key={i} className="bg-slate-50 rounded-md p-3 border border-slate-100">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="font-medium text-xs text-slate-900">{hull.id.replace('config-', '')}</span>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${hull.classification === 'Fortress' ? 'bg-red-100 text-red-700' :
+                                                            hull.classification === 'Sieve' ? 'bg-orange-100 text-orange-700' :
+                                                                'bg-blue-100 text-blue-700'
+                                                            }`}>{hull.classification}</span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500">{hull.interpretation}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Floating Legend Card (Existing) */}
                             {isLegendOpen && (
-                                /* ... (Legend Content remains) ... */
                                 <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-10 max-h-[600px] overflow-y-auto">
-                                    {/* ... logic ... */}
                                     <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
                                         <span className="font-semibold text-slate-800">Actor Types</span>
                                         <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
@@ -667,10 +588,28 @@ export function EcosystemMap({
                                         </div>
                                     )}
 
-                                    {/* Nested Map Legend Addition */}
                                     <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
                                         <p className="mb-1"><span className="font-bold">─</span> Strong Ties</p>
                                         <p><span className="font-bold">- -</span> Absent / Virtual (Ghost)</p>
+                                    </div>
+
+                                    {/* Hull Style Legend */}
+                                    <div className="mt-3 pt-2 border-t border-slate-100">
+                                        <p className="font-semibold text-slate-800 mb-2">Boundary Strength</p>
+                                        <div className="space-y-2 text-[10px] text-slate-500">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-3 border-2 border-slate-300 bg-slate-100/50 rounded-sm"></div>
+                                                <span>Solid: Stable/Closed</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-3 border-2 border-slate-300 border-dashed bg-slate-100/20 rounded-sm"></div>
+                                                <span>Dashed: Porous/Open</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-slate-400 rounded-sm"></div>
+                                                <span>Darker: High Density</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -699,13 +638,45 @@ export function EcosystemMap({
                                     </Button>
                                 </div>
                             )}
+
+                            {hoveredNode && (
+                                <div
+                                    className="absolute z-50 pointer-events-none"
+                                    style={{
+                                        left: tooltipPos.x + 10,
+                                        top: tooltipPos.y + 10,
+                                    }}
+                                >
+                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 max-w-[250px] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="font-semibold mb-0.5 flex items-center gap-2">
+                                            {(hoveredNode as GhostActor).isGhost && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                            )}
+                                            {hoveredNode.name}
+                                        </div>
+                                        <div className="text-slate-400 text-[10px] mb-1">{hoveredNode.type}</div>
+                                        {hoveredNode.description && (
+                                            <div className="text-slate-300 border-t border-slate-700/50 pt-1 mt-1 leading-relaxed">
+                                                {(hoveredNode as GhostActor).isGhost ? `MISSING: ${hoveredNode.description}` : hoveredNode.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {isNestedMode && (
+                                <div className="animate-in slide-in-from-bottom-5 duration-700">
+                                    <TranslationChain
+                                        actors={actors}
+                                        onHoverStage={setHighlightedStage}
+                                    />
+                                </div>
+                            )}
+
                         </>
                     )}
 
-                    {/* Legal Stratum Legend - Visible in Stratum Mode */}
                     {is3DMode && isStratumMode && <StratumLegend />}
-
-                    {/* Simple View Type Legend - Visible in Standard 3D Mode */}
                     {is3DMode && !isStratumMode && <ViewTypeLegend />}
                 </CardContent>
             </Card >

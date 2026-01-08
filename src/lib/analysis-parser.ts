@@ -165,6 +165,12 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
                 inverted_text: responseText,
                 raw_response: responseText
             };
+        } else if (analysisMode === 'assemblage_explanation') {
+            analysis = {
+                narrative: responseText.substring(0, 500) || "Failed to generate assemblage explanation.",
+                hulls: [],
+                raw_response: responseText
+            };
         } else {
             analysis = {
                 key_insight: 'Automated Extraction (Unstructured Response)',
@@ -238,6 +244,16 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
                 market_power: "Score imputed (missing from generation).",
                 procedurality: "Score imputed (missing from generation)."
             };
+        }
+
+        // [Fix] Ensure assemblage_explanation has required structure
+        if (analysisMode === 'assemblage_explanation') {
+            if (!analysis.narrative) {
+                analysis.narrative = "Analysis completed but narrative is missing.";
+            }
+            if (!Array.isArray(analysis.hulls)) {
+                analysis.hulls = [];
+            }
         }
     }
 
