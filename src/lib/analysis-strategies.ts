@@ -177,6 +177,16 @@ Please synthesize these resistance findings according to the system prompt instr
         userContent: text || ''
     }),
 
+    assemblage_explanation: async (userId, { configurations }) => ({
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'assemblage_explanation'),
+        userContent: `ANALYSIS TARGET: Hull Metrics Integration
+
+Here are the calculated Assemblage Metrics for the current ecosystem map:
+${JSON.stringify(configurations, null, 2)}
+
+Please interpret these "Stability" (Density) and "Porosity" (External Connectivity) scores.`
+    }),
+
     default: async (userId, { title, sourceType, text }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens'),
         userContent: `DOCUMENT TITLE: ${title || 'Untitled Document'}

@@ -1,6 +1,7 @@
 import { StorageService } from '@/lib/storage-service';
 import { ABSENCE_PROMPT } from './absence';
 import { ASSEMBLAGE_PROMPT } from './assemblage';
+import { ASSEMBLAGE_EXPLANATION_PROMPT } from './assemblage-explanation';
 import { COMPARATIVE_SYNTHESIS_PROMPT } from './comparative-synthesis';
 import { COMPARISON_SYSTEM_PROMPT } from './comparison';
 import { CRITIQUE_SYSTEM_PROMPT } from './critique';
@@ -301,6 +302,17 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         outputSchema: {
             format: 'json',
             requiredKeys: ['timeline']
+        }
+    },
+    'assemblage_explanation': {
+        id: 'assemblage_explanation',
+        name: 'Assemblage Explanation',
+        description: 'Explains the political significance of Hull Stability and Porosity.',
+        category: 'Analysis',
+        defaultValue: ASSEMBLAGE_EXPLANATION_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['narrative', 'hulls']
         }
     }
 };

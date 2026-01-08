@@ -15,7 +15,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v24';
+const PROMPT_VERSION = 'v26'; // Incremented for structured, pedagogical assemblage explanation format
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0} `);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },

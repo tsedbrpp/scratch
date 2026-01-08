@@ -130,16 +130,11 @@ export async function performAnalysis(
         analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
     }
 
-    // Critique Logic
-    // Only run critique for specific modes or if requested
-    // (Wait, runCritiqueLoop was not used in performAnalysis in the original file, it was just exported)
-    // Checking usage... The original file has runCritiqueLoop exported but seemingly unused within performAnalysis directly?
-    // Ah, it might be called by the API route directly.
-    // I will export runCritiqueLoop from here as well by re-exporting it or just let the API import from the new service.
-    // But since I am refactoring this file, I should remove the implementation.
-    // I will need to check api/analysis/route.ts or similar to see where runCritiqueLoop is used.
-    // For now, I will remove the local implementation and importing it won't re-export it automatically.
-    // I should probably re-export it to maintain compatibility if other files import from 'analysis-service'.
+    // Return analysis result with usage stats
+    return {
+        analysis,
+        usage: completion.usage
+    };
 }
 
 export { runStressTest } from '@/lib/analysis/stress-test-service';
