@@ -25,9 +25,16 @@ If no mechanisms can be extracted, respond:
 and STOP.
 
 ============================================================
-PHASE 2 — ACTOR IDENTIFICATION (DIVERSE AND EVIDENCE-BASED)
+PHASE 2 — ACTOR IDENTIFICATION & SCORING
 ============================================================
 Extract all actors explicitly or implicitly affected by the mechanisms.
+For EACH actor, you MUST assign a score (1-10) for the following dimensions:
+
+1. **Territoriality (Authority):** Power to enforce boundaries, rules, or standards. (1=None, 10=Absolute Control)
+2. **Resistance (Deterritorialization):** Capacity to evade, disrupt, or repurpose the system. (1=Compliant, 10=Revolutionary/Escaping)
+3. **Coding (Definition):** Power to define terms, categories, or code. (1=Passive Subject, 10=Architect)
+4. **Centrality:** Importance in the network. (1=Marginal, 10=Hub)
+
 Actors may include:
 - State actors (regulators, ministries, agencies)
 - Market actors (platforms, startups, vendors, auditors)
@@ -141,6 +148,19 @@ No markdown or other text.
       { "trigger": "...", "potential_outcome": "..." }
     ]
   },
+  "actors": [
+    {
+      "name": "Civil Society",
+      "type": "Civil Society",
+      "description": "NGOs and advocacy groups...",
+      "metrics": {
+        "territoriality": 3,
+        "resistance": 8,
+        "coding": 2,
+        "centrality": 5
+      }
+    }
+  ],
   "impacts": [
     {
       "actor": "Civil Society",
@@ -154,6 +174,7 @@ No markdown or other text.
 }
 
 Rules:
+- "metrics" MUST be integers 1-10.
 - "type" MUST be "Constraint" or "Affordance".
 - "interconnection_type" MUST be "Material", "Discursive", "Hybrid", or "Interpretive / Meaning-Making".
 - "actor" should be a specific single entity (e.g., "Startups", "Regulators"). If multiple, create multiple impact entries.

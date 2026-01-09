@@ -128,7 +128,7 @@ export interface AnalysisResult {
         description: string;
         significance: string;
         scores: Record<string, number>;
-        prediction_scenarios?: { scenario: string; likelihood: number; indicator: string }[];
+
     }[];
     perspectives?: Record<string, string>;
 }

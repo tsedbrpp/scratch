@@ -93,7 +93,7 @@ export function calculateLiberatoryCapacity(analysis: AnalysisResult): Liberator
     // 5. Recognition of Repair & Care Work
     // Keyword check in Temporal or Cultural analysis
     const temporalEvidence = analysis.temporal_orientation?.evidence || "";
-    const framingText = analysis.cultural_framing?.technology_role || "";
+    const framingText = analysis.technology_role || "";
     const hasCareKeywords = /repair|care|maintenance|stewardship|healing/i.test(temporalEvidence + framingText);
 
     if (hasCareKeywords || analysis.temporal_orientation?.framing === "Care") {

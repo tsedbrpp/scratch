@@ -1,6 +1,6 @@
 import React from 'react';
 import { EcosystemActor } from '@/types/ecosystem';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine, Label } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine, Label } from 'recharts';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Info } from 'lucide-react';
@@ -13,23 +13,73 @@ interface AssemblageCompassProps {
 
 export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: AssemblageCompassProps) {
 
+    // Pseudo-random jitter based on actor ID string to be deterministic but scattered
+    // (Prevents jittering on re-renders)
+    const getJitter = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return (hash % 1000) / 1000 - 0.5; // -0.5 to 0.5
+    };
+
+    // Helper to convert qualitative metrics to numeric scale for plotting
+    const qualitativeToNumeric = (val: string | number | undefined): number => {
+        if (typeof val === 'number') return val;
+        switch (val) {
+            case 'High': return 8;
+            case 'Moderate': return 5;
+            case 'Low': return 2;
+            case 'Weak': return 2;
+            default: return 5;
+        }
+    };
+
     // Prepare data for the scatter plot
-    const data = actors.map(actor => ({
-        id: actor.id,
-        name: actor.name,
-        type: actor.type,
-        x: actor.metrics?.influence || 5, // Influence (Territorialization)
-        y: actor.metrics?.resistance || 5, // Resistance (Deterritorialization)
-        z: 100, // Size
-        fill: getColorByType(actor.type),
-        actor: actor // Pass full actor for tooltip
-    }));
+    const data = actors.map(actor => {
+        // Use new assemblage metrics (with fallback to legacy top-level field)
+        const baseTerr = qualitativeToNumeric(actor.metrics?.territorialization || actor.influence);
+        const baseDeterr = qualitativeToNumeric(actor.metrics?.deterritorialization);
+
+        // Apply jitter properties - scaled to avoid shifting too much 
+        // (0.4 jitter means max deviation is +/- 0.2 units on 0-10 scale)
+        const jitterX = getJitter(actor.id + "x") * 0.4;
+        const jitterY = getJitter(actor.id + "y") * 0.4;
+
+        return {
+            id: actor.id,
+            name: actor.name,
+            type: actor.type,
+            x: Math.max(0, Math.min(10, baseTerr + jitterX)), // Clamp to 0-10
+            y: Math.max(0, Math.min(10, baseDeterr + jitterY)),
+            z: 100, // Size
+            fill: getColorByType(actor.type),
+            actor: actor // Pass full actor for tooltip
+        };
+    });
 
     // Quadrant Definitions
     // Q1 (High Inf, High Res): Battleground
     // Q2 (High Inf, Low Res): Strata
     // Q3 (Low Inf, High Res): Lines of Flight
     // Q4 (Low Inf, Low Res): Amorphous
+
+    if (actors.length === 0) {
+        return (
+            <div className="w-full h-[600px] flex flex-col items-center justify-center text-center p-8 border border-slate-200 border-dashed rounded-xl bg-slate-50">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                    <Info className="h-8 w-8 text-slate-300" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No Actors Mapped Yet</h3>
+                <p className="text-slate-500 max-w-md mb-6">
+                    This policy document hasn't been analyzed yet. Go to the <strong>Visual Assemblage</strong> tab and use the <strong>Materialize</strong> or <strong>Simulation</strong> tools to populate the map.
+                </p>
+                <div className="text-xs text-slate-400">
+                    Once actors are created, they will appear on this epistemic plane based on their territorialization and resistance scores.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full min-h-[1000px] bg-white rounded-xl border border-slate-200 shadow-sm p-4 relative overflow-hidden flex flex-col">
@@ -111,6 +161,7 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                             ticks={[0, 2, 4, 6, 8, 10]}
                             label={{ value: 'Degree of Deterritorialization (Resistance)', angle: -90, position: 'left', offset: 0, fill: '#64748b', fontSize: 12, style: { textAnchor: 'middle' } }}
                         />
+                        <ZAxis type="number" dataKey="z" range={[64, 400]} />
 
                         {/* Quadrant Labels */}
                         <ReferenceLine x={5} stroke="#94a3b8" strokeDasharray="5 5" />
@@ -163,11 +214,15 @@ const CustomTooltip = ({ active, payload }: any) => {
                 <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mb-2">
                     <div>
                         <span className="text-slate-500 block">Territorialization</span>
-                        <span className="font-mono font-bold text-indigo-600">{data.x}</span>
+                        <span className="font-mono font-bold text-indigo-600">
+                            {data.actor.metrics?.territorialization || data.actor.influence || "Unknown"}
+                        </span>
                     </div>
                     <div>
                         <span className="text-slate-500 block">Deterritorialization</span>
-                        <span className="font-mono font-bold text-emerald-600">{data.y}</span>
+                        <span className="font-mono font-bold text-emerald-600">
+                            {data.actor.metrics?.deterritorialization || "Unknown"}
+                        </span>
                     </div>
                 </div>
 

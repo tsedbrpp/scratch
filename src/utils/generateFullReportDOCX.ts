@@ -815,7 +815,6 @@ class ReportGeneratorDOCX {
 
         if (data.actors) this.renderEcosystemActors(data.actors);
         if (data.configurations) this.renderEcosystemConfigurations(data.configurations);
-        if (data.culturalHoles) this.renderEcosystemCulturalHoles(data.culturalHoles);
         if (data.absenceAnalysis) this.renderAbsenceAnalysis(data.absenceAnalysis);
         if (data.assemblage) this.renderAssemblageAnalysis(data.assemblage);
     }
@@ -864,18 +863,7 @@ class ReportGeneratorDOCX {
         this.sections.push(new Paragraph({ text: "" })); // Spacing
     }
 
-    private renderEcosystemCulturalHoles(culturalHoles: any) {
-        this.addSubHeader("Structural Holes Analysis");
-        if (culturalHoles.summary) {
-            this.addText(culturalHoles.summary);
-        }
-        if (culturalHoles.holes && culturalHoles.holes.length > 0) {
-            this.addText("Identified Holes:", STYLE.colors.secondary, 0, true);
-            culturalHoles.holes.forEach((hole: any) => {
-                this.addText(`• Between ${hole.clusterA} & ${hole.clusterB}: ${hole.opportunity}`);
-            });
-        }
-    }
+
 
     private renderAbsenceAnalysis(absenceAnalysis: any) {
         this.addSubHeader("Critique: Absences & Blindspots");

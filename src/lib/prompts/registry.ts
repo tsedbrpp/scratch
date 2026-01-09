@@ -15,13 +15,12 @@ import { INSTITUTIONAL_LOGICS_PROMPT } from './institutional-logics';
 import { LEGITIMACY_PROMPT } from './legitimacy';
 // Note: ONTOLOGY_SYSTEM_PROMPT has multiple exports, usually we just need the main one or we can register them separately.
 import { ONTOLOGY_SYSTEM_PROMPT, ONTOLOGY_COMPARISON_SYSTEM_PROMPT } from './ontology';
-import { PERSPECTIVE_SIMULATION_PROMPT } from './perspective-simulation';
-import { RESISTANCE_SYSTEM_PROMPT, RESISTANCE_GENERATION_PROMPT, RESISTANCE_SYNTHESIS_PROMPT } from './resistance';
+import { RESISTANCE_SYSTEM_PROMPT, RESISTANCE_SYNTHESIS_PROMPT } from './resistance';
+import { RESISTANCE_DISCOURSE_ANALYSIS_PROMPT } from './resistance-analysis';
 import { STRESS_TEST_SYSTEM_PROMPT } from './stress-test';
-import { TRAJECTORY_PROMPT } from './trajectory';
 import { MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE } from './micro-fascism';
 import { LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE } from './liberatory';
-import { ECOSYSTEM_GENERATION_PROMPT_TEMPLATE, COMPLIANCE_CASCADE_PROMPT_TEMPLATE } from './ecosystem-simulation';
+import { ANT_TRACE_PROMPT, ASSEMBLAGE_REALIST_PROMPT, HYBRID_REFLEXIVE_PROMPT } from './theoretical-prompts';
 
 export interface PromptDefinition {
     id: string;
@@ -157,17 +156,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         category: 'Analysis',
         defaultValue: ONTOLOGY_COMPARISON_SYSTEM_PROMPT
     },
-    'perspective_simulation': {
-        id: 'perspective_simulation',
-        name: 'Perspective Simulation',
-        description: 'Generates conflicting viewpoints (Market vs Democratic) on a topic.',
-        category: 'Simulation',
-        defaultValue: PERSPECTIVE_SIMULATION_PROMPT,
-        outputSchema: {
-            format: 'json',
-            requiredKeys: ['perspectiveA', 'perspectiveB']
-        }
-    },
+
     'resistance_analysis': {
         id: 'resistance_analysis',
         name: 'Resistance Analysis',
@@ -175,13 +164,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         category: 'Analysis',
         defaultValue: RESISTANCE_SYSTEM_PROMPT
     },
-    'resistance_generation': {
-        id: 'resistance_generation',
-        name: 'Resistance Generation',
-        description: 'Generates synthetic user resistance traces for simulation.',
-        category: 'Simulation',
-        defaultValue: RESISTANCE_GENERATION_PROMPT
-    },
+
     'resistance_synthesis': {
         id: 'resistance_synthesis',
         name: 'Resistance Synthesis',
@@ -196,13 +179,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         category: 'Critique',
         defaultValue: STRESS_TEST_SYSTEM_PROMPT
     },
-    'trajectory_simulation': {
-        id: 'trajectory_simulation',
-        name: 'Trajectory Simulation',
-        description: 'Simulates structural shifts in the ecosystem under different governance scenarios.',
-        category: 'Simulation',
-        defaultValue: TRAJECTORY_PROMPT
-    },
+
     'theme_extraction': {
         id: 'theme_extraction',
         name: 'Theme Extraction (Grounded Theory)',
@@ -282,28 +259,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
             requiredKeys: ['items']
         }
     },
-    'ecosystem_generation': {
-        id: 'ecosystem_generation',
-        name: 'Ecosystem Actor Generation',
-        description: 'Generates relevant actors based on a user query.',
-        category: 'Simulation',
-        defaultValue: ECOSYSTEM_GENERATION_PROMPT_TEMPLATE,
-        outputSchema: {
-            format: 'json',
-            requiredKeys: ['actors']
-        }
-    },
-    'compliance_cascade': {
-        id: 'compliance_cascade',
-        name: 'Compliance Cascade Simulation',
-        description: 'Simulates phase transitions in the ecosystem triggered by an event.',
-        category: 'Simulation',
-        defaultValue: COMPLIANCE_CASCADE_PROMPT_TEMPLATE,
-        outputSchema: {
-            format: 'json',
-            requiredKeys: ['timeline']
-        }
-    },
+
     'assemblage_explanation': {
         id: 'assemblage_explanation',
         name: 'Assemblage Explanation',
@@ -313,6 +269,72 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative', 'hulls']
+        }
+    },
+    'ant_trace_explanation': {
+        id: 'ant_trace_explanation',
+        name: 'ANT Trace Explanation',
+        description: 'Generates a descriptive methodological trace of the actor-network.',
+        category: 'Analysis',
+        defaultValue: ANT_TRACE_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['narrative']
+        }
+    },
+    'assemblage_realist_explanation': {
+        id: 'assemblage_realist_explanation',
+        name: 'Assemblage Realist Explanation',
+        description: 'Interprets mechanisms of territorialization and coding.',
+        category: 'Analysis',
+        defaultValue: ASSEMBLAGE_REALIST_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['narrative']
+        }
+    },
+    'hybrid_reflexive_explanation': {
+        id: 'hybrid_reflexive_explanation',
+        name: 'Hybrid Reflexive Explanation',
+        description: 'Synthesizes ANT trace and Assemblage mechanisms with theoretical reflexivity.',
+        category: 'Analysis',
+        defaultValue: HYBRID_REFLEXIVE_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['narrative']
+        }
+    },
+    'generate_search_terms': {
+        id: 'generate_search_terms',
+        name: 'Generate Search Terms',
+        description: 'Extracts key search terms from policy insights for finding online discussions.',
+        category: 'Extraction',
+        defaultValue: `Given this policy insight, extract 3-5 key search terms or phrases that would be most effective for finding related discussions on Reddit. Focus on concrete topics, issues, or controversies that people would actually discuss online.\n\nReturn ONLY a JSON array of search terms, without any markdown formatting or explanation. Example format:\n["algorithmic bias", "AI regulation", "facial recognition"]`,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: []
+        }
+    },
+    'trajectory_simulation': {
+        id: 'trajectory_simulation',
+        name: 'Trajectory Simulation',
+        description: 'Simulates how an assemblage evolves under specific scenario conditions.',
+        category: 'Simulation',
+        defaultValue: `You are analyzing the trajectory of an algorithmic assemblage under specific conditions.\n\nGiven a set of actors and a scenario, predict how the assemblage will evolve. Consider:\n- How territorialization and deterritorialization forces shift\n- Which actors gain or lose influence\n- What new connections or disconnections emerge\n- How coding mechanisms change\n\nReturn your analysis as JSON with:\n- narrative: Overall trajectory description\n- deltas: Array of changes with source_id, target_id, change_type, and description\n- stabilization_mechanisms: What keeps the assemblage coherent\n- lines_of_flight: Potential escape routes or mutations`,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['narrative', 'deltas']
+        }
+    },
+    'resistance_discourse_analysis': {
+        id: 'resistance_discourse_analysis',
+        name: 'Resistance Discourse Analysis',
+        description: 'Analyzes resistance artifacts through assemblage theory and critical discourse analysis.',
+        category: 'Analysis',
+        defaultValue: RESISTANCE_DISCOURSE_ANALYSIS_PROMPT,
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['frames', 'rhetorical_strategies', 'reconfiguration']
         }
     }
 };

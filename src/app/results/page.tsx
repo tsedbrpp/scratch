@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useServerStorage } from "@/hooks/useServerStorage";
-import { CulturalHolesAnalysisResult } from "@/types/ecosystem";
-import { CulturalHolesAnalysis } from "@/components/ecosystem/CulturalHolesAnalysis";
+// import { CulturalHolesAnalysisResult } from "@/types/ecosystem";
+// import { CulturalHolesAnalysis } from "@/components/ecosystem/CulturalHolesAnalysis";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, RotateCcw } from "lucide-react";
 import { AVAILABLE_PERSPECTIVES, DEFAULT_PERSPECTIVE_A, DEFAULT_PERSPECTIVE_B } from "@/lib/perspectives";
 
 export default function ResultsPage() {
-    const [analysisResult, setAnalysisResult] = useState<CulturalHolesAnalysisResult | null>(null);
+    // const [analysisResult, setAnalysisResult] = useState<CulturalHolesAnalysisResult | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [hasRun, setHasRun] = useState(false);
 
@@ -100,7 +100,7 @@ export default function ResultsPage() {
 
             const data = await response.json();
             if (data.success && data.analysis) {
-                setAnalysisResult(data.analysis);
+                // setAnalysisResult(data.analysis);
                 setHasRun(true);
             } else {
                 throw new Error(data.error || "Analysis returned no data");
@@ -256,7 +256,7 @@ export default function ResultsPage() {
                     </div>
 
                     {/* Rendering the Analysis Component Inline */}
-                    {(hasRun || isAnalyzing) && (
+                    {/* {(hasRun || isAnalyzing) && (
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <CulturalHolesAnalysis
                                 culturalHoles={analysisResult}
@@ -267,7 +267,10 @@ export default function ResultsPage() {
                                 Fig 3.1: Live generation of structural holes between the provided textual artifacts.
                             </div>
                         </div>
-                    )}
+                    )} */}
+                    <div className="p-8 text-center text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                        <p className="text-sm">Cultural Holes Analysis component temporarily disabled.</p>
+                    </div>
                 </div>
             </article>
         </div>

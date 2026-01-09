@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
 import { createRateLimitResponse, createUnauthorizedResponse, createErrorResponse } from '@/lib/api-helpers';
 import { safeJSONParse } from '@/lib/analysis-utils';
+import { PromptRegistry } from '@/lib/prompts/registry';
 
 export async function POST(req: Request) {
     const { userId } = await auth();
@@ -34,12 +35,7 @@ export async function POST(req: Request) {
 
         const openai = new OpenAI({ apiKey });
 
-        const prompt = `Given this policy insight, extract 3-5 key search terms or phrases that would be most effective for finding related discussions on Reddit. Focus on concrete topics, issues, or controversies that people would actually discuss online.
-
-Insight: "${keyInsight}"
-
-Return ONLY a JSON array of search terms, without any markdown formatting or explanation. Example format:
-["algorithmic bias", "AI regulation", "facial recognition"]`;
+        const systemPrompt = await PromptRegistry.getEffectivePrompt(userId, 'generate_search_terms');
 
         const response = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -48,7 +44,7 @@ Return ONLY a JSON array of search terms, without any markdown formatting or exp
                     role: 'system',
                     content: 'You are a search optimization expert. Extract the most relevant search terms for finding online discussions.'
                 },
-                { role: 'user', content: prompt }
+                { role: 'user', content: `${systemPrompt}\n\nInsight: "${keyInsight}"` }
             ],
             // temperature: 0.3, // Removed for fine-tuned compatibility
             max_completion_tokens: 200

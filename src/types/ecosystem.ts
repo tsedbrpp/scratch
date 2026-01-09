@@ -1,24 +1,36 @@
+export type QualitativeMetric = "Strong" | "Moderate" | "Weak" | "Latent";
+
+export interface ReflexiveLogEntry {
+    id: string;
+    timestamp: number;
+    action_type: "Trace_Rejection" | "Actor_Merge" | "Strategic_Subtraction" | "Manual_Inscription" | "Other";
+    rationale: string;
+    affected_actors?: string[];
+    user_id?: string;
+}
+
 export interface EcosystemActor {
     id: string;
     name: string;
     type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
     description: string;
-    influence: "High" | "Medium" | "Low";
+    influence: "High" | "Medium" | "Low"; // Legacy field, use metrics.territorialization instead
     url?: string;
     metrics?: {
-        influence: number;
-        alignment: number;
-        resistance: number;
+        // Assemblage Theory Metrics (DeLanda)
+        territorialization: QualitativeMetric;  // Coding intensity, stability, power to enforce boundaries
+        deterritorialization: QualitativeMetric; // Lines of flight, mutation potential, resistance to capture
+        coding: QualitativeMetric;              // How tightly defined/categorized, rigidity of identity
         rationale?: string;
-        dynamic_power?: number; // Calculated via centrality/pagerank
-        // Dimensional Breakdown (V3)
-        territoriality?: number; // Power to enforce (1-10)
-        coding?: number;        // Power to define (1-10)
-        centrality?: number;    // Network reach (1-10)
-        counter_conduct?: number;    // Active subversion (1-10)
-        discursive_opposition?: number; // Critical speech (1-10)
+        dynamic_power?: number; // Calculated via centrality/pagerank (internal only)
+
+        // Dimensional Breakdown (V3) - De-quantified for interpretive rigor
+        territoriality?: QualitativeMetric; // Power to enforce (legacy, maps to territorialization)
+        centrality?: QualitativeMetric;    // Network reach
+        counter_conduct?: QualitativeMetric;    // Active subversion (maps to deterritorialization)
+        discursive_opposition?: QualitativeMetric; // Critical speech (maps to deterritorialization)
     };
-    source?: "default" | "simulation" | "absence_fill";
+    source?: "default" | "absence_fill";
     quotes?: string[];
     region?: "Global North" | "Global South" | "International" | "Unknown";
     role_type?: "Material" | "Expressive" | "Mixed";
@@ -26,6 +38,14 @@ export interface EcosystemActor {
         source_id: string;
         context_type: "accountability" | "legitimacy" | "cultural_absence" | "trace";
         context_detail: string;
+    };
+
+    // NEW: ANT trace metadata (optional for backward compatibility)
+    trace_metadata?: {
+        source: "document_extraction" | "ai_inference" | "user_input";
+        evidence: string;
+        provisional: boolean;
+        confidence: number;
     };
 }
 
@@ -44,45 +64,10 @@ export interface EcosystemConfiguration {
     color: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     analysisData?: any; // To store full AssemblageExtractionResult
+    reflexive_log?: ReflexiveLogEntry[];
 }
 
-export interface BridgingConcept {
-    concept: string;
-    explanation: string;
-}
 
-export interface CulturalHole {
-    id: string;
-    clusterA: string;
-    clusterB: string;
-    distance: number;
-    bridgingConcepts: BridgingConcept[];
-    opportunity: string;
-    policyImplication: string;
-}
-
-export interface CulturalFraming {
-    state_market_society: string;
-    technology_role: string;
-    rights_conception: string;
-    historical_context: string;
-    epistemic_authority: string;
-    temporal_orientation: string;
-    enforcement_culture: string;
-    cultural_distinctiveness_score: number;
-    cultural_distinctiveness_rationale: string;
-    dominant_cultural_logic: string;
-    silenced_voices: string[];
-}
-
-export interface CulturalHolesAnalysisResult {
-    summary: string;
-    overall_connectivity_score: number;
-    holes: CulturalHole[];
-    silences?: { id: string; name: string; category: string; keywords: string[] }[];
-    recommendations?: { role: string; action: string }[];
-    cultural_framing?: CulturalFraming;
-}
 
 export interface AssemblageAnalysis {
     narrative: string;
@@ -103,6 +88,12 @@ export interface AssemblageAnalysis {
         embedded: string[];
         mobility_score: "High" | "Medium" | "Low";
     };
+    provisional_status?: import('./provisional').ProvisionalInscription;
+    computed_metrics?: {
+        territorialization_audit?: string[];
+        coding_audit?: string[];
+    };
+    traces?: any[]; // To store ANT trace objects if included
 }
 
 export interface AiAbsenceAnalysis {

@@ -187,6 +187,45 @@ ${JSON.stringify(configurations, null, 2)}
 Please interpret these "Stability" (Density) and "Porosity" (External Connectivity) scores.`
     }),
 
+    ant_trace: async (userId, { actors, links }) => ({
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'ant_trace_explanation'),
+        userContent: `TRACED ACTORS:
+${JSON.stringify(actors.map((a: any) => ({ name: a.name, type: a.type })), null, 2)}
+
+ASSOCIATIONS:
+${JSON.stringify(links.map((l: any) => ({ source: l.source, target: l.target, type: l.type })), null, 2)}
+
+Please provide a methodological trace of this network.`
+    }),
+
+    assemblage_realist: async (userId, { traced_actors, detected_mechanisms, identified_capacities }) => ({
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'assemblage_realist_explanation'),
+        userContent: `ASSEMBLAGE COMPONENTS:
+${JSON.stringify(traced_actors.map((a: any) => a.name), null, 2)}
+
+DETECTED MECHANISMS (Territorialization/Coding):
+${JSON.stringify(detected_mechanisms, null, 2)}
+
+IDENTIFIED CAPACITIES:
+${JSON.stringify(identified_capacities, null, 2)}
+
+Please interpret the ontological status of this assemblage.`
+    }),
+
+    hybrid_reflexive: async (userId, { ant_trace, assemblage_analysis, tensions }) => ({
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'hybrid_reflexive_explanation'),
+        userContent: `ANT TRACE DATA:
+Actor Count: ${ant_trace.actor_count}
+
+ASSEMBLAGE MECHANISMS:
+${JSON.stringify(assemblage_analysis, null, 2)}
+
+THEORETICAL TENSIONS:
+${JSON.stringify(tensions, null, 2)}
+
+Please synthesize these findings and discuss the reflexivity of the analysis.`
+    }),
+
     default: async (userId, { title, sourceType, text }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens'),
         userContent: `DOCUMENT TITLE: ${title || 'Untitled Document'}

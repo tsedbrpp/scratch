@@ -185,15 +185,30 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
 
     // Robustness Fixes
     // Ecosystem Mode: Ensure it's an array
-    if (analysisMode === 'ecosystem' && !Array.isArray(analysis)) {
-        console.log('[ANALYSIS FIX] Ecosystem analysis is not an array, attempting to extract...');
-        if (analysis.impacts && Array.isArray(analysis.impacts)) {
-            analysis = analysis.impacts;
-        } else if (analysis.analysis && Array.isArray(analysis.analysis)) {
-            analysis = analysis.analysis;
-        } else {
-            // If it's a single object, wrap it
-            analysis = [analysis];
+    // Ecosystem Mode: Robust Handling
+    if (analysisMode === 'ecosystem') {
+        if (!Array.isArray(analysis)) {
+            // If it's the new V2 format with actors and impacts
+            if (analysis.impacts && Array.isArray(analysis.impacts)) {
+                // If we have actors, return the whole object (Frontend must handle this)
+                if (analysis.actors && Array.isArray(analysis.actors)) {
+                    // It's the new rich format, keep it as is.
+                } else {
+                    // It's the intermediate format (object with impacts but no actors),
+                    // or we want to remain backward compatible if actors are missing.
+                    // But wait, if I return object, legacy frontend code expecting array might break.
+                    // Let's check page.tsx... `const impacts = Array.isArray(analysis) ? analysis : (analysis.impacts || []);`
+                    // This implies page.tsx ALREADY handles an object return!
+                    // So I can safely return the object.
+                }
+            } else if (analysis.analysis && Array.isArray(analysis.analysis)) {
+                analysis = analysis.analysis;
+            } else {
+                // If it's a single object that looks like an impact, wrap it
+                if (analysis.actor && analysis.impact) {
+                    analysis = [analysis];
+                }
+            }
         }
     }
 

@@ -45,16 +45,16 @@ const NAV_GROUPS: NavGroup[] = [
         ]
     },
     {
-        title: "Data Collection",
+        title: "Material Collection",
         items: [
             {
-                name: "Documents",
+                name: "Policy Archive",
                 href: "/data",
                 icon: Database,
-                description: "Archive of primary policy texts (PDFs) and source materials."
+                description: "Archive of primary policy texts and source materials."
             },
             {
-                name: "Empirical Data",
+                name: "Trace Provenance",
                 href: "/empirical",
                 icon: Users,
                 description: "Collect and organize empirical traces from web sources."
@@ -62,16 +62,16 @@ const NAV_GROUPS: NavGroup[] = [
         ]
     },
     {
-        title: "Agency & Resistance",
+        title: "Counter-Conduct",
         items: [
             {
-                name: "Resistance",
+                name: "Micro-Resistance",
                 href: "/resistance",
                 icon: Users,
                 description: "Analyze micro-resistance strategies and counter-conduct."
             },
             {
-                name: "Critical Reflection",
+                name: "Reflexive Positioning",
                 href: "/reflexivity",
                 icon: Scan,
                 description: "Examine how your own perspective and context shape the analysis."
@@ -79,33 +79,33 @@ const NAV_GROUPS: NavGroup[] = [
         ]
     },
     {
-        title: "Assemblage Mapping",
+        title: "Assemblage Cartography",
         items: [
             {
-                name: "Assemblage Diagram",
+                name: "Assemblage Compass",
                 href: "/ecosystem",
                 icon: Network,
                 description: "Trace territories, flows, and coding intensities of the assemblage."
             },
             {
-                name: "Cross-Case Analysis",
+                name: "Cross-Case Synthesis",
                 href: "/synthesis",
                 icon: Network,
-                description: "Cross-case analysis and AI-powered framework comparison."
+                description: "Cross-case analysis and comparative framework synthesis."
             },
         ]
     },
     {
-        title: "Structural Governance",
+        title: "Structural Analysis",
         items: [
             {
-                name: "Comparison",
+                name: "Policy Mobilities",
                 href: "/comparison",
                 icon: ArrowLeftRight,
-                description: "Side-by-side comparison of governance frameworks."
+                description: "Trace policy mutations and translations across jurisdictions."
             },
             {
-                name: "Governance",
+                name: "Institutional Logics",
                 href: "/governance",
                 icon: Scale,
                 description: "Analyze resource orchestration and institutional logics."
@@ -131,7 +131,7 @@ const NAV_GROUPS: NavGroup[] = [
         ]
     },
     {
-        title: "Educational Resources",
+        title: "Theoretical Resources",
         items: [
             {
                 name: "Critical Glossary",

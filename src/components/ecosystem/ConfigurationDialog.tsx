@@ -23,9 +23,10 @@ export function ConfigurationDialog({
     setDescription,
     onConfirm
 }: ConfigurationDialogProps) {
+    console.log("ConfigurationDialog rendering. isOpen:", isOpen);
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent>
+            <DialogContent className="z-[100]">
                 <DialogHeader>
                     <DialogTitle>Create Ecosystem Configuration</DialogTitle>
                     <DialogDescription>

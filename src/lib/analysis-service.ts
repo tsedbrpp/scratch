@@ -8,6 +8,7 @@ import { PositionalityData } from '@/types';
 import { parseAnalysisResponse } from '@/lib/analysis-parser';
 import { runStressTest } from '@/lib/analysis/stress-test-service';
 import { runCritiqueLoop } from '@/lib/analysis/critique-service';
+import { logger } from './logger';
 
 export interface AnalysisConfig {
     systemPrompt: string;
@@ -104,7 +105,7 @@ export async function performAnalysis(
         systemPrompt += generateCalibrationContext(positionality);
     }
 
-    console.log(`[ANALYSIS] Calling OpenAI for mode: ${analysisMode} `);
+    logger.analysis(`Calling OpenAI for mode: ${analysisMode} `);
     const aiStartTime = Date.now();
 
     // AI Call
@@ -117,7 +118,7 @@ export async function performAnalysis(
         max_completion_tokens: 16384,
         response_format: { type: "json_object" }
     });
-    console.log(`[ANALYSIS] OpenAI response received in ${Date.now() - aiStartTime} ms`);
+    logger.analysis(`OpenAI response received in ${Date.now() - aiStartTime} ms`);
 
     const responseText = completion.choices[0]?.message?.content || '';
 

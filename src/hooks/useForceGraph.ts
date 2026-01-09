@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { EcosystemActor } from '@/types/ecosystem';
 
-interface SimulationNode extends d3.SimulationNodeDatum {
+export interface SimulationNode extends d3.SimulationNodeDatum {
     id: string;
     type: string;
     radius: number;
@@ -25,10 +25,20 @@ export function useForceGraph(
     configurations: { id: string; memberIds: string[] }[] = [],
     links: { source: string; target: string; type: string }[] = [],
     enableClustering: boolean = false,
-    isPaused: boolean = false
+    isPaused: boolean = false,
+    configOffsets: Record<string, { x: number; y: number }> = {} // CHANGED: Offsets from default
 ) {
     const [nodes, setNodes] = useState<SimulationNode[]>([]);
     const simulationRef = useRef<d3.Simulation<SimulationNode, SimulationLink> | null>(null);
+    const configOffsetsRef = useRef(configOffsets);
+
+    // Keep Ref in Sync & Wake up simulation on drag
+    useEffect(() => {
+        configOffsetsRef.current = configOffsets;
+        if (simulationRef.current) {
+            simulationRef.current.alphaTarget(0.3).restart();
+        }
+    }, [configOffsets]);
 
     // Initialize Nodes
     useEffect(() => {
@@ -38,7 +48,7 @@ export function useForceGraph(
                 return {
                     id: actor.id,
                     type: actor.type,
-                    radius: 30,
+                    radius: actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20,
                     x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 50,
                     y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 50,
                     vx: existing ? existing.vx : 0,
@@ -60,7 +70,7 @@ export function useForceGraph(
 
         // 1. Initialize Simulation (Base Forces)
         const simulation = d3.forceSimulation(nodes)
-            .force("collide", d3.forceCollide().radius((d: any) => d.radius + 10).iterations(2));
+            .force("collide", d3.forceCollide().radius((d: d3.SimulationNodeDatum) => (d as SimulationNode).radius + 10).iterations(2));
 
         // 2. Configure Layout Specific Forces
         if (enableClustering) {
@@ -77,7 +87,7 @@ export function useForceGraph(
             };
 
             simulation
-                .force("radial", d3.forceRadial((d: any) => getRadialRadius(d.type), width / 2, height / 2).strength(0.8))
+                .force("radial", d3.forceRadial((d: d3.SimulationNodeDatum) => getRadialRadius((d as SimulationNode).type), width / 2, height / 2).strength(0.8))
                 .force("charge", d3.forceManyBody().strength(-300)) // Weaker repulsion for rings
                 .force("center", null)
                 .force("x", null)
@@ -100,7 +110,7 @@ export function useForceGraph(
 
             if (validLinks.length > 0) {
                 // Tighter links in radial mode to keep rings coherent
-                simulation.force("link", d3.forceLink(validLinks).id((d: any) => d.id).distance(enableClustering ? 100 : 150));
+                simulation.force("link", d3.forceLink(validLinks).id((d: d3.SimulationNodeDatum) => (d as SimulationNode).id).distance(enableClustering ? 100 : 150));
             }
         }
 
@@ -116,11 +126,19 @@ export function useForceGraph(
                 let targetX = width / 2;
                 let targetY = height / 2;
 
+                // Calculate Default Home
                 if (totalConfigs > 1) {
                     const radius = Math.min(width, height) * 0.35; // Use 35% of view dimension
                     const angle = (i / totalConfigs) * 2 * Math.PI - (Math.PI / 2); // Start at top
                     targetX = (width / 2) + Math.cos(angle) * radius;
                     targetY = (height / 2) + Math.sin(angle) * radius;
+                }
+
+                // Apply Manual Offsets via Ref (Hot update)
+                const currentOffsets = configOffsetsRef.current;
+                if (currentOffsets[config.id]) {
+                    targetX += currentOffsets[config.id].x;
+                    targetY += currentOffsets[config.id].y;
                 }
 
                 members.forEach(d => {
@@ -142,21 +160,29 @@ export function useForceGraph(
         return () => {
             simulation.stop();
         };
-    }, [nodes.length, links.length, width, height, configurations.length, enableClustering, isPaused]);
+    }, [nodes.length, links.length, width, height, configurations.length, enableClustering, isPaused]); // Removed configOffsets from deps
+
+    // Custom interface to compatible with both D3 internal events and manual React triggers
+    interface GraphDragEvent {
+        active?: boolean | number;
+        x: number;
+        y: number;
+        subject?: any;
+    }
 
     const drag = (node: SimulationNode) => {
-        const dragStarted = (event: any) => {
+        const dragStarted = (event: GraphDragEvent) => {
             if (!event.active) simulationRef.current?.alphaTarget(0.3).restart();
             node.fx = node.x;
             node.fy = node.y;
         };
 
-        const dragged = (event: any) => {
+        const dragged = (event: GraphDragEvent) => {
             node.fx = event.x;
             node.fy = event.y;
         };
 
-        const dragEnded = (event: any) => {
+        const dragEnded = (event: GraphDragEvent) => {
             if (!event.active) simulationRef.current?.alphaTarget(0);
             node.fx = null;
             node.fy = null;

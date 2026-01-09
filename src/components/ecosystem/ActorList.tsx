@@ -1,14 +1,13 @@
 import React from 'react';
 import { EcosystemActor } from '@/types/ecosystem';
+import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Globe, Plus, Search, Loader2, Trash2, ExternalLink, FileText, Wand2, Zap, RefreshCcw, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Wand2, Globe, Search } from 'lucide-react';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -20,15 +19,6 @@ interface ActorListProps {
     isExpanded?: boolean;
     onToggleExpand?: () => void;
 
-    // Simulation Props
-    isSimulating: boolean;
-    simulationQuery: string;
-    setSimulationQuery: (query: string) => void;
-    onSimulate: () => void;
-    isDialogOpen: boolean;
-    setIsDialogOpen: (open: boolean) => void;
-    onClearCache: () => void;
-
     // Extraction Props
     isExtracting: boolean;
     extractionText: string;
@@ -37,9 +27,6 @@ interface ActorListProps {
     isExtractionDialogOpen: boolean;
     setIsExtractionDialogOpen: (open: boolean) => void;
 
-    // Analysis Props
-    isAnalyzingHoles: boolean;
-    onAnalyze: () => void;
     onClose?: () => void;
 }
 
@@ -50,28 +37,19 @@ export function ActorList({
     onClearAll,
     isExpanded = false,
     onToggleExpand,
-    isSimulating,
-    simulationQuery,
-    setSimulationQuery,
-    onSimulate,
-    isDialogOpen,
-    setIsDialogOpen,
-    onClearCache,
     isExtracting,
     extractionText,
     setExtractionText,
     onExtract,
     isExtractionDialogOpen,
     setIsExtractionDialogOpen,
-    isAnalyzingHoles,
-    onAnalyze,
     onClose
 }: ActorListProps) {
     return (
         <Card className="h-[500px] lg:h-full flex flex-col">
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Assemblage Actors ({actors.length})</CardTitle>
+                    <CardTitle className="text-lg">Trace Provenance ({actors.length})</CardTitle>
                     <div className="flex gap-1">
                         {onToggleExpand && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={onToggleExpand} title={isExpanded ? "Collapse" : "Expand"}>
@@ -83,53 +61,7 @@ export function ActorList({
                                 <X className="h-4 w-4" />
                             </Button>
                         )}
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" title="Simulate Data">
-                                    <Globe className="h-4 w-4 text-indigo-600" />
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Discover Actors</DialogTitle>
-                                    <DialogDescription>
-                                        Use web search to discover and import actors into the ecosystem.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="query" className="text-right">
-                                            Search Query
-                                        </Label>
-                                        <Input
-                                            id="query"
-                                            value={simulationQuery}
-                                            onChange={(e) => setSimulationQuery(e.target.value)}
-                                            className="col-span-3 text-slate-900"
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={onClearCache}>
-                                        Clear Cache
-                                    </Button>
-                                    <Button onClick={() => onSimulate()} disabled={isSimulating}>
-                                        {isSimulating ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Discovering...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Search className="mr-2 h-4 w-4" />
-                                                Simulate
-                                            </>
-                                        )}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
+                        {/* Extraction Dialog */}
                         <Dialog open={isExtractionDialogOpen} onOpenChange={setIsExtractionDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8" title="Extract from Text">
@@ -140,7 +72,8 @@ export function ActorList({
                                 <DialogHeader>
                                     <DialogTitle>Extract Assemblage</DialogTitle>
                                     <DialogDescription>
-                                        Paste text to automatically extract actors and create a Super-Node configuration.
+                                        Paste text to trace actants and create a Super-Node configuration.
+                                        This adheres to the "Strategic Subtraction" principle: only empirical traces are visualized.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="py-4">
@@ -152,16 +85,16 @@ export function ActorList({
                                     />
                                 </div>
                                 <DialogFooter>
-                                    <Button onClick={onExtract} disabled={isExtracting}>
+                                    <Button onClick={onExtract} disabled={isExtracting} className="bg-slate-900 text-white">
                                         {isExtracting ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Extracting...
+                                                Adhering Source...
                                             </>
                                         ) : (
                                             <>
                                                 <Wand2 className="mr-2 h-4 w-4" />
-                                                Extract & Group
+                                                Adhere Empirical Source
                                             </>
                                         )}
                                     </Button>
@@ -169,30 +102,7 @@ export function ActorList({
                             </DialogContent>
                         </Dialog>
 
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            title="Analyze Cultural Holes"
-                            onClick={onAnalyze}
-                            disabled={isAnalyzingHoles}
-                        >
-                            {isAnalyzingHoles ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
-                            ) : (
-                                <Zap className="h-4 w-4 text-amber-600" />
-                            )}
-                        </Button>
 
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            title="Clear Simulation Cache"
-                            onClick={onClearCache}
-                        >
-                            <RefreshCcw className="h-4 w-4 text-slate-500" />
-                        </Button>
 
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -215,9 +125,7 @@ export function ActorList({
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                            <Plus className="h-4 w-4" />
-                        </Button>
+
                     </div>
                 </div>
                 <div className="relative mt-2">
@@ -229,49 +137,32 @@ export function ActorList({
                 </div>
 
                 {/* Explicit Actions Row */}
-                <div className="flex flex-col gap-2 mt-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => setIsDialogOpen(true)}
-                        >
-                            <Globe className="mr-2 h-3 w-3 text-indigo-600" />
-                            Simulate
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => setIsExtractionDialogOpen(true)}
-                        >
-                            <FileText className="mr-2 h-3 w-3 text-emerald-600" />
-                            Extract
-                        </Button>
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={onAnalyze}
-                        disabled={isAnalyzingHoles}
-                    >
-                        {isAnalyzingHoles ? (
-                            <Loader2 className="mr-2 h-3 w-3 animate-spin text-amber-600" />
-                        ) : (
-                            <Zap className="mr-2 h-3 w-3 text-amber-600" />
-                        )}
-                        Analyze Cultural Holes
-                    </Button>
-                </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
                 {actors.length === 0 && (
-                    <div className="text-center p-6 text-slate-500 text-sm border-2 border-dashed border-slate-100 rounded-lg m-2">
-                        <Globe className="h-8 w-8 mx-auto mb-2 text-indigo-200" />
-                        <p>No actors found.</p>
-                        <p className="mt-2 text-xs">Click the <Globe className="inline h-3 w-3 text-indigo-600" /> icon above to simulate ecosystem data.</p>
+                    <div className="text-center p-6 text-slate-500 text-sm border-2 border-dashed border-slate-200 rounded-lg m-2 bg-slate-50/50">
+                        <div className="flex justify-center mb-3">
+                            <div className="relative">
+                                <Globe className="h-10 w-10 text-slate-300" />
+                                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border border-slate-200">
+                                    <X className="h-4 w-4 text-slate-400" />
+                                </div>
+                            </div>
+                        </div>
+                        <h3 className="font-semibold text-slate-700 mb-1">Strategic Subtraction Active</h3>
+                        <p className="text-xs text-slate-500 max-w-[280px] mx-auto mb-4 leading-relaxed">
+                            Automated web scraping and predictive modeling are excluded to preserve empirical traceability.
+                            You must adhere researcher-curated text to trace mediations.
+                        </p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsExtractionDialogOpen(true)}
+                            className="bg-white hover:bg-slate-50 text-xs gap-2"
+                        >
+                            <FileText className="h-3 w-3 text-emerald-600" />
+                            Adhere Empirical Source
+                        </Button>
                     </div>
                 )}
                 {actors.map(actor => (
@@ -290,10 +181,18 @@ export function ActorList({
                             </div>
                         )}
                         <div className="flex items-center justify-between mb-1">
-                            <span className={`font-medium text-sm ${actor.source === 'absence_fill' ? 'text-amber-900 group-hover:text-amber-700' : ''}`}>
-                                {actor.name}
-                            </span>
-                            <div className="flex gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`font-medium text-sm ${actor.source === 'absence_fill' ? 'text-amber-900 group-hover:text-amber-700' : ''}`}>
+                                    {actor.name}
+                                </span>
+                                {(!actor.source || actor.source === 'default') && (
+                                    <ProvisionalBadge
+                                        className="h-4 px-1 text-[9px] border-indigo-200 bg-indigo-50 text-indigo-600"
+                                        fragility={{ value: 0.4, interpretation: "provisional", factors: { input_completeness: 0.5, model_uncertainty: 0.3, theoretical_tension: 0.4, empirical_grounding: 0.8 } }}
+                                    />
+                                )}
+                            </div>
+                            <div className="flex gap-1 shrink-0">
                                 {actor.source === 'absence_fill' && (
                                     <Badge variant="outline" className="text-[9px] px-1 py-0 h-5 border-amber-300 text-amber-600 bg-amber-100">
                                         Recovered
@@ -320,7 +219,7 @@ export function ActorList({
                                 <ul className="space-y-1">
                                     {actor.quotes.map((quote, idx) => (
                                         <li key={idx} className="text-[10px] text-slate-600 italic border-l-2 border-indigo-200 pl-2">
-                                            "{quote}"
+                                            &quot;{quote}&quot;
                                         </li>
                                     ))}
                                 </ul>
@@ -342,6 +241,6 @@ export function ActorList({
                     </div>
                 ))}
             </CardContent>
-        </Card>
+        </Card >
     );
 }

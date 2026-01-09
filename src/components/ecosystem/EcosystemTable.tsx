@@ -15,6 +15,19 @@ interface EcosystemTableProps {
 export function EcosystemTable({ actors, onSelectActor, selectedActorId }: EcosystemTableProps) {
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof EcosystemActor | 'metrics.resistance' | 'metrics.influence'; direction: 'asc' | 'desc' } | null>(null);
 
+    const getMetricRank = (val: string | number | undefined): number => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        // Map qualitative to rank
+        const map: Record<string, number> = {
+            "Strong": 3, "High": 3,
+            "Moderate": 2, "Medium": 2,
+            "Weak": 1, "Low": 1,
+            "Latent": 0
+        };
+        return map[val] || 0;
+    };
+
     const sortedActors = React.useMemo(() => {
         const sortableActors = [...actors];
         if (sortConfig !== null) {
@@ -22,13 +35,13 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                 let aValue: any = a[sortConfig.key as keyof EcosystemActor];
                 let bValue: any = b[sortConfig.key as keyof EcosystemActor];
 
-                // Handle nested metrics
+                // Handle nested metrics with rank conversion
                 if (sortConfig.key === 'metrics.resistance') {
-                    aValue = a.metrics?.resistance || 0;
-                    bValue = b.metrics?.resistance || 0;
+                    aValue = getMetricRank(a.metrics?.resistance);
+                    bValue = getMetricRank(b.metrics?.resistance);
                 } else if (sortConfig.key === 'metrics.influence') {
-                    aValue = a.metrics?.influence || 0;
-                    bValue = b.metrics?.influence || 0;
+                    aValue = getMetricRank(a.metrics?.influence);
+                    bValue = getMetricRank(b.metrics?.influence);
                 }
 
                 if (aValue < bValue) {
@@ -140,7 +153,7 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[300px] p-3 text-xs">
-                                                <p className="font-semibold mb-2">Influence Score: {actor.metrics?.influence}</p>
+                                                <p className="font-semibold mb-2">Influence Quality: {actor.metrics?.influence}</p>
                                                 {/* Dimensional Breakdown */}
                                                 {actor.metrics?.territoriality !== undefined && (
                                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 text-[10px] text-slate-500">
@@ -155,13 +168,13 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                                     <TableCell className="text-right py-2">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <span className={`cursor-help decoration-slate-300 underline underline-offset-2 decoration-dotted text-xs font-mono font-bold ${(actor.metrics?.resistance || 0) > 6 ? 'text-red-500' : 'text-slate-400'
+                                                <span className={`cursor-help decoration-slate-300 underline underline-offset-2 decoration-dotted text-xs font-mono font-bold ${(actor.metrics?.resistance === 'Strong' || (typeof actor.metrics?.resistance === 'number' && actor.metrics.resistance > 6)) ? 'text-red-500' : 'text-slate-400'
                                                     }`}>
                                                     {actor.metrics?.resistance || '-'}
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[300px] p-3 text-xs">
-                                                <p className="font-semibold mb-2">Resistance Score: {actor.metrics?.resistance}</p>
+                                                <p className="font-semibold mb-2">Resistance Quality: {actor.metrics?.resistance}</p>
                                                 {/* Dimensional Breakdown */}
                                                 {actor.metrics?.counter_conduct !== undefined && (
                                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 text-[10px] text-slate-500">

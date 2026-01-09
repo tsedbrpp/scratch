@@ -25,11 +25,7 @@ export interface CulturalHole {
     opportunity: string; // Description of innovation potential
 
     policyImplication: string;
-    prediction_scenarios?: {
-        scenario: string;
-        likelihood: number; // 0-100
-        indicator: string;
-    }[];
+
 }
 
 export interface CulturalAnalysisResult {

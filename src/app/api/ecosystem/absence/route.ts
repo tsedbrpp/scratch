@@ -4,6 +4,7 @@ import { ABSENCE_PROMPT } from '@/lib/prompts/absence';
 import { EcosystemActor } from '@/types/ecosystem';
 import { auth } from '@clerk/nextjs/server';
 import { PromptRegistry } from '@/lib/prompts/registry';
+import { logger } from '@/lib/logger';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -13,7 +14,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
     const { userId } = await auth();
-    console.log("Absence Analysis API Called at " + new Date().toISOString());
+    logger.debug("Absence Analysis API Called at " + new Date().toISOString());
 
     // if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
     //     // Simulate AI processing delay
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, analysis });
 
     } catch (error) {
-        console.error("Absence Analysis Error:", error);
+        logger.error("Absence Analysis Error:", error);
         return NextResponse.json({ success: false, error: "Failed to analyze absences" }, { status: 500 });
     }
 }

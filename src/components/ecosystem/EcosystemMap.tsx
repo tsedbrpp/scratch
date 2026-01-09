@@ -3,19 +3,20 @@ import * as d3 from 'd3';
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, Layers, EyeOff, ChevronDown, Loader2, ZoomIn, Maximize, Minimize, MessageSquare, X } from 'lucide-react';
-import { useForceGraph } from '@/hooks/useForceGraph';
+import { Network, MousePointer2, Layers, EyeOff, ChevronDown, Loader2, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
+import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
 import { generateEdges } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
 import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor } from '@/lib/ecosystem-utils';
-import { SimulationService } from '@/lib/simulation-service';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
     loading: () => <div className="h-full flex items-center justify-center bg-slate-50 text-slate-400">Loading 3D Engine...</div>
 });
+
+import { AnalysisMode, ModeSelector } from '@/components/ui/mode-selector';
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -30,10 +31,14 @@ interface EcosystemMapProps {
     onConfigDrag: (configId: string, dx: number, dy: number) => void;
     activeLayers?: Record<string, boolean>;
     toggleLayer?: (layer: string) => void;
-    activeLens?: string;
     colorMode?: "type" | "epistemic";
     onConfigClick?: (configId: string) => void;
+    selectedConfigId?: string | null;
+    onDeleteConfiguration?: (configId: string) => void;
     absenceAnalysis?: AssemblageAnalysis | AiAbsenceAnalysis | null;
+    analysisMode?: AnalysisMode;
+    setAnalysisMode?: (mode: AnalysisMode) => void;
+    configLayout?: Record<string, { x: number; y: number }>;
 }
 
 // --- Swiss Design System Constants ---
@@ -45,6 +50,8 @@ const HULL_STYLES = {
     strokeWidth: 2
 };
 
+// ... unchanged styles ...
+
 export function EcosystemMap({
     actors,
     configurations,
@@ -52,15 +59,19 @@ export function EcosystemMap({
     setInteractionMode,
     selectedForGrouping,
     onToggleSelection,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onCreateConfiguration,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    activeLens = "None",
     onConfigClick,
-    absenceAnalysis
+    onConfigDrag,
+    selectedConfigId,
+    onDeleteConfiguration,
+    absenceAnalysis,
+    analysisMode = "hybrid_reflexive",
+    setAnalysisMode,
+    configLayout = {}
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+    const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null); // Ref for zoom behavior
@@ -97,8 +108,11 @@ export function EcosystemMap({
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    analysisMode: 'assemblage_explanation',
+                    analysisMode: 'assemblage_explanation', // Legacy required field
+                    mode: analysisMode, // NEW: Theoretical mode for backward compatible routing
                     configurations: configurations, // Pass metrics implicitly via configs
+                    actors: mergedActors, // Pass actors for tracing
+                    links: links, // Pass links for tracing
                     text: 'Assess Hull Metrics' // Dummy text
                 })
             });
@@ -143,12 +157,10 @@ export function EcosystemMap({
         }));
     }, [mergedActors]);
 
-    // Calculate Dynamic Power Live
+    // Simplified Actor Hydration (No Simulation)
     const hydratedActors = useMemo(() => {
-        // We pass the raw link structure to the service
-        // The service needs { source: string, target: string }
-        return SimulationService.calculateDynamicPower(mergedActors, links);
-    }, [mergedActors, links]);
+        return mergedActors;
+    }, [mergedActors]);
 
     // Force Physics
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -159,23 +171,32 @@ export function EcosystemMap({
         configurations.map(c => ({ id: c.id, memberIds: c.memberIds })),
         links,
         isNestedMode,
-        is3DMode
+        is3DMode,
+        configLayout // Renamed internally in hook, but prop name can stay configLayout or be renamed. Let's send the prop as 'configOffsets' arg.
     );
 
     // Zoom Behavior Setup
     useEffect(() => {
         if (!svgRef.current) return;
+        const svg = d3.select(svgRef.current);
 
-        const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
             .scaleExtent([0.1, 4])
+            .filter((event) => {
+                // Prevent zoom/pan if clicking on a draggable config or if button is not left click
+                if (event.target instanceof Element && event.target.closest('.draggable-config')) {
+                    return false;
+                }
+                return !event.button;
+            })
             .on("zoom", (event) => {
                 setTransform(event.transform);
             });
 
-        zoomBehaviorRef.current = zoomBehavior; // Store in ref
 
+        zoomBehaviorRef.current = zoom; // Store in ref
         const svgSelection = d3.select(svgRef.current);
-        svgSelection.call(zoomBehavior);
+        svgSelection.call(zoom);
 
         return () => {
             svgSelection.on(".zoom", null);
@@ -216,14 +237,32 @@ export function EcosystemMap({
         return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleMouseDown = (e: React.MouseEvent, node: any) => {
+     
+    const handleMouseDown = (e: React.MouseEvent, node: SimulationNode) => {
         e.stopPropagation(); // Prevent Zoom/Pan start
         if (interactionMode === "drag") {
             setDraggingNodeId(node.id);
-            drag(node).dragStarted({ active: true, x: node.x, y: node.y });
+            drag(node).dragStarted({ active: true, x: node.x ?? 0, y: node.y ?? 0 });
+        }
+        // In select mode, we just consume the event so zoom doesn't start
+    };
+
+    const handleConfigMouseDown = (e: React.MouseEvent, configId: string) => {
+        e.stopPropagation();
+        if (interactionMode === "drag") {
+            setDraggingConfigId(configId);
+            // We don't use d3 drag behavior for configs, we just track delta in mouseMove
+        } else if (onConfigClick) {
+            onConfigClick(configId);
+        }
+    };
+
+    const handleNodeClick = (e: React.MouseEvent, actor: EcosystemActor) => {
+        e.stopPropagation();
+        if (interactionMode === "select") {
+            onToggleSelection(actor.id);
         } else {
-            onToggleSelection(node.id);
+            setFocusedNodeId(focusedNodeId === actor.id ? null : actor.id);
         }
     };
 
@@ -241,21 +280,35 @@ export function EcosystemMap({
     };
 
     const handleSvgMouseMove = (e: React.MouseEvent) => {
-        if (!draggingNodeId || interactionMode !== "drag") return;
-        e.preventDefault();
-        e.stopPropagation();
+        if (interactionMode !== "drag") return;
 
         const worldP = getTransformedPoint(e.clientX, e.clientY);
-        const node = nodes.find(n => n.id === draggingNodeId);
 
-        if (node) drag(node).dragged({ x: worldP.x, y: worldP.y });
+        if (draggingNodeId) {
+            e.preventDefault();
+            e.stopPropagation();
+            const node = nodes.find(n => n.id === draggingNodeId);
+            if (node) drag(node).dragged({ x: worldP.x, y: worldP.y });
+        } else if (draggingConfigId && onConfigDrag) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Simple delta calculation requires previous mouse position, 
+            // but since we don't store it, we can use movementX/Y and scale by transform.k
+            // However, movementX/Y is screen pixels.
+            const dx = e.movementX / transform.k;
+            const dy = e.movementY / transform.k;
+            onConfigDrag(draggingConfigId, dx, dy);
+        }
     };
 
     const handleMouseUp = () => {
         if (draggingNodeId) {
             const node = nodes.find(n => n.id === draggingNodeId);
-            if (node) drag(node).dragEnded({ active: false });
+            if (node) drag(node).dragEnded({ active: false, x: 0, y: 0 });
             setDraggingNodeId(null);
+        }
+        if (draggingConfigId) {
+            setDraggingConfigId(null);
         }
     };
 
@@ -292,16 +345,10 @@ export function EcosystemMap({
         return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
     };
 
-    // --- Simulation Mechanics (Hulls) --- //
-    // 2. Calculate Hull Metrics (Stability/Porosity) using existing hydratedActors and links
+    // Standard Config Passthrough
     const hydratedConfigs = useMemo(() => {
-        if (!links.length) return configurations;
-        // The service might expect links with objects if it calculates via memory refs, 
-        // but our service implementation handles IDs.
-        // Let's verify SimulationService.calculateHullMetrics signature: (configs, actors, links)
-        // Ensure links match expected shape { source: string|obj, target: string|obj }
-        return SimulationService.calculateHullMetrics(configurations, hydratedActors, links);
-    }, [configurations, hydratedActors, links]);
+        return configurations;
+    }, [configurations]);
 
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -327,7 +374,7 @@ export function EcosystemMap({
                 {/* ... (Header remains) */}
                 <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white z-10 relative">
                     <div>
-                        <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Actor Network Modeling</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Assemblage Compass</CardTitle>
                         <CardDescription className="text-xs text-slate-500 font-normal">
                             {is3DMode ? "3D WebGL Visualization" : (isNestedMode ? "Nested Assemblage (Actor → Collective → Regime)" : "Hierarchical view of assemblage clusters")}
                         </CardDescription>
@@ -347,7 +394,7 @@ export function EcosystemMap({
                             <Network className="h-3 w-3 mr-1" /> {is3DMode ? "3D View" : "2D View"}
                         </Button>
 
-                        {!is3DMode ? (
+                        {!is3DMode && (
                             <>
                                 <div className="w-px h-3 bg-slate-300 mx-0.5" />
                                 <Button
@@ -374,7 +421,9 @@ export function EcosystemMap({
                                     <ZoomIn className="h-3 w-3 mr-1" /> Reset View
                                 </Button>
                             </>
-                        ) : (
+                        )}
+
+                        {is3DMode && (
                             <>
                                 <div className="w-px h-3 bg-slate-300 mx-0.5" />
                                 <Button
@@ -389,6 +438,21 @@ export function EcosystemMap({
                         )}
 
                         <div className="w-px h-3 bg-slate-300 mx-0.5" />
+
+                        {/* Integrated Mode Selector */}
+                        {analysisMode && setAnalysisMode && (
+                            <>
+                                <div className="flex items-center scale-90 origin-center -mx-1">
+                                    <ModeSelector
+                                        value={analysisMode}
+                                        onChange={setAnalysisMode}
+                                        className="h-7 border-none shadow-none text-xs"
+                                    />
+                                </div>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                            </>
+                        )}
+
                         <Button
                             variant="ghost" size="sm"
                             className={`h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-indigo-600 ${isExplaining ? "animate-pulse" : ""}`}
@@ -456,21 +520,23 @@ export function EcosystemMap({
                                         </g>
                                     )}
 
-                                    {hydratedConfigs.map(config => {
-                                        const memberPoints = config.memberIds.map(id => getNodePos(id)).filter(p => p.x !== 0 && p.y !== 0);
+                                    {hydratedConfigs.map((config: EcosystemConfiguration) => {
+                                        const memberPoints = config.memberIds.map((id: string) => getNodePos(id)).filter((p: { x: number; y: number }) => p.x !== 0 && p.y !== 0);
                                         if (memberPoints.length < 2) return null;
-                                        const centroid = memberPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                                        const centroid = memberPoints.reduce((acc: { x: number; y: number }, p: { x: number; y: number }) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
                                         centroid.x /= memberPoints.length;
                                         centroid.y /= memberPoints.length;
                                         const porosity = config.properties.porosity_index || 0;
                                         const strokeDash = porosity > 0.6 ? "6 4" : (porosity > 0.3 ? "10 2" : "none");
                                         const stability = config.properties.calculated_stability || 0.1;
-                                        const fillOpacity = Math.max(0.05, Math.min(0.3, stability * 0.4));
+                                        const isConfigSelected = selectedConfigId === config.id;
+                                        const fillOpacity = isConfigSelected ? 0.3 : Math.max(0.05, Math.min(0.3, stability * 0.4));
                                         return (
-                                            <g key={config.id} className="transition-all duration-500 ease-out" opacity={highlightedStage ? 0.1 : 1}>
+                                            <g key={config.id} className={`draggable-config transition-all duration-500 ease-out ${interactionMode === 'drag' ? 'cursor-move' : 'cursor-pointer'}`} opacity={highlightedStage ? 0.1 : 1} onMouseDown={(e) => handleConfigMouseDown(e, config.id)}>
                                                 <path
                                                     d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
-                                                    fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
+                                                    fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
+                                                    className={isConfigSelected ? "drop-shadow-md" : ""}
                                                 />
                                                 <rect x={centroid.x - (config.name.length * 3 + 8)} y={centroid.y - 32} width={config.name.length * 6 + 16} height={18} rx={9} fill={config.color} fillOpacity={0.9} stroke="white" strokeWidth={1.5} className="drop-shadow-sm" />
                                                 <text x={centroid.x} y={centroid.y - 20} textAnchor="middle" dominantBaseline="middle" className="text-[10px] font-bold fill-white uppercase tracking-wider" style={{ pointerEvents: 'none' }}>{config.name}</text>
@@ -490,8 +556,8 @@ export function EcosystemMap({
                                         return <line key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y} stroke={isFocused ? "#64748B" : "#CBD5E1"} strokeWidth={strokeWidth} strokeOpacity={highlightedStage ? 0.1 : (isFocused ? 0.9 : 0.5)} strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"} markerEnd={!highlightedStage ? "url(#arrow)" : ""} className="transition-all duration-300" pointerEvents="none" />;
                                     })}
 
-                                    {nodes.map(node => {
-                                        const actor = hydratedActors.find(a => a.id === node.id);
+                                    {nodes.map((node: SimulationNode) => {
+                                        const actor = hydratedActors.find((a: EcosystemActor) => a.id === node.id);
                                         if (!actor) return null;
                                         const color = getActorColor(actor.type);
                                         const isSelected = selectedForGrouping.includes(actor.id);
@@ -506,7 +572,7 @@ export function EcosystemMap({
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
                                         const strokeDash = isGhost ? "3 2" : "none";
                                         return (
-                                            <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => { e.stopPropagation(); setFocusedNodeId(isFocused ? null : actor.id); }} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
+                                            <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => handleNodeClick(e, actor)} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
                                                 {isSelected && (getActorShape(actor.type) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />)}
                                                 {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} />}
                                                 <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
@@ -525,7 +591,10 @@ export function EcosystemMap({
                                 <div className="absolute top-16 right-4 left-4 sm:left-auto sm:w-96 bg-white/95 backdrop-blur-md shadow-xl border border-slate-200 rounded-lg overflow-hidden animate-in slide-in-from-top-5 duration-300 z-50">
                                     <div className="bg-slate-50 border-b border-slate-100 p-3 flex justify-between items-center">
                                         <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                            <MessageSquare className="h-4 w-4 text-indigo-500" /> Assemblage Analysis
+                                            <MessageSquare className="h-4 w-4 text-indigo-500" />
+                                            {analysisMode === 'ant_trace' ? 'ANT Trace Analysis' :
+                                                analysisMode === 'hybrid_reflexive' ? 'Hybrid Reflexive Analysis' :
+                                                    'Assemblage Analysis'}
                                         </h3>
                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={() => setExplanation(null)}>
                                             <X className="h-4 w-4" />
@@ -552,11 +621,45 @@ export function EcosystemMap({
                                 </div>
                             )}
 
+                            {/* SELECTION CONTEXT MENU (New) */}
+                            {selectedForGrouping.length > 0 && (
+                                <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-xl border border-indigo-200 rounded-lg p-2 z-40 animate-in slide-in-from-top-2 flex items-center gap-3">
+                                    <div className="flex items-center gap-2 pl-2 border-r border-slate-200 pr-3">
+                                        <div className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                            {selectedForGrouping.length}
+                                        </div>
+                                        <span className="text-xs font-medium text-slate-600">Selected</span>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onCreateConfiguration();
+                                        }}
+                                        className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                    >
+                                        <Layers className="h-3 w-3 mr-1.5" />
+                                        Create Configuration
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                            selectedForGrouping.forEach(id => onToggleSelection(id));
+                                        }}
+                                        className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                        title="Clear Selection"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
+
                             {/* Floating Legend Card (Existing) */}
                             {isLegendOpen && (
                                 <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-10 max-h-[600px] overflow-y-auto">
                                     <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
-                                        <span className="font-semibold text-slate-800">Actor Types</span>
+                                        <span className="font-semibold text-slate-800">Actant Types</span>
                                         <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
                                             <ChevronDown className="h-3 w-3" />
                                         </Button>
@@ -570,18 +673,39 @@ export function EcosystemMap({
                                         ))}
                                     </div>
 
+
+                                    {/* Macro Assemblages Legend */}
+
                                     {/* Macro Assemblages Legend */}
                                     {configurations.length > 0 && (
                                         <div className="mt-3 pt-2 border-t border-slate-100">
                                             <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
                                             <div className="space-y-1.5">
                                                 {configurations.map(config => (
-                                                    <div key={config.id} className="flex items-center gap-2">
-                                                        <div
-                                                            className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80"
-                                                            style={{ backgroundColor: config.color }}
-                                                        />
-                                                        <span className="text-slate-600 truncate">{config.name}</span>
+                                                    <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50 cursor-pointer" onClick={() => onConfigClick?.(config.id)}>
+                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                            <div
+                                                                className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
+                                                                style={{ backgroundColor: config.color }}
+                                                            />
+                                                            <span className="text-slate-600 truncate text-[10px] group-hover:text-slate-900 transition-colors">{config.name}</span>
+                                                        </div>
+                                                        {onDeleteConfiguration && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-4 w-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-1"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm(`Delete configuration "${config.name}"?`)) {
+                                                                        onDeleteConfiguration(config.id);
+                                                                    }
+                                                                }}
+                                                                title="Delete Configuration"
+                                                            >
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -589,7 +713,8 @@ export function EcosystemMap({
                                     )}
 
                                     <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
-                                        <p className="mb-1"><span className="font-bold">─</span> Strong Ties</p>
+                                        <p className="mb-1"><span className="font-bold">─</span> Line Thickness: Connectivity</p>
+                                        <p><span className="font-bold">●</span> Node Size: Translation Strength</p>
                                         <p><span className="font-bold">- -</span> Absent / Virtual (Ghost)</p>
                                     </div>
 

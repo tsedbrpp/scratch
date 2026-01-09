@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { redis } from '@/lib/redis';
-import { RESISTANCE_DISCOURSE_ANALYSIS_PROMPT } from '@/lib/prompts/resistance-analysis';
 import { ArtifactAnalysisResult, DiscourseFrame, RhetoricalStrategy, ReconfigurationAnalysis, ResistanceArtifact } from '@/types/resistance';
 import { StorageService } from '@/lib/storage-service';
 import { getAuthenticatedUserId } from '@/lib/auth-helper';
+import { PromptRegistry } from '@/lib/prompts/registry';
+import { logger } from '@/lib/logger';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -19,25 +20,28 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        console.log('[RESISTANCE ANALYSIS] Request Body:', JSON.stringify(body, null, 2));
+        logger.debug('[RESISTANCE ANALYSIS] Request Body:', JSON.stringify(body, null, 2));
         const { artifact_id, artifact_text, analysis_type } = body;
 
         if (!artifact_text) {
-            console.error('[RESISTANCE ANALYSIS] Missing artifact_text');
+            logger.error('[RESISTANCE ANALYSIS] Missing artifact_text');
             return NextResponse.json(
                 { success: false, error: 'Artifact text is required' },
                 { status: 400 }
             );
         }
 
+        // Get prompt from registry
+        const systemPrompt = await PromptRegistry.getEffectivePrompt(userId, 'resistance_discourse_analysis');
+
         // Call OpenAI for discourse analysis
-        console.log('Starting OpenAI analysis for artifact:', artifact_id);
+        logger.debug('Starting OpenAI analysis for artifact:', artifact_id);
         const completion = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [
                 {
                     role: 'system',
-                    content: RESISTANCE_DISCOURSE_ANALYSIS_PROMPT
+                    content: systemPrompt
                 },
                 {
                     role: 'user',
@@ -48,9 +52,9 @@ export async function POST(request: NextRequest) {
             temperature: 0.3,
         });
 
-        console.log('OpenAI completion received');
+        logger.debug('OpenAI completion received');
         const analysis = JSON.parse(completion.choices[0].message.content || '{}');
-        console.log('Analysis parsed successfully');
+        logger.debug('Analysis parsed successfully');
 
         const result: ArtifactAnalysisResult = {
             artifact_id,
@@ -77,12 +81,12 @@ export async function POST(request: NextRequest) {
                 };
 
                 await StorageService.set(userId, 'resistance_artifacts', artifacts);
-                console.log(`Analysis persisted for artifact ${artifact_id}`);
+                logger.debug(`Analysis persisted for artifact ${artifact_id}`);
             } else {
-                console.warn(`Artifact ${artifact_id} not found in Redis, skipping persistence.`);
+                logger.warn(`Artifact ${artifact_id} not found in Redis, skipping persistence.`);
             }
         } catch (redisError) {
-            console.error('Failed to persist analysis to Redis:', redisError);
+            logger.error('Failed to persist analysis to Redis:', redisError);
             // Continue to return success to UI even if persistence fails, but log it
         }
 
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Error analyzing resistance artifact:', error);
+        logger.error('Error analyzing resistance artifact:', error);
         return NextResponse.json(
             { success: false, error: 'Failed to analyze artifact', details: error instanceof Error ? error.message : String(error) },
             { status: 500 }

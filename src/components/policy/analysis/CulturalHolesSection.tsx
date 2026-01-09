@@ -13,23 +13,7 @@ export function CulturalHolesSection({ holes }: { holes: NonNullable<AnalysisRes
                     <div className="p-4 space-y-4">
                         <p className="text-xs text-slate-700">{hole.description}</p>
 
-                        {hole.prediction_scenarios && (
-                            <div className="space-y-2">
-                                <h5 className="text-[10px] font-bold text-indigo-500 uppercase">Scenario Forecasts (&quot;Betting&quot;)</h5>
-                                {hole.prediction_scenarios.map((pred, j) => (
-                                    <div key={j} className="flex items-start gap-2 text-xs bg-white p-2 rounded border border-indigo-100">
-                                        <Network className="h-3 w-3 mt-0.5 text-indigo-400 shrink-0" />
-                                        <div>
-                                            <p className="text-indigo-900 font-medium">{pred.scenario}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] text-slate-400 uppercase">Likelihood: {pred.likelihood}%</span>
-                                                <span className="text-[10px] text-slate-400 uppercase">Indicator: {pred.indicator}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+
                     </div>
                 </div>
             ))}
