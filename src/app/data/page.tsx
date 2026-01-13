@@ -16,7 +16,7 @@ import {
     ComparativeSynthesis,
     PositionalityData
 } from "@/types";
-import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
+import { EcosystemActor, EcosystemConfiguration } from "@/types/ecosystem";
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
 import { SynthesisComparisonResult } from "@/types/synthesis";
@@ -25,7 +25,7 @@ import { extractTextFromPDF } from "@/utils/pdfExtractor";
 import { DocumentCard } from "@/components/policy/DocumentCard";
 import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
 import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
-// import { EditSourceDialog } from "@/components/policy/EditSourceDialog"; // Unused currently
+import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
@@ -52,7 +52,7 @@ export default function PolicyDocumentsPage() {
     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
     const [ecosystemActors, setEcosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
-    const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
+
     const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
     const [comparativeSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
@@ -309,6 +309,7 @@ export default function PolicyDocumentsPage() {
                     title: `[Trace] ${item.title} `,
                     description: item.snippet || 'No description available',
                     type: "Trace" as const,
+                    traceType: "provenance" as const, // Explicitly mark as provenance
                     extractedText: `${item.snippet} \n\nSource: ${item.link} \n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'} `,
                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
                     status: "Active Case" as const,
@@ -378,21 +379,19 @@ export default function PolicyDocumentsPage() {
 
             let finalActors = ecosystemActors;
             let finalConfigs = ecosystemConfigs;
-            let finalHoles = culturalHoles;
+
             let finalAbsence = absenceAnalysis;
 
             if (contextId) {
                 console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
-                const [actorsData, configsData, holesData, absenceData] = await Promise.all([
+                const [actorsData, configsData, absenceData] = await Promise.all([
                     fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
                     fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
-                    fetchServerStorage<CulturalHolesAnalysisResult>(`ecosystem_cultural_holes_${contextId}`),
                     fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
                 ]);
 
                 if (actorsData) finalActors = actorsData;
                 if (configsData) finalConfigs = configsData;
-                if (holesData) finalHoles = holesData;
                 if (absenceData) finalAbsence = absenceData;
 
                 console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
@@ -412,7 +411,7 @@ export default function PolicyDocumentsPage() {
                 ecosystem: {
                     actors: finalActors,
                     configurations: finalConfigs,
-                    culturalHoles: finalHoles,
+
                     absenceAnalysis: finalAbsence,
                     assemblage: finalAbsence as any
                 },
@@ -576,7 +575,12 @@ export default function PolicyDocumentsPage() {
             />
 
             {/* Edit Source Dialog (if you have one, or remove if unused) */}
-            {/* <EditSourceDialog ... /> */}
+            <EditSourceDialog
+                source={editingSource}
+                open={!!editingSource}
+                onOpenChange={(open: boolean) => !open && setEditingSource(null)}
+                onSave={handleEditSource}
+            />
 
             <PositionalityDialog
                 isOpen={isPositionalityDialogOpen}

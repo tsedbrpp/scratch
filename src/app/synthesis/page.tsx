@@ -7,11 +7,16 @@ import { Source, EcosystemImpact } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitMerge, GitPullRequest, AlertCircle, FileDown, CheckCircle2, Sparkles, Brain, Network, Loader2, RefreshCw } from "lucide-react";
+import { GitMerge, GitPullRequest, AlertCircle, FileDown, CheckCircle2, Sparkles, Brain, Network, Loader2, RefreshCw, Radio } from "lucide-react";
 import { generateSynthesisPDF } from "@/utils/generateSynthesisPDF";
 import { AssemblageSankey } from "@/components/AssemblageSankey";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Info } from "lucide-react";
+import { RelationalAxisMap } from "@/components/comparison/RelationalAxisMap";
+import { ComparisonNetworkGraph } from "@/components/comparison/ComparisonNetworkGraph";
+import { ResonanceNetworkGraph } from "@/components/comparison/ResonanceNetworkGraph";
+import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
+import { useRouter } from "next/navigation"; // [NEW] For Deep Linking
 
 import { SynthesisComparisonResult as ComparisonResult } from "@/types/synthesis";
 
@@ -54,6 +59,15 @@ const SYNTHESIS_FINDINGS = [
     },
 ];
 
+const EXCLUDED_KEYS = new Set([
+    'verified_quotes',
+    'system_critique',
+    'assemblage_network',
+    'resonances',
+    'topology_analysis',
+    'key_insight'
+]);
+
 export default function SynthesisPage() {
     const { sources, isLoading } = useSources();
     const [isExporting, setIsExporting] = useState(false);
@@ -64,19 +78,14 @@ export default function SynthesisPage() {
     const [isComparing, setIsComparing] = useState(false);
     const [comparisonResult, setComparisonResult] = useServerStorage<ComparisonResult | null>("synthesis_comparison_result", null);
 
-    // Ecosystem State
-    const [selectedEcosystemSourceId, setSelectedEcosystemSourceId] = useServerStorage<string | null>("synthesis_ecosystem_source_id", null);
-    const ecosystemSource = sources.find(s => s.id === selectedEcosystemSourceId) || null;
+    // Ecosystem State (REMOVED: isMapping, ecosystemImpacts, selectedEcosystemSourceId)
+    // Replaced with Preflight Logic
 
-    const [isMapping, setIsMapping] = useState(false);
-    const [ecosystemImpacts, setEcosystemImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
-    const [interconnectionFilter, setInterconnectionFilter] = useState<"All" | "Material" | "Discursive" | "Hybrid" | "Interpretive / Meaning-Making">("All");
-    const [viewMode, setViewMode] = useState<"list" | "graph">("list");
-    const [chartView, setChartView] = useState<"radar" | "bar">("radar");
-    const [showGuide, setShowGuide] = useState(true);
-
-    // Filter sources that have text available for analysis
-    const analyzedSources = sources.filter(s => s.analysis || s.extractedText);
+    // Filter sources that have text available for analysis AND are Policy Documents (not Traces/Web)
+    const analyzedSources = sources.filter(s =>
+        (s.analysis || s.extractedText) &&
+        (s.type === 'PDF' || s.type === 'Text')
+    );
 
     const handleExport = () => {
         if (!comparisonResult) {
@@ -111,6 +120,26 @@ export default function SynthesisPage() {
     const handleCompare = async (forceRefresh = false) => {
         if (!sourceA || !sourceB) return;
 
+        // [NEW] Soft Preflight: Check for AssemblageExport in SessionStorage
+        const exportA = sessionStorage.getItem(`assemblage_export_${sourceA.id}`);
+        const exportB = sessionStorage.getItem(`assemblage_export_${sourceB.id}`);
+
+        let assemblageA: AssemblageExport | null = null;
+        let assemblageB: AssemblageExport | null = null;
+
+        try {
+            if (exportA) assemblageA = JSON.parse(exportA);
+            if (exportB) assemblageB = JSON.parse(exportB);
+        } catch (e) {
+            console.error("Failed to parse exports", e);
+        }
+
+        // Warning if missing (Rhizomatic Flexibility - warn but don't block, fallback to raw text)
+        if (!assemblageA || !assemblageB) {
+            console.warn("Missing Assemblage Exports. Comparison will rely on raw text regeneration, which lacks provenance.");
+            // Optional: You could show a UI toast here
+        }
+
         setIsComparing(true);
         // setComparisonResult(null); // Keep previous result while loading so button stays visible
 
@@ -120,13 +149,40 @@ export default function SynthesisPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
+            // Find associated traces for Source A
+            const tracesA = sources.filter(s => s.type === 'Trace' && s.policyId === sourceA.id);
+            // Find associated traces for Source B
+            const tracesB = sources.filter(s => s.type === 'Trace' && s.policyId === sourceB.id);
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
                     analysisMode: 'comparison',
-                    sourceA: { title: sourceA.title, text: sourceA.extractedText?.substring(0, 15000) || '' },
-                    sourceB: { title: sourceB.title, text: sourceB.extractedText?.substring(0, 15000) || '' },
+                    sourceA: {
+                        title: sourceA.title,
+                        text: sourceA.extractedText?.substring(0, 15000) || '',
+                        // [NEW] Inject Assemblage Narrative if available (Provenance)
+                        assemblageNarrative: assemblageA?.impactNarrative,
+                        assemblageActors: assemblageA?.nodes?.map(n => ({ name: n.name, type: n.type, description: n.description })) || [],
+                        traces: tracesA.map(t => ({
+                            title: t.title,
+                            description: t.description,
+                            extractedText: t.extractedText // Include full text if Deep Fetched
+                        }))
+                    },
+                    sourceB: {
+                        title: sourceB.title,
+                        text: sourceB.extractedText?.substring(0, 15000) || '',
+                        // [NEW] Inject Assemblage Narrative if available (Provenance)
+                        assemblageNarrative: assemblageB?.impactNarrative,
+                        assemblageActors: assemblageB?.nodes?.map(n => ({ name: n.name, type: n.type, description: n.description })) || [],
+                        traces: tracesB.map(t => ({
+                            title: t.title,
+                            description: t.description,
+                            extractedText: t.extractedText
+                        }))
+                    },
                     force: forceRefresh
                 })
             });
@@ -145,47 +201,7 @@ export default function SynthesisPage() {
         }
     };
 
-    const handleEcosystemMap = async () => {
-        if (!ecosystemSource) return;
-
-        // Check for existing results
-        if (ecosystemImpacts.length > 0) {
-            const confirmRun = confirm("Existing ecosystem map found. Do you want to re-run it? This will overwrite the current map.");
-            if (!confirmRun) {
-                return;
-            }
-        }
-
-        setIsMapping(true);
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    text: ecosystemSource.extractedText?.substring(0, 30000) || '',
-                    sourceType: 'Policy Document',
-                    analysisMode: 'ecosystem'
-                })
-            });
-
-            const data = await response.json();
-            if (data.success && Array.isArray(data.analysis)) {
-                setEcosystemImpacts(data.analysis);
-            } else {
-                alert("Mapping failed: " + (data.error || "Unknown error"));
-            }
-        } catch (error) {
-            console.error("Mapping error:", error);
-            alert("Failed to generate ecosystem map.");
-        } finally {
-            setIsMapping(false);
-        }
-    };
+    // [REMOVED] handleEcosystemMap logic - Moved to EcosystemPage (Separation of Concerns)
 
     if (isLoading) {
         return (
@@ -320,104 +336,65 @@ export default function SynthesisPage() {
                                     <RefreshCw className={`mr-2 h-4 w-4 ${isComparing ? 'animate-spin' : ''}`} />
                                     Regenerate
                                 </Button>
+
                             )}
                         </div>
 
+                        {/* [NEW] Preflight Warning / Deep Link */}
+                        {sourceA && !sessionStorage.getItem(`assemblage_export_${sourceA.id}`) && (
+                            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-xs flex items-center justify-between">
+                                <span>⚠️ Missing Assemblage Analysis for Source A ({sourceA.title}). Comparison will lack provenance.</span>
+                                <a
+                                    href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceA.id}`} // Deep Link
+                                    className="font-bold underline hover:text-amber-900"
+                                >
+                                    Analyze in Ecosystem
+                                </a>
+                            </div>
+                        )}
+                        {sourceB && !sessionStorage.getItem(`assemblage_export_${sourceB.id}`) && (
+                            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-xs flex items-center justify-between">
+                                <span>⚠️ Missing Assemblage Analysis for Source B ({sourceB.title}). Comparison will lack provenance.</span>
+                                <a
+                                    href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceB.id}`} // Deep Link
+                                    className="font-bold underline hover:text-amber-900"
+                                >
+                                    Analyze in Ecosystem
+                                </a>
+                            </div>
+                        )}
+
                         {comparisonResult && (
                             <div className="mt-8 space-y-6 pt-4 border-t">
-                                <div className="h-[450px] w-full">
-                                    <h4 className="font-semibold text-slate-900 mb-2 text-center">Shape of Divergence</h4>
-                                    <p className="text-xs text-center text-slate-500 mb-4">
-                                        Comparing: <span className="font-medium text-slate-700">{sourceA?.title}</span> vs <span className="font-medium text-slate-700">{sourceB?.title}</span>
-                                    </p>
-
-                                    <div className="flex justify-center mb-4 space-x-2">
-                                        <button
-                                            onClick={() => setChartView("radar")}
-                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${chartView === "radar"
-                                                ? "bg-slate-900 text-white"
-                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                                }`}
-                                        >
-                                            Radar View
-                                        </button>
-                                        <button
-                                            onClick={() => setChartView("bar")}
-                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${chartView === "bar"
-                                                ? "bg-slate-900 text-white"
-                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                                }`}
-                                        >
-                                            Bar View
-                                        </button>
-                                    </div>
-
-                                    {showGuide && (
-                                        <div className="mb-6 mx-auto max-w-2xl bg-blue-50 border border-blue-100 rounded-lg p-3 relative">
-                                            <button
-                                                onClick={() => setShowGuide(false)}
-                                                className="absolute top-2 right-2 text-blue-400 hover:text-blue-600"
-                                            >
-                                                ×
-                                            </button>
-                                            <div className="flex gap-3">
-                                                <Info className="h-5 w-5 text-blue-600 shrink-0" />
-                                                <div className="text-xs text-blue-900 space-y-1">
-                                                    <p className="font-semibold">How to read this chart:</p>
-                                                    <p><span className="font-bold text-blue-700">Convergence (Blue):</span> How similar the frameworks are. High score = Very similar rules/definitions.</p>
-                                                    <p><span className="font-bold text-red-700">Coloniality (Red):</span> Power imbalance. High score = One framework is imposing values on the other.</p>
-                                                </div>
-                                            </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[800px] lg:h-[600px]">
+                                    {/* PRIMARY: FORCE GRAPH */}
+                                    {comparisonResult.assemblage_network && comparisonResult.assemblage_network.nodes.length > 0 ? (
+                                        <div className="col-span-1 lg:col-span-1 h-full min-h-[400px]">
+                                            <ComparisonNetworkGraph
+                                                networkData={comparisonResult.assemblage_network}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="col-span-1 lg:col-span-1 h-full min-h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg bg-slate-50">
+                                            <p className="text-sm text-slate-500">No assemblage network data generated.</p>
                                         </div>
                                     )}
 
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        {chartView === "radar" ? (
-                                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                                                { subject: 'Risk', A: comparisonResult?.risk?.convergence_score || 0, B: comparisonResult?.risk?.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Governance', A: comparisonResult?.governance?.convergence_score || 0, B: comparisonResult?.governance?.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Rights', A: comparisonResult?.rights?.convergence_score || 0, B: comparisonResult?.rights?.coloniality_score || 0, fullMark: 10 },
-                                                { subject: 'Scope', A: comparisonResult?.scope?.convergence_score || 0, B: comparisonResult?.scope?.coloniality_score || 0, fullMark: 10 },
-                                            ]}>
-                                                <PolarGrid />
-                                                <PolarAngleAxis dataKey="subject" />
-                                                <PolarRadiusAxis angle={30} domain={[0, 10]} />
-                                                <Tooltip />
-                                                <Radar name="Convergence (Similarity)" dataKey="A" stroke="#2563eb" fill="#2563eb" fillOpacity={0.5} />
-                                                <Radar name="Coloniality (Power Imbalance)" dataKey="B" stroke="#dc2626" fill="#dc2626" fillOpacity={0.5} />
-                                                <Legend />
-                                            </RadarChart>
-                                        ) : (
-                                            <BarChart
-                                                data={[
-                                                    { subject: 'Risk', Convergence: comparisonResult?.risk?.convergence_score || 0, Coloniality: comparisonResult?.risk?.coloniality_score || 0 },
-                                                    { subject: 'Governance', Convergence: comparisonResult?.governance?.convergence_score || 0, Coloniality: comparisonResult?.governance?.coloniality_score || 0 },
-                                                    { subject: 'Rights', Convergence: comparisonResult?.rights?.convergence_score || 0, Coloniality: comparisonResult?.rights?.coloniality_score || 0 },
-                                                    { subject: 'Scope', Convergence: comparisonResult?.scope?.convergence_score || 0, Coloniality: comparisonResult?.scope?.coloniality_score || 0 },
-                                                ]}
-                                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                            >
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="subject" />
-                                                <YAxis domain={[0, 10]} />
-                                                <Tooltip />
-                                                <Legend />
-                                                <Bar dataKey="Convergence" fill="#2563eb" name="Convergence (Similarity)" />
-                                                <Bar dataKey="Coloniality" fill="#dc2626" name="Coloniality (Power Imbalance)" />
-                                            </BarChart>
-                                        )}
-                                    </ResponsiveContainer>
-                                    <p className="text-xs text-center text-slate-400 mt-4">
-                                        Scale 0-10: Higher scores indicate stronger presence of the attribute.
-                                    </p>
-                                </div >
-
-
-                            </div >
+                                    {/* SECONDARY: RELATIONAL TOPOLOGY */}
+                                    <div className="col-span-1 lg:col-span-1 h-full min-h-[400px]">
+                                        <RelationalAxisMap
+                                            topology={comparisonResult.topology_analysis}
+                                            sourceAName={sourceA?.title || "Source A"}
+                                            sourceBName={sourceB?.title || "Source B"}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
-            )}
+            )
+            }
 
             {/* Synthesis Matrix */}
             <div>
@@ -427,7 +404,7 @@ export default function SynthesisPage() {
                     // Show AI-generated comparison results
                     <div className="grid gap-4">
                         {Object.entries(comparisonResult)
-                            .filter(([key]) => key !== 'verified_quotes' && key !== 'system_critique')
+                            .filter(([key]) => !EXCLUDED_KEYS.has(key))
                             .map(([key, value]) => {
                                 const typedValue = value as ComparisonResult["risk"];
                                 const finding = SYNTHESIS_FINDINGS.find(f => f.key === key);
@@ -507,6 +484,49 @@ export default function SynthesisPage() {
                 )}
             </div>
 
+            {/* Transversal Flows Section - ADDED for Assemblage Alignment */}
+            {/* Transversal Resonances Section */}
+            {
+                comparisonResult?.resonances && (comparisonResult.resonances.narrative?.length > 10 || (comparisonResult.resonances.shared_strategies && comparisonResult.resonances.shared_strategies.length > 0)) && (
+                    <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <Network className="h-5 w-5 text-indigo-600" />
+                                <CardTitle>Transversal Resonances (Rhizomatic Connections)</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Strategies and concepts identified consistently resonating between the contexts (Trans-local resistance).
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {comparisonResult.resonances.narrative && (
+                                <p className="text-sm text-slate-800 leading-relaxed italic">
+                                    "{comparisonResult.resonances.narrative}"
+                                </p>
+                            )}
+                            {comparisonResult.resonances.resonance_graph && (
+                                <div className="mt-4 border rounded-lg overflow-hidden bg-white/50 h-[400px]">
+                                    <ResonanceNetworkGraph
+                                        data={comparisonResult.resonances.resonance_graph}
+                                        height={400}
+                                    />
+                                </div>
+                            )}
+                            {comparisonResult.resonances.shared_strategies && comparisonResult.resonances.shared_strategies.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {comparisonResult.resonances.shared_strategies.map((strat: string, i: number) => (
+                                        <Badge key={i} variant="secondary" className="bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                                            <GitMerge className="h-3 w-3 mr-1" />
+                                            {strat}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )
+            }
+
             {/* Verified Quotes Section */}
             {
                 comparisonResult?.verified_quotes && comparisonResult.verified_quotes.length > 0 && (
@@ -582,174 +602,6 @@ export default function SynthesisPage() {
                             )}
                         </CardContent>
                     </Card>
-                )
-            }
-
-
-            {/* Ecosystem Impact Mapping */}
-            {
-                analyzedSources.length > 0 && (
-                    <Card className="border-teal-200">
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <Network className="h-5 w-5 text-teal-600" />
-                                <CardTitle>Ecosystem Impact Mapping</CardTitle>
-                            </div>
-                            <CardDescription>
-                                Map how policy mechanisms constrain or afford possibilities for ecosystem actors
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex gap-4 items-end">
-                                <div className="flex-1 space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">Select Policy Document</label>
-                                    <select
-                                        className="w-full p-2 border rounded-md text-sm"
-                                        value={selectedEcosystemSourceId || ""}
-                                        onChange={(e) => {
-                                            setSelectedEcosystemSourceId(e.target.value || null);
-                                        }}
-                                    >
-                                        <option value="">Select document...</option>
-                                        {analyzedSources.map(s => (
-                                            <option key={s.id} value={s.id}>{s.title}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <Button
-                                    className="bg-teal-600 text-white hover:bg-teal-700"
-                                    onClick={handleEcosystemMap}
-                                    disabled={!ecosystemSource || isMapping}
-                                >
-                                    {isMapping ? (
-                                        <>
-                                            <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                                            Mapping...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Network className="mr-2 h-4 w-4" />
-                                            Generate Map
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-
-                            {ecosystemImpacts.length > 0 && (
-                                <div className="mt-4 space-y-3 pt-4 border-t">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-semibold text-slate-900">Ecosystem Impacts</h4>
-                                        <div className="flex gap-2">
-                                            <div className="flex bg-slate-100 rounded-lg p-1 mr-4">
-                                                <button
-                                                    onClick={() => setViewMode("list")}
-                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "list"
-                                                        ? "bg-white text-slate-900 shadow-sm"
-                                                        : "text-slate-500 hover:text-slate-900"
-                                                        }`}
-                                                >
-                                                    List View
-                                                </button>
-                                                <button
-                                                    onClick={() => setViewMode("graph")}
-                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === "graph"
-                                                        ? "bg-white text-slate-900 shadow-sm"
-                                                        : "text-slate-500 hover:text-slate-900"
-                                                        }`}
-                                                >
-                                                    Graph View
-                                                </button>
-                                            </div>
-
-                                            <Button
-                                                variant={interconnectionFilter === "All" ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setInterconnectionFilter("All")}
-                                            >
-                                                All
-                                            </Button>
-                                            <Button
-                                                variant={interconnectionFilter === "Material" ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setInterconnectionFilter("Material")}
-                                            >
-                                                Material
-                                            </Button>
-                                            <Button
-                                                variant={interconnectionFilter === "Discursive" ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setInterconnectionFilter("Discursive")}
-                                            >
-                                                Discursive
-                                            </Button>
-                                            <Button
-                                                variant={interconnectionFilter === "Hybrid" ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setInterconnectionFilter("Hybrid")}
-                                            >
-                                                Hybrid
-                                            </Button>
-                                            <Button
-                                                variant={interconnectionFilter === "Interpretive / Meaning-Making" ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => setInterconnectionFilter("Interpretive / Meaning-Making")}
-                                            >
-                                                Interpretive
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {viewMode === "graph" ? (
-                                        <div className="border rounded-lg p-4 bg-white min-h-[500px]">
-                                            <AssemblageSankey
-                                                data={ecosystemImpacts.filter(impact =>
-                                                    interconnectionFilter === "All" ||
-                                                    impact.interconnection_type === interconnectionFilter
-                                                )}
-                                            />
-                                            <p className="text-center text-xs text-slate-500 mt-4">
-                                                Visualizing the flow from <strong>Actors</strong> → <strong>Mechanisms</strong> → <strong>Impacts</strong>
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-3">
-                                            {ecosystemImpacts
-                                                .filter(impact =>
-                                                    interconnectionFilter === "All" ||
-                                                    impact.interconnection_type === interconnectionFilter
-                                                )
-                                                .map((impact, i) => (
-                                                    <div key={i} className={`p-3 rounded-lg border ${impact.type === "Constraint"
-                                                        ? "bg-red-50 border-red-200"
-                                                        : "bg-green-50 border-green-200"
-                                                        }`}>
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <span className={`text-xs font-bold uppercase ${impact.type === "Constraint" ? "text-red-700" : "text-green-700"
-                                                                }`}>
-                                                                {impact.type}
-                                                            </span>
-                                                            {impact.interconnection_type && (
-                                                                <Badge variant="outline" className="text-xs">
-                                                                    {impact.interconnection_type}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm font-semibold text-slate-900 mb-1">{impact.actor}</p>
-                                                        <p className="text-xs text-slate-600 mb-1">
-                                                            <span className="font-medium">Mechanism:</span> {impact.mechanism}
-                                                        </p>
-                                                        <p className="text-xs text-slate-600">
-                                                            <span className="font-medium">Impact:</span> {impact.impact}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )
-                                    }
-                                </div >
-                            )}
-                        </CardContent >
-                    </Card >
                 )
             }
 

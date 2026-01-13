@@ -20,7 +20,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Filter, Sparkles, Loader2, Trash, Eye, FileText } from "lucide-react";
+import { Plus, Search, Filter, Sparkles, Loader2, Trash, Eye, FileText, Maximize } from "lucide-react";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
 
 export default function EmpiricalPage() {
@@ -38,7 +38,9 @@ export default function EmpiricalPage() {
 
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
 
-    // Search State
+    const [fullScreenAnalysisSource, setFullScreenAnalysisSource] = useState<Source | null>(null);
+
+    // ... existing search state ...
     const [isSearching, setIsSearching] = useState(false);
     const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
     const [customQuery, setCustomQuery] = useServerStorage<string>("empirical_custom_query", "");
@@ -80,7 +82,10 @@ export default function EmpiricalPage() {
         toast.success("Trace added successfully");
     };
 
+    // ... handleSearchTraces ...
+
     const handleSearchTraces = async () => {
+        // ... existing implementation ...
         if (!selectedPolicyId) {
             toast.error("Please select a policy document first.");
             return;
@@ -114,11 +119,6 @@ export default function EmpiricalPage() {
             const result = await response.json();
 
             if (result.success && Array.isArray(result.traces)) {
-                // Determine analysis to attach (basic vs resistance)
-                // Since this is the "Empirical" page, we might just want to store the trace content properly.
-                // The search API returns `strategy` / `explanation` which are resistance-specific. 
-                // We'll store them as resistance_analysis if present, but the main point is the trace itself.
-
                 const newTraces = result.traces.map((trace: { title: string; description: string; query: string; content: string; sourceUrl: string; strategy?: string; explanation?: string }) => ({
                     id: Math.random().toString(36).substr(2, 9),
                     title: `[Web] ${trace.title}`,
@@ -130,7 +130,6 @@ export default function EmpiricalPage() {
                     colorClass: "bg-blue-100",
                     iconClass: "text-blue-600",
                     policyId: selectedPolicyId, // Link to selected policy
-                    // We optionally include resistance analysis if the search API provided it
                     resistance_analysis: trace.strategy ? {
                         strategy_detected: trace.strategy,
                         evidence_quote: trace.content,
@@ -139,13 +138,12 @@ export default function EmpiricalPage() {
                     } : undefined
                 }));
 
-                // Add each new trace to the store
                 for (const trace of newTraces) {
                     await addSource(trace);
                 }
 
                 toast.success(`Found ${newTraces.length} traces from the web!`);
-                setCustomQuery(""); // Reset query
+                setCustomQuery("");
             } else {
                 if (response.status === 429 || result.error === "Quota Exceeded") {
                     toast.error("Quota Exceeded", {
@@ -194,7 +192,15 @@ export default function EmpiricalPage() {
 
             if (result.success) {
                 await updateSource(sourceId, { analysis: result.analysis });
-                toast.success('Analysis complete!');
+                // Un-minimize if it was legally minimized before re-analysis
+                setMinimizedAnalysisIds(prev => prev.filter(id => id !== sourceId));
+
+                toast.success('Analysis complete!', {
+                    action: {
+                        label: 'View Results',
+                        onClick: () => setFullScreenAnalysisSource(sources.find(s => s.id === sourceId) || null) // Re-fetch to get latest state
+                    }
+                });
             } else {
                 toast.error(`Analysis failed: ${result.error || 'Unknown error'} `);
             }
@@ -516,7 +522,21 @@ export default function EmpiricalPage() {
                                                 </div>
                                             )}
                                             {source.analysis && (
-                                                <AnalysisResults analysis={source.analysis} />
+                                                <div className="relative mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Sparkles className="h-4 w-4 text-purple-500" />
+                                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Analysis Ready</span>
+                                                    </div>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setFullScreenAnalysisSource(source)}
+                                                        className="gap-2 text-xs border-slate-200 hover:bg-slate-50 hover:text-purple-700"
+                                                    >
+                                                        <Maximize className="h-3 w-3" />
+                                                        View Full Analysis
+                                                    </Button>
+                                                </div>
                                             )}
                                         </CardContent>
                                     </Card>
@@ -535,6 +555,33 @@ export default function EmpiricalPage() {
                 )}
 
             </div>
+
+            {/* Full Screen Analysis Dialog */}
+            <Dialog open={!!fullScreenAnalysisSource} onOpenChange={(open) => !open && setFullScreenAnalysisSource(null)}>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col p-6">
+                    <DialogHeader className="shrink-0 mb-4 pb-4 border-b border-slate-100 flex flex-row items-center justify-between">
+                        <div>
+                            <DialogTitle className="text-xl">{fullScreenAnalysisSource?.title}</DialogTitle>
+                            <DialogDescription>
+                                Full Screen Analysis View
+                            </DialogDescription>
+                        </div>
+                        {/* Custom Close Button for nicer placement if standard one conflicts, but standard X is fine usually. */}
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-y-auto px-4 pb-8">
+                        {fullScreenAnalysisSource?.analysis ? (
+                            <div className="max-w-7xl mx-auto">
+                                <AnalysisResults analysis={fullScreenAnalysisSource.analysis} sourceTitle={fullScreenAnalysisSource.title} sourceId={fullScreenAnalysisSource.id} />
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-slate-400">
+                                Analysis data not available.
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={!!viewingSource} onOpenChange={(open) => !open && setViewingSource(null)}>
                 <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">

@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
-import { useServerStorage } from "@/hooks/useServerStorage";
+// import { useServerStorage } from "@/hooks/useServerStorage";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,9 @@ export default function ComparisonPage() {
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
     const [activeLens, setActiveLens] = useState<InterpretationLens>("assemblage");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResults, setSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
+    const [synthesisResults, setSynthesisResults, isStorageLoading] = useLocalStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v3", {});
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
+    const [forceRefresh, setForceRefresh] = useState(false);
 
     // Deep Analysis State
     const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
@@ -42,13 +44,14 @@ export default function ComparisonPage() {
     const currentResult = synthesisResults?.[activeLens] || null;
 
     useEffect(() => {
-        if (isLoading) return;
+        // Wait for both sources and storage to load
+        if (isLoading || isStorageLoading) return;
 
         // Auto-select first two docs
         if (policyDocs.length >= 2 && selectedDocs.length === 0) {
             setSelectedDocs([policyDocs[0].id, policyDocs[1].id]);
         }
-    }, [isLoading, selectedDocs.length, policyDocs]);
+    }, [isLoading, isStorageLoading, selectedDocs.length, policyDocs]);
 
     const selectedSources = selectedDocs
         .map(id => policyDocs.find(s => s.id === id))
@@ -82,7 +85,8 @@ export default function ComparisonPage() {
         }
 
         // Confirmation: Check if persistence data exists for THIS lens
-        if (currentResult) {
+        // If forceRefresh is true, we skip confirmation because user explicitly asked for it via Clear Cache
+        if (currentResult && !forceRefresh) {
             if (!confirm(`Existing ${activeLens} synthesis found. Do you want to re-run it? This will overwrite the current findings.`)) {
                 setActiveTab("synthesis");
                 return;
@@ -95,7 +99,8 @@ export default function ComparisonPage() {
 
         try {
             // Prepare documents for synthesis
-            const result = await synthesizeComparison(selectedSources, activeLens);
+            // Pass forceRefresh flag
+            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh);
 
             // Update the record
             setSynthesisResults(prev => {
@@ -104,6 +109,9 @@ export default function ComparisonPage() {
                     [activeLens]: result as unknown as ComparativeSynthesis
                 }
             });
+
+            // Reset force flag
+            setForceRefresh(false);
 
         } catch (error) {
             console.error("Synthesis failed:", error);
@@ -170,7 +178,7 @@ export default function ComparisonPage() {
 
     // Helper to render the "Run Deep Analysis" button if data is missing
     const renderAnalysisButtonOrContent = (source: Source, type: 'cultural' | 'logics' | 'legitimacy', content: React.ReactNode) => {
-         
+
         const data = (type === 'cultural' ? source.cultural_framing :
             type === 'logics' ? source.institutional_logics :
                 source.legitimacy_analysis) as Record<string, any> | undefined;
@@ -383,6 +391,7 @@ export default function ComparisonPage() {
                                     size="icon"
                                     onClick={() => {
                                         if (confirm(`Clear cached synthesis for ${activeLens}?`)) {
+                                            setForceRefresh(true);
                                             setSynthesisResults(prev => {
                                                 const next = { ...prev };
                                                 delete next[activeLens];
@@ -390,7 +399,7 @@ export default function ComparisonPage() {
                                             });
                                         }
                                     }}
-                                    title="Clear Cache"
+                                    title="Clear Cache & Force Refresh Next Run"
                                     className="text-slate-400 hover:text-red-600 shrink-0"
                                 >
                                     <RefreshCw className="h-4 w-4" />
@@ -580,7 +589,10 @@ export default function ComparisonPage() {
                                     {!currentResult && !isSynthesizing && (
                                         <div className="text-center py-12 text-slate-500">
                                             <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                                            <p>Click "Synthesize" to generate a comparative analysis for the <strong>{activeLens}</strong> lens.</p>
+                                            <p className="font-medium text-slate-700">No {activeLens} analysis generated yet</p>
+                                            <p className="text-sm mt-2 max-w-sm mx-auto">
+                                                Each interpretation lens requires a separate AI analysis. Click "Synthesize" to generate findings specifically for the <strong>{activeLens}</strong> perspective.
+                                            </p>
                                         </div>
                                     )}
 
@@ -671,15 +683,15 @@ export default function ComparisonPage() {
                                                                     <CardTitle className="text-base font-bold text-purple-900">{conf.conflict_type}</CardTitle>
                                                                     <CardDescription className="text-slate-700">{conf.description}</CardDescription>
                                                                 </CardHeader>
-                                                                <CardContent className="space-y-2 text-sm">
-                                                                    <div className="flex gap-2">
-                                                                        <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence A:</span>
-                                                                        <span className="italic text-slate-600">&quot;{conf.policy_a_evidence}&quot;</span>
-                                                                    </div>
-                                                                    <div className="flex gap-2">
-                                                                        <span className="font-semibold text-purple-700 whitespace-nowrap">Evidence B:</span>
-                                                                        <span className="italic text-slate-600">&quot;{conf.policy_b_evidence}&quot;</span>
-                                                                    </div>
+                                                                <CardContent className="space-y-3 text-sm">
+                                                                    {conf.evidence?.map((ev, eIdx) => (
+                                                                        <div key={eIdx} className="flex gap-2 items-start">
+                                                                            <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 h-5 mt-0.5 bg-white border-purple-200 text-purple-700">
+                                                                                {ev.policy}
+                                                                            </Badge>
+                                                                            <span className="italic text-slate-600 leading-snug">&quot;{ev.text}&quot;</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </CardContent>
                                                             </Card>
                                                         ))}
@@ -700,15 +712,15 @@ export default function ComparisonPage() {
                                                                 <CardTitle className="text-base font-bold text-emerald-900">{tens.tension_type}</CardTitle>
                                                                 <CardDescription className="text-slate-700">{tens.description}</CardDescription>
                                                             </CardHeader>
-                                                            <CardContent className="space-y-2 text-sm">
-                                                                <div className="flex gap-2">
-                                                                    <span className="font-semibold text-emerald-700 whitespace-nowrap">Evidence A:</span>
-                                                                    <span className="italic text-slate-600">&quot;{tens.policy_a_evidence}&quot;</span>
-                                                                </div>
-                                                                <div className="flex gap-2">
-                                                                    <span className="font-semibold text-emerald-700 whitespace-nowrap">Evidence B:</span>
-                                                                    <span className="italic text-slate-600">&quot;{tens.policy_b_evidence}&quot;</span>
-                                                                </div>
+                                                            <CardContent className="space-y-3 text-sm">
+                                                                {tens.evidence?.map((ev, eIdx) => (
+                                                                    <div key={eIdx} className="flex gap-2 items-start">
+                                                                        <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 h-5 mt-0.5 bg-white border-emerald-200 text-emerald-700">
+                                                                            {ev.policy}
+                                                                        </Badge>
+                                                                        <span className="italic text-slate-600 leading-snug">&quot;{ev.text}&quot;</span>
+                                                                    </div>
+                                                                ))}
                                                             </CardContent>
                                                         </Card>
                                                     ))}

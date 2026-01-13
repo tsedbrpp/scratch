@@ -1,15 +1,13 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Loader2, Plus, Ghost, Layers, Globe, ShieldCheck, Maximize2, Minimize2, BoxSelect, X, Search } from 'lucide-react';
+import { Loader2, Layers, Maximize2, Minimize2, X, Search } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
-import { ProvisionalBadge, FragilityIndicator } from '@/components/ui/provisional-badge';
-
-import { ReflexiveLog } from './ReflexiveLog';
+import { ProvisionalBadge } from '@/components/ui/provisional-badge';
+import { AssemblageAnalysisView } from './AssemblageAnalysisView';
 
 interface AssemblagePanelProps {
     actors: EcosystemActor[];
@@ -23,10 +21,83 @@ interface AssemblagePanelProps {
     selectedConfig?: EcosystemConfiguration | null;
     onUpdateConfig?: (config: EcosystemConfiguration) => void;
     onClose?: () => void;
+    onUpdateActors?: (actors: EcosystemActor[]) => void;
 }
 
-export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSaveAnalysis, isExpanded = false, onToggleExpand, selectedConfig, onUpdateConfig, onClose }: AssemblagePanelProps) {
+export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSaveAnalysis, isExpanded = false, onToggleExpand, selectedConfig, onUpdateConfig, onClose, onUpdateActors }: AssemblagePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleRatify = () => {
+        const currentData = savedAnalysis || selectedConfig?.analysisData;
+        if (!currentData?.provisional_status) return;
+
+        const currentStatus = currentData.provisional_status;
+        const updatedProvisional = {
+            ...currentStatus,
+            source: "user_validated" as const,
+            fragility_score: {
+                ...currentStatus.fragility_score,
+                value: 0.1, // Significant reduction in fragility
+                interpretation: "stable" as const,
+                factors: {
+                    input_completeness: 0.1,
+                    model_uncertainty: 0.1,
+                    theoretical_tension: 0.1,
+                    empirical_grounding: 0.1
+                }
+            },
+            authority_conditions: [" ratified by human expert"] // Mark as ratified
+        };
+
+        const updatedAnalysis = {
+            ...currentData,
+            provisional_status: updatedProvisional
+        };
+
+        if (selectedConfig && onUpdateConfig) {
+            const updatedConfig = {
+                ...selectedConfig,
+                analysisData: updatedAnalysis
+            };
+            onUpdateConfig(updatedConfig);
+        }
+
+        if (onSaveAnalysis) onSaveAnalysis(updatedAnalysis);
+    };
+
+    const handleContest = (interpretation: string, basis: string) => {
+        const currentData = savedAnalysis || selectedConfig?.analysisData;
+        if (!currentData?.provisional_status) return;
+
+        const currentStatus = currentData.provisional_status;
+        const updatedProvisional = {
+            ...currentStatus,
+            alternative_interpretations: [
+                ...(currentStatus.alternative_interpretations || []),
+                {
+                    interpretation,
+                    theoretical_basis: basis,
+                    plausibility: 0.5
+                }
+            ],
+            last_contested_at: new Date().toISOString()
+        };
+
+        const updatedAnalysis = {
+            ...currentData,
+            provisional_status: updatedProvisional
+        };
+
+        if (selectedConfig && onUpdateConfig) {
+            const updatedConfig = {
+                ...selectedConfig,
+                analysisData: updatedAnalysis
+            };
+            onUpdateConfig(updatedConfig);
+        }
+
+        if (onSaveAnalysis) onSaveAnalysis(updatedAnalysis);
+    };
 
     const handleAddLog = (entry: import('@/types/ecosystem').ReflexiveLogEntry) => {
         if (!selectedConfig || !onUpdateConfig) return;
@@ -62,10 +133,16 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
-            const response = await fetch('/api/ecosystem/absence', {
+            // [FIX] Changed from /api/ecosystem/absence to /api/analyze to use the full Deleuzian prompt
+            const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify({ actors, text: analyzedText })
+                body: JSON.stringify({
+                    text: analyzedText || actors.map(a => `${a.name}: ${a.description}`).join("\n"),
+                    analysisMode: 'assemblage_extraction_v3', // Prompt V3 maps scores
+                    sourceType: 'Trace',
+                    force: true // Force fresh analysis to bypass cache
+                })
             });
 
             if (!response.ok) {
@@ -75,31 +152,128 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
             }
 
             const data = await response.json();
-            if (data.success && onSaveAnalysis) {
-                if (data.success && onSaveAnalysis) {
-                    // [FIX] Safe Merge: Explicitly preserve traces and metrics from existing analysis
-                    // The 'absence' analysis (deep scan) does typically NOT return traces/metrics,
-                    // so specific keys must be protected from being overwritten by undefined/null.
-                    const effectiveAnalysis = selectedConfig?.analysisData || savedAnalysis || {};
 
-                    const mergedAnalysis = {
-                        ...effectiveAnalysis,
-                        ...data.analysis,
-                        // Force preserve critical metric data if it exists in the old state
-                        traces: effectiveAnalysis.traces || data.analysis.traces,
-                        computed_metrics: effectiveAnalysis.computed_metrics || data.analysis.computed_metrics,
-                        // Preserve the core assemblage identity if not provided by new analysis
-                        assemblage: effectiveAnalysis.assemblage || data.analysis.assemblage
-                    };
-
-                    onSaveAnalysis(mergedAnalysis);
-                }
+            // 1. Update Analysis Data
+            if (data.analysis && onSaveAnalysis) {
+                const effectiveAnalysis = selectedConfig?.analysisData || savedAnalysis || {};
+                const mergedAnalysis = {
+                    ...effectiveAnalysis,
+                    ...data.analysis,
+                    // Preserve the core assemblage identity if not provided by new analysis
+                    assemblage: effectiveAnalysis.assemblage || data.analysis.assemblage,
+                    // [FIX] Force Reset Provisional Status on new analysis
+                    provisional_status: {
+                        source: "ai_generated",
+                        fragility_score: {
+                            value: 0.55,
+                            interpretation: "provisional",
+                            factors: {
+                                input_completeness: 0.6,
+                                model_uncertainty: 0.5,
+                                theoretical_tension: 0.4,
+                                empirical_grounding: 0.3
+                            }
+                        },
+                        authority_conditions: ["pending ratification"]
+                    }
+                };
+                onSaveAnalysis(mergedAnalysis);
             }
+
+            // 2. [NEW] Update Actor Metrics (Territorialization/Deterritorialization)
+            if (data.analysis?.actors && Array.isArray(data.analysis.actors) && onUpdateActors) {
+                console.log("Trace Complete: Updating Actor Metrics", data.analysis.actors);
+
+                const updatedActors = actors.map(existingActor => {
+                    // Fuzzy match by name
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const match = data.analysis.actors.find((a: any) => a.name.toLowerCase() === existingActor.name.toLowerCase());
+
+                    if (match && match.metrics) {
+                        return {
+                            ...existingActor,
+                            metrics: {
+                                ...existingActor.metrics,
+                                territorialization: match.metrics.territorialization ?? match.metrics.territoriality ?? match.metrics.territorial ?? match.metrics.influence ?? 5,
+                                deterritorialization: match.metrics.deterritorialization ?? match.metrics.resistance ?? match.metrics.escape ?? Math.max(match.metrics.counter_conduct || 0, match.metrics.discursive_opposition || 0) ?? 5,
+                                coding: match.metrics.coding ?? 5,
+                                rationale: match.metrics.rationale
+                            }
+                        };
+                    }
+                    return existingActor;
+                });
+
+                onUpdateActors(updatedActors);
+            }
+
         } catch (error) {
             console.error("Assemblage Analysis failed", error);
             alert("Failed to analyze assemblage. Please check your connection.");
         } finally {
             setIsAnalyzing(false);
+        }
+    };
+
+    const [isEnriching, setIsEnriching] = useState(false);
+    const [enrichProgress, setEnrichProgress] = useState(0);
+
+    const handleEnrichLinks = async () => {
+        if (!actors || actors.length === 0) return;
+        if (!onUpdateActors) return;
+
+        setIsEnriching(true);
+        setEnrichProgress(0);
+
+        const actorsToEnrich = actors.filter(a => !a.url);
+        const total = actorsToEnrich.length;
+        let processed = 0;
+        const updatedActors = [...actors];
+
+        // Process in batches of 3 to avoid rate limits
+        const BATCH_SIZE = 3;
+
+        try {
+            for (let i = 0; i < total; i += BATCH_SIZE) {
+                const batch = actorsToEnrich.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(batch.map(async (actor) => {
+                    try {
+                        const response = await fetch('/api/enrich-actor', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                actorName: actor.name,
+                                context: actor.type === 'Policymaker' ? 'government ministry' : 'official website'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.url) {
+                                const index = updatedActors.findIndex(a => a.id === actor.id);
+                                if (index !== -1) {
+                                    updatedActors[index] = { ...updatedActors[index], url: data.url };
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to enrich ${actor.name}`, err);
+                    }
+                }));
+
+                processed += batch.length;
+                setEnrichProgress(Math.round((processed / total) * 100));
+
+                // Update text as we go (optional, or update at end)
+                onUpdateActors([...updatedActors]);
+            }
+        } catch (error) {
+            console.error("Enrichment failed", error);
+            alert("Failed to complete link enrichment.");
+        } finally {
+            setIsEnriching(false);
+            setEnrichProgress(0);
         }
     };
 
@@ -217,149 +391,18 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                         </div>
 
                         {selectedConfig.analysisData ? (
-                            <Tabs defaultValue="critique" className="w-full">
-                                <TabsList className="grid w-full grid-cols-5 bg-slate-100/50 p-1 mb-4 h-auto">
-                                    <TabsTrigger value="critique" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                        Critique
-                                    </TabsTrigger>
-                                    <TabsTrigger value="actants" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                        Actants
-                                    </TabsTrigger>
-                                    <TabsTrigger value="mechanisms" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                        Mechanisms
-                                    </TabsTrigger>
-                                    <TabsTrigger value="relations" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                        Relations
-                                    </TabsTrigger>
-                                    <TabsTrigger value="journal" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                        Journal
-                                    </TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="journal" className="space-y-4 h-[400px]">
-                                    <ReflexiveLog
-                                        logs={selectedConfig.reflexive_log || []}
-                                        onAddLog={handleAddLog}
-                                        onDeleteLog={handleDeleteLog}
-                                    />
-                                </TabsContent>
-
-                                <TabsContent value="critique" className="space-y-4">
-                                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-900 text-xs italic">
-                                        &quot;{(selectedConfig.analysisData as AssemblageAnalysis).narrative}&quot;
-                                        {(selectedConfig.analysisData as AssemblageAnalysis).provisional_status && (
-                                            <div className="mt-2 pt-2 border-t border-amber-200">
-                                                <FragilityIndicator score={(selectedConfig.analysisData as AssemblageAnalysis).provisional_status!.fragility_score} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Excluded Voices</h4>
-                                        <div className="space-y-2">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).missing_voices?.map((mv, i) => (
-                                                <div key={i} className="bg-white p-2 rounded border border-slate-200 shadow-sm flex justify-between gap-2">
-                                                    <div>
-                                                        <span className="font-semibold text-xs text-slate-900 block">{mv.name}</span>
-                                                        <p className="text-[10px] text-slate-500">{mv.reason}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Structural Voids</h4>
-                                        <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).structural_voids?.map((v, i) => <li key={i}>{v}</li>)}
-                                        </ul>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="actants" className="space-y-4">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Infrastructures</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).socio_technical_components?.infra?.map((inf, i) => (
-                                                <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded border border-slate-200">
-                                                    {inf}
-                                                </span>
-                                            )) || <p className="text-xs text-slate-400">No infrastructures detected.</p>}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Discourses</h4>
-                                        <div className="space-y-2">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).socio_technical_components?.discourse?.map((d, i) => (
-                                                <p key={i} className="text-xs text-slate-600 border-l-2 border-indigo-200 pl-2">
-                                                    {d}
-                                                </p>
-                                            )) || <p className="text-xs text-slate-400">No discourses detected.</p>}
-                                        </div>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="relations" className="space-y-4">
-                                    <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="text-xs font-bold text-slate-700 uppercase">Mobility Score</h4>
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${(selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.mobility_score === "High" ? "bg-green-100 text-green-700" :
-                                                (selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.mobility_score === "Low" ? "bg-red-100 text-red-700" :
-                                                    "bg-amber-100 text-amber-700"
-                                                }`}>
-                                                {(selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.mobility_score || "Unknown"}
-                                            </span>
-                                        </div>
-                                        <p className="text-[10px] text-slate-500 mb-3">
-                                            High exteriority means components can be easily detached and reused in other assemblages.
-                                        </p>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] uppercase font-bold text-green-600 block border-b border-green-100 pb-1">Detachable</span>
-                                                {(selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.detachable?.length ? (
-                                                    (selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.detachable.map((item, i) => (
-                                                        <p key={i} className="text-xs text-slate-600 pl-1">{item}</p>
-                                                    ))
-                                                ) : <p className="text-[10px] text-slate-400 italic">None identified</p>}
-                                            </div>
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] uppercase font-bold text-red-600 block border-b border-red-100 pb-1">Embedded (Interior)</span>
-                                                {(selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.embedded?.length ? (
-                                                    (selectedConfig.analysisData as AssemblageAnalysis).relations_of_exteriority?.embedded.map((item, i) => (
-                                                        <p key={i} className="text-xs text-slate-600 pl-1">{item}</p>
-                                                    ))
-                                                ) : <p className="text-[10px] text-slate-400 italic">None identified</p>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                        <h4 className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">
-                                            <Globe className="h-3 w-3" /> Origin Concepts
-                                        </h4>
-                                        <ul className="list-disc list-inside text-xs text-blue-900 space-y-1">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).policy_mobilities?.origin_concepts?.map((c, i) => <li key={i}>{c}</li>) || <li>None detected</li>}
-                                        </ul>
-                                    </div>
-                                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                        <h4 className="text-xs font-bold text-emerald-800 uppercase mb-2">Local Mutations</h4>
-                                        <ul className="list-disc list-inside text-xs text-emerald-900 space-y-1">
-                                            {(selectedConfig.analysisData as AssemblageAnalysis).policy_mobilities?.local_mutations?.map((m, i) => <li key={i}>{m}</li>) || <li>None detected</li>}
-                                        </ul>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="mechanisms" className="space-y-4">
-                                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Stabilization Mechanisms</h4>
-                                    <p className="text-xs text-slate-500 mb-2">How this assemblage holds together against disruption:</p>
-                                    <div className="space-y-2">
-                                        {(selectedConfig.analysisData as AssemblageAnalysis).stabilization_mechanisms?.map((mech, i) => (
-                                            <div key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                                                <ShieldCheck className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
-                                                <span>{mech}</span>
-                                            </div>
-                                        )) || <p className="text-xs text-slate-400">No mechanisms detected.</p>}
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
+                            <AssemblageAnalysisView
+                                analysis={selectedConfig.analysisData as AssemblageAnalysis}
+                                actors={actors}
+                                reflexiveLogs={selectedConfig.reflexive_log}
+                                onAddLog={handleAddLog}
+                                onDeleteLog={handleDeleteLog}
+                                onRatify={handleRatify}
+                                onContest={handleContest}
+                                onEnrichLinks={handleEnrichLinks}
+                                isEnriching={isEnriching}
+                                enrichProgress={enrichProgress}
+                            />
                         ) : (
                             <div className="p-4 border border-dashed border-slate-300 rounded-lg text-center text-slate-500">
                                 <p className="text-sm">No deep analysis data available for this configuration.</p>
@@ -367,142 +410,17 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                         )}
                     </div>
                 ) : savedAnalysis ? (
-                    <Tabs defaultValue="critique" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4 bg-slate-100/50 p-1 mb-4 h-auto">
-                            <TabsTrigger value="critique" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                Critique
-                            </TabsTrigger>
-                            <TabsTrigger value="actants" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                Actants
-                            </TabsTrigger>
-                            <TabsTrigger value="mechanisms" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                Mechanisms
-                            </TabsTrigger>
-                            <TabsTrigger value="relations" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600">
-                                Relations
-                            </TabsTrigger>
-                        </TabsList>
-
-                        {/* CRITIQUE TAB (Existing Absence Data) */}
-                        <TabsContent value="critique" className="space-y-4">
-                            <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-900 text-xs italic">
-                                &quot;{savedAnalysis.narrative}&quot;
-                                {savedAnalysis.provisional_status && (
-                                    <div className="mt-2 pt-2 border-t border-amber-200">
-                                        <FragilityIndicator score={savedAnalysis.provisional_status.fragility_score} />
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Excluded Voices</h4>
-                                <div className="space-y-2">
-                                    {savedAnalysis.missing_voices.map((mv, i) => (
-                                        <div key={i} className="bg-white p-2 rounded border border-slate-200 shadow-sm flex justify-between gap-2">
-                                            <div>
-                                                <span className="font-semibold text-xs text-slate-900 block">{mv.name}</span>
-                                                <p className="text-[10px] text-slate-500">{mv.reason}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Structural Voids</h4>
-                                <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
-                                    {savedAnalysis.structural_voids.map((v, i) => <li key={i}>{v}</li>)}
-                                </ul>
-                            </div>
-                        </TabsContent>
-
-                        {/* ACTANTS TAB (New Socio-Technical Components) */}
-                        <TabsContent value="actants" className="space-y-4">
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Infrastructures</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {savedAnalysis.socio_technical_components?.infra.map((inf, i) => (
-                                        <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded border border-slate-200">
-                                            {inf}
-                                        </span>
-                                    )) || <p className="text-xs text-slate-400">No infrastructures detected.</p>}
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Discourses</h4>
-                                <div className="space-y-2">
-                                    {savedAnalysis.socio_technical_components?.discourse.map((d, i) => (
-                                        <p key={i} className="text-xs text-slate-600 border-l-2 border-indigo-200 pl-2">
-                                            {d}
-                                        </p>
-                                    )) || <p className="text-xs text-slate-400">No discourses detected.</p>}
-                                </div>
-                            </div>
-                        </TabsContent>
-
-                        {/* RELATIONS TAB */}
-                        <TabsContent value="relations" className="space-y-4">
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase">Mobility Score</h4>
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${savedAnalysis.relations_of_exteriority?.mobility_score === "High" ? "bg-green-100 text-green-700" :
-                                        savedAnalysis.relations_of_exteriority?.mobility_score === "Low" ? "bg-red-100 text-red-700" :
-                                            "bg-amber-100 text-amber-700"
-                                        }`}>
-                                        {savedAnalysis.relations_of_exteriority?.mobility_score || "Unknown"}
-                                    </span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 mb-3">
-                                    High exteriority means components can be easily detached and reused in other assemblages.
-                                </p>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] uppercase font-bold text-green-600 block border-b border-green-100 pb-1">Detachable</span>
-                                        {savedAnalysis.relations_of_exteriority?.detachable?.length ? (
-                                            savedAnalysis.relations_of_exteriority.detachable.map((item, i) => (
-                                                <p key={i} className="text-xs text-slate-600 pl-1">{item}</p>
-                                            ))
-                                        ) : <p className="text-[10px] text-slate-400 italic">None identified</p>}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] uppercase font-bold text-red-600 block border-b border-red-100 pb-1">Embedded (Interior)</span>
-                                        {savedAnalysis.relations_of_exteriority?.embedded?.length ? (
-                                            savedAnalysis.relations_of_exteriority.embedded.map((item, i) => (
-                                                <p key={i} className="text-xs text-slate-600 pl-1">{item}</p>
-                                            ))
-                                        ) : <p className="text-[10px] text-slate-400 italic">None identified</p>}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                <h4 className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">
-                                    <Globe className="h-3 w-3" /> Origin Concepts
-                                </h4>
-                                <ul className="list-disc list-inside text-xs text-blue-900 space-y-1">
-                                    {savedAnalysis.policy_mobilities?.origin_concepts.map((c, i) => <li key={i}>{c}</li>) || <li>None detected</li>}
-                                </ul>
-                            </div>
-                            <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                <h4 className="text-xs font-bold text-emerald-800 uppercase mb-2">Local Mutations</h4>
-                                <ul className="list-disc list-inside text-xs text-emerald-900 space-y-1">
-                                    {savedAnalysis.policy_mobilities?.local_mutations.map((m, i) => <li key={i}>{m}</li>) || <li>None detected</li>}
-                                </ul>
-                            </div>
-                        </TabsContent>
-
-                        {/* MECHANISMS TAB (New Stabilization Mechanisms) */}
-                        <TabsContent value="mechanisms" className="space-y-4">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Stabilization Mechanisms</h4>
-                            <p className="text-xs text-slate-500 mb-2">How this assemblage holds together against disruption:</p>
-                            <div className="space-y-2">
-                                {savedAnalysis.stabilization_mechanisms?.map((mech, i) => (
-                                    <div key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                                        <ShieldCheck className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
-                                        <span>{mech}</span>
-                                    </div>
-                                )) || <p className="text-xs text-slate-400">No mechanisms detected.</p>}
-                            </div>
-                        </TabsContent>
-                    </Tabs>
+                    <AssemblageAnalysisView
+                        analysis={savedAnalysis}
+                        actors={actors}
+                        onEnrichLinks={handleEnrichLinks}
+                        isEnriching={isEnriching}
+                        enrichProgress={enrichProgress}
+                        onRatify={handleRatify}
+                        onContest={handleContest}
+                    // Logs only exist in Config mode so far, but we could add them to global analysis too if needed.
+                    // Currently ReflexiveLog is only connected to `selectedConfig` in logic above.
+                    />
                 ) : (
                     <div className="flex flex-col items-center justify-center h-48 text-center text-slate-400">
                         <Layers className="h-8 w-8 mb-2 opacity-50" />

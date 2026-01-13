@@ -6,217 +6,105 @@ export interface AnalysisParserResult {
     error?: string;
 }
 
-export function parseAnalysisResponse(responseText: string, analysisMode: string): any {
-    let analysis: any;
-
-    try {
-        if (!responseText || !responseText.trim()) {
-            throw new Error("Empty response text received from API");
-        }
-
-        // Robust JSON extraction
-        let cleanedResponse = responseText
-            .replace(/```json\s*/gi, '')
-            .replace(/```/g, '')
-            .replace(/^JSON:/i, '') // Handle "JSON:" prefix
-            .trim();
-
-        // Find the first '{' or '[' to handle potential preamble text
-        const firstBrace = cleanedResponse.indexOf('{');
-        const firstBracket = cleanedResponse.indexOf('[');
-
-        let start = -1;
-        let end = -1;
-
-        // Determine if it's an object or array and find start/end
-        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-            start = firstBrace;
-            end = cleanedResponse.lastIndexOf('}');
-        } else if (firstBracket !== -1) {
-            start = firstBracket;
-            end = cleanedResponse.lastIndexOf(']');
-        }
-
-        if (start !== -1 && end !== -1) {
-            cleanedResponse = cleanedResponse.substring(start, end + 1);
-        }
-
-        analysis = JSON.parse(cleanedResponse);
-
-        // [Robustness] Handle models returning valid JSON but incorrectly named keys
-        // If we are in default/dsf mode but missing primary keys, treat as partial/fallback
-        if ((!analysisMode || analysisMode === 'dsf') && !analysis.governance_power_accountability) {
-            // Try to find ANY useful content
-            const content = analysis.summary || analysis.content || analysis.response || analysis.answer || JSON.stringify(analysis, null, 2);
-
-            // Remap to expected structure so UI displays it
-            analysis = {
-                key_insight: analysis.key_insight || 'Schema Mismatch (Valid JSON)',
-                governance_power_accountability: content,
-                plurality_inclusion_embodiment: 'See Governance & Power',
-                agency_codesign_self_determination: 'Not parsed',
-                reflexivity_situated_praxis: 'Not parsed',
-                // Keep original data just in case
-                ...analysis
-            };
-        }
-
-        // [Robustness] Handle comparison mode missing keys
-        if (analysisMode === 'comparison' && (!analysis.risk || !analysis.governance)) {
-            const errorStruct = { convergence: "Missing from response", divergence: "Missing from response", coloniality: "Missing from response", resistance: "Missing from response", convergence_score: 0, coloniality_score: 0 };
-            analysis = {
-                risk: analysis.risk || errorStruct,
-                governance: analysis.governance || errorStruct,
-                rights: analysis.rights || errorStruct,
-                scope: analysis.scope || errorStruct,
-                verified_quotes: analysis.verified_quotes || [],
-                system_critique: analysis.system_critique || "Partial analysis generated.",
-                ...analysis
-            };
-        }
-    } catch (parseError) {
-        console.error("[ANALYSIS ERROR] JSON Parse failed:", parseError);
-        console.log("[ANALYSIS ERROR] Failed text:", responseText);
-
-        // Fallback structures based on mode
-        if (analysisMode === 'resistance') {
-            analysis = {
-                strategy_detected: "Unstructured Analysis",
-                evidence_quote: "See raw output",
-                interpretation: responseText.substring(0, 300),
-                confidence: "Low",
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'comparison') {
-            const errorStruct = { convergence: "Failed to parse", divergence: "Failed to parse", coloniality: "Failed to parse", resistance: "Failed to parse", convergence_score: 0, coloniality_score: 0 };
-            analysis = {
-                risk: errorStruct,
-                governance: errorStruct,
-                rights: errorStruct,
-                scope: errorStruct,
-                verified_quotes: [],
-                system_critique: "Analysis failed to produce structured output.",
-                raw_response: responseText,
-                error: "Failed to parse structured comparison"
-            };
-        } else if (analysisMode === 'ecosystem') {
-            analysis = [{
-                actor: "Unstructured Analysis",
-                mechanism: "See raw output",
-                impact: responseText.substring(0, 300),
-                type: "Constraint"
-            }];
-        } else if (analysisMode === 'generate_resistance') {
-            analysis = [{
-                title: "Generation Failed",
-                description: "Could not parse generated traces.",
-                content: responseText
-            }];
-        } else if (analysisMode === 'assemblage_extraction_v3') {
-            analysis = {
-                assemblage: {
-                    name: "Extraction Failed",
-                    description: "Could not parse response",
-                    properties: { stability: "Low", generativity: "Low", territorialization_score: 0, coding_intensity_score: 0 }
-                },
-                actors: [],
-                relations: [],
-                narrative: "Analysis failed to parse.",
-                missing_voices: [],
-                structural_voids: [],
-                socio_technical_components: { infra: [], discourse: [] },
-                policy_mobilities: { origin_concepts: [], local_mutations: [] },
-                stabilization_mechanisms: [],
-                traces: [],
-                computed_metrics: {
-                    territorialization_score: 0,
-                    coding_intensity_score: 0,
-                    territorialization_audit: ["Analysis Failed"],
-                    coding_audit: ["Analysis Failed"]
-                },
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'cultural_holes') {
-            analysis = {
-                holes: [],
-                recommendations: [],
-                overall_connectivity_score: 0,
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'legitimacy') {
-            analysis = {
-                orders: { market: 0, industrial: 0, civic: 0, domestic: 0, inspired: 0, fame: 0 },
-                dominant_order: "Unstructured",
-                justification_logic: responseText.substring(0, 300),
-                moral_vocabulary: [],
-                conflict_spot: "Unknown",
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'resistance_synthesis') {
-            analysis = {
-                executive_summary: responseText.substring(0, 300),
-                dominant_strategies: [],
-                emerging_themes: [],
-                implications_for_policy: "Failed to parse structured synthesis.",
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'stress_test') {
-            analysis = {
-                inverted_text: responseText,
-                raw_response: responseText
-            };
-        } else if (analysisMode === 'assemblage_explanation') {
-            analysis = {
-                narrative: responseText.substring(0, 500) || "Failed to generate assemblage explanation.",
-                hulls: [],
-                raw_response: responseText
-            };
-        } else {
-            analysis = {
-                key_insight: 'Automated Extraction (Unstructured Response)',
-                governance_power_accountability: responseText,
-                plurality_inclusion_embodiment: 'See "Governance & Power" for full text.',
-                agency_codesign_self_determination: 'Not parsed.',
-                reflexivity_situated_praxis: 'Not parsed.',
-                raw_response: responseText
-            };
-        }
+/**
+ * Robustly extracts JSON string from a potentially noisy LLM response.
+ * Handles markdown code blocks, prefixes, and surrounding text.
+ */
+function cleanJsonString(responseText: string): string {
+    if (!responseText || !responseText.trim()) {
+        throw new Error("Empty response text received from API");
     }
 
-    // Robustness Fixes
-    // Ecosystem Mode: Ensure it's an array
-    // Ecosystem Mode: Robust Handling
-    if (analysisMode === 'ecosystem') {
-        if (!Array.isArray(analysis)) {
-            // If it's the new V2 format with actors and impacts
-            if (analysis.impacts && Array.isArray(analysis.impacts)) {
-                // If we have actors, return the whole object (Frontend must handle this)
-                if (analysis.actors && Array.isArray(analysis.actors)) {
-                    // It's the new rich format, keep it as is.
-                } else {
-                    // It's the intermediate format (object with impacts but no actors),
-                    // or we want to remain backward compatible if actors are missing.
-                    // But wait, if I return object, legacy frontend code expecting array might break.
-                    // Let's check page.tsx... `const impacts = Array.isArray(analysis) ? analysis : (analysis.impacts || []);`
-                    // This implies page.tsx ALREADY handles an object return!
-                    // So I can safely return the object.
-                }
-            } else if (analysis.analysis && Array.isArray(analysis.analysis)) {
-                analysis = analysis.analysis;
-            } else {
-                // If it's a single object that looks like an impact, wrap it
-                if (analysis.actor && analysis.impact) {
-                    analysis = [analysis];
-                }
-            }
-        }
+    let cleaned = responseText
+        .replace(/```json\s*/gi, '')
+        .replace(/```/g, '')
+        .replace(/^JSON:/i, '') // Handle "JSON:" prefix
+        .trim();
+
+    // Find the first '{' or '[' to handle potential preamble text
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+
+    let start = -1;
+    let end = -1;
+
+    // Determine if it's an object or array and find start/end
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+        start = firstBrace;
+        end = cleaned.lastIndexOf('}');
+    } else if (firstBracket !== -1) {
+        start = firstBracket;
+        end = cleaned.lastIndexOf(']');
     }
 
-    // [Feature] Trace-Based Metrics Computation
-    // Check both root-level and nested (assemblage.traces) to be robust
+    if (start !== -1 && end !== -1) {
+        cleaned = cleaned.substring(start, end + 1);
+    }
+
+    return cleaned;
+}
+
+/**
+ * Fallback generator for when JSON parsing fails completely.
+ */
+function generateFallback(mode: string, responseText: string): any {
+    console.error(`[ANALYSIS ERROR] JSON Parse failed for mode: ${mode}`);
+    console.log("[ANALYSIS ERROR] Failed text:", responseText);
+
+    const fallbacks: Record<string, any> = {
+        resistance: {
+            strategy_detected: "Unstructured Analysis",
+            evidence_quote: "See raw output",
+            interpretation: responseText.substring(0, 300),
+            confidence: "Low",
+            raw_response: responseText
+        },
+        comparison: {
+            risk: { convergence: "Failed to parse", divergence: "Failed to parse" },
+            governance: { convergence: "Failed to parse", divergence: "Failed to parse" },
+            system_critique: "Analysis failed to produce structured output.",
+            raw_response: responseText,
+            error: "Failed to parse structured comparison"
+        },
+        ecosystem: [{
+            actor: "Unstructured Analysis",
+            mechanism: "See raw output",
+            impact: responseText.substring(0, 300),
+            type: "Constraint"
+        }],
+        assemblage_extraction_v3: {
+            assemblage: {
+                name: "Extraction Failed",
+                description: "Could not parse response",
+                properties: { stability: "Low", generativity: "Low", territorialization_score: 0, coding_intensity_score: 0 }
+            },
+            narrative: "Analysis failed to parse.",
+            computed_metrics: {
+                territorialization_score: 0,
+                coding_intensity_score: 0,
+                territorialization_audit: ["Analysis Failed"],
+                coding_audit: ["Analysis Failed"]
+            },
+            raw_response: responseText
+        }
+    };
+
+    return fallbacks[mode] || {
+        key_insight: 'Automated Extraction (Unstructured Response)',
+        governance_power_accountability: responseText,
+        raw_response: responseText
+    };
+}
+
+/**
+ * Fixer for Assemblage Extraction V3 results.
+ * Hoists nested fields and computes metrics.
+ */
+function fixAssemblageExtractionV3(analysis: any): any {
+    // 1. Trace-Based Metrics Computation
     const extractedTraces = analysis.traces || (analysis.assemblage && analysis.assemblage.traces);
 
-    if (analysisMode === 'assemblage_extraction_v3' && extractedTraces) {
+    if (extractedTraces) {
         const metrics = computeDeLandaMetrics(extractedTraces);
 
         // Inject computed scores into the assemblage properties for UI compatibility
@@ -225,52 +113,122 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
             analysis.assemblage.properties.coding_intensity_score = metrics.coding_intensity_score;
         }
 
-        // Attach full audit trail to the root so UI can find it
+        // Attach full audit trail to the root
         analysis.computed_metrics = metrics;
 
-        // Ensure traces are exposed at the root for easier access if they were nested
+        // Ensure traces are exposed at the root
         if (!analysis.traces) {
             analysis.traces = extractedTraces;
         }
     }
 
-    // [Fix] Ensure key_insight is never blank
-    if (analysis && typeof analysis === 'object' && !Array.isArray(analysis)) {
-        if (!analysis.key_insight || analysis.key_insight.trim() === '') {
-            analysis.key_insight = analysis.governance_power_accountability
-                ? (analysis.governance_power_accountability.substring(0, 80) + "...")
-                : "Analysis completed";
-        }
+    // 2. Hoist nested assemblage fields to root for UI compatibility
+    if (analysis.assemblage) {
+        const keysToHoist = [
+            'missing_voices',
+            'structural_voids',
+            'narrative',
+            'socio_technical_components',
+            'policy_mobilities',
+            'stabilization_mechanisms',
+            'relations_of_exteriority',
+            'blindspot_intensity'
+        ];
 
-        // [Fix] Ensure governance_scores exist for DSF mode to prevent UI gaps (Governance Compass missing)
-        if ((!analysisMode || analysisMode === 'dsf') && !analysis.governance_scores) {
-            console.warn('[ANALYSIS FIX] Governance scores missing in DSF mode. Imputing defaults.');
-            analysis.governance_scores = {
-                centralization: 50,
-                rights_focus: 50,
-                flexibility: 50,
-                market_power: 50,
-                procedurality: 50
-            };
-            analysis.governance_score_explanations = {
-                centralization: "Score imputed (missing from generation).",
-                rights_focus: "Score imputed (missing from generation).",
-                flexibility: "Score imputed (missing from generation).",
-                market_power: "Score imputed (missing from generation).",
-                procedurality: "Score imputed (missing from generation)."
-            };
-        }
-
-        // [Fix] Ensure assemblage_explanation has required structure
-        if (analysisMode === 'assemblage_explanation') {
-            if (!analysis.narrative) {
-                analysis.narrative = "Analysis completed but narrative is missing.";
+        keysToHoist.forEach(key => {
+            if (!analysis[key] && analysis.assemblage[key]) {
+                analysis[key] = analysis.assemblage[key];
             }
-            if (!Array.isArray(analysis.hulls)) {
-                analysis.hulls = [];
-            }
-        }
+        });
     }
 
     return analysis;
+}
+
+/**
+ * Main Parser Function
+ */
+export function parseAnalysisResponse(responseText: string, analysisMode: string): any {
+    let analysis: any;
+
+    try {
+        const cleanedJson = cleanJsonString(responseText);
+        analysis = JSON.parse(cleanedJson);
+
+        // --- Mode-Specific Fixers ---
+
+        // V3 Assemblage Fixer
+        if (analysisMode === 'assemblage_extraction_v3') {
+            return fixAssemblageExtractionV3(analysis);
+        }
+
+        // Ecosystem Mode Fixer
+        if (analysisMode === 'ecosystem') {
+            if (!Array.isArray(analysis)) {
+                // If wrapped in 'analysis' or 'impacts' object, unwrap it if it's an array
+                if (analysis.analysis && Array.isArray(analysis.analysis)) return analysis.analysis;
+                if (analysis.impacts && Array.isArray(analysis.impacts)) return analysis; // Keep object if it has structure, let UI handle it
+                // Single object wrap
+                if (analysis.actor && analysis.impact) return [analysis];
+            }
+            return analysis;
+        }
+
+        // DSF / Default Fixer
+        if ((!analysisMode || analysisMode === 'dsf')) {
+            // Impute missing governance scores
+            if (!analysis.governance_scores) {
+                console.warn('[ANALYSIS FIX] Governance scores missing in DSF mode. Imputing defaults.');
+                analysis.governance_scores = {
+                    centralization: 50, rights_focus: 50, flexibility: 50, market_power: 50, procedurality: 50
+                };
+            }
+            // Check content existence
+            if (!analysis.governance_power_accountability) {
+                const content = analysis.summary || analysis.content || JSON.stringify(analysis, null, 2);
+                analysis = {
+                    ...analysis,
+                    key_insight: analysis.key_insight || 'Schema Mismatch (Valid JSON)',
+                    governance_power_accountability: content,
+                    plurality_inclusion_embodiment: 'See Governance & Power'
+                };
+            }
+        }
+
+        // Comparison Mode Fixer
+        if (analysisMode === 'comparison') {
+            if (!analysis.risk || !analysis.governance) {
+                const errorStruct = { convergence: "Missing", divergence: "Missing", coloniality: "Missing", resistance: "Missing", convergence_score: 0, coloniality_score: 0 };
+                return {
+                    risk: analysis.risk || errorStruct,
+                    governance: analysis.governance || errorStruct,
+                    rights: analysis.rights || errorStruct,
+                    scope: analysis.scope || errorStruct,
+                    verified_quotes: analysis.verified_quotes || [],
+                    system_critique: analysis.system_critique || "Partial analysis generated.",
+                    ...analysis
+                };
+            }
+        }
+
+        // Assemblage Explanation Fixer
+        if (analysisMode === 'assemblage_explanation') {
+            if (!analysis.narrative) analysis.narrative = "Narrative missing.";
+            if (!Array.isArray(analysis.hulls)) analysis.hulls = [];
+        }
+
+        // Generic fallback for key_insight
+        if (analysis && typeof analysis === 'object' && !Array.isArray(analysis)) {
+            if (!analysis.key_insight || analysis.key_insight.trim() === '') {
+                analysis.key_insight = analysis.governance_power_accountability
+                    ? (analysis.governance_power_accountability.substring(0, 80) + "...")
+                    : "Analysis completed";
+            }
+        }
+
+        return analysis;
+
+    } catch (error) {
+        return generateFallback(analysisMode, responseText);
+    }
 }

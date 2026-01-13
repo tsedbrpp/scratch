@@ -26,7 +26,8 @@ export function ExportReportDialog({ open, onOpenChange, onGenerate, isGeneratin
         multiLens: true,
         scenarios: true,
         logs: true,
-        configurations: true
+        configurations: true,
+        resistanceArtifacts: true
     };
 
     const [selection, setSelection] = useState<ReportSectionSelection>(defaultSelection);
@@ -139,6 +140,14 @@ export function ExportReportDialog({ open, onOpenChange, onGenerate, isGeneratin
                                 onCheckedChange={() => toggleSection('logs')}
                             />
                             <Label htmlFor="logs" className="cursor-pointer">Methodological Logs & Reflexivity</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="artifacts"
+                                checked={selection.resistanceArtifacts}
+                                onCheckedChange={() => toggleSection('resistanceArtifacts')}
+                            />
+                            <Label htmlFor="artifacts" className="cursor-pointer">Resistance Artifacts (Primary Data)</Label>
                         </div>
                     </div>
                 </div>

@@ -11,27 +11,9 @@ export interface DiscourseCluster {
     quotes?: { text: string; source: string }[]; // Evidence/citations for the themes
 }
 
-export interface BridgingConcept {
-    concept: string;
-    explanation: string;
-}
-
-export interface CulturalHole {
-    id: string;
-    clusterA: string;
-    clusterB: string;
-    distance: number; // 0-1, higher = bigger gap
-    bridgingConcepts: BridgingConcept[];
-    opportunity: string; // Description of innovation potential
-
-    policyImplication: string;
-
-}
-
 export interface CulturalAnalysisResult {
     summary?: string;
     clusters: DiscourseCluster[];
-    holes: CulturalHole[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     silences?: any[]; // Keep flexible for now or import from ontology
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,10 +32,4 @@ export interface ThemeExtraction {
 export interface ThemeObject {
     theme: string;
     quote: string;
-}
-
-export interface BridgingData {
-    bridgingConcepts: BridgingConcept[];
-    opportunity: string;
-    policyImplication: string;
 }

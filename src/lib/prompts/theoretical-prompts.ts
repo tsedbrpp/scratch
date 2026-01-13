@@ -58,6 +58,13 @@ Synthesize these findings while highlighting the *theoretical tension*.
 3.  **The Tension**: How does "freezing" the network into an assemblage risk hiding the active work of translation?
 4.  **Reflexivity**: Is your analysis imposing order that isn't there?
 
+## REQUIRED VOCABULARY
+You must explicitly use the following terms where appropriate:
+- "Sociotechnical Hybridity"
+- "Agential Cut" (Barad)
+- "Translation Chains"
+- "Assemblage Hybrid"
+
 ## OUTPUT FORMAT (JSON)
 {
   "narrative": "A reflexive synthesis highlighting both the empirical trace and the ontological mechanisms, noting the tension between them... (approx 4-5 sentences)"

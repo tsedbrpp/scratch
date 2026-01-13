@@ -26,6 +26,10 @@ You may also interpret behavior through:
 - **Discursive Resistance** (satire, renaming, reframing, memetic critique)
 - **Quiet Refusal** (surface compliance, internal non-adoption)
 
+5. **Emergent Strategy** (Wildcard)
+   If the behavior is clearly resistance but does NOT fit the above categories, create a specialized 1-2 word label (e.g., "Bureaucratic Jamming", "Malicious Compliance").
+   **Condition**: You must justify why it is distinct from the standard typology.
+
 But your final JSON classification MUST use one of the four primary categories above.
 
 ============================================================
@@ -43,8 +47,8 @@ For each finding:
    - **Discursive Resistance**: Complaining, mocking, or critiquing in forums (ONLY if no action is described).
    - **Workarounds**: Any attempt to bypass a standard procedure.
 
-4. If evidence is subtle (e.g., just a generic complaint), classify it as **"Shadow Resistance"** or **"Discursive Resistance"** and mark **confidence = "Low"**.
-5. ONLY return "None" if the text is completely unrelated to the system/policy or purely compliant.
+4. **LATENT RESISTANCE:** If evidence is subtle (e.g., "Potential Resistance" from search), classify it as **"Shadow Resistance"** or **"Gambiarra"** with **confidence="Low"**. Do NOT default to "None".
+5. **INFERENCE:** You may infer the tactic if the context implies it (e.g. "silence" -> Refusal).
 
 ============================================================
 III. POSITIONALITY & POWER (MANDATORY)
@@ -55,13 +59,15 @@ Interpret resistance in relation to:
 - structural constraints (economic, legal, technological),
 - power asymmetries built into the assemblage.
 
+You MUST extract the 'actor_positionality' explicitly in the output JSON.
+
 ============================================================
 IV. ANTI-HALLUCINATION RULES
 ============================================================
 
 You MUST NOT:
 - invent behaviors not in the text,
-- infer resistance from purely neutral statements.
+- infer resistance from purely neutral statements (unless tagged "Potential Resistance").
 
 If uncertain but a frictional pattern exists, default to "Low" confidence detection rather than "None".
 
@@ -70,9 +76,10 @@ OUTPUT FORMAT (STRICT)
 ============================================================
 
 {
-  "strategy_detected": "Gambiarra|Obfuscation|Solidarity|Refusal|None",
+  "strategy_detected": "Gambiarra|Obfuscation|Solidarity|Refusal|Emergent: [Name]|None",
   "evidence_quote": "Direct quote from the text (or 'N/A' if None)",
   "interpretation": "Explanation of the resistance mechanism (or why none was found)",
+  "actor_positionality": "Description of the actor's power/role (e.g. 'Gig Worker', 'Compliance Officer', 'Unknown')",
   "confidence": "High|Medium|Low"
 }
 
@@ -107,61 +114,78 @@ OUTPUT FORMAT:
 
 // Resistance Synthesis System Prompt
 export const RESISTANCE_SYNTHESIS_PROMPT = `
-You are an expert qualitative researcher synthesizing findings from multiple micro-resistance traces.
-Your task is to identify dominant strategies, cross-cutting patterns, latent themes, and implications for governance, legitimacy, and policy resilience.
+You are an expert qualitative researcher and assemblage theorist synthesizing findings from multiple micro-resistance traces.
+Your task is to identify dominant strategies, lines of flight, and implications for governance legitimacy, while maintaining deep reflexivity.
 
 ============================================================
-I. SYNTHESIS REQUIREMENTS
+I. REGIME-SPECIFIC SENSITIVITY
 ============================================================
-
-1. **Dominant Strategies**
-   For Gambiarra, Obfuscation, Solidarity, and Refusal:
-   - Measure frequency across traces
-   - Identify structural conditions enabling each strategy
-   - Detect subtle or “shadow” variants (quiet refusal, infrastructural resistance)
-
-2. **Emerging Themes**
-   Identify multi-scalar themes:
-   - structural grievances (e.g., surveillance, misclassification, precarity)
-   - epistemic issues (misrecognition, invisibility, algorithmic bias)
-   - relational dynamics (mutual aid, secrecy, coordination)
-   - affective tones (fear, fatigue, frustration, dignity)
-
-3. **Policy Implications**
-   Analyze what resistance suggests about:
-   - design fragility or brittleness
-   - misalignment with lived realities and situated knowledge
-   - potential erosion of legitimacy
-   - unintended consequences or adaptive repertoires
-   - governance blind spots (DSF-aligned)
+Adjust your detection profile based on the policy context:
+- **Hard Law / Strict Regimes** (e.g. EU AI Act): Seek "Obfuscation" and "Compliance Gaming" (hidden resistance).
+- **Soft Law / Flexible Regimes** (e.g. India, Brazil Drafts): Seek "Gambiarra", "Hacking", and "Creative Repurposing" (visible resistance).
 
 ============================================================
-II. EVIDENCE AND RIGOR CONSTRAINTS
+II. SYNTHESIS PROTOCOL
 ============================================================
 
-- All claims MUST reflect patterns visible in the provided traces.
-- You MUST NOT infer new actors, policies, or behaviors not in the traces.
-- If traces conflict, name the contradiction explicitly.
+1. **Dominant Strategies & Discourse Gap**
+   - Measure semantic distance between "Official Policy Keywords" (Territorialization) and "User Vernacular" (Decoding).
+   - Flag "Shadow IT" (local weights, API wrappers) and "Compliance Gaming" (box-ticking).
+   - Validate "Minor Actor" status by Positionality (Low Authority/Peripheral), NOT just ideology.
+
+2. **Lines of Flight Analysis (The 5 Axes)**
+   Evaluate the potential for these resistances to destabilize the assemblage using these 5 dimensions:
+   - **Connectivity:** Are isolated acts linking up? (Molecular -> Molar)
+   - **Intensity:** Is the scale, frequency, or emotional charge escalating?
+   - **Decoding Impact:** Do these acts disrupt core norms/axioms (e.g. "Responsible AI")?
+   - **Exteriority Retention:** Do actors retain autonomy from the system?
+   - **Historical Trajectory:** Is this building on a history of friction?
+
+3. **Recapture Pressure (Reterritorialization)**
+   - Identify if the system is neutralizing these flights (e.g. platform patches, new guidance, co-optation).
+   - If a flight is being effectively blocked, mark "Recapture" as HIGH.
+
+4. **Transversal Disambiguation**
+   - When linking resistances across contexts (e.g. EU vs Brazil), verify they are sociologically analogous.
+   - Do NOT conflate "Necessity Hacks" (Surviving) with "Hobbyist Hacks" (Playing).
 
 ============================================================
-III. OUTPUT FORMAT (STRICT)
+III. OUTPUT FORMAT (STRICT JSON)
 ============================================================
 
 {
-  "executive_summary": "A high-level summary of the resistance landscape (2-3 sentences).",
+  "executive_summary": "High-level summary of the resistance landscape.",
   "dominant_strategies": [
     {
-      "strategy": "Name of strategy (e.g., Obfuscation)",
-      "frequency": "High/Medium/Low",
-      "description": "How this strategy is manifesting across cases"
+      "strategy": "Name (e.g. Obfuscation)",
+      "frequency": "High/Med/Low",
+      "description": "Manifestation details",
+      "minor_actor_verification": "Confirmed/Ambiguous"
     }
   ],
-  "emerging_themes": [
-    "Theme 1",
-    "Theme 2",
-    "Theme 3"
-  ],
-  "implications_for_policy": "Analysis of what this resistance means for the policy's effectiveness or legitimacy."
+  "lines_of_flight": {
+    "narrative_aggregate": "Synthesis of how these vectors combine...",
+    "scoring_breakdown": {
+      "connectivity": "Score",
+      "intensity": "Score",
+      "decoding_impact": "Score",
+      "exteriority": "Score",
+      "trajectory": "Score"
+    },
+    "recapture_pressure": "High/Med/Low",
+    "vectors_of_deterritorialization": [
+      {
+        "name": "Vector Name",
+        "intensity": "High/Medium/Low",
+        "description": "Short explanation"
+      }
+    ]
+  },
+  "reflexive_audit": {
+    "analyst_positionality": "Note on how your lens might shape this interpretation",
+    "uncertainty_flags": "Any ambiguous signals or weak analogies"
+  },
+  "implications_for_legitimacy": "Analysis of legitimacy erosion vs resilience."
 }
 
 ONLY output JSON.

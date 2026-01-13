@@ -13,7 +13,7 @@ interface EcosystemTableProps {
 }
 
 export function EcosystemTable({ actors, onSelectActor, selectedActorId }: EcosystemTableProps) {
-    const [sortConfig, setSortConfig] = React.useState<{ key: keyof EcosystemActor | 'metrics.resistance' | 'metrics.influence'; direction: 'asc' | 'desc' } | null>(null);
+    const [sortConfig, setSortConfig] = React.useState<{ key: keyof EcosystemActor | 'metrics.territorialization' | 'metrics.deterritorialization'; direction: 'asc' | 'desc' } | null>(null);
 
     const getMetricRank = (val: string | number | undefined): number => {
         if (!val) return 0;
@@ -36,12 +36,12 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                 let bValue: any = b[sortConfig.key as keyof EcosystemActor];
 
                 // Handle nested metrics with rank conversion
-                if (sortConfig.key === 'metrics.resistance') {
-                    aValue = getMetricRank(a.metrics?.resistance);
-                    bValue = getMetricRank(b.metrics?.resistance);
-                } else if (sortConfig.key === 'metrics.influence') {
-                    aValue = getMetricRank(a.metrics?.influence);
-                    bValue = getMetricRank(b.metrics?.influence);
+                if (sortConfig.key === 'metrics.deterritorialization') {
+                    aValue = getMetricRank(a.metrics?.deterritorialization);
+                    bValue = getMetricRank(b.metrics?.deterritorialization);
+                } else if (sortConfig.key === 'metrics.territorialization') {
+                    aValue = getMetricRank(a.metrics?.territorialization);
+                    bValue = getMetricRank(b.metrics?.territorialization);
                 }
 
                 if (aValue < bValue) {
@@ -56,7 +56,7 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
         return sortableActors;
     }, [actors, sortConfig]);
 
-    const requestSort = (key: keyof EcosystemActor | 'metrics.resistance' | 'metrics.influence') => {
+    const requestSort = (key: keyof EcosystemActor | 'metrics.territorialization' | 'metrics.deterritorialization') => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
@@ -80,6 +80,15 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
     ) : (
         <Minus className="h-3 w-3 text-slate-200 mx-auto" />
     );
+
+    // Helper to standardize display (Number -> String)
+    const formatMetric = (val: string | number | undefined): string => {
+        if (val === undefined || val === null) return '-';
+        if (typeof val === 'string') return val;
+        if (val >= 8) return 'High';
+        if (val >= 4) return 'Medium';
+        return 'Low';
+    };
 
     return (
         <TooltipProvider>
@@ -109,11 +118,11 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                                 <Megaphone className="h-4 w-4 mx-auto text-slate-500" />
                             </TableHead>
 
-                            <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => requestSort('metrics.influence')}>
-                                Infl. <ArrowUpDown className="ml-1 h-3 w-3 inline-block text-slate-400" />
+                            <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => requestSort('metrics.territorialization')}>
+                                Terr. <ArrowUpDown className="ml-1 h-3 w-3 inline-block text-slate-400" />
                             </TableHead>
-                            <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => requestSort('metrics.resistance')}>
-                                Res. <ArrowUpDown className="ml-1 h-3 w-3 inline-block text-slate-400" />
+                            <TableHead className="text-right cursor-pointer hover:bg-slate-100" onClick={() => requestSort('metrics.deterritorialization')}>
+                                Deterr. <ArrowUpDown className="ml-1 h-3 w-3 inline-block text-slate-400" />
                             </TableHead>
                             <TableHead className="text-right">Link</TableHead>
                         </TableRow>
@@ -149,17 +158,18 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <span className="cursor-help decoration-slate-300 underline underline-offset-2 decoration-dotted text-xs text-slate-500 font-mono">
-                                                    {actor.metrics?.influence || '-'}
+                                                    {formatMetric(actor.metrics?.territorialization)}
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[300px] p-3 text-xs">
-                                                <p className="font-semibold mb-2">Influence Quality: {actor.metrics?.influence}</p>
+                                                <p className="font-semibold mb-2">Territorialization (Stability): {String(actor.metrics?.territorialization)}</p>
                                                 {/* Dimensional Breakdown */}
-                                                {actor.metrics?.territoriality !== undefined && (
+                                                {actor.metrics?.coding !== undefined && (
                                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 text-[10px] text-slate-500">
-                                                        <span>Territoriality:</span><span className="font-mono text-slate-900">{actor.metrics.territoriality}</span>
-                                                        <span>Coding:</span><span className="font-mono text-slate-900">{actor.metrics.coding}</span>
-                                                        <span>Centrality:</span><span className="font-mono text-slate-900">{actor.metrics.centrality}</span>
+                                                        <span>Coding:</span><span className="font-mono text-slate-900">{String(actor.metrics.coding)}</span>
+                                                        {actor.metrics.centrality !== undefined && (
+                                                            <><span>Centrality:</span><span className="font-mono text-slate-900">{String(actor.metrics.centrality)}</span></>
+                                                        )}
                                                     </div>
                                                 )}
                                             </TooltipContent>
@@ -168,13 +178,13 @@ export function EcosystemTable({ actors, onSelectActor, selectedActorId }: Ecosy
                                     <TableCell className="text-right py-2">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <span className={`cursor-help decoration-slate-300 underline underline-offset-2 decoration-dotted text-xs font-mono font-bold ${(actor.metrics?.resistance === 'Strong' || (typeof actor.metrics?.resistance === 'number' && actor.metrics.resistance > 6)) ? 'text-red-500' : 'text-slate-400'
+                                                <span className={`cursor-help decoration-slate-300 underline underline-offset-2 decoration-dotted text-xs font-mono font-bold ${(actor.metrics?.deterritorialization === 'Strong' || (typeof actor.metrics?.deterritorialization === 'number' && actor.metrics.deterritorialization > 6)) ? 'text-red-500' : 'text-slate-400'
                                                     }`}>
-                                                    {actor.metrics?.resistance || '-'}
+                                                    {formatMetric(actor.metrics?.deterritorialization)}
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[300px] p-3 text-xs">
-                                                <p className="font-semibold mb-2">Resistance Quality: {actor.metrics?.resistance}</p>
+                                                <p className="font-semibold mb-2">Deterritorialization (Change): {actor.metrics?.deterritorialization}</p>
                                                 {/* Dimensional Breakdown */}
                                                 {actor.metrics?.counter_conduct !== undefined && (
                                                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-2 text-[10px] text-slate-500">

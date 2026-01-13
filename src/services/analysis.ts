@@ -64,7 +64,7 @@ export const analyzeDocument = async (
     }
 };
 
-export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage"): Promise<AnalysisResult> => {
+export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage", force: boolean = false): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
@@ -77,7 +77,8 @@ export const synthesizeComparison = async (documents: Source[], lens: string = "
             body: JSON.stringify({
                 analysisMode: 'comparative_synthesis',
                 documents,
-                lens
+                lens,
+                force
             })
         });
 

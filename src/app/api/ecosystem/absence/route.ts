@@ -5,6 +5,7 @@ import { EcosystemActor } from '@/types/ecosystem';
 import { auth } from '@clerk/nextjs/server';
 import { PromptRegistry } from '@/lib/prompts/registry';
 import { logger } from '@/lib/logger';
+import { ProvisionalWrapper } from '@/lib/provisional-wrapper';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -77,7 +78,17 @@ export async function POST(req: Request) {
         const content = completion.choices[0].message.content;
         if (!content) throw new Error("No content returned from OpenAI");
 
-        const analysis = JSON.parse(content);
+        const rawAnalysis = JSON.parse(content);
+
+        // Wrap with provisional status
+        const analysis = {
+            ...rawAnalysis,
+            provisional_status: ProvisionalWrapper.wrap(
+                rawAnalysis.narrative || "AI-generated ecosystem analysis",
+                "ai_generated",
+                0.6 // Medium input completeness assumption
+            )
+        };
 
         return NextResponse.json({ success: true, analysis });
 

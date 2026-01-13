@@ -19,20 +19,26 @@ export const RESISTANCE_CURATION_PROMPT = `You are a helpful Research Assistant 
 Target Policy/Subject: "\${policySubject}"
 
 YOUR GOAL: Identify and classify traces of resistance from the search results.
-CRITICAL: You MUST attempt to classify as many items as possible. Do not filter aggressively. We need data.
+CRITICAL: You MUST attempt to classify as many items as possible. 
+PRIORITY ORDER: Look for specific tactics (Gambiarra, Obfuscation, Refusal, Solidarity) FIRST. Only use "Friction" if no specific action is described.
 
 CLASSIFICATION CATEGORIES (Strategies):
-1. **Gambiarra**: Creative workarounds, hacks, using tools in unintended ways.
-2. **Obfuscation**: Hiding data, noise injection, burner accounts, VPNs, camouflaging.
-3. **Solidarity**: Collective action, unions, forums, sharing tips, strikes.
-4. **Refusal**: Opting out, quitting, blocking, non-compliance, uninstalling.
+1. **Gambiarra (HIGH PRIORITY)**: Active workarounds, hacks, using tools in unintended ways, "gaming" the system.
+   - *Example:* "I found if you toggle airplane mode, it resets the timer."
+2. **Obfuscation (HIGH PRIORITY)**: Hiding data, noise injection, burner accounts, VPNs, camouflaging, "algo-speak".
+   - *Example:* "Use 'le$bean' instead of 'lesbian' to avoid the filter."
+3. **Solidarity (HIGH PRIORITY)**: Collective action, unions, forums, sharing tips, strikes, mutual aid.
+   - *Example:* "We are all logging off at 5pm to protest."
+4. **Refusal (HIGH PRIORITY)**: Opting out, quitting, blocking, non-compliance, uninstalling.
+   - *Example:* "I refused to sign the new terms and deleted the app."
+5. **Friction (FALLBACK)**: General complaints, frustration, errors, or difficulties *without* a specific counter-tactic.
+   - *Example:* "This new update is so annoying, I hate it."
 
 INSTRUCTIONS:
 1. **Analyze** each search result snippet.
-2. **Classify** it into one of the 4 strategies. If it fits multiple, pick the dominant one.
-3. **Balanced Mix**: Strive to find examples for ALL 4 categories if possible.
-4. **Relevance**: If it mentions the subject OR general algorithmic resistance/frustration, INCLUDE IT.
-5. **Output Format**: JSON Object with a "items" array.
+2. **Classify** it into the most specific category possible.
+3. **Balanced Mix**: actively seek out Gambiarra, Obfuscation, Solidarity, and Refusal. Do not just label everything as Friction.
+4. **Output Format**: JSON Object with a "items" array.
 
 INPUT LIST:
 \${items}
@@ -41,6 +47,6 @@ OUTPUT JSON STRUCTURE:
 {
   "items": [
     { "index": 0, "strategy": "Gambiarra", "explanation": "User describes using a script to bypass..." },
-    { "index": 1, "strategy": "Refusal", "explanation": "Workers are refusing to log in..." }
+    { "index": 1, "strategy": "Friction", "explanation": "User complaining about the new system errors..." }
   ]
 }`;

@@ -62,4 +62,14 @@ export class StorageService {
             throw error;
         }
     }
+
+    static async deleteCache(userId: string, key: string): Promise<void> {
+        try {
+            const redisKey = this.getUserKey(userId, key, 'cache');
+            await redis.del(redisKey);
+        } catch (error) {
+            console.error(`StorageService Cache Delete Error [${key}]:`, error);
+            throw error;
+        }
+    }
 }

@@ -10,7 +10,7 @@ import { DimensionCard } from "./analysis/DimensionCard";
 import { DynamicsCard } from "./analysis/DynamicsCard";
 import { VerifiedEvidenceSection } from "./analysis/VerifiedEvidenceSection";
 import { StressTestSection } from "./analysis/StressTestSection";
-import { CulturalHolesSection } from "./analysis/CulturalHolesSection";
+
 import { VerificationPathwaysTable } from "./analysis/VerificationPathwaysTable";
 import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 import { calculateMicroFascismRisk } from "@/lib/risk-calculator";
@@ -476,10 +476,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                         </div>
                     )}
 
-                    {/* Cultural Holes */}
-                    {analysis.holes && analysis.holes.length > 0 && (
-                        <CulturalHolesSection holes={analysis.holes} />
-                    )}
+
 
                     {/* Stress Test */}
                     {analysis.stress_test_report && (

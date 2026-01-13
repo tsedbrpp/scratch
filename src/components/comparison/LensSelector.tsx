@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Spectacles, TrendingUp, ShieldAlert, Globe } from 'lucide-react';
+import { TrendingUp, ShieldAlert, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 export type InterpretationLens = "assemblage" | "market" | "democratic" | "decolonial";

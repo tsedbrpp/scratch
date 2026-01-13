@@ -28,7 +28,9 @@ Use the following classification heuristics:
 - **Policymaker** → regulators, ministries, standards bodies, government agencies, intergovernmental bodies.
 - **Civil Society** → NGOs, advocacy groups, worker organizations, community groups.
 - **Academic** → universities, research institutes, labs producing knowledge.
-- **Infrastructure** → algorithms, models, datasets, cloud platforms, APIs, standards, protocols, automated systems.
+- **Infrastructure** → cloud platforms, APIs, server farms, cables, hardware, physical networks.
+- **Algorithm** → AI models, risk scoring systems, classification tools, automated decision systems.
+- **Dataset** → training data, registries, databases, benchmarks.
 
 ROLE TYPE (DeLanda):
 - **Material**: Acts through physical force, enforcement, hardware, destruction, or technically binding code (e.g., Police, Server Farm, Firewall, Fine).
@@ -163,7 +165,7 @@ OUTPUT FORMAT (STRICT)
   "actors": [
     {
       "name": "Name of the actor",
-      "type": "Startup | Policymaker | Civil Society | Academic | Infrastructure",
+      "type": "Startup | Policymaker | Civil Society | Academic | Infrastructure | Algorithm | Dataset",
       "description": "Brief description of role",
       "region": "Global North | Global South | International | Unknown",
       "role_type": "Material | Expressive | Mixed",

@@ -44,11 +44,11 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { policyText, customQuery, platforms } = body;
+        const { policyText, policyTitle, customQuery, platforms } = body;
         console.log(`DEBUG: Received request. PolicyText length: ${policyText?.length}, Query: ${customQuery}`);
 
         // Generate cache key
-        const cacheKey = `user:${userId}:search-traces-v20-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+        const cacheKey = `user:${userId}:search-traces-v27-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
 
         // Check cache
         try {
@@ -70,50 +70,71 @@ export async function POST(request: NextRequest) {
             return createErrorResponse(new Error("Google Search API not configured"), "Server Configuration Error");
         }
 
+
+
+        // Define Semantic Resistance Strategies
+        const RESISTANCE_STRATEGIES = {
+            gambiarra: '("workaround" OR "hack" OR "bypass" OR "trick" OR "loophole" OR "shadow IT" OR "creative solution")',
+            obfuscation: '("data poisoning" OR "adversarial noise" OR "cloak" OR "hide" OR "camouflage" OR "algo-speak" OR "digital mask")',
+            solidarity: '("union" OR "strike" OR "collective action" OR "organizing" OR "forum guide" OR "shared tactics" OR "worker group")',
+            refusal: '("opt-out" OR "non-compliance" OR "refuse" OR "uninstall" OR "block" OR "boycott" OR "working to rule")'
+        };
+
         let searchQueries: string[] = [];
+        let policyContext = "";
 
-        // If custom query provided, use it directly
-        if (customQuery && customQuery.trim()) {
-            searchQueries = [customQuery.trim()];
+        // 1. Determine Context (The "Subject" of the search)
+        if (policyTitle && policyTitle.trim()) {
+            policyContext = policyTitle.trim();
+        } else if (policyText) {
+            // Fallback: heuristic extraction
+            policyContext = policyText.split('\n')[0].substring(0, 100).replace(/["']/g, "");
+            if (policyContext.length < 5) policyContext = "AI Governance Algorithm";
         }
-        // Otherwise, extract key terms from policy text
-        else if (policyText) {
-            if (!openaiApiKey) {
-                return createErrorResponse(new Error("OpenAI API key required for automatic term extraction"), "Server Configuration Error");
-            }
 
-            const openai = new OpenAI({ apiKey: openaiApiKey });
-
-            const keyTermPrompt = await PromptRegistry.getEffectivePrompt(userId, 'key_term_extraction');
-            const completion = await openai.chat.completions.create({
-                model: process.env.OPENAI_MODEL || 'gpt-4',
-                messages: [
-                    { role: 'system', content: keyTermPrompt },
-                    { role: 'user', content: `POLICY TEXT:\n${policyText.substring(0, 3000)}` }
-                ],
-                // temperature: 0.3, // Removed for fine-tuned compatibility
-                max_completion_tokens: 200,
-            });
-
-            const responseText = completion.choices[0]?.message?.content || '';
-            searchQueries = safeJSONParse<string[]>(responseText, ['AI policy resistance', 'algorithm criticism']);
-        } else {
+        if (!policyContext && !customQuery) {
             return NextResponse.json(
-                { error: 'Either policyText or customQuery must be provided' },
+                { error: 'Either policy document (Title/Text) or customQuery must be provided' },
                 { status: 400 }
             );
         }
 
-        // Ensure we have at least one broad query to catch news/social results
-        searchQueries.push("AI policy controversy");
-        console.log("Search Queries:", searchQueries);
+        // 2. Build Queries
+        const contextPrefix = policyContext ? `"${policyContext}"` : "";
+        const combinedContext = `${contextPrefix} ${customQuery || ""}`.trim();
+
+        // Check if the query is "Strategic" (contains resistance keywords)
+        const isStrategicQuery = (q: string) => {
+            const keywords = ["hack", "workaround", "bypass", "protest", "strike", "union", "refus", "opt-out", "block", "hidden", "private", "noise"];
+            return keywords.some(k => q.toLowerCase().includes(k));
+        };
+
+        if (customQuery && isStrategicQuery(customQuery)) {
+            // User knows what they are doing (e.g. "drivers strike")
+            searchQueries = [combinedContext];
+            console.log(`Using explicit custom strategy: ${searchQueries[0]}`);
+        } else {
+            // User provided a subject (e.g. "India AI") or just relying on policy title
+            // Generate 4 strategic variants using the Combined Context as the subject
+            const baseSubject = combinedContext || "AI Governance Algorithm";
+
+            searchQueries.push(`${baseSubject} ${RESISTANCE_STRATEGIES.gambiarra}`.trim());
+            searchQueries.push(`${baseSubject} ${RESISTANCE_STRATEGIES.obfuscation}`.trim());
+            searchQueries.push(`${baseSubject} ${RESISTANCE_STRATEGIES.solidarity}`.trim());
+            searchQueries.push(`${baseSubject} ${RESISTANCE_STRATEGIES.refusal}`.trim());
+
+            console.log(`Auto-expanded generic query into strategies for: ${baseSubject}`);
+        }
+
+        // Just log, don't re-push generic terms
+        console.log("Strategic Queries:", searchQueries);
         console.log("Platforms:", platforms);
 
         // Construct platform-specific queries
         const platformFilters = platforms || ['reddit', 'hackernews', 'forums'];
         const allTraces: Trace[] = [];
 
-        for (const query of searchQueries.slice(0, 2)) { // Limit to 2 queries
+        for (const query of searchQueries.slice(0, 4)) { // Limit to 4 queries (one per strategy)
             // Split platforms into two groups to prevent Reddit from drowning out others
             const dominantPlatforms = platformFilters.filter((p: string) => ['reddit', 'hackernews', 'forums'].includes(p));
             const diversePlatforms = platformFilters.filter((p: string) => !['reddit', 'hackernews', 'forums'].includes(p));
@@ -242,12 +263,37 @@ export async function POST(request: NextRequest) {
                     curationSource = "OpenAI";
                 }
 
+                // [Enhanced Fallback] If we have extremely low yield (< 3) but many raw results, 
+                // fill the gap with raw results labeled as "Potential Resistance".
+                if (curatedFinal.length < 3 && allTraces.length >= 3) {
+                    console.log(`Low yield (${curatedFinal.length}) detected. Backfilling with raw traces.`);
+
+                    // Find indices already curated
+                    const curatedLinks = new Set(curatedFinal.map(c => c.link));
+
+                    // Filter un-curated
+                    const remaining = allTraces.filter(t => !curatedLinks.has(t.sourceUrl));
+
+                    // Add up to 5 more
+                    remaining.slice(0, 5).forEach(t => {
+                        curatedFinal.push({
+                            title: t.title,
+                            link: t.sourceUrl,
+                            snippet: t.content,
+                            strategy: "Potential Resistance",
+                            explanation: "Identified by keyword matching (AI classification skipped or low confidence)."
+                        });
+                    });
+                }
+
                 if (curatedFinal.length === 0) {
-                    // If both failed, use original
+                    // If everything failed, use original
                     curatedFinal = allTraces.map(t => ({
                         title: t.title,
                         link: t.sourceUrl,
-                        snippet: t.content
+                        snippet: t.content,
+                        strategy: "Unclassified",
+                        explanation: "Automated keyword match."
                     }));
                 }
 
@@ -295,5 +341,34 @@ export async function POST(request: NextRequest) {
 
     } catch (error: unknown) {
         return createErrorResponse(error, 'Search failed');
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    let { userId } = await auth();
+    if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+        const demoUserId = request.headers.get('x-demo-user-id');
+        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+            userId = demoUserId;
+        }
+    }
+
+    if (!userId) {
+        return createUnauthorizedResponse();
+    }
+
+    try {
+        const body = await request.json();
+        const { policyText, customQuery, platforms } = body;
+
+        // Generate cache key (Must match POST logic exactly)
+        const cacheKey = `user:${userId}:search-traces-v27-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
+
+        await StorageService.deleteCache(userId, cacheKey);
+        console.log(`Cache cleared for key: ${cacheKey}`);
+
+        return NextResponse.json({ success: true, message: "Cache cleared" });
+    } catch (error) {
+        return createErrorResponse(error, "Failed to clear cache");
     }
 }

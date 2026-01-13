@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lightbulb, Sparkles, Network, Loader2, BookOpen } from "lucide-react";
-import { CulturalHoleCard } from "@/components/CulturalHoleCard";
-import { CulturalHoleMatrix } from "@/components/CulturalHoleMatrix";
+
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
 
@@ -52,8 +51,13 @@ export default function CulturalAnalysisPage() {
         }
     ];
 
-    // Filter sources that have text available for analysis
-    const analyzedSources = sources.filter(s => s.analysis || s.extractedText);
+    // Filter sources that have text available for analysis, checking for Policy Documents specifically or excluding Traces/Web.
+    // User request: "filter out trace and web and just list the policy documents"
+    const analyzedSources = sources.filter(s =>
+        (s.analysis || s.extractedText) &&
+        s.type !== 'Trace' &&
+        s.type !== 'Web'
+    );
 
     const toggleSource = (sourceId: string) => {
         setSelectedSources((prev) =>
@@ -135,8 +139,7 @@ export default function CulturalAnalysisPage() {
                             details: {
                                 lens: selectedLensId,
                                 sourceCount: sourcesToAnalyze.length,
-                                clustersFound: data.analysis.clusters.length,
-                                holesFound: data.analysis.holes.length
+                                clustersFound: data.analysis.clusters.length
                             }
                         })
                     });
@@ -173,16 +176,9 @@ export default function CulturalAnalysisPage() {
             `Cluster,"${c.name}","${c.themes.join(', ')}","${c.sources.join(', ')}"`
         ).join("\n");
 
-        // 2. Holes CSV
-        const holesHeader = "\nType,Gap Between,Distance,Bridging Concepts,Opportunity,Policy Implication\n";
-        const holesRows = culturalAnalysis.holes.map(h =>
-            `Hole,"${h.clusterA} - ${h.clusterB}",${h.distance},"${h.bridgingConcepts.join(', ')}","${h.opportunity}","${h.policyImplication}"`
-        ).join("\n");
-
         const csvContent = "data:text/csv;charset=utf-8,"
             + "Analysis Summary\n" + `"${(culturalAnalysis.summary || '').replace(/"/g, '""')}"\n\n`
-            + clustersHeader + clustersRows
-            + holesHeader + holesRows;
+            + clustersHeader + clustersRows;
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -207,32 +203,7 @@ export default function CulturalAnalysisPage() {
 
             <MultiLensAnalysis sources={sources} />
 
-            {/* Introduction Card */}
-            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5 text-amber-600" />
-                        <CardTitle>What are Cultural Holes?</CardTitle>
-                    </div>
-                    <CardDescription>
-                        Understanding gaps in entrepreneurial ecosystems
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-slate-700">
-                    <p>
-                        <strong>Cultural holes</strong> are gaps between clusters of understandings, practices, or discourse within a sociotechnical ecosystem. These gaps represent opportunities for new ideas, practices, or values to emerge.
-                    </p>
-                    <p>
-                        By analyzing discourse from multiple policy documents, this tool:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                        <li>Extracts key themes from each document</li>
-                        <li>Clusters similar themes into &quot;discourse communities&quot;</li>
-                        <li>Identifies gaps between distant clusters</li>
-                        <li>Suggests bridging concepts for policy intervention</li>
-                    </ul>
-                </CardContent>
-            </Card>
+
 
             {/* Source Selection */}
             <Card>
@@ -307,7 +278,7 @@ export default function CulturalAnalysisPage() {
                                     ) : (
                                         <>
                                             <Lightbulb className="mr-2 h-4 w-4" />
-                                            Detect Cultural Holes
+                                            Detect Discourse Clusters
                                         </>
                                     )}
                                 </Button>
@@ -343,48 +314,27 @@ export default function CulturalAnalysisPage() {
                     )}
 
 
-                    {/* Explanation Card */}
+                    {/* Methodology Explanation */}
                     <Card className="bg-blue-50 border-blue-200">
                         <CardHeader>
                             <div className="flex items-center gap-2">
                                 <BookOpen className="h-5 w-5 text-blue-600" />
-                                <CardTitle className="text-base">Understanding Cultural Holes</CardTitle>
+                                <CardTitle className="text-base">Methodology: Discourse Field Analysis</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm text-slate-700">
                             <div>
                                 <p className="font-semibold text-blue-900 mb-1">What are Discourse Clusters?</p>
-                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent &quot;discourse community&quot; within your analyzed documents.</p>
+                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent &quot;discourse community&quot; or &quot;regime of truth&quot; regarding AI governance.</p>
                             </div>
                             <div>
-                                <p className="font-semibold text-blue-900 mb-1">What are Cultural Holes?</p>
-                                <p>Gaps between discourse clusters where concepts don&apos;t overlap. These represent areas where different stakeholder groups or policy frameworks aren&apos;t connecting with each other.</p>
-                            </div>
-                            <div className="bg-white p-3 rounded border border-blue-200">
-                                <p className="font-semibold text-blue-900 mb-1">💡 Why This Matters</p>
-                                <p>Cultural holes reveal <span className="font-semibold">innovation opportunities</span> and <span className="font-semibold">policy blind spots</span>. The &quot;bridging concepts&quot; suggest ways to connect isolated conversations and create more holistic governance frameworks.</p>
+                                <p className="font-semibold text-blue-900 mb-1">Epistemic Framing</p>
+                                <p>By analyzing how these clusters form, we can identify which knowledge systems are dominant (e.g., Technical Safety) and which are marginalized or fragmented.</p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Network Visualization */}
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <Network className="h-5 w-5 text-blue-600" />
-                                <CardTitle>Discourse Cluster Network</CardTitle>
-                            </div>
-                            <CardDescription>
-                                Visual representation of theme clusters and cultural holes
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <CulturalHoleMatrix
-                                clusters={culturalAnalysis.clusters}
-                                holes={culturalAnalysis.holes}
-                            />
-                        </CardContent>
-                    </Card>
+
 
                     {/* Cluster Summary */}
                     <Card>
@@ -460,39 +410,7 @@ export default function CulturalAnalysisPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Cultural Holes */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Lightbulb className="h-6 w-6 text-amber-600" />
-                            <h3 className="text-2xl font-bold text-slate-900">
-                                Cultural Holes Detected
-                            </h3>
-                            <Badge className="bg-amber-100 text-amber-800">
-                                {culturalAnalysis.holes.length} gap{culturalAnalysis.holes.length !== 1 ? 's' : ''}
-                            </Badge>
-                        </div>
 
-                        {culturalAnalysis.holes.length === 0 ? (
-                            <Card>
-                                <CardContent className="py-8 text-center text-slate-500">
-                                    <p>No significant cultural holes detected.</p>
-                                    <p className="text-sm mt-2">
-                                        The selected sources have highly similar discourse patterns.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <div className="grid gap-4">
-                                {culturalAnalysis.holes.map((hole) => (
-                                    <CulturalHoleCard
-                                        key={hole.id}
-                                        hole={hole}
-                                        clusters={culturalAnalysis.clusters}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
                 </div>
             )
             }

@@ -156,9 +156,13 @@ export function DocumentCard({
                         <AnalysisResults
                             analysis={source.analysis}
                             sourceTitle={source.title}
-                            onUpdate={(updates) => onUpdateSource && onUpdateSource(source.id, {
-                                analysis: { ...source.analysis!, ...updates }
-                            })}
+                            onUpdate={async (updates) => {
+                                if (onUpdateSource && source.analysis) {
+                                    await onUpdateSource(source.id, {
+                                        analysis: { ...source.analysis, ...updates }
+                                    });
+                                }
+                            }}
                         />
                     </div>
                 )}

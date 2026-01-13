@@ -39,13 +39,22 @@ export async function executeGoogleSearch(query: string, apiKey: string, cx: str
  */
 function processCurationResponse(content: string, originalResults: SearchResult[]): SearchResult[] {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const validItems = safeJSONParse<any[]>(content, []);
+    const parsed = safeJSONParse<any>(content, []);
 
-    if (Array.isArray(validItems) && validItems.length > 0) {
+    let itemsToProcess: any[] = [];
+
+    // Robustly extract array
+    if (Array.isArray(parsed)) {
+        itemsToProcess = parsed;
+    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.items)) {
+        itemsToProcess = parsed.items;
+    }
+
+    if (itemsToProcess.length > 0) {
         const curatedResults: SearchResult[] = [];
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        validItems.forEach((item: any) => {
+        itemsToProcess.forEach((item: any) => {
             let index = -1;
             let strategy = "Unclassified";
             let explanation = "";

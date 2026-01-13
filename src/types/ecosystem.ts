@@ -18,17 +18,17 @@ export interface EcosystemActor {
     url?: string;
     metrics?: {
         // Assemblage Theory Metrics (DeLanda)
-        territorialization: QualitativeMetric;  // Coding intensity, stability, power to enforce boundaries
-        deterritorialization: QualitativeMetric; // Lines of flight, mutation potential, resistance to capture
-        coding: QualitativeMetric;              // How tightly defined/categorized, rigidity of identity
+        territorialization: QualitativeMetric | number;  // Coding intensity, stability, power to enforce boundaries
+        deterritorialization: QualitativeMetric | number; // Lines of flight, mutation potential, resistance to capture
+        coding: QualitativeMetric | number;              // How tightly defined/categorized, rigidity of identity
         rationale?: string;
         dynamic_power?: number; // Calculated via centrality/pagerank (internal only)
 
         // Dimensional Breakdown (V3) - De-quantified for interpretive rigor
-        territoriality?: QualitativeMetric; // Power to enforce (legacy, maps to territorialization)
-        centrality?: QualitativeMetric;    // Network reach
-        counter_conduct?: QualitativeMetric;    // Active subversion (maps to deterritorialization)
-        discursive_opposition?: QualitativeMetric; // Critical speech (maps to deterritorialization)
+        territoriality?: QualitativeMetric | number; // Power to enforce (legacy, maps to territorialization)
+        centrality?: QualitativeMetric | number;    // Network reach
+        counter_conduct?: QualitativeMetric | number;    // Active subversion (maps to deterritorialization)
+        discursive_opposition?: QualitativeMetric | number; // Critical speech (maps to deterritorialization)
     };
     source?: "default" | "absence_fill";
     quotes?: string[];
@@ -127,4 +127,3 @@ export interface AssemblageExplanation {
     narrative: string;
     hulls: AssemblageExplanationHull[];
 }
-

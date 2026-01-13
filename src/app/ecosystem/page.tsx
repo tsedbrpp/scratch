@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis } from "@/types/ecosystem";
+import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { inferActorType } from "@/lib/ecosystem-utils";
+import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep Linking
 
 // Components
 import { ActorList } from "@/components/ecosystem/ActorList";
@@ -13,14 +16,22 @@ import { ConfigurationDialog } from "@/components/ecosystem/ConfigurationDialog"
 import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
 import { EcosystemTable } from "@/components/ecosystem/EcosystemTable";
 import { AssemblageCompass } from "@/components/ecosystem/AssemblageCompass";
-import { Network, List, Compass, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, FileText, Loader2, Hand, MousePointer2 } from "lucide-react";
+import { DraggablePanel } from "@/components/ui/draggable-panel";
+import { Network, PanelLeftOpen, PanelRightOpen, Loader2, LayoutGrid, ArrowLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnalysisMode } from "@/components/ui/mode-selector";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
-export default function EcosystemPage() {
+
+function EcosystemContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnToSynthesis = searchParams.get("returnTo") === "synthesis";
+    const mode = searchParams.get("mode");
+
     // Sources for policy selection
     const { sources, isLoading: isSourcesLoading } = useSources();
     const [selectedPolicyId, setSelectedPolicyId] = useServerStorage<string | null>(STORAGE_KEYS.ECOSYSTEM_ACTIVE_POLICY, null);
@@ -67,9 +78,9 @@ export default function EcosystemPage() {
     const [colorMode, setColorMode] = useState<"type" | "epistemic">("type");
     const [filterType, setFilterType] = useState<EcosystemActor["type"] | "All">("All");
 
-    const filteredActors = actors.filter(actor =>
+    const filteredActors = useMemo(() => actors.filter(actor =>
         filterType === "All" ? true : actor.type === filterType
-    );
+    ), [actors, filterType]);
 
 
 
@@ -103,7 +114,17 @@ export default function EcosystemPage() {
             });
             return hasChanges ? newPositions : prev;
         });
-    }, [actors]); // Depend on actors to re-run layout for new actors
+        // Depend on actors to re-run layout for new actors
+    }, [actors]);
+
+    // [NEW] Deep Linking Initialization
+    useEffect(() => {
+        const sourceIdParam = searchParams.get("sourceId");
+        if (sourceIdParam && sourceIdParam !== selectedPolicyId) {
+            console.log("Deep Link: Setting Policy ID", sourceIdParam);
+            setSelectedPolicyId(sourceIdParam);
+        }
+    }, [searchParams, selectedPolicyId, setSelectedPolicyId]);
 
     // Handlers
 
@@ -282,6 +303,7 @@ export default function EcosystemPage() {
         };
 
         setConfigurations(prev => [...prev, newConfig]);
+        setSelectedConfigId(newConfig.id); // [FIX] Auto-select for export
         setIsConfigDialogOpen(false);
         setNewConfigName("");
         setNewConfigDesc("");
@@ -342,87 +364,17 @@ export default function EcosystemPage() {
         );
     }
 
+
+    const handleResetLayout = () => {
+        // Reset local logic if we were persisting positions, for now just ensures state validity
+        setShowLeftPanel(true);
+        setShowRightPanel(false);
+    };
+
     return (
-        <div className="flex flex-col h-full gap-4">
+        <div className="flex flex-col h-full gap-4 relative isolate">
 
-            <div className="flex flex-col gap-4 shrink-0">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Governance Assemblage Map</h2>
-                        <p className="text-slate-500">Mapping the actors, associations, and territorial dynamics of the AI governance regime.</p>
-                    </div>
-                </div>
-
-                {/* Policy Selector Section */}
-                <Card className="bg-white border-slate-200 shadow-sm">
-                    <CardContent className="p-4">
-                        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                            <div className="flex items-center gap-4 w-full md:w-auto">
-                                <div className="p-2 bg-blue-50 rounded-lg">
-                                    <FileText className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-slate-900 text-sm">Active Policy Document</h3>
-                                </div>
-                            </div>
-                            <div className="w-full md:w-[300px]">
-                                <Select
-                                    value={selectedPolicyId || ""}
-                                    onValueChange={async (val) => {
-                                        // Migration Logic: If we are in "Temp" mode (no policy) and have actors,
-                                        // carry them over to the new policy context so the user doesn't lose their work.
-                                        if (!selectedPolicyId && actors.length > 0) {
-                                            const confirmMigrate = window.confirm("You have actors in the scratchpad. Do you want to move them to this policy?");
-                                            if (confirmMigrate) {
-                                                try {
-                                                    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                                                    if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                                                        headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-                                                    }
-
-                                                    // Manually save current state to the NEW keys
-                                                    await Promise.all([
-                                                        fetch('/api/storage', {
-                                                            method: 'POST',
-                                                            headers,
-                                                            body: JSON.stringify({ key: `ecosystem_actors_${val}`, value: actors }),
-                                                        }),
-                                                        fetch('/api/storage', {
-                                                            method: 'POST',
-                                                            headers,
-                                                            body: JSON.stringify({ key: `ecosystem_configurations_${val}`, value: configurations }),
-                                                        })
-                                                    ]);
-                                                } catch (err) {
-                                                    console.error("Migration failed:", err);
-                                                }
-                                            }
-                                        }
-                                        setSelectedPolicyId(val);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-9 text-sm">
-                                        <SelectValue placeholder="Select a policy document..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {policyDocuments.length === 0 ? (
-                                            <div className="p-2 text-sm text-slate-500 text-center">No documents found</div>
-                                        ) : (
-                                            policyDocuments.map(doc => (
-                                                <SelectItem key={doc.id} value={doc.id}>
-                                                    {doc.title}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-
+            {/* NEW: Map Background Layer */}
             {!selectedPolicyId ? (
                 <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 p-12">
                     <div className="text-center">
@@ -433,219 +385,211 @@ export default function EcosystemPage() {
                         <p className="text-slate-500 mt-2 max-w-md mx-auto">
                             Please select a policy document above to visualize the actors, assemblages, and cultural absences specific to that context.
                         </p>
+                        {/* Policy Selector as Floating Card for Empty State */}
+                        <div className="mt-8 max-w-xs mx-auto text-left">
+                            <Card className="bg-white border-slate-200 shadow-sm">
+                                <CardContent className="p-4">
+                                    <Select
+                                        value={selectedPolicyId || ""}
+                                        onValueChange={async (val) => {
+                                            if (!selectedPolicyId && actors.length > 0) {
+                                                const confirmMigrate = window.confirm("You have actors in the scratchpad. Do you want to move them to this policy?");
+                                                if (confirmMigrate) {
+                                                    try {
+                                                        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                                                        if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                                                            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                                                        }
+                                                        await Promise.all([
+                                                            fetch('/api/storage', { method: 'POST', headers, body: JSON.stringify({ key: `ecosystem_actors_${val}`, value: actors }) }),
+                                                            fetch('/api/storage', { method: 'POST', headers, body: JSON.stringify({ key: `ecosystem_configurations_${val}`, value: configurations }) })
+                                                        ]);
+                                                    } catch (err) { console.error("Migration failed:", err); }
+                                                }
+                                            }
+                                            setSelectedPolicyId(val);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-9 text-sm">
+                                            <SelectValue placeholder="Select a policy document..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {policyDocuments.map(doc => (
+                                                <SelectItem key={doc.id} value={doc.id}>{doc.title}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             ) : (
-                <Tabs defaultValue="map" className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex justify-between items-center px-1 shrink-0">
-                        <TabsList className="bg-slate-100">
-                            <TabsTrigger value="map" className="gap-2">
-                                <Network className="h-4 w-4" /> Visual Assemblage
-                            </TabsTrigger>
-                            <TabsTrigger value="table" className="gap-2">
-                                <List className="h-4 w-4" /> Table View
-                            </TabsTrigger>
-                            <TabsTrigger value="compass" className="gap-2">
-                                <Compass className="h-4 w-4" /> Assemblage Compass
-                            </TabsTrigger>
-                        </TabsList>
+                <>
+                    {/* Full Screen Map Container */}
+                    <div className="absolute inset-0 z-0 bg-slate-50 overflow-hidden">
+                        {/* Map is always rendered if policy is selected */}
+                        <EcosystemMap
+                            actors={filteredActors}
+                            configurations={configurations}
+                            positions={positions}
+                            interactionMode={interactionMode}
+                            setInteractionMode={setInteractionMode}
+                            selectedForGrouping={selectedForGrouping}
+                            onToggleSelection={toggleSelection}
+                            onCreateConfiguration={handleCreateConfiguration}
+                            onActorDrag={handleActorDrag}
+                            onConfigDrag={handleConfigDrag}
+                            onDeleteConfiguration={handleDeleteConfiguration}
+                            selectedConfigId={selectedConfigId}
+                            activeLayers={activeLayers}
+                            toggleLayer={toggleLayer}
+                            colorMode={colorMode}
+                            onConfigClick={handleConfigClick}
+                            absenceAnalysis={absenceAnalysis}
+                            analysisMode={analysisMode}
+                            setAnalysisMode={setAnalysisMode}
+                            configLayout={configLayout}
+                            onConfigSelect={setSelectedConfigId}
+                            extraToolbarContent={
+                                <div className="flex items-center gap-2">
+                                    <div className="w-[180px]">
+                                        <Select
+                                            value={selectedPolicyId || ""}
+                                            onValueChange={(val) => setSelectedPolicyId(val)}
+                                        >
+                                            <SelectTrigger className="h-7 text-xs border-transparent bg-transparent hover:bg-slate-200 focus:ring-0">
+                                                <SelectValue placeholder="Policy..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {policyDocuments.map(doc => (
+                                                    <SelectItem key={doc.id} value={doc.id}>{doc.title}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                    <TooltipProvider>
+                                        <div className="flex items-center gap-1">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost" size="sm"
+                                                        className={`h-7 px-2 text-xs font-medium gap-1.5 ${showLeftPanel ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:text-slate-900"}`}
+                                                        onClick={() => setShowLeftPanel(!showLeftPanel)}
+                                                    >
+                                                        <PanelLeftOpen className="h-3 w-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Toggle Actors List</p>
+                                                </TooltipContent>
+                                            </Tooltip>
 
-                        {/* Global Actions (like Clear Cache) could go here */}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost" size="sm"
+                                                        className={`h-7 px-2 text-xs font-medium gap-1.5 ${showRightPanel ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:text-slate-900"}`}
+                                                        onClick={() => setShowRightPanel(!showRightPanel)}
+                                                    >
+                                                        <PanelRightOpen className="h-3 w-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Toggle Analysis Panel</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost" size="icon"
+                                                        className="h-7 w-7 text-slate-400 hover:text-slate-900"
+                                                        onClick={handleResetLayout}
+                                                    >
+                                                        <LayoutGrid className="h-3 w-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Reset Window Layout</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TooltipProvider>
+                                </div>
+                            }
+                        />
                     </div>
 
-                    {/* TAB 1: VISUAL ASSEMBLAGE (FULL MAP) */}
-                    <TabsContent value="map" className="flex-1 flex overflow-hidden mt-4 gap-6 data-[state=inactive]:hidden">
+                    {/* Floating Windows (Draggable) */}
 
-                        {/* Map View - Retaining Sidebar Logic for Selection/Simulation, but defaults can be managed */}
-                        <div className="flex flex-col lg:flex-row h-full gap-6 flex-1 overflow-hidden">
-                            {/* Left Panel (Actor List) */}
-                            {showLeftPanel && (
-                                <div className={`flex flex-col gap-4 shrink-0 transition-all duration-300 overflow-y-auto ${isLeftExpanded ? 'w-full lg:w-[600px] xl:w-[700px] z-20 shadow-xl' : 'w-full lg:w-80'}`}>
-                                    <ActorList
-                                        actors={actors}
-                                        selectedActorId={selectedActorId}
-                                        onSelectActor={setSelectedActorId}
-                                        onClearAll={handleClearAll}
-                                        isExpanded={isLeftExpanded}
-                                        onToggleExpand={() => setIsLeftExpanded(!isLeftExpanded)}
+                    {/* 1. Actor List Panel */}
+                    <DraggablePanel
+                        title="Actors & Extraction"
+                        isOpen={showLeftPanel}
+                        onClose={() => setShowLeftPanel(false)}
+                        defaultPosition={{ x: 20, y: 80 }}
+                        width={350}
+                        className="max-h-[80vh]"
+                    >
+                        <ActorList
+                            actors={actors}
+                            selectedActorId={selectedActorId}
+                            onSelectActor={setSelectedActorId}
+                            onClearAll={handleClearAll}
+                            isExpanded={true} // Always expanded in window mode
+                            onToggleExpand={() => { }} // No-op in window mode
+                            isExtracting={isExtracting}
+                            extractionText={extractionText}
+                            setExtractionText={setExtractionText}
+                            onExtract={handleExtractAssemblage}
+                            isExtractionDialogOpen={isExtractionDialogOpen}
+                            setIsExtractionDialogOpen={setIsExtractionDialogOpen}
+                            onClose={() => setShowLeftPanel(false)}
+                        />
+                    </DraggablePanel>
 
-                                        isExtracting={isExtracting}
-                                        extractionText={extractionText}
-                                        setExtractionText={setExtractionText}
-                                        onExtract={handleExtractAssemblage}
-                                        isExtractionDialogOpen={isExtractionDialogOpen}
-                                        setIsExtractionDialogOpen={setIsExtractionDialogOpen}
-                                        onClose={() => setShowLeftPanel(false)}
-                                    />
-                                </div>
-                            )}
+                    {/* 2. Assemblage Analysis Panel */}
+                    <DraggablePanel
+                        title="Assemblage Analysis"
+                        isOpen={showRightPanel}
+                        onClose={() => setShowRightPanel(false)}
+                        defaultPosition={{ x: window.innerWidth - 450, y: 80 }}
+                        width={400}
+                        className="max-h-[80vh]"
+                    >
+                        <AssemblagePanel
+                            actors={actors}
+                            analyzedText={extractionText}
+                            savedAnalysis={selectedConfigId ? configurations.find(c => c.id === selectedConfigId)?.analysisData : absenceAnalysis}
+                            onSaveAnalysis={(analysis) => {
+                                if (selectedConfigId) {
+                                    setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
+                                } else {
+                                    setAbsenceAnalysis(analysis);
+                                }
+                            }}
+                            onToggleExpand={() => { }} // Window manages size
+                            isExpanded={true}
+                            selectedConfig={configurations.find(c => c.id === selectedConfigId)}
+                            onClose={() => { setShowRightPanel(false); setSelectedConfigId(null); }}
+                            onUpdateConfig={(updatedConfig) => {
+                                setConfigurations(prev => prev.map(c => c.id === updatedConfig.id ? updatedConfig : c));
+                            }}
+                            onUpdateActors={setActors}
+                        />
+                    </DraggablePanel>
 
-                            {/* Center (The Map) */}
-                            <div className="flex-1 flex flex-col gap-4 overflow-hidden relative transition-all duration-300">
-                                {/* Map Header / Toolbar */}
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-10 pointer-events-none">
-                                    <div className="flex items-center gap-3 pointer-events-auto">
-                                        {!showLeftPanel && (
-                                            <button onClick={() => setShowLeftPanel(true)} className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shadow-sm border border-slate-200" title="Show Actor List">
-                                                <PanelLeftOpen size={20} />
-                                            </button>
-                                        )}
-                                        {showLeftPanel && (
-                                            <button onClick={() => setShowLeftPanel(false)} className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shadow-sm border border-slate-200" title="Hide Actor List">
-                                                <PanelLeftClose size={20} />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-col gap-2 items-end pointer-events-auto">
-                                        <div className="flex items-center gap-2">
-                                            {/* NEW: Theoretical Mode Selector */}
-                                            {/* NEW: Theoretical Mode Selector - Moved to Map Toolbar */}
-
-                                            {/* Interaction Mode Toggle */}
-                                            <div className="flex bg-slate-100 p-0.5 rounded mr-2 border shadow-sm">
-                                                <button
-                                                    onClick={() => setInteractionMode("drag")}
-                                                    className={`p-1.5 rounded-sm transition-all ${interactionMode === "drag" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
-                                                    title="Drag Mode (Pan/Move)"
-                                                >
-                                                    <Hand className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setInteractionMode("select")}
-                                                    className={`p-1.5 rounded-sm transition-all ${interactionMode === "select" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
-                                                    title="Select Mode (Group Actors)"
-                                                >
-                                                    <MousePointer2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-
-                                            {/* Color Mode Toggle */}
-                                            <div className="flex bg-slate-100 p-0.5 rounded mr-2 border shadow-sm">
-                                                <button onClick={() => setColorMode("type")} className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${colorMode === "type" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}>Type</button>
-                                                <button onClick={() => setColorMode("epistemic")} className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-all flex items-center gap-1 ${colorMode === "epistemic" ? "bg-white shadow text-emerald-700" : "text-slate-500 hover:text-slate-700"}`}>Epistemic</button>
-                                            </div>
-
-                                            {/* Filter Checkbox/Select */}
-                                            <div className="bg-slate-100 p-0.5 rounded border shadow-sm">
-                                                <select
-                                                    className="text-xs border-none bg-transparent font-medium text-slate-600 focus:ring-0 cursor-pointer h-7"
-                                                    value={filterType}
-                                                    onChange={(e) => setFilterType(e.target.value as EcosystemActor["type"] | "All")}
-                                                >
-                                                    <option value="All">All Types</option>
-                                                    <option value="Policymaker">Policymakers</option>
-                                                    <option value="Startup">Startups</option>
-                                                    <option value="Civil Society">Civil Society</option>
-                                                    <option value="Academic">Academics</option>
-                                                    <option value="Infrastructure">Infrastructure</option>
-                                                    <option value="Algorithm">Algorithms</option>
-                                                    <option value="Dataset">Datasets</option>
-                                                </select>
-                                            </div>
-
-                                            {/* Right Panel Toggle */}
-                                            {!showRightPanel && (
-                                                <button onClick={() => setShowRightPanel(true)} className="p-1.5 rounded bg-white hover:bg-slate-50 text-slate-600 transition-colors border shadow-sm" title="Show Details">
-                                                    <PanelRightOpen size={18} />
-                                                </button>
-                                            )}
-                                            {showRightPanel && (
-                                                <button onClick={() => setShowRightPanel(false)} className="p-1.5 rounded bg-white hover:bg-slate-50 text-slate-600 transition-colors border shadow-sm" title="Hide Details">
-                                                    <PanelRightClose size={18} />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                {/* Actual Map Component */}
-                                <div className="flex-1 min-h-0 border rounded-xl overflow-hidden shadow-sm relative">
-                                    <EcosystemMap
-                                        actors={filteredActors}
-                                        configurations={configurations}
-                                        positions={positions}
-                                        interactionMode={interactionMode}
-                                        setInteractionMode={setInteractionMode}
-                                        selectedForGrouping={selectedForGrouping}
-                                        onToggleSelection={toggleSelection}
-                                        onCreateConfiguration={handleCreateConfiguration}
-                                        onActorDrag={handleActorDrag}
-                                        onConfigDrag={handleConfigDrag}
-                                        onDeleteConfiguration={handleDeleteConfiguration}
-                                        selectedConfigId={selectedConfigId}
-                                        activeLayers={activeLayers}
-                                        toggleLayer={toggleLayer}
-                                        colorMode={colorMode}
-                                        onConfigClick={handleConfigClick}
-                                        absenceAnalysis={absenceAnalysis}
-                                        analysisMode={analysisMode}
-                                        setAnalysisMode={setAnalysisMode}
-                                        configLayout={configLayout}
-                                    />
-                                    {/* Removed CulturalHolesAnalysis from here */}
-                                </div>
-                            </div>
-
-                            {/* Right Panel (Details/Inspector) */}
-                            {showRightPanel && (
-                                <div className={`shrink-0 flex flex-col gap-4 transition-all duration-300 overflow-y-auto ${isRightExpanded ? 'w-full lg:w-[800px] xl:w-[1000px] z-20 shadow-xl' : 'w-full lg:w-72'}`}>
-                                    <AssemblagePanel
-                                        actors={actors}
-                                        analyzedText={extractionText}
-                                        savedAnalysis={absenceAnalysis}
-                                        onSaveAnalysis={(analysis) => {
-                                            if (selectedConfigId) {
-                                                setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
-                                            } else {
-                                                setAbsenceAnalysis(analysis);
-                                            }
-                                        }}
-                                        onToggleExpand={() => setIsRightExpanded(!isRightExpanded)}
-                                        isExpanded={isRightExpanded} // Pass state specifically if component supports it (AssemblagePanel might not use it yet visually but good to pass if interface allows, otherwise ignore)
-                                        selectedConfig={configurations.find(c => c.id === selectedConfigId)}
-                                        onClose={() => { setShowRightPanel(false); setSelectedConfigId(null); }}
-                                        onUpdateConfig={(updatedConfig) => {
-                                            setConfigurations(prev => prev.map(c => c.id === updatedConfig.id ? updatedConfig : c));
-                                        }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </TabsContent>
-
-                    {/* TAB 2: TABLE VIEW */}
-                    <TabsContent value="table" className="flex-1 overflow-hidden mt-4 p-4 data-[state=inactive]:hidden">
-                        <Card className="h-full border-slate-200">
-                            <CardContent className="p-0 h-full overflow-hidden">
-                                <EcosystemTable
-                                    actors={filteredActors}
-                                    onSelectActor={setSelectedActorId}
-                                    selectedActorId={selectedActorId}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* TAB 3: ASSEMBLAGE COMPASS */}
-                    <TabsContent value="compass" className="flex-1 overflow-auto mt-4 p-4 data-[state=inactive]:hidden">
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col">
-                            <h3 className="text-lg font-semibold mb-4 text-slate-800 flex items-center shrink-0">
-                                <Compass className="w-5 h-5 mr-2 text-indigo-600" /> Epistemic Compass
-                            </h3>
-                            <div className="flex-1 min-h-0">
-                                <AssemblageCompass
-                                    actors={filteredActors}
-                                    onSelectActor={setSelectedActorId}
-                                    selectedActorId={selectedActorId}
-                                />
-                            </div>
-                        </div>
-                    </TabsContent>
+                    {/* 3. Assemblage Compass (Optional - could be another Tab or Window) */}
+                    {/* Currently integrated into AssemblagePanel or separate - leaving as is or making separate window?
+                    The original tabs logic suggested 'Compass' as a tab. 
+                    Let's create a separate toggle for Compass Window if needed, 
+                    OR assume user opens it via menu. For now, sticking to the main 2 panels.
+                */}
 
 
-
+                    {/* Dialogs */}
                     <ConfigurationDialog
                         isOpen={isConfigDialogOpen}
                         onClose={() => setIsConfigDialogOpen(false)}
@@ -655,20 +599,97 @@ export default function EcosystemPage() {
                         setDescription={setNewConfigDesc}
                         onConfirm={confirmCreateConfiguration}
                     />
-                </Tabs>
+
+                    {/* [NEW] Return Path for Deep Linking */}
+                    {returnToSynthesis && (
+                        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+                            <Button
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center gap-2"
+                                onClick={() => {
+                                    // Validation: Check for Policy
+                                    if (!selectedPolicyId) return;
+
+                                    let exportData: AssemblageExport | null = null;
+
+                                    if (selectedConfigId) {
+                                        // Case A: Export Selected Configuration
+                                        const config = configurations.find(c => c.id === selectedConfigId);
+                                        if (config) {
+                                            exportData = {
+                                                id: config.id,
+                                                policyId: selectedPolicyId,
+                                                generatedAt: new Date().toISOString(),
+                                                version: 1,
+                                                status: 'draft',
+                                                analyst: { id: 'current-user', positionality: 'Analyst' },
+                                                nodes: actors.filter(a => config.memberIds.includes(a.id)),
+                                                impactNarrative: {
+                                                    summary: config.description,
+                                                    constraints: config.analysisData?.impacts?.filter((i: any) => i.type?.toLowerCase() === 'constraint').map((i: any) => i.description) || [],
+                                                    affordances: config.analysisData?.impacts?.filter((i: any) => i.type?.toLowerCase() === 'affordance').map((i: any) => i.description) || [],
+                                                    provenance: 'ecosystem_generated'
+                                                },
+                                                topology: {
+                                                    territorializationScore: Number(config.properties.territorialization_score) || 5,
+                                                    codingIntensityScore: Number(config.properties.coding_intensity_score) || 5
+                                                }
+                                            };
+                                        }
+                                    } else if (absenceAnalysis) {
+                                        // Case B: Export Global Analysis (Absence/Trace Analysis)
+                                        // Cast to any because absenceAnalysis storage type is narrower than API result
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        const globalAnalysis = absenceAnalysis as any;
+
+                                        exportData = {
+                                            id: `global-${selectedPolicyId}`,
+                                            policyId: selectedPolicyId,
+                                            generatedAt: new Date().toISOString(),
+                                            version: 1,
+                                            status: 'draft',
+                                            analyst: { id: 'current-user', positionality: 'Analyst' },
+                                            nodes: actors,
+                                            impactNarrative: {
+                                                summary: globalAnalysis.assemblage?.description || globalAnalysis.narrative || "Global Assemblage Analysis",
+                                                constraints: globalAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'constraint').map((i: any) => i.description) || [],
+                                                affordances: globalAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'affordance').map((i: any) => i.description) || [],
+                                                provenance: 'ecosystem_generated'
+                                            },
+                                            topology: {
+                                                territorializationScore: Number(globalAnalysis.assemblage?.properties?.territorialization_score) || 5,
+                                                codingIntensityScore: Number(globalAnalysis.assemblage?.properties?.coding_intensity_score) || 5
+                                            }
+                                        };
+                                    }
+
+                                    if (exportData) {
+                                        sessionStorage.setItem(`assemblage_export_${selectedPolicyId}`, JSON.stringify(exportData));
+                                        console.log("Export Saved:", exportData);
+                                        router.push("/synthesis");
+                                    } else {
+                                        alert("No assemblage analysis found. Please run 'Trace Inscriptions' or create a configuration first.");
+                                    }
+                                }}
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Save & Return to Synthesis
+                            </Button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
 }
 
-// Helper to infer actor type from name (simple heuristic for legacy fallback)
-function inferActorType(name: string): EcosystemActor['type'] {
-    const n = name.toLowerCase();
-    if (n.includes("ministry") || n.includes("agency") || n.includes("commission") || n.includes("eu ")) return "Policymaker";
-    if (n.includes("university") || n.includes("institute") || n.includes("lab")) return "Academic";
-    if (n.includes("corp") || n.includes("inc") || n.includes("ltd") || n.includes("startup")) return "Startup";
-    if (n.includes("foundation") || n.includes("ngo") || n.includes("association") || n.includes("union")) return "Civil Society";
-    if (n.includes("platform") || n.includes("cloud") || n.includes("server") || n.includes("data")) return "Infrastructure";
-    return "Civil Society"; // Default
+export default function EcosystemPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+        }>
+            <EcosystemContent />
+        </Suspense>
+    );
 }
-

@@ -73,16 +73,29 @@ Every impact MUST explicitly include:
 4. **Type**
    - **Constraint** (limits capacity, shrinks agency, imposes burdens)
    - **Affordance** (expands agency, enables participation, unlocks resources)
+   - **Line of Flight** (escapes the system entirely, refusing its logic; a vector of deterritorialization)
 
 5. **Interconnection Type**
    What relational domain the impact modifies:
-7.    - **Interpretive / Meaning-Making** (shifts in how concepts, risk, or authority are understood or felt)
+   - **Interpretive / Meaning-Making** (shifts in how concepts, risk, or authority are understood or felt)
    - **Material** (infrastructure, computation, architecture, data standards)
    - **Discursive** (norms, legitimacy, narratives, categories, definitions)
    - **Hybrid/Sociotechnical** (intertwined material and discursive processes)
 
 ============================================================
-PHASE 4 — REQUIRED IMPACT DIMENSIONS
+PHASE 4 — MINOR SCIENCE INSTRUCTIONS (DELEUZIAN LENS)
+============================================================
+Analyze not just what the policy SAYS, but where it STUTTERS.
+Identify:
+1. **Aporias**: Logical contradictions or dead ends where the policy's language fails.
+2. **Stuttering**: Repetitive or awkward phrasing that indicates underlying anxiety or instability.
+3. **Lines of Flight**: Mechanisms or actors that evade capture by the dominant logic.
+4. **Minor Politics**: Voices or practices that do not seek power/statehood but seek to persist *despite* the state.
+
+DO NOT just summarize. DIAGNOSE the assemblage's potential for rupture.
+
+============================================================
+PHASE 5 — REQUIRED IMPACT DIMENSIONS
 ============================================================
 Your set of impacts MUST include ALL of the following:
 
@@ -100,7 +113,7 @@ DO NOT produce vague or rhetorical impacts.
 All impacts must reference DSF principles AND textual evidence.
 
 ============================================================
-PHASE 5 — CROSS-ACTOR COUPLING EFFECTS
+PHASE 6 — CROSS-ACTOR COUPLING EFFECTS
 ============================================================
 At least one impact MUST describe how a mechanism affecting one actor:
 - indirectly affects another actor,
@@ -111,7 +124,7 @@ Examples:
 - “Risk-tier classification → shifts liability → changes investment incentives.”
 
 ============================================================
-PHASE 6 — MULTI-SCALE IMPACT REQUIREMENTS
+PHASE 7 — MULTI-SCALE IMPACT REQUIREMENTS
 ============================================================
 Your set of impacts MUST include impacts at each of the following levels:
 
@@ -120,7 +133,7 @@ Your set of impacts MUST include impacts at each of the following levels:
 - **Macro** (regulatory fields, global markets, geopolitical impacts)
 
 ============================================================
-PHASE 7 — ANTI-HALLUCINATION RULES
+PHASE 8 — ANTI-HALLUCINATION RULES
 ============================================================
 You MUST NOT:
 - invent actors,
@@ -146,6 +159,9 @@ No markdown or other text.
     ],
     "tipping_points": [
       { "trigger": "...", "potential_outcome": "..." }
+    ],
+    "lines_of_flight": [
+        { "actor": "...", "vector": "...", "rupture_potential": "High/Medium/Low" }
     ]
   },
   "actors": [
@@ -175,7 +191,7 @@ No markdown or other text.
 
 Rules:
 - "metrics" MUST be integers 1-10.
-- "type" MUST be "Constraint" or "Affordance".
+- "type" MUST be "Constraint", "Affordance", or "Line of Flight".
 - "interconnection_type" MUST be "Material", "Discursive", "Hybrid", or "Interpretive / Meaning-Making".
 - "actor" should be a specific single entity (e.g., "Startups", "Regulators"). If multiple, create multiple impact entries.
 ============================================================

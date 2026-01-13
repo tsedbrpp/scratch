@@ -63,11 +63,27 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 type: (absent.role || absent.category || "Civil Society") as any, // Cast to match stricter type if needed
                 description: absent.reason || "Structurally absent actor",
-                metrics: { influence: 1, resistance: 0, alignment: 1 },
+                metrics: {
+                    territorialization: "Weak",
+                    deterritorialization: "Strong",
+                    coding: "Weak"
+                },
                 influence: "Low",
                 isGhost: true // Flag for rendering
             });
         });
     }
     return baseActors as GhostActor[];
+};
+
+export const inferActorType = (name: string): EcosystemActor['type'] => {
+    const n = name.toLowerCase();
+    if (n.includes("ministry") || n.includes("agency") || n.includes("commission") || n.includes("eu ")) return "Policymaker";
+    if (n.includes("university") || n.includes("institute") || n.includes("lab")) return "Academic";
+    if (n.includes("corp") || n.includes("inc") || n.includes("ltd") || n.includes("startup")) return "Startup";
+    if (n.includes("foundation") || n.includes("ngo") || n.includes("association") || n.includes("union")) return "Civil Society";
+    if (n.includes("platform") || n.includes("cloud") || n.includes("server") || n.includes("api")) return "Infrastructure";
+    if (n.includes("algorithm") || n.includes("model") || n.includes("ai ") || n.includes("risk score") || n.includes("classifier")) return "Algorithm";
+    if (n.includes("dataset") || n.includes("training data") || n.includes("registry") || n.includes("benchmark")) return "Dataset";
+    return "Civil Society"; // Default
 };

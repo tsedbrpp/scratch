@@ -951,22 +951,7 @@ class ReportGeneratorDOCX {
             });
         }
 
-        // Holes
-        if (data.holes && data.holes.length > 0) {
-            this.addSubHeader("Cultural Holes & Opportunities");
-            data.holes.forEach((hole: any) => {
-                this.addText(`Gap: ${hole.clusterA} ↔ ${hole.clusterB} (Distance: ${hole.distance.toFixed(2)})`, STYLE.colors.danger, 0, true);
-                this.addText(`Opportunity: ${hole.opportunity}`);
-                if (hole.policyImplication) {
-                    this.addText(`Policy Implication: ${hole.policyImplication}`, STYLE.colors.secondary);
-                }
-                if (hole.bridgingConcepts && hole.bridgingConcepts.length > 0) {
-                    const concepts = hole.bridgingConcepts.map((b: any) => b.concept).join(", ");
-                    this.addText(`Bridging Concepts: ${concepts}`, STYLE.colors.success);
-                }
-                this.addSpacer();
-            });
-        }
+
     }
 
     public renderOntology(data: ReportData["ontology"]) {

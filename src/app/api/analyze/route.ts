@@ -15,7 +15,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v27-fix'; // Incremented for structured, pedagogical assemblage explanation format
+const PROMPT_VERSION = 'v28-add-algo'; // Incremented to invalidate cache for algorithm support
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -225,6 +225,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      // Pass traces to the analysis service via the requestData object
+      // (They are already in requestData, so no extra work needed here other than validation if strict)
     }
 
     if (analysisMode === 'ontology_comparison') {

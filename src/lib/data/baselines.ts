@@ -1,4 +1,5 @@
 import { Source, AnalysisResult } from "@/types";
+import { ProvisionalWrapper } from "@/lib/provisional-wrapper";
 
 const EU_GOVERNANCE_ANALYSIS: AnalysisResult = {
     governance_power_accountability: "Establishes a centralized, technocratic product safety regime. Power is concentrated in the European Commission's AI Office and national market surveillance authorities. Compliance is managed through ex-ante conformity assessments and industry standards (CEN/CENELEC), largely sidelining civil society from enforcement. Accountability operates upwards to regulators rather than downwards to affected communities.",
@@ -62,7 +63,12 @@ const EU_GOVERNANCE_ANALYSIS: AnalysisResult = {
             timestamp: "2024-05-20T10:00:00Z",
             user: "Researcher"
         }
-    }
+    },
+    provisional_status: ProvisionalWrapper.wrap(
+        "Establishes a centralized, technocratic product safety regime...",
+        "ai_generated",
+        0.8 // High completeness (it's the full text)
+    )
 };
 
 const BRAZIL_GOVERNANCE_ANALYSIS: AnalysisResult = {

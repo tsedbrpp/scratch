@@ -22,16 +22,19 @@ OUTPUT FORMAT (STRICT)
     {
       "theme": "Definition of AI Risk",
       "description": "How the concept of risk diverges in practice.",
-      "policy_a_stance": "Risk as Fundamental Rights violation.",
-      "policy_b_stance": "Risk as Economic loss."
+      "stances": [
+        { "policy": "EU AI Act", "stance": "Fundamental Rights violation" },
+        { "policy": "US Executive Order", "stance": "National Security threat" }
+      ]
     }
   ],
   "concept_mutations": [
     {
       "concept": "High-Risk AI system",
       "origin_context": "EU AI Act (Product Safety)",
-      "local_mutation": "Brazil PL 2338 (Rights Impact)",
-      "mechanism": "Legal Transplant with constitutional filter"
+      "local_mutations": [
+        { "policy": "Brazil PL 2338", "mutation": "Rights Impact Focus", "mechanism": "Legal Transplant" }
+      ]
     }
   ],
   "assemblage_network": {
@@ -64,16 +67,20 @@ OUTPUT FORMAT (STRICT)
     {
       "conflict_type": "Market vs. State Logic",
       "description": "Conflict explanation.",
-      "policy_a_evidence": "Evidence A",
-      "policy_b_evidence": "Evidence B"
+      "evidence": [
+        { "policy": "EU AI Act", "text": "Evidence text from EU doc" },
+        { "policy": "US Executive Order", "text": "Evidence text from US doc" }
+      ]
     }
   ],
   "legitimacy_tensions": [
     {
       "tension_type": "Technocratic vs. Democratic",
       "description": "Description.",
-      "policy_a_evidence": "Evidence A",
-      "policy_b_evidence": "Evidence B"
+      "evidence": [
+         { "policy": "EU AI Act", "text": "Evidence text A" },
+         { "policy": "India AI Strategy", "text": "Evidence text B" }
+      ]
     }
   ],
   "assemblage_metrics": [

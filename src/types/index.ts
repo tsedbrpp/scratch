@@ -131,6 +131,7 @@ export interface AnalysisResult {
 
     }[];
     perspectives?: Record<string, string>;
+    provisional_status?: import('./provisional').ProvisionalInscription;
 }
 
 // Core interfaces for analysis
@@ -168,7 +169,9 @@ export interface Source {
     title: string;
     description: string;
     type: "PDF" | "Web" | "Text" | "Trace";
+    traceType?: "provenance" | "resistance"; // Distinguish between empirical evidence and resistance reactions
     url?: string;
+    sourceUrl?: string; // For Traces
     jurisdiction?: "EU" | "Brazil" | "US";
     pageCount?: number;
     addedDate: string;
@@ -246,14 +249,12 @@ export interface ComparativeSynthesis {
     key_divergences: {
         theme: string;
         description: string;
-        policy_a_stance: string;
-        policy_b_stance: string;
+        stances: { policy: string; stance: string }[];
     }[];
     concept_mutations: {
         concept: string;
         origin_context: string;
-        local_mutation: string;
-        mechanism: string;
+        local_mutations: { policy: string; mutation: string; mechanism: string }[];
     }[];
     assemblage_network: {
         nodes: string[];
@@ -272,14 +273,12 @@ export interface ComparativeSynthesis {
     institutional_conflict: {
         conflict_type: string;
         description: string;
-        policy_a_evidence: string;
-        policy_b_evidence: string;
+        evidence: { policy: string; text: string }[];
     }[];
     legitimacy_tensions: {
         tension_type: string;
         description: string;
-        policy_a_evidence: string;
-        policy_b_evidence: string;
+        evidence: { policy: string; text: string }[];
     }[];
     coloniality_assessment: string;
     synthesis_matrix?: never;

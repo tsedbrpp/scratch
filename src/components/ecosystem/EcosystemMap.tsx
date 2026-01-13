@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, Layers, EyeOff, ChevronDown, Loader2, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
+import { Network, MousePointer2, Layers, EyeOff, ChevronDown, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
 import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
 import { generateEdges } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
@@ -39,6 +39,8 @@ interface EcosystemMapProps {
     analysisMode?: AnalysisMode;
     setAnalysisMode?: (mode: AnalysisMode) => void;
     configLayout?: Record<string, { x: number; y: number }>;
+    onConfigSelect?: (configId: string) => void;
+    extraToolbarContent?: React.ReactNode;
 }
 
 // --- Swiss Design System Constants ---
@@ -67,9 +69,13 @@ export function EcosystemMap({
     absenceAnalysis,
     analysisMode = "hybrid_reflexive",
     setAnalysisMode,
-    configLayout = {}
+    configLayout = {},
+    onConfigSelect,
+    extraToolbarContent
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    // ... existing state ...
+
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
@@ -96,8 +102,25 @@ export function EcosystemMap({
     const [isExplaining, setIsExplaining] = useState(false);
     const [explanation, setExplanation] = useState<AssemblageExplanation | null>(null);
 
-    const handleExplainMap = async () => {
+    const links = useMemo(() => {
+        const generated = generateEdges(mergedActors);
+        return generated.map(e => ({
+            source: e.source.id,
+            target: e.target.id,
+            type: e.label
+        }));
+    }, [mergedActors]);
+
+    // Simplified Actor Hydration (No Simulation)
+    const hydratedActors = useMemo(() => {
+        return mergedActors;
+    }, [mergedActors]);
+
+    const handleExplainMap = React.useCallback(async () => {
+        if (!analysisMode) return;
         setIsExplaining(true);
+        // Clear previous explanation to indicate change
+        setExplanation(null);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
             if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
@@ -113,6 +136,10 @@ export function EcosystemMap({
                     configurations: configurations, // Pass metrics implicitly via configs
                     actors: mergedActors, // Pass actors for tracing
                     links: links, // Pass links for tracing
+                    interactionState: { // NEW: Pass visual context
+                        isNested: isNestedMode,
+                        is3D: is3DMode
+                    },
                     text: 'Assess Hull Metrics' // Dummy text
                 })
             });
@@ -126,7 +153,9 @@ export function EcosystemMap({
         } finally {
             setIsExplaining(false);
         }
-    };
+    }, [analysisMode, configurations, mergedActors, links, isNestedMode, is3DMode]);
+
+
 
     const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
         if (!stageId) return true;
@@ -147,20 +176,6 @@ export function EcosystemMap({
                 return true;
         }
     };
-
-    const links = useMemo(() => {
-        const generated = generateEdges(mergedActors);
-        return generated.map(e => ({
-            source: e.source.id,
-            target: e.target.id,
-            type: e.label
-        }));
-    }, [mergedActors]);
-
-    // Simplified Actor Hydration (No Simulation)
-    const hydratedActors = useMemo(() => {
-        return mergedActors;
-    }, [mergedActors]);
 
     // Force Physics
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -237,7 +252,7 @@ export function EcosystemMap({
         return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
     };
 
-     
+
     const handleMouseDown = (e: React.MouseEvent, node: SimulationNode) => {
         e.stopPropagation(); // Prevent Zoom/Pan start
         if (interactionMode === "drag") {
@@ -353,6 +368,8 @@ export function EcosystemMap({
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+    const [hoveredLink, setHoveredLink] = useState<{ source: string | Object, target: string | Object, type: string } | null>(null);
+
     // Node Event Handlers
     const handleNodeHover = (e: React.MouseEvent, actor: EcosystemActor) => {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -363,6 +380,19 @@ export function EcosystemMap({
             });
         }
         setHoveredNode(actor);
+        setHoveredLink(null);
+    };
+
+    const handleLinkHover = (e: React.MouseEvent, link: any) => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+            setTooltipPos({
+                x: e.clientX - rect.left + 5,
+                y: e.clientY - rect.top + 5
+            });
+        }
+        setHoveredLink(link);
+        setHoveredNode(null);
     };
 
     return (
@@ -372,16 +402,19 @@ export function EcosystemMap({
                 ref={containerRef}
             >
                 {/* ... (Header remains) */}
-                <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between bg-white z-10 relative">
+                <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row flex-wrap items-center justify-between gap-y-4 bg-white z-10 relative">
                     <div>
                         <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Assemblage Compass</CardTitle>
                         <CardDescription className="text-xs text-slate-500 font-normal">
-                            {is3DMode ? "3D WebGL Visualization" : (isNestedMode ? "Nested Assemblage (Actor → Collective → Regime)" : "Hierarchical view of assemblage clusters")}
+                            {is3DMode ? "3D WebGL Visualization" : (isNestedMode ? "Nested Assemblage (Actor → Collective → Regime)" : "Relational view of heterogeneous associations")}
                         </CardDescription>
                     </div>
 
                     {/* Modern Toolbar */}
-                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200">
+                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200 overflow-x-auto max-w-full pb-1">
+                        {extraToolbarContent}
+                        {extraToolbarContent && <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />}
+
                         <Button
                             variant="ghost" size="sm"
                             onClick={() => {
@@ -389,33 +422,33 @@ export function EcosystemMap({
                                 setIs3DMode(newMode);
                                 if (newMode) setIsStratumMode(true);
                             }}
-                            className={`h-7 px-2.5 text-xs font-medium ${is3DMode ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${is3DMode ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                         >
                             <Network className="h-3 w-3 mr-1" /> {is3DMode ? "3D View" : "2D View"}
                         </Button>
 
                         {!is3DMode && (
                             <>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
                                     onClick={() => setIsNestedMode(!isNestedMode)}
-                                    className={`h-7 px-2.5 text-xs font-medium ${isNestedMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isNestedMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
                                 >
                                     <Layers className="h-3 w-3 mr-1" /> {isNestedMode ? "Nested Map" : "Force Layout"}
                                 </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
-                                    className={`h-7 px-2.5 text-xs font-medium ${interactionMode === "drag" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${interactionMode === "drag" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                                     onClick={() => setInteractionMode("drag")}
                                 >
                                     <MousePointer2 className="h-3 w-3 mr-1" /> Move Actor
                                 </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
-                                    className="h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900"
+                                    className="h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 shrink-0"
                                     onClick={resetZoom}
                                 >
                                     <ZoomIn className="h-3 w-3 mr-1" /> Reset View
@@ -425,11 +458,11 @@ export function EcosystemMap({
 
                         {is3DMode && (
                             <>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
                                     onClick={() => setIsStratumMode(!isStratumMode)}
-                                    className={`h-7 px-2.5 text-xs font-medium ${isStratumMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isStratumMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
                                     title="Visualize Law as a Stratum over the Meshwork"
                                 >
                                     <Layers className="h-3 w-3 mr-1" /> {isStratumMode ? "Stratum Active" : "Legal Stratum"}
@@ -437,35 +470,38 @@ export function EcosystemMap({
                             </>
                         )}
 
-                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
 
                         {/* Integrated Mode Selector */}
                         {analysisMode && setAnalysisMode && (
                             <>
-                                <div className="flex items-center scale-90 origin-center -mx-1">
+                                <div className="flex items-center scale-90 origin-center -mx-1 shrink-0">
                                     <ModeSelector
                                         value={analysisMode}
                                         onChange={setAnalysisMode}
                                         className="h-7 border-none shadow-none text-xs"
                                     />
                                 </div>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                             </>
                         )}
 
                         <Button
-                            variant="ghost" size="sm"
-                            className={`h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-indigo-600 ${isExplaining ? "animate-pulse" : ""}`}
+                            variant="ghost"
+                            size="sm"
+                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isExplaining || explanation ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-900"}`}
                             onClick={handleExplainMap}
-                            disabled={isExplaining}
+                            title="Generate AI Analysis of current view"
                         >
-                            {isExplaining ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />}
-                            {isExplaining ? "Analyzing..." : "Explain Map"}
+                            <MessageSquare className="h-3 w-3 mr-1.5" />
+                            {isExplaining ? "Tracing..." : "Open Trace"}
                         </Button>
-                        <div className="w-px h-3 bg-slate-300 mx-0.5" />
+
+                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+
                         <Button
                             variant="ghost" size="sm"
-                            className={`h-7 px-2.5 text-xs font-medium ${isFullScreen ? "bg-red-50 text-red-600" : "text-slate-500 hover:text-slate-900"}`}
+                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isFullScreen ? "bg-red-50 text-red-600" : "text-slate-500 hover:text-slate-900"}`}
                             onClick={toggleFullScreen}
                         >
                             {isFullScreen ? (
@@ -549,11 +585,37 @@ export function EcosystemMap({
                                         const t = getNodePos(link.target as string);
                                         if (s.x === 0 || t.x === 0) return null;
                                         const isFocused = focusedNodeId && (link.source === focusedNodeId || link.target === focusedNodeId);
+                                        const isHovered = hoveredLink && hoveredLink.source === link.source && hoveredLink.target === link.target;
+
                                         let strokeWidth = 1;
                                         if (link.type === "Regulates" || link.type === "Governs") strokeWidth = 2.5;
                                         if (link.type === "Excludes") strokeWidth = 1.5;
-                                        if (isFocused) strokeWidth += 1;
-                                        return <line key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y} stroke={isFocused ? "#64748B" : "#CBD5E1"} strokeWidth={strokeWidth} strokeOpacity={highlightedStage ? 0.1 : (isFocused ? 0.9 : 0.5)} strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"} markerEnd={!highlightedStage ? "url(#arrow)" : ""} className="transition-all duration-300" pointerEvents="none" />;
+                                        if (isFocused || isHovered) strokeWidth += 1.5;
+
+                                        return (
+                                            <g key={i}
+                                                onMouseEnter={(e) => handleLinkHover(e, link)}
+                                                onMouseLeave={() => setHoveredLink(null)}
+                                            >
+                                                {/* Hit Area (Invisible but thicker) */}
+                                                <line
+                                                    x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                                                    stroke="transparent"
+                                                    strokeWidth={10}
+                                                    className="cursor-pointer"
+                                                />
+                                                {/* Visible Line */}
+                                                <line
+                                                    x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                                                    stroke={isFocused || isHovered ? "#475569" : "#CBD5E1"}
+                                                    strokeWidth={strokeWidth}
+                                                    strokeOpacity={highlightedStage ? 0.1 : (isFocused || isHovered ? 1 : 0.5)}
+                                                    strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"}
+                                                    markerEnd={!highlightedStage ? "url(#arrow)" : ""}
+                                                    className="transition-all duration-300 pointer-events-none"
+                                                />
+                                            </g>
+                                        );
                                     })}
 
                                     {nodes.map((node: SimulationNode) => {
@@ -682,7 +744,7 @@ export function EcosystemMap({
                                             <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
                                             <div className="space-y-1.5">
                                                 {configurations.map(config => (
-                                                    <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50 cursor-pointer" onClick={() => onConfigClick?.(config.id)}>
+                                                    <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50 cursor-pointer" onClick={(e) => { e.stopPropagation(); onConfigSelect ? onConfigSelect(config.id) : onConfigClick?.(config.id); }}>
                                                         <div className="flex items-center gap-2 overflow-hidden">
                                                             <div
                                                                 className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
@@ -764,6 +826,36 @@ export function EcosystemMap({
                                 </div>
                             )}
 
+                            {hoveredLink && (
+                                <div
+                                    className="absolute z-50 pointer-events-none"
+                                    style={{
+                                        left: tooltipPos.x + 10,
+                                        top: tooltipPos.y + 10,
+                                    }}
+                                >
+                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="font-semibold">{hoveredLink.type}</div>
+                                        <div className="text-slate-400 text-[10px] mt-0.5">
+                                            {(() => {
+                                                const s = hoveredLink.source;
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                const sName = typeof s === 'object' ? (s as any).name : mergedActors.find(a => a.id === s)?.name || s;
+
+                                                const t = hoveredLink.target;
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                const tName = typeof t === 'object' ? (t as any).name : mergedActors.find(a => a.id === t)?.name || t;
+
+                                                return (
+                                                    <>
+                                                        {sName} <span className="mx-1">→</span> {tName}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {hoveredNode && (
                                 <div
                                     className="absolute z-50 pointer-events-none"

@@ -2,6 +2,7 @@ import React from 'react';
 import { EcosystemActor } from '@/types/ecosystem';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine, Label } from 'recharts';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Info } from 'lucide-react';
 
@@ -82,59 +83,64 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
     }
 
     return (
-        <div className="w-full min-h-[1000px] bg-white rounded-xl border border-slate-200 shadow-sm p-4 relative overflow-hidden flex flex-col">
-            <div className="bg-white/90 p-2 rounded-md border shadow-sm mb-4 shrink-0 self-start z-10 flex items-center gap-3">
+        <div className="w-full min-h-[1000px] bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col">
+            {/* Improved Header Toolbar */}
+            <div className="w-full px-6 py-5 border-b bg-slate-50 flex justify-between items-center shrink-0 z-20">
                 <div>
-                    <h3 className="text-sm font-bold text-slate-900">Plane of Consistency</h3>
-                    <p className="text-xs text-slate-500">Mapping the vectors of becoming.</p>
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Plane of Consistency</h3>
+                    <p className="text-sm text-slate-500 mt-1">Mapping the vectors of becoming (Territorialization vs Resistance).</p>
                 </div>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <button className="text-slate-400 hover:text-indigo-600 transition-colors">
-                            <Info className="h-4 w-4" />
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 h-96 overflow-y-auto p-4" align="start">
-                        <h4 className="font-bold text-slate-900 mb-2 text-sm">Assemblage Theory Guide</h4>
-                        <div className="space-y-4 text-xs text-slate-600">
+                <div className="flex items-center gap-3">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="gap-2 bg-white border-slate-300 text-slate-700 hover:text-indigo-600 hover:border-indigo-200 shadow-sm">
+                                <Info className="h-4 w-4" />
+                                Map Guide
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 h-96 overflow-y-auto p-4" align="end">
+                            <h4 className="font-bold text-slate-900 mb-2 text-sm">Assemblage Theory Guide</h4>
+                            <div className="space-y-4 text-xs text-slate-600">
 
-                            {/* Axes */}
-                            <div className="border-b border-slate-100 pb-2">
-                                <p className="font-semibold text-slate-900 mb-1">X-Axis: Territorialization</p>
-                                <p>Forces that stabilize identity, enforce boundaries, and increase internal homogeneity. (Rules, Standards, Habits, Code)</p>
-                            </div>
-                            <div className="border-b border-slate-100 pb-2">
-                                <p className="font-semibold text-slate-900 mb-1">Y-Axis: Deterritorialization</p>
-                                <p>Forces that destabilize, create new connections, and facilitate escape. (Innovation, Rebellion, Glitches, Art)</p>
-                            </div>
+                                {/* Axes */}
+                                <div className="border-b border-slate-100 pb-2">
+                                    <p className="font-semibold text-slate-900 mb-1">X-Axis: Territorialization</p>
+                                    <p>Forces that stabilize identity, enforce boundaries, and increase internal homogeneity. (Rules, Standards, Habits, Code)</p>
+                                </div>
+                                <div className="border-b border-slate-100 pb-2">
+                                    <p className="font-semibold text-slate-900 mb-1">Y-Axis: Deterritorialization</p>
+                                    <p>Forces that destabilize, create new connections, and facilitate escape. (Innovation, Rebellion, Glitches, Art)</p>
+                                </div>
 
-                            {/* Quadrants */}
-                            <div>
-                                <h5 className="font-bold text-slate-900 mb-2 mt-3 text-xs">The Four Quadrants</h5>
+                                {/* Quadrants */}
+                                <div>
+                                    <h5 className="font-bold text-slate-900 mb-2 mt-3 text-xs">The Four Quadrants</h5>
 
-                                <div className="mb-2">
-                                    <span className="text-red-600 font-bold block">The Battleground (Q1)</span>
-                                    <p>High Influence / High Resistance. The zone of active conflict, negotiation, and power struggles. Institutions under siege.</p>
-                                </div>
-                                <div className="mb-2">
-                                    <span className="text-blue-600 font-bold block">The Strata (Q2)</span>
-                                    <p>High Influence / Low Resistance. Stable, sedimented institutions. "Black boxes" that are unquestioned and widely adopted.</p>
-                                </div>
-                                <div className="mb-2">
-                                    <span className="text-emerald-600 font-bold block">Lines of Flight (Q3)</span>
-                                    <p>Low Influence / High Resistance. Radical experiments, hackers, and movements attempting to escape the dominant logic.</p>
-                                </div>
-                                <div className="mb-2">
-                                    <span className="text-slate-500 font-bold block">The Amorphous (Q4)</span>
-                                    <p>Low Influence / Low Resistance. Passive components, raw resources, or disengaged users. Potential energy waiting to be formed.</p>
+                                    <div className="mb-2">
+                                        <span className="text-red-600 font-bold block">The Battleground (Q1)</span>
+                                        <p>High Influence / High Resistance. The zone of active conflict, negotiation, and power struggles. Institutions under siege.</p>
+                                    </div>
+                                    <div className="mb-2">
+                                        <span className="text-blue-600 font-bold block">The Strata (Q2)</span>
+                                        <p>High Influence / Low Resistance. Stable, sedimented institutions. "Black boxes" that are unquestioned and widely adopted.</p>
+                                    </div>
+                                    <div className="mb-2">
+                                        <span className="text-emerald-600 font-bold block">Lines of Flight (Q3)</span>
+                                        <p>Low Influence / High Resistance. Radical experiments, hackers, and movements attempting to escape the dominant logic.</p>
+                                    </div>
+                                    <div className="mb-2">
+                                        <span className="text-slate-500 font-bold block">The Amorphous (Q4)</span>
+                                        <p>Low Influence / Low Resistance. Passive components, raw resources, or disengaged users. Potential energy waiting to be formed.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
 
-            <div className="w-full h-[900px]">
+            {/* Chart Area */}
+            <div className="w-full h-[900px] p-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 20, right: 20, bottom: 80, left: 80 }}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -163,7 +169,7 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                         />
                         <ZAxis type="number" dataKey="z" range={[64, 400]} />
 
-                        {/* Quadrant Labels */}
+                        {/* Quadrant Labels - Renamed to Zones of Intensity */}
                         <ReferenceLine x={5} stroke="#94a3b8" strokeDasharray="5 5" />
                         <ReferenceLine y={5} stroke="#94a3b8" strokeDasharray="5 5" />
 
@@ -175,23 +181,35 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                             fill="#8884d8"
                             onClick={(node) => onSelectActor(node.payload.id)}
                             className="cursor-pointer"
+                            shape={(props: any) => {
+                                const { cx, cy, fill, payload } = props;
+                                const isLineOfFlight = payload.y > 7; // High deterritorialization (Lowered threshold for visibility)
+                                return (
+                                    <g className="cursor-pointer">
+                                        {isLineOfFlight && (
+                                            <circle cx={cx} cy={cy} r={10} fill="none" stroke={fill} strokeWidth={2} opacity={0.5} className="animate-ping" />
+                                        )}
+                                        <circle cx={cx} cy={cy} r={isLineOfFlight ? 6 : 5} fill={fill} />
+                                    </g>
+                                );
+                            }}
                         />
                     </ScatterChart>
                 </ResponsiveContainer>
             </div>
 
-            {/* Quadrant Text Labels (Absolute Positioned Overlay for better control) */}
-            <div className="absolute top-[20%] right-[15%] text-red-900/40 font-bold text-2xl select-none pointer-events-none text-center">
-                THE BATTLEGROUND<br /><span className="text-xs font-normal opacity-70">Contested Territory</span>
+            {/* Zones of Intensity (De-striated Labels) */}
+            <div className="absolute top-[20%] right-[15%] text-red-900/40 font-bold text-lg select-none pointer-events-none text-center transform rotate-2">
+                ZONE OF CONFLICT<br /><span className="text-xs font-normal opacity-70">Active Negotiation</span>
             </div>
-            <div className="absolute bottom-[20%] right-[15%] text-blue-900/40 font-bold text-2xl select-none pointer-events-none text-center">
-                THE STRATA<br /><span className="text-xs font-normal opacity-70">Institutional Stability</span>
+            <div className="absolute bottom-[20%] right-[15%] text-blue-900/40 font-bold text-lg select-none pointer-events-none text-center">
+                STRATA OF STABILITY<br /><span className="text-xs font-normal opacity-70">Sedimented Institutions</span>
             </div>
-            <div className="absolute top-[20%] left-[15%] text-emerald-900/40 font-bold text-2xl select-none pointer-events-none text-center">
-                LINES OF FLIGHT<br /><span className="text-xs font-normal opacity-70">Escape & Innovation</span>
+            <div className="absolute top-[20%] left-[15%] text-emerald-900/40 font-bold text-lg select-none pointer-events-none text-center transform -rotate-2">
+                VECTORS OF ESCAPE<br /><span className="text-xs font-normal opacity-70">Lines of Flight</span>
             </div>
-            <div className="absolute bottom-[20%] left-[15%] text-slate-500/30 font-bold text-2xl select-none pointer-events-none text-center">
-                AMORPHOUS<br /><span className="text-xs font-normal opacity-70">Potential Energy</span>
+            <div className="absolute bottom-[20%] left-[15%] text-slate-500/30 font-bold text-lg select-none pointer-events-none text-center">
+                DORMANT POTENTIAL<br /><span className="text-xs font-normal opacity-70">The Amorphous</span>
             </div>
         </div>
     );
@@ -201,14 +219,20 @@ const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         const actor = data.actor;
+        const isLineOfFlight = data.y > 7;
 
         return (
-            <Card className="bg-white/95 backdrop-blur shadow-xl border-slate-200 p-3 min-w-[200px]">
+            <Card className={`bg-white/95 backdrop-blur shadow-xl border-slate-200 p-3 min-w-[200px] ${isLineOfFlight ? 'border-emerald-500 border-2' : ''}`}>
                 <p className="font-bold text-sm text-slate-900 mb-1">{data.name}</p>
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                         {data.type}
                     </span>
+                    {isLineOfFlight && (
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 animate-pulse">
+                            Line of Flight
+                        </span>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mb-2">

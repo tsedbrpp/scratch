@@ -485,7 +485,7 @@ function Dashboard({ sources }: { sources: Source[] }) {
 
   // Retrieve ecosystem state to visualize resistance
   const [actors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
-  const highResistanceCount = actors.filter(a => (a.metrics?.resistance || 0) > 5).length;
+  const highResistanceCount = actors.filter(a => (a.metrics?.deterritorialization === 'Strong' || Number(a.metrics?.deterritorialization) > 5)).length;
 
   return (
     <div className="space-y-8">

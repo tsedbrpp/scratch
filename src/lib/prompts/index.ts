@@ -5,7 +5,6 @@ export * from './resistance';
 export * from './comparison';
 export * from './ecosystem';
 export * from './ontology';
-export * from './cultural-holes';
 export * from './legitimacy';
 export * from './assemblage';
 export * from './stress-test';

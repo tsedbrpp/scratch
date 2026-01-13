@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import * as d3 from 'd3';
 import { OntologyNode, OntologyLink } from '@/types/ontology';
 import { getColorForCategory } from '@/lib/ontology-utils';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ZoomIn, ZoomOut, Maximize, Minimize, Network } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface OntologyMapProps {
@@ -12,49 +13,212 @@ interface OntologyMapProps {
     onSelectCategory: (category: string | null) => void;
     selectedNodeId: string | null;
     onSelectNode: (nodeId: string | null) => void;
-    onNodeDrag: (nodeId: string, x: number, y: number) => void;
+    // onNodeDrag prop is removed as drag is handled internally by D3
+    onNodeDrag?: (nodeId: string, x: number, y: number) => void;
+}
+
+// Extend types for D3
+interface D3Node extends OntologyNode, d3.SimulationNodeDatum {
+    radius?: number;
+}
+interface D3Link extends d3.SimulationLinkDatum<D3Node> {
+    relation: string;
 }
 
 export function OntologyMap({
-    nodes,
-    links,
+    nodes: rawNodes,
+    links: rawLinks,
     selectedCategory,
     onSelectCategory,
     selectedNodeId,
-    onSelectNode,
-    onNodeDrag
+    onSelectNode
 }: OntologyMapProps) {
-    const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<SVGGElement>(null);
 
-    const handleMouseDown = (e: React.MouseEvent, nodeId: string) => {
-        e.stopPropagation();
-        setDraggingNodeId(nodeId);
-    };
+    // Deep clone data to avoid mutating props (D3 mutates objects)
+    const { d3Nodes, d3Links } = useMemo(() => {
+        const nodes = rawNodes.map(n => ({ ...n })) as D3Node[];
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!draggingNodeId || !svgRef.current) return;
+        // Create a set of valid node IDs for O(1) lookup
+        const nodeIds = new Set(nodes.map(n => n.id));
 
-        const svgRect = svgRef.current.getBoundingClientRect();
-        const x = e.clientX - svgRect.left;
-        const y = e.clientY - svgRect.top;
+        // Filter out links where source or target doesn't exist to prevent D3 crashes
+        const links = rawLinks
+            .filter(l => nodeIds.has(l.source) && nodeIds.has(l.target))
+            .map(l => ({ ...l })) as unknown as D3Link[];
 
-        onNodeDrag(draggingNodeId, x, y);
-    };
+        return { d3Nodes: nodes, d3Links: links };
+    }, [rawNodes, rawLinks]);
 
-    const handleMouseUp = () => {
-        setDraggingNodeId(null);
-    };
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
-    return (
-        <Card className="h-[600px] flex flex-col overflow-hidden border-slate-200 shadow-sm">
-            <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">
+    useEffect(() => {
+        if (!svgRef.current || !containerRef.current) return;
+
+        const width = svgRef.current.clientWidth;
+        const height = svgRef.current.clientHeight;
+
+        // Force Simulation
+        const simulation = d3.forceSimulation<D3Node>(d3Nodes)
+            .force("link", d3.forceLink<D3Node, D3Link>(d3Links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide().radius(50).iterations(2));
+
+        // SVG Elements Selection
+        const svg = d3.select(svgRef.current);
+        const container = d3.select(containerRef.current);
+
+        // Clear previous renders (if managing DOM manually, but here we use React for nodes, 
+        // actually let's use D3 for rendering to ensure performance with the simulation tick)
+        // Wait, mixing React render and D3 update is tricky. 
+        // Let's use D3 to control the position attributes of the React-rendered elements?
+        // OR let D3 render everything. D3 rendering is smoother for force graphs.
+        // I will switch to D3 rendering entirely for the content inside containerRef.
+        container.selectAll("*").remove();
+
+        // Arrow Marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 25) // Offset to not overlap node
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#94a3b8");
+
+        // Links
+        const link = container.append("g")
+            .selectAll("g")
+            .data(d3Links)
+            .join("g");
+
+        const linkPath = link.append("path")
+            .attr("stroke", "#cbd5e1")
+            .attr("stroke-width", 2)
+            .attr("fill", "none")
+        //.attr("marker-end", "url(#arrowhead)"); // Optional arrow
+
+        const linkText = link.append("text")
+            .text(d => d.relation)
+            .attr("font-size", "10px")
+            .attr("fill", "#64748b")
+            .attr("text-anchor", "middle")
+            .attr("dy", -5)
+            .style("pointer-events", "none")
+            .style("text-shadow", "0 0 4px white");
+
+
+        // Nodes
+        const node = container.append("g")
+            .selectAll("g")
+            .data(d3Nodes)
+            .join("g")
+            .attr("cursor", "pointer")
+            .call(d3.drag<any, any>()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+            );
+
+        node.append("circle")
+            .attr("r", d => d.id === selectedNodeId ? 45 : 35)
+            .attr("fill", d => d.color || getColorForCategory(d.category))
+            .attr("stroke", d => d.id === selectedNodeId ? "#4f46e5" : "#fff")
+            .attr("stroke-width", d => d.id === selectedNodeId ? 3 : 2)
+            .attr("class", "transition-all duration-300 shadow-sm");
+
+        // Node Label (ForeignObject for wrapping text)
+        node.append("foreignObject")
+            .attr("x", -35)
+            .attr("y", -35)
+            .attr("width", 70)
+            .attr("height", 70)
+            .append("xhtml:div")
+            .style("height", "100%")
+            .style("width", "100%")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("justify-content", "center")
+            .style("text-align", "center")
+            .style("pointer-events", "none")
+            .html(d => `<span class="text-xs font-medium text-slate-800 line-clamp-3 leading-tight px-1">${d.label}</span>`);
+
+        // Click handler
+        node.on("click", (event, d) => {
+            onSelectNode(d.id);
+        });
+
+        // Ticker
+        simulation.on("tick", () => {
+            linkPath.attr("d", d => {
+                const source = d.source as D3Node;
+                const target = d.target as D3Node;
+                return `M${source.x},${source.y} L${target.x},${target.y}`;
+            });
+
+            linkText
+                .attr("x", d => ((d.source as D3Node).x! + (d.target as D3Node).x!) / 2)
+                .attr("y", d => ((d.source as D3Node).y! + (d.target as D3Node).y!) / 2);
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        // Zoom Behavior
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                container.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Drag functions
+        function dragstarted(event: any, d: D3Node) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event: any, d: D3Node) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event: any, d: D3Node) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        return () => {
+            simulation.stop();
+        };
+    }, [d3Nodes, d3Links, selectedNodeId, onSelectNode, isFullScreen]); // Re-run when full screen toggles
+
+    // Helper to render the content (avoids code duplication between card and full screen)
+    const renderMapContent = (containerClass: string, isFull: boolean) => (
+        <div className={`flex flex-col bg-white ${containerClass}`}>
+            <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between shrink-0">
+                <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <Network className="h-4 w-4" />
                     Concept Map
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                    {selectedCategory && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-500 hover:text-slate-900"
+                        title={isFull ? "Exit Full Screen" : "Full Screen"}
+                        onClick={() => setIsFullScreen(!isFull)}
+                    >
+                        {isFull ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    </Button>
+                    {!isFull && selectedCategory && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -70,78 +234,13 @@ export function OntologyMap({
             <div className="flex-1 bg-slate-50 relative overflow-hidden">
                 <svg
                     ref={svgRef}
-                    className="w-full h-full cursor-grab active:cursor-grabbing"
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+                    className="w-full h-full cursor-move"
                 >
-                    {/* Links */}
-                    {links.map((link, i) => {
-                        const source = nodes.find(n => n.id === link.source);
-                        const target = nodes.find(n => n.id === link.target);
-                        if (!source || !target || source.x === undefined || source.y === undefined || target.x === undefined || target.y === undefined) return null;
-
-                        const midX = (source.x + target.x) / 2;
-                        const midY = (source.y + target.y) / 2;
-
-                        return (
-                            <g key={i}>
-                                <line
-                                    x1={source.x}
-                                    y1={source.y}
-                                    x2={target.x}
-                                    y2={target.y}
-                                    stroke="#cbd5e1"
-                                    strokeWidth="2"
-                                />
-                                <text
-                                    x={midX}
-                                    y={midY}
-                                    textAnchor="middle"
-                                    dy={-4}
-                                    className="text-[10px] fill-slate-500 font-medium pointer-events-none select-none"
-                                    style={{ textShadow: "0 0 4px white, 0 0 4px white" }}
-                                >
-                                    {link.relation}
-                                </text>
-                            </g>
-                        );
-                    })}
-
-                    {/* Nodes */}
-                    {nodes.map((node) => (
-                        <g
-                            key={node.id}
-                            transform={`translate(${node.x},${node.y})`}
-                            onMouseEnter={() => setHoveredNodeId(node.id)}
-                            onMouseLeave={() => setHoveredNodeId(null)}
-                            onMouseDown={(e) => handleMouseDown(e, node.id)}
-                            onClick={() => onSelectNode(node.id)}
-                            className="cursor-pointer transition-opacity duration-200"
-                            style={{
-                                opacity: hoveredNodeId && hoveredNodeId !== node.id ? 0.4 : 1
-                            }}
-                        >
-                            <circle
-                                r={selectedNodeId === node.id ? 45 : 40}
-                                fill={node.color || getColorForCategory(node.category)}
-                                className="transition-all duration-300 shadow-sm"
-                                stroke={selectedNodeId === node.id ? "#4f46e5" : "white"}
-                                strokeWidth={selectedNodeId === node.id ? 3 : 2}
-                            />
-                            <foreignObject x="-35" y="-35" width="70" height="70">
-                                <div className="h-full w-full flex items-center justify-center text-center">
-                                    <span className="text-xs font-medium text-slate-800 line-clamp-3 leading-tight px-1">
-                                        {node.label}
-                                    </span>
-                                </div>
-                            </foreignObject>
-                        </g>
-                    ))}
+                    <g ref={containerRef} />
                 </svg>
 
                 {/* Legend Overlay */}
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur p-3 rounded-lg border border-slate-200 shadow-sm space-y-2">
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur p-3 rounded-lg border border-slate-200 shadow-sm space-y-2 pointer-events-auto">
                     <div className="text-xs font-semibold text-slate-500 mb-2">Legend</div>
                     {['Core', 'Mechanism', 'Actor', 'Value'].map(cat => (
                         <div
@@ -157,6 +256,26 @@ export function OntologyMap({
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+
+    if (isFullScreen) {
+        return (
+            <div className="fixed inset-0 z-50 bg-white">
+                {renderMapContent("h-screen w-screen", true)}
+            </div>
+        );
+    }
+
+    return (
+        <Card className="h-[600px] flex flex-col overflow-hidden border-slate-200 shadow-sm relative">
+            <div className="flex flex-col h-full">
+                {/* We unmount/remount SVG on toggle, which restarts simulation. This is acceptable or even desired for resizing.
+                    Wait, renderMapContent uses refs. If we call it here, refs need to be attached. 
+                    Since we return one OR the other, refs connect to the active one. */
+                    renderMapContent("h-full", false)
+                }
             </div>
         </Card>
     );

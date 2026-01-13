@@ -5,10 +5,7 @@ import { detectSilences } from '@/lib/ontology';
 import { CULTURAL_FRAMING_PROMPT } from '@/lib/prompts/cultural-framing';
 import {
     ThemeObject,
-    BridgingConcept,
-    BridgingData,
     DiscourseCluster,
-    CulturalHole,
     CulturalAnalysisResult
 } from '@/types/cultural';
 
@@ -34,7 +31,7 @@ export async function performCulturalAnalysis(
         return {
             summary: "No themes could be extracted from the provided sources. Please ensure the documents contain sufficient text content.",
             clusters: [],
-            holes: [],
+
             timestamp: new Date().toISOString(),
         } as CulturalAnalysisResult;
     }
@@ -43,7 +40,7 @@ export async function performCulturalAnalysis(
     const clustersWithDescriptions = await clusterThemes(allThemeObjects, validThemes, sourceIds, openai);
 
     // Step 4: Cultural Holes
-    const holes = await identifyCulturalHoles(userId, clustersWithDescriptions, openai);
+
 
     // Step 5: Silences & Framing
     console.log('Detecting silences (missing stakeholders)...');
@@ -58,7 +55,7 @@ export async function performCulturalAnalysis(
     }
 
     // Step 6: Summary
-    const summary = await generateAnalysisSummary(clustersWithDescriptions, holes, openai);
+    const summary = await generateAnalysisSummary(clustersWithDescriptions, openai);
 
     // Calculate Connectivity
     const overall_connectivity_score = calculateConnectivity(clustersWithDescriptions);
@@ -66,7 +63,7 @@ export async function performCulturalAnalysis(
     return {
         summary,
         clusters: clustersWithDescriptions,
-        holes,
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         silences: silences as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,63 +167,7 @@ async function clusterThemes(allThemeObjects: { theme: string; quote: string; so
     );
 }
 
-async function identifyCulturalHoles(userId: string, clusters: DiscourseCluster[], openai: OpenAI) {
-    console.log('Identifying cultural holes...');
-    const potentialHoles = [];
-    const holeThreshold = 0.4;
 
-    for (let i = 0; i < clusters.length; i++) {
-        for (let j = i + 1; j < clusters.length; j++) {
-            const similarity = cosineSimilarity(clusters[i].centroid, clusters[j].centroid);
-            const distance = 1 - similarity;
-            if (distance > holeThreshold) {
-                potentialHoles.push({ clusterA: clusters[i], clusterB: clusters[j], distance: parseFloat(distance.toFixed(3)) });
-            }
-        }
-    }
-
-    potentialHoles.sort((a, b) => b.distance - a.distance);
-    const topHoles = potentialHoles.slice(0, 3);
-    const bridgingPrompt = await PromptRegistry.getEffectivePrompt(userId, 'bridging_concepts');
-
-    return Promise.all(
-        topHoles.map(async (hole) => {
-            try {
-                const bridgingResponse = await openai.chat.completions.create({
-                    model: 'gpt-4o',
-                    messages: [
-                        { role: 'system', content: bridgingPrompt },
-                        { role: 'user', content: `Cluster A: ${hole.clusterA.themes.join(', ')}\nCluster B: ${hole.clusterB.themes.join(', ')}` },
-                    ],
-                    temperature: 0.5,
-                });
-                const bridgingData = safeJSONParse<BridgingData>(
-                    bridgingResponse.choices[0].message.content || '{}',
-                    { bridgingConcepts: [], opportunity: '', policyImplication: '' }
-                );
-                return {
-                    id: `hole-${hole.clusterA.id}-${hole.clusterB.id}`,
-                    clusterA: hole.clusterA.name,
-                    clusterB: hole.clusterB.name,
-                    distance: hole.distance,
-                    bridgingConcepts: bridgingData.bridgingConcepts || [],
-                    opportunity: bridgingData.opportunity || '',
-                    policyImplication: bridgingData.policyImplication || '',
-                };
-            } catch {
-                return {
-                    id: `hole-${hole.clusterA.id}`,
-                    clusterA: hole.clusterA.name,
-                    clusterB: hole.clusterB.name,
-                    distance: hole.distance,
-                    bridgingConcepts: [],
-                    opportunity: 'Error',
-                    policyImplication: 'Error'
-                };
-            }
-        })
-    );
-}
 
 async function analyzeCulturalFraming(text: string, openai: OpenAI) {
     console.log('Running Cultural Framing analysis...');
@@ -249,7 +190,7 @@ async function analyzeCulturalFraming(text: string, openai: OpenAI) {
     return undefined;
 }
 
-async function generateAnalysisSummary(clusters: DiscourseCluster[], holes: CulturalHole[], openai: OpenAI) {
+async function generateAnalysisSummary(clusters: DiscourseCluster[], openai: OpenAI) {
     console.log('Generating overall summary...');
     try {
         const summaryResponse = await openai.chat.completions.create({
@@ -261,7 +202,7 @@ async function generateAnalysisSummary(clusters: DiscourseCluster[], holes: Cult
                 },
                 {
                     role: 'user',
-                    content: `Clusters: ${clusters.map(c => c.name).join(', ')}\nTop Hole: ${holes.length > 0 ? `${holes[0].clusterA} vs ${holes[0].clusterB}` : "None"}`
+                    content: `Clusters: ${clusters.map(c => c.name).join(', ')}`
                 }
             ],
             temperature: 0.5,

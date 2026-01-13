@@ -5,11 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BrainCircuit, Lightbulb, Sparkles, FileText, Activity, Grid, Download, Share2, Maximize2, SlidersHorizontal } from "lucide-react";
-import { CulturalHoleCard } from "@/components/CulturalHoleCard";
-import { CulturalHoleNetwork } from "@/components/CulturalHoleNetwork";
-import { CulturalHoleMatrix } from "@/components/CulturalHoleMatrix";
-import { CulturalAnalysisResult, BridgingConcept } from "@/types/cultural";
 import { AnalysisResult } from "@/types";
+import { CulturalAnalysisResult } from "@/types/cultural";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -60,58 +57,7 @@ const DEMO_ANALYSIS: CulturalAnalysisResult = {
             ]
         }
     ],
-    holes: [
-        {
-            id: "h1",
-            clusterA: "c1",
-            clusterB: "c2",
-            distance: 0.78,
-            opportunity: "Bridging the gap between EU 'Technical Safety' and Brazilian 'Social Justice'.",
-            policyImplication: "Develop 'Socio-Technical Conformity Assessments' where EU technical standards must be validated against Brazilian racial impact indicators.",
-            bridgingConcepts: [
-                {
-                    concept: "Cosmotechnical Alignment",
-                    explanation: "Harmonizing technical standards not by universalizing them, but by adapting them to local cosmologies and social realities."
-                },
-                {
-                    concept: "Situated Risk Scoring",
-                    explanation: "Risk metrics that weigh 'cultural harm' and 'erasure' as heavily as physical safety or discrimination."
-                }
-            ]
-        },
-        {
-            id: "h2",
-            clusterA: "c1",
-            clusterB: "c3",
-            distance: 0.45,
-            opportunity: "Harmonizing 'Auditable Innovation' mechanisms to allow US firms market access without diluting EU safety.",
-            policyImplication: "Create 'Transatlantic Safe Harbors' where US voluntary commitments are legally recognized if they meet specific EU audit thresholds.",
-            bridgingConcepts: [
-                {
-                    concept: "Binding Self-Regulation",
-                    explanation: "Voluntary industry codes that become legally enforceable contracts once adopted."
-                }
-            ]
-        },
-        {
-            id: "h3",
-            clusterA: "c2",
-            clusterB: "c3",
-            distance: 0.92,
-            opportunity: "Reconciling 'Data Sovereignty' with 'Global Innovation Flows'.",
-            policyImplication: "Implement 'Sovereign Compute Zones' where US companies invest in local Brazil infrastructure in exchange for data access.",
-            bridgingConcepts: [
-                {
-                    concept: "Infrastructural Sovereignty",
-                    explanation: "Ensuring that the physical hardware and compute power for local AI resides within national borders."
-                },
-                {
-                    concept: "Epistemic Reparations",
-                    explanation: "US firms funding local research to 'correct' the biases in their foundation models using local data."
-                }
-            ]
-        }
-    ]
+
 };
 
 // Mock Data for Document Analysis
@@ -154,7 +100,6 @@ const DEMO_STANDARD_ANALYSIS: AnalysisResult = {
 export default function DemoPage() {
     const [analysisMode, setAnalysisMode] = useState<'standard' | 'decolonial'>('decolonial');
     const [isLiveMode, setIsLiveMode] = useState(false);
-    const [selectedConcept, setSelectedConcept] = useState<BridgingConcept | null>(null);
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20">
@@ -277,11 +222,9 @@ export default function DemoPage() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="h-[400px] bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center relative overflow-hidden">
-                                            <CulturalHoleNetwork
-                                                clusters={DEMO_ANALYSIS.clusters}
-                                                holes={DEMO_ANALYSIS.holes}
-                                                isLive={isLiveMode}
-                                            />
+                                            <div className="text-center p-8 text-slate-400">
+                                                Network Visualization Placeholder
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -329,38 +272,12 @@ export default function DemoPage() {
                                 </div>
                             </div>
 
-                            {/* Right Column: Cultural Holes & Insights */}
+                            {/* Right Column: Cultural Holes (Removed) */}
                             <div className="space-y-6">
-                                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-xl shadow-2xl border border-indigo-500/30 relative overflow-hidden">
-                                    {/* Decorative background element */}
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="p-2 bg-indigo-500/20 rounded-lg border border-indigo-500/30">
-                                                <Lightbulb className="h-5 w-5 text-yellow-400" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-white leading-tight">Detected Cultural Holes</h3>
-                                                <p className="text-indigo-200 text-xs mt-1">
-                                                    Strategic opportunities for innovation
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {DEMO_ANALYSIS.holes.map((hole) => (
-                                                <CulturalHoleCard
-                                                    key={hole.id}
-                                                    hole={hole}
-                                                    clusters={DEMO_ANALYSIS.clusters}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
+                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center text-slate-500">
+                                    <h3 className="text-lg font-semibold">Discourse Fields Analysis</h3>
+                                    <p className="text-sm mt-2">The "Cultural Holes" visualization has been deprecated in favor of Discourse Fields. Please verify the live analysis page for the latest updates.</p>
                                 </div>
-
-
                             </div>
                         </div>
                     </TabsContent>
@@ -396,11 +313,9 @@ export default function DemoPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-8 flex justify-center bg-white">
-                                    <CulturalHoleMatrix
-                                        clusters={DEMO_ANALYSIS.clusters}
-                                        holes={DEMO_ANALYSIS.holes}
-                                        onConceptClick={setSelectedConcept}
-                                    />
+                                    <div className="text-center p-8 text-slate-400">
+                                        Comparison Matrix Placeholder
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -473,46 +388,7 @@ export default function DemoPage() {
                     </TabsContent>
                 </Tabs>
 
-                {/* Policy Drafter Dialog */}
-                <Dialog open={!!selectedConcept} onOpenChange={(open) => !open && setSelectedConcept(null)}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-xl">
-                                <Sparkles className="h-5 w-5 text-indigo-600" />
-                                Generative Policy Drafter
-                            </DialogTitle>
-                            <DialogDescription>
-                                Drafting a policy clause based on the bridging concept: <span className="font-bold text-slate-900">&quot;{selectedConcept?.concept}&quot;</span>
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="space-y-4 mt-4">
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Context</h4>
-                                <p className="text-sm text-slate-700">{selectedConcept?.explanation}</p>
-                            </div>
-
-                            <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-100 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                                <h4 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
-                                    <FileText className="h-4 w-4" />
-                                    Drafted Clause (v0.1)
-                                </h4>
-                                <p className="font-mono text-sm text-indigo-900 leading-relaxed bg-white/50 p-4 rounded-lg border border-indigo-200/50">
-                                    &quot;Article 14(a): Providers of high-risk AI systems shall implement <strong>{selectedConcept?.concept.toLowerCase()}</strong> protocols. These protocols must demonstrate not only technical compliance but also alignment with local cultural norms and fundamental rights frameworks of the deployment context, subject to third-party audit.&quot;
-                                </p>
-                            </div>
-
-                            <div className="flex justify-end gap-2 mt-4">
-                                <Button variant="outline" onClick={() => setSelectedConcept(null)}>Close</Button>
-                                <Button className="bg-indigo-600 hover:bg-indigo-700">
-                                    <Download className="h-4 w-4 mr-2" /> Save to Drafts
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

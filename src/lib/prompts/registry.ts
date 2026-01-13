@@ -1,3 +1,4 @@
+// Force rebuild
 import { StorageService } from '@/lib/storage-service';
 import { ABSENCE_PROMPT } from './absence';
 import { ASSEMBLAGE_PROMPT } from './assemblage';
@@ -5,10 +6,9 @@ import { ASSEMBLAGE_EXPLANATION_PROMPT } from './assemblage-explanation';
 import { COMPARATIVE_SYNTHESIS_PROMPT } from './comparative-synthesis';
 import { COMPARISON_SYSTEM_PROMPT } from './comparison';
 import { CRITIQUE_SYSTEM_PROMPT } from './critique';
-import { CULTURAL_FRAMING_PROMPT } from './cultural-framing';
 import { THEME_EXTRACTION_PROMPT, BRIDGING_PROMPT, LENS_PROMPTS } from './cultural-analysis';
+import { CULTURAL_FRAMING_PROMPT } from './cultural-framing';
 import { KEY_TERM_EXTRACTION_PROMPT, SUBJECT_IDENTIFICATION_PROMPT, RESISTANCE_CURATION_PROMPT } from './search-traces';
-import { CULTURAL_HOLES_PROMPT } from './cultural-holes';
 import { DSF_SYSTEM_PROMPT } from './dsf';
 import { ECOSYSTEM_SYSTEM_PROMPT } from './ecosystem';
 import { INSTITUTIONAL_LOGICS_PROMPT } from './institutional-logics';
@@ -57,10 +57,10 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
             requiredKeys: ['assemblage', 'actors', 'relations']
         }
     },
-    'comparative_synthesis': {
-        id: 'comparative_synthesis',
-        name: 'Comparative Synthesis',
-        description: 'Synthesizes findings across multiple analytic lenses (Framing, Logics, Legitimacy).',
+    'comparative_synthesis_v2': {
+        id: 'comparative_synthesis_v2',
+        name: 'Comparative Synthesis V2',
+        description: 'Synthesizes findings across multiple analytic lenses (N-way comparison).',
         category: 'Analysis',
         defaultValue: COMPARATIVE_SYNTHESIS_PROMPT,
         outputSchema: { format: 'json' }
@@ -90,13 +90,6 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Analyzes implicit cultural assumptions, metaphors, and state-market imaginaries.',
         category: 'Analysis',
         defaultValue: CULTURAL_FRAMING_PROMPT
-    },
-    'cultural_holes': {
-        id: 'cultural_holes',
-        name: 'Cultural Holes Analysis',
-        description: 'Identifies disconnects in meaning and vocabulary between different actor groups.',
-        category: 'Analysis',
-        defaultValue: CULTURAL_HOLES_PROMPT
     },
     'dsf_lens': {
         id: 'dsf_lens',

@@ -36,16 +36,43 @@ const getLensInstruction = (lensType: string) => {
 };
 
 export const strategies: Record<string, (userId: string, data: any) => Promise<StrategyResult>> = {
-    comparison: async (userId, { sourceA, sourceB }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparison_framework'),
-        userContent: `SOURCE A(${sourceA.title}):
+    comparison: async (userId, { sourceA, sourceB }) => {
+        const formatTraces = (traces: any[]) => {
+            if (!traces || traces.length === 0) return "No specific resistance traces provided.";
+            return traces.map((t: any) => `- [${t.title}]: ${t.extractedText ? t.extractedText.substring(0, 500) + "..." : t.description}`).join('\n');
+        };
+
+        const formatAssemblageData = (source: any) => {
+            let output = "";
+            if (source.assemblageNarrative) {
+                output += `\n\nASSEMBLAGE NARRATIVE (Provenance):\n${JSON.stringify(source.assemblageNarrative, null, 2)}`;
+            }
+            if (source.assemblageActors && source.assemblageActors.length > 0) {
+                output += `\n\nPRE-IDENTIFIED ACTORS (Provenance):\n${source.assemblageActors.map((a: any) => `- ${a.name} (${a.type}): ${a.description}`).join('\n')}`;
+            }
+            return output;
+        };
+
+        const traceContentA = sourceA.traces ? `\n\nTRACE EVIDENCE (Source A):\n${formatTraces(sourceA.traces)}` : "";
+        const traceContentB = sourceB.traces ? `\n\nTRACE EVIDENCE (Source B):\n${formatTraces(sourceB.traces)}` : "";
+        const assemblageContentA = formatAssemblageData(sourceA);
+        const assemblageContentB = formatAssemblageData(sourceB);
+
+        return {
+            systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparison_framework'),
+            userContent: `SOURCE A(${sourceA.title}):
 ${sourceA.text}
+${assemblageContentA}
+${traceContentA}
 
 SOURCE B(${sourceB.title}):
 ${sourceB.text}
+${assemblageContentB}
+${traceContentB}
 
 Please compare these sources according to the system prompt instructions.`
-    }),
+        };
+    },
 
     ecosystem: async (userId, { sourceType, text }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'ecosystem_analysis'),
@@ -139,7 +166,7 @@ Please analyze the legitimacy and justification orders in this text.`
     }),
 
     comparative_synthesis: async (userId, { documents, lens = 'assemblage' }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparative_synthesis'),
+        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparative_synthesis_v2'),
         userContent: `DOCUMENTS TO SYNTHESIZE:
 ${JSON.stringify(documents, null, 2)}
 
@@ -187,16 +214,24 @@ ${JSON.stringify(configurations, null, 2)}
 Please interpret these "Stability" (Density) and "Porosity" (External Connectivity) scores.`
     }),
 
-    ant_trace: async (userId, { actors, links }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'ant_trace_explanation'),
-        userContent: `TRACED ACTORS:
-${JSON.stringify(actors.map((a: any) => ({ name: a.name, type: a.type })), null, 2)}
+    ant_trace: async (userId, { actors, links }) => {
+        // Create lookup map for ID -> Name
+        const nameMap = new Map(actors.map((a: any) => [a.id, a.name || "Unknown Actor"]));
+        return {
+            systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'ant_trace_explanation'),
+            userContent: `TRACED ACTORS:
+${JSON.stringify(actors.map((a: any) => ({ name: a.name || "Unknown Actor", type: a.type })), null, 2)}
 
 ASSOCIATIONS:
-${JSON.stringify(links.map((l: any) => ({ source: l.source, target: l.target, type: l.type })), null, 2)}
+${JSON.stringify(links.map((l: any) => ({
+                source: nameMap.get(l.source) || l.source,
+                target: nameMap.get(l.target) || l.target,
+                type: l.type
+            })), null, 2)}
 
 Please provide a methodological trace of this network.`
-    }),
+        };
+    },
 
     assemblage_realist: async (userId, { traced_actors, detected_mechanisms, identified_capacities }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'assemblage_realist_explanation'),
@@ -212,7 +247,7 @@ ${JSON.stringify(identified_capacities, null, 2)}
 Please interpret the ontological status of this assemblage.`
     }),
 
-    hybrid_reflexive: async (userId, { ant_trace, assemblage_analysis, tensions }) => ({
+    hybrid_reflexive: async (userId, { ant_trace, assemblage_analysis, tensions, interactionState }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'hybrid_reflexive_explanation'),
         userContent: `ANT TRACE DATA:
 Actor Count: ${ant_trace.actor_count}
@@ -223,7 +258,11 @@ ${JSON.stringify(assemblage_analysis, null, 2)}
 THEORETICAL TENSIONS:
 ${JSON.stringify(tensions, null, 2)}
 
-Please synthesize these findings and discuss the reflexivity of the analysis.`
+VIEW CONTEXT:
+${interactionState?.isNested ? "Users are viewing this as a Nested Assemblage (Actor -> Collective -> Regime) to emphasize structural containment." : "Users are viewing this as a Flat Network to emphasize unrestricted flow."}
+${interactionState?.is3D ? "Users are exploring this in 3D space, focusing on topology and depth." : ""}
+
+Please synthesize these findings and discuss the reflexivity of the analysis. Explicitly reference the "Assemblage Hybrid" nature of the network.`
     }),
 
     default: async (userId, { title, sourceType, text }) => ({
