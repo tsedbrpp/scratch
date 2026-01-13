@@ -127,3 +127,12 @@ export interface AssemblageExplanation {
     narrative: string;
     hulls: AssemblageExplanationHull[];
 }
+
+export interface EcosystemEdge {
+    source: string;
+    target: string;
+    type: string;
+    label?: string; // Optional label for visualization
+    weight?: number; // Strength of connection
+    description?: string; // Helper text
+}
