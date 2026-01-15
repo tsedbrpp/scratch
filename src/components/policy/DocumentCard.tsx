@@ -29,6 +29,7 @@ interface DocumentCardProps {
     onUpdateSource?: (id: string, updates: Partial<Source>) => void;
     isFocused?: boolean;
     onToggleFocus?: () => void;
+    isReadOnly?: boolean;
 }
 
 export function DocumentCard({
@@ -44,7 +45,8 @@ export function DocumentCard({
     onView,
     onUpdateSource,
     isFocused = false,
-    onToggleFocus
+    onToggleFocus,
+    isReadOnly = false
 }: DocumentCardProps) {
     const hasAnalysis = !!source.analysis;
 
@@ -80,7 +82,11 @@ export function DocumentCard({
                                 <DropdownMenuItem onClick={() => onView(source)}>
                                     <Eye className="mr-2 h-4 w-4" /> View Text
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onFindTraces(source)} disabled={!source.extractedText}>
+                                <DropdownMenuItem
+                                    onClick={() => onFindTraces(source)}
+                                    disabled={!source.extractedText || isReadOnly}
+                                    title={isReadOnly ? "Trace generation disabled in Demo Mode" : ""}
+                                >
                                     <Globe className="mr-2 h-4 w-4" /> Find Traces
                                 </DropdownMenuItem>
                                 {onToggleFocus && (
@@ -126,7 +132,8 @@ export function DocumentCard({
                         variant={hasAnalysis ? "outline" : "default"}
                         className={`w-full text-xs h-8 ${!hasAnalysis && 'bg-indigo-600 hover:bg-indigo-700'}`}
                         onClick={() => onAnalyze(source.id, 'dsf')}
-                        disabled={isAnalyzing}
+                        disabled={isAnalyzing || isReadOnly}
+                        title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}
                     >
                         {isAnalyzing ? (
                             <Loader2 className="mr-2 h-3 w-3 animate-spin" />
@@ -142,7 +149,8 @@ export function DocumentCard({
                             variant="secondary"
                             className="w-full text-xs h-8 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200"
                             onClick={() => onAnalyze(source.id, 'stress_test')}
-                            disabled={isAnalyzing}
+                            disabled={isAnalyzing || isReadOnly}
+                            title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}
                         >
                             <Zap className="mr-2 h-3 w-3" />
                             Run Stress Test

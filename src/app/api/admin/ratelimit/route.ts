@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { setRateLimitOverride, setHardCapOverride, getUserRateLimitConfig, resetUserUsage } from '@/lib/ratelimit';
+import { getCredits, addCredits } from '@/lib/redis-scripts';
 import { redis } from '@/lib/redis';
 import { createClerkClient } from '@clerk/nextjs/server';
 
@@ -50,11 +51,16 @@ export async function GET() {
             totalUsageMap.set(uid, parseInt(total || '0', 10));
         }
 
-        // 4. Merge data
+        // 4. Fetch credits from Redis
+        // We can't easily scan all credits:* keys because we want to align with users list
+        // So we will just fetch for each user in step 5
+
+        // 5. Merge data
         const users = await Promise.all(clerkUsers.data.map(async (user) => {
             const usageData = usageMap.get(user.id) || { usage: 0, ttl: -1 };
             const totalUsage = totalUsageMap.get(user.id) || 0;
             const config = await getUserRateLimitConfig(user.id);
+            const credits = await getCredits(user.id);
 
             return {
                 userId: user.id,
@@ -62,6 +68,7 @@ export async function GET() {
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'No Name',
                 usage: usageData.usage,
                 totalUsage,
+                credits,
                 limitOverride: config.limit,
                 capOverride: config.cap,
                 ttl: usageData.ttl
@@ -82,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { targetUserId, action, limit, cap } = await request.json();
+        const { targetUserId, action, limit, cap, amount } = await request.json();
 
         if (action === 'set_limit') {
             await setRateLimitOverride(targetUserId, limit);
@@ -90,6 +97,18 @@ export async function POST(request: NextRequest) {
             await setHardCapOverride(targetUserId, cap);
         } else if (action === 'reset_usage') {
             await resetUserUsage(targetUserId);
+        } else if (action === 'add_credits') {
+            // amount can be negative to deduct
+            await addCredits(targetUserId, amount, 'ADMIN_MANUAL', `admin-${Date.now()}`, amount > 0 ? 'BONUS' : 'PURCHASE');
+            // If negative, 'PURCHASE' isn't quite right for type, but 'REFUND' might be better for removing?
+            // redis-scripts types: 'PURCHASE' | 'BONUS' | 'REFUND'
+            // If negative, maybe we should call deductCredits?
+            // But addCredits takes signed int?
+            // redis-scripts: addCredits script does `incrby`. So negative works.
+            // But `deductCredits` does logic check > 0.
+            // Let's rely on addCredits which handles negative addition (subtraction) without checks?
+            // Actually `addCredits` sets type.
+            // Let's just pass 'BONUS' for admin adjustments for now.
         } else {
             return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }

@@ -12,6 +12,7 @@ import { PromptDefinition } from "@/lib/prompts/registry";
 interface PromptWithState extends PromptDefinition {
     currentValue: string;
     isModified: boolean;
+    isEditable?: boolean;
     testInput: string;
     testOutput: string;
     isTesting: boolean;
@@ -267,9 +268,15 @@ export default function PromptSettingsPage() {
                                                 Customized
                                             </Badge>
                                         )}
+                                        {/* DEBUG: Show Admin Status */}
+                                        {prompt.isEditable && (
+                                            <Badge variant="outline" className="border-indigo-200 text-indigo-700">
+                                                Admin
+                                            </Badge>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
-                                        {editingId === prompt.id ? (
+                                        {editingId === prompt.id && prompt.isEditable ? (
                                             <>
                                                 <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
                                                 <Button size="sm" onClick={() => handleSave(prompt.id)} disabled={isSaving}>
@@ -279,53 +286,57 @@ export default function PromptSettingsPage() {
                                             </>
                                         ) : (
                                             <>
-                                                {prompt.isModified && (
+                                                {prompt.isEditable && prompt.isModified && (
                                                     <Button variant="outline" size="sm" onClick={() => handleReset(prompt.id)} title="Restore Default">
                                                         <RotateCcw className="h-4 w-4 mr-2" />
                                                         Reset
                                                     </Button>
                                                 )}
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(prompt)}>
-                                                    Edit Prompt
-                                                </Button>
+                                                {prompt.isEditable && (
+                                                    <Button variant="outline" size="sm" onClick={() => handleEdit(prompt)}>
+                                                        Edit Prompt
+                                                    </Button>
+                                                )}
                                             </>
                                         )}
                                     </div>
 
                                     {/* Test Playground */}
-                                    <div className="mt-6 pt-6 border-t border-slate-200">
-                                        <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-indigo-500" />
-                                            Test Playground
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="text-xs font-medium text-slate-500 mb-1 block">Sample Input</label>
-                                                <Textarea
-                                                    placeholder="Paste a snippet of text to test..."
-                                                    value={prompt.testInput}
-                                                    onChange={(e) => updatePromptState(prompt.id, { testInput: e.target.value })}
-                                                    className="h-40 font-mono text-xs"
-                                                />
-                                                <Button
-                                                    onClick={() => handleTest(prompt)}
-                                                    disabled={prompt.isTesting || !prompt.testInput?.trim()}
-                                                    className="mt-2 w-full"
-                                                    size="sm"
-                                                    variant="secondary"
-                                                >
-                                                    {prompt.isTesting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Play className="h-3 w-3 mr-2" />}
-                                                    Run Test
-                                                </Button>
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-medium text-slate-500 mb-1 block">AI Output</label>
-                                                <div className="h-40 bg-slate-50 rounded-md border p-3 overflow-y-auto text-xs font-mono whitespace-pre-wrap">
-                                                    {prompt.testOutput || <span className="text-slate-400 italic">Output will appear here...</span>}
+                                    {prompt.isEditable && (
+                                        <div className="mt-6 pt-6 border-t border-slate-200">
+                                            <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                                                <Sparkles className="h-4 w-4 text-indigo-500" />
+                                                Test Playground
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs font-medium text-slate-500 mb-1 block">Sample Input</label>
+                                                    <Textarea
+                                                        placeholder="Paste a snippet of text to test..."
+                                                        value={prompt.testInput}
+                                                        onChange={(e) => updatePromptState(prompt.id, { testInput: e.target.value })}
+                                                        className="h-40 font-mono text-xs"
+                                                    />
+                                                    <Button
+                                                        onClick={() => handleTest(prompt)}
+                                                        disabled={prompt.isTesting || !prompt.testInput?.trim()}
+                                                        className="mt-2 w-full"
+                                                        size="sm"
+                                                        variant="secondary"
+                                                    >
+                                                        {prompt.isTesting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Play className="h-3 w-3 mr-2" />}
+                                                        Run Test
+                                                    </Button>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-medium text-slate-500 mb-1 block">AI Output</label>
+                                                    <div className="h-40 bg-slate-50 rounded-md border p-3 overflow-y-auto text-xs font-mono whitespace-pre-wrap">
+                                                        {prompt.testOutput || <span className="text-slate-400 italic">Output will appear here...</span>}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                                 <CardDescription>{prompt.description}</CardDescription>
                             </CardHeader>

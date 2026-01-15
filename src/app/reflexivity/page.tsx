@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources"; // Added hook
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ const GUIDING_QUESTIONS = [
 
 export default function ReflexivityPage() {
     const { sources, isLoading } = useSources();
+    const { isReadOnly } = useDemoMode();
     const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
 
     // Identify Policy Documents
@@ -206,7 +208,8 @@ export default function ReflexivityPage() {
                                 <Button
                                     onClick={handleSave}
                                     className="bg-slate-900 text-white hover:bg-slate-800"
-                                    disabled={saveStatus === "saving"}
+                                    disabled={saveStatus === "saving" || isReadOnly}
+                                    title={isReadOnly ? "Saving disabled in Demo Mode" : ""}
                                 >
                                     <Save className="mr-2 h-4 w-4" />
                                     {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved!" : "Save Entry"}

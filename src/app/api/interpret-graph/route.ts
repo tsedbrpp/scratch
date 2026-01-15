@@ -1,11 +1,17 @@
 import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
+import { isReadOnlyAccess } from '@/lib/auth-helper';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: Request) {
+    // BLOCK READ-ONLY DEMO USERS
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to interpret graphs." }, { status: 403 });
+    }
+
     try {
         const { nodes, edges } = await req.json();
 

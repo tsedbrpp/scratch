@@ -22,6 +22,7 @@ import {
 import { UploadArtifactDialog } from "./UploadArtifactDialog";
 import { DiscoveryDialog } from "./DiscoveryDialog";
 import { useResistanceArtifacts } from "@/hooks/useResistanceArtifacts";
+import { useDemoMode } from "@/hooks/useDemoMode";
 
 interface ArtifactRepositoryProps {
     onSelectArtifact?: (artifact: ResistanceArtifact) => void;
@@ -29,6 +30,7 @@ interface ArtifactRepositoryProps {
 
 export function ArtifactRepository({ onSelectArtifact }: ArtifactRepositoryProps) {
     const { artifacts, isLoading, addArtifact, deleteArtifact } = useResistanceArtifacts();
+    const { isReadOnly } = useDemoMode();
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [isDiscoverOpen, setIsDiscoverOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -95,11 +97,11 @@ export function ArtifactRepository({ onSelectArtifact }: ArtifactRepositoryProps
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button onClick={() => setIsUploadOpen(true)}>
+                            <Button onClick={() => setIsUploadOpen(true)} disabled={isReadOnly} title={isReadOnly ? "Upload disabled in Demo Mode" : ""}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Upload Artifact
                             </Button>
-                            <Button variant="secondary" onClick={() => setIsDiscoverOpen(true)}>
+                            <Button variant="secondary" onClick={() => setIsDiscoverOpen(true)} disabled={isReadOnly} title={isReadOnly ? "Discovery disabled in Demo Mode" : ""}>
                                 <Globe className="mr-2 h-4 w-4" />
                                 Discover
                             </Button>
@@ -164,6 +166,7 @@ export function ArtifactRepository({ onSelectArtifact }: ArtifactRepositoryProps
                                     <Button
                                         variant="outline"
                                         onClick={() => setIsUploadOpen(true)}
+                                        disabled={isReadOnly}
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
                                         Upload
@@ -171,6 +174,7 @@ export function ArtifactRepository({ onSelectArtifact }: ArtifactRepositoryProps
                                     <Button
                                         variant="outline"
                                         onClick={() => setIsDiscoverOpen(true)}
+                                        disabled={isReadOnly}
                                     >
                                         <Globe className="mr-2 h-4 w-4" />
                                         Discover
@@ -250,6 +254,8 @@ export function ArtifactRepository({ onSelectArtifact }: ArtifactRepositoryProps
                                                             }
                                                         }
                                                     }}
+                                                    disabled={isReadOnly}
+                                                    title={isReadOnly ? "Delete disabled in Demo Mode" : ""}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>

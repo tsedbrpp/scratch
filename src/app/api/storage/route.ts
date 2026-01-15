@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageService } from '@/lib/storage-service';
 import { auth } from '@clerk/nextjs/server';
+import { isReadOnlyAccess } from '@/lib/auth-helper';
 
 export async function GET(request: NextRequest) {
     let { userId } = await auth();
@@ -34,15 +35,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-    let { userId } = await auth();
-
-    // Check for demo user if not authenticated
-    if (!userId && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-        const demoUserId = request.headers.get('x-demo-user-id');
-        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            userId = demoUserId;
-        }
+    // Block write operations in Read-Only / Demo Mode
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Storage updates disabled in Demo Mode" }, { status: 403 });
     }
+
+    const { userId } = await auth();
 
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });

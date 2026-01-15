@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lightbulb, Sparkles, Network, Loader2, BookOpen } from "lucide-react";
 
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
 
 export default function CulturalAnalysisPage() {
     const { sources, isLoading } = useSources();
+    const { isReadOnly } = useDemoMode();
     const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
@@ -68,6 +70,11 @@ export default function CulturalAnalysisPage() {
     };
 
     const handleAnalyze = async () => {
+        if (isReadOnly) {
+            alert("Analysis disabled in Demo Mode");
+            return;
+        }
+
         if (selectedSources.length < 2) {
             alert("Please select at least 2 sources for cultural analysis.");
             return;
@@ -268,7 +275,7 @@ export default function CulturalAnalysisPage() {
                                 <Button
                                     className="bg-amber-600 text-white hover:bg-amber-700"
                                     onClick={handleAnalyze}
-                                    disabled={selectedSources.length < 2 || isAnalyzing}
+                                    disabled={selectedSources.length < 2 || isAnalyzing || isReadOnly} // [NEW]
                                 >
                                     {isAnalyzing ? (
                                         <>

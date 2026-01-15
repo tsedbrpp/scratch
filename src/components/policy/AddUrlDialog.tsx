@@ -70,6 +70,9 @@ export function AddUrlDialog({ open, onOpenChange, onAdd }: AddUrlDialogProps) {
                                 {error}
                             </div>
                         )}
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-xs text-amber-800">
+                            <strong>Disclaimer:</strong> By using this feature, you confirm that you have the right to access and analyze the content from the provided URL. You are responsible for ensuring compliance with the target site&apos;s Terms of Service.
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={isLoading}>

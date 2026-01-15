@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { ReportData, LensType } from "@/types/report";
 import {
     ResistanceSynthesisResult,
@@ -41,12 +42,16 @@ import { ReportSectionSelection } from "@/types/report";
 import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
 import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifactView";
 import { ResistanceArtifact } from "@/types/resistance";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 export default function PolicyDocumentsPage() {
     // ----------------------------------------------------------------------
     // 1. Hooks & State
     // ----------------------------------------------------------------------
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
+    const { isReadOnly } = useDemoMode();
+    const { hasCredits } = useCredits();
 
     // Data for Full Report Aggregation
     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
@@ -83,6 +88,7 @@ export default function PolicyDocumentsPage() {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
+    const [showTopUp, setShowTopUp] = useState(false);
 
     // ----------------------------------------------------------------------
     // 2. Computed Values
@@ -115,8 +121,21 @@ export default function PolicyDocumentsPage() {
     };
 
     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isReadOnly) {
+            alert('Document uploads are disabled in Demo Mode.');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Enforce 10MB Limit
+        const MAX_SIZE_MB = 10;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            alert(`File is too large. Maximum size is ${MAX_SIZE_MB}MB.`);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
 
         setIsUploading(true);
         try {
@@ -147,6 +166,11 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleUrlAdd = async (url: string) => {
+        if (isReadOnly) {
+            alert('Adding content from URL is disabled in Demo Mode.');
+            return;
+        }
+
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
@@ -182,6 +206,10 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleAddSource = async (title: string, description: string, pageCount: string, publicationDate: string, version: string) => {
+        if (isReadOnly) {
+            alert('Adding documents is disabled in Demo Mode.');
+            return;
+        }
         const source: Source = {
             id: Date.now().toString(),
             title,
@@ -203,6 +231,11 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleAnalyze = async (sourceId: string, mode: AnalysisMode) => {
+        if (isReadOnly) {
+            alert('Analysis is disabled in Demo Mode.');
+            return;
+        }
+
         const source = sources.find(s => s.id === sourceId);
         if (!source || !source.extractedText) {
             alert('No text available to analyze. Please upload a PDF or add text first.');
@@ -230,6 +263,12 @@ export default function PolicyDocumentsPage() {
 
     const proceedWithAnalysis = async (positionalityData: PositionalityData) => {
         if (!pendingAnalysis) return;
+        if (isReadOnly) {
+            alert('Analysis is disabled in Demo Mode.');
+            setIsPositionalityDialogOpen(false);
+            setPendingAnalysis(null);
+            return;
+        }
         const { sourceId, mode, force } = pendingAnalysis;
         const source = sources.find(s => s.id === sourceId);
 
@@ -269,7 +308,15 @@ export default function PolicyDocumentsPage() {
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Analysis failed: ${errorMessage} `);
+
+            // Check for Insufficient Credits (402)
+            // Error usually comes as "Error: Insufficient Credits..."
+            if (errorMessage.includes("Insufficient Credits") || errorMessage.includes("Payment Required") || errorMessage.includes("402")) {
+                console.log("Triggering Top Up Dialog due to error:", errorMessage);
+                setShowTopUp(true);
+            } else {
+                alert(`Analysis failed: ${errorMessage} `);
+            }
         } finally {
             setAnalyzingId(null);
             setPendingAnalysis(null);
@@ -277,6 +324,11 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleFindTraces = async (source: Source) => {
+        if (isReadOnly) {
+            alert('Trace search is disabled in Demo Mode.');
+            return;
+        }
+
         if (!source.extractedText) {
             alert('Please upload a PDF or add text first before finding traces.');
             return;
@@ -343,6 +395,10 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleDelete = async (sourceId: string) => {
+        if (isReadOnly) {
+            alert('Deleting documents is disabled in Demo Mode.');
+            return;
+        }
         if (confirm('Are you sure you want to delete this source?')) {
             await deleteSource(sourceId);
         }
@@ -367,6 +423,10 @@ export default function PolicyDocumentsPage() {
     };
 
     const handleGenerateReport = async (selection: ReportSectionSelection) => {
+        if (isReadOnly) {
+            alert("Report generation is disabled in Demo Mode.");
+            return;
+        }
         setIsExporting(true);
         try {
             // Determine Context for Ecosystem Data
@@ -472,6 +532,7 @@ export default function PolicyDocumentsPage() {
                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
                         onExportReport={() => setIsExportReportDialogOpen(true)}
                         isExporting={isExporting}
+                        isReadOnly={isReadOnly}
                     />
                 </div>
             </div>
@@ -515,6 +576,7 @@ export default function PolicyDocumentsPage() {
                                     onUpdateSource={handleEditSource}
                                     isFocused={focusedSourceId === source.id}
                                     onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
+                                    isReadOnly={isReadOnly}
                                 />
                             ))}
                         </div>
@@ -593,6 +655,16 @@ export default function PolicyDocumentsPage() {
                 onOpenChange={setIsExportReportDialogOpen}
                 onGenerate={handleGenerateReport}
                 isGenerating={isExporting}
+            />
+
+            <CreditTopUpDialog
+                open={showTopUp}
+                onOpenChange={setShowTopUp}
+                onSuccess={() => {
+                    // Refresh is handled by Dashboard component or page reload if needed
+                    // But let's alert user success
+                    alert("Credits added! Please try running the analysis again.");
+                }}
             />
         </div>
     );

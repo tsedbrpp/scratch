@@ -8,13 +8,14 @@ import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { inferActorType } from "@/lib/ecosystem-utils";
 import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep Linking
+import { useDemoMode } from "@/hooks/useDemoMode";
+
 
 // Components
 import { ActorList } from "@/components/ecosystem/ActorList";
 import { EcosystemMap } from "@/components/ecosystem/EcosystemMap";
 import { ConfigurationDialog } from "@/components/ecosystem/ConfigurationDialog";
 import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
-import { EcosystemTable } from "@/components/ecosystem/EcosystemTable";
 import { AssemblageCompass } from "@/components/ecosystem/AssemblageCompass";
 import { DraggablePanel } from "@/components/ui/draggable-panel";
 import { Network, PanelLeftOpen, PanelRightOpen, Loader2, LayoutGrid, ArrowLeft } from "lucide-react";
@@ -29,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 function EcosystemContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { isReadOnly } = useDemoMode();
     const returnToSynthesis = searchParams.get("returnTo") === "synthesis";
     const mode = searchParams.get("mode");
 
@@ -54,8 +56,8 @@ function EcosystemContent() {
     const [configLayout, setConfigLayout] = useState<Record<string, { x: number, y: number }>>({});
 
     // Layout State (Zen Mode + Expansion)
-    const [showLeftPanel, setShowLeftPanel] = useState(false);
-    const [showRightPanel, setShowRightPanel] = useState(false);
+    const [showLeftPanel, setShowLeftPanel] = useState(true);
+    const [showRightPanel, setShowRightPanel] = useState(true);
     const [isLeftExpanded, setIsLeftExpanded] = useState(false);
     const [isRightExpanded, setIsRightExpanded] = useState(false);
 
@@ -130,6 +132,10 @@ function EcosystemContent() {
 
 
     const handleExtractAssemblage = async () => {
+        if (isReadOnly) {
+            alert("This feature is disabled in Demo Mode.");
+            return;
+        }
         if (!extractionText.trim()) return;
         setIsExtracting(true);
         try {
@@ -430,6 +436,7 @@ function EcosystemContent() {
                     <div className="absolute inset-0 z-0 bg-slate-50 overflow-hidden">
                         {/* Map is always rendered if policy is selected */}
                         <EcosystemMap
+                            isReadOnly={isReadOnly}
                             actors={filteredActors}
                             configurations={configurations}
                             positions={positions}
@@ -605,6 +612,8 @@ function EcosystemContent() {
                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
                             <Button
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center gap-2"
+                                disabled={isReadOnly}
+                                title={isReadOnly ? "Export disabled in Demo Mode" : ""}
                                 onClick={() => {
                                     // Validation: Check for Policy
                                     if (!selectedPolicyId) return;
@@ -637,9 +646,6 @@ function EcosystemContent() {
                                         }
                                     } else if (absenceAnalysis) {
                                         // Case B: Export Global Analysis (Absence/Trace Analysis)
-                                        // Cast to any because absenceAnalysis storage type is narrower than API result
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        const globalAnalysis = absenceAnalysis as any;
 
                                         exportData = {
                                             id: `global-${selectedPolicyId}`,
@@ -650,14 +656,16 @@ function EcosystemContent() {
                                             analyst: { id: 'current-user', positionality: 'Analyst' },
                                             nodes: actors,
                                             impactNarrative: {
-                                                summary: globalAnalysis.assemblage?.description || globalAnalysis.narrative || "Global Assemblage Analysis",
-                                                constraints: globalAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'constraint').map((i: any) => i.description) || [],
-                                                affordances: globalAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'affordance').map((i: any) => i.description) || [],
+                                                summary: absenceAnalysis.assemblage?.description || absenceAnalysis.narrative || "Global Assemblage Analysis",
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                constraints: absenceAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'constraint').map((i: any) => i.description) || [],
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                affordances: absenceAnalysis.impacts?.filter((i: any) => i.type?.toLowerCase() === 'affordance').map((i: any) => i.description) || [],
                                                 provenance: 'ecosystem_generated'
                                             },
                                             topology: {
-                                                territorializationScore: Number(globalAnalysis.assemblage?.properties?.territorialization_score) || 5,
-                                                codingIntensityScore: Number(globalAnalysis.assemblage?.properties?.coding_intensity_score) || 5
+                                                territorializationScore: Number(absenceAnalysis.assemblage?.properties?.territorialization_score) || 5,
+                                                codingIntensityScore: Number(absenceAnalysis.assemblage?.properties?.coding_intensity_score) || 5
                                             }
                                         };
                                     }

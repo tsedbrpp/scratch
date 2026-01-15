@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDemoMode } from '@/hooks/useDemoMode'; // [NEW]
 import { useServerStorage } from '@/hooks/useServerStorage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ const LENSES: { id: LensType; name: string; description: string }[] = [
 ];
 
 export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensAnalysisProps) {
+    const { isReadOnly } = useDemoMode(); // [NEW]
     // Persist text input
     const [text, setText] = useServerStorage("multi_lens_text", initialText);
 
@@ -52,6 +54,10 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
 
     const handleAnalyze = async () => {
         if (!text.trim()) return;
+        if (isReadOnly) { // [NEW]
+            alert("Analysis disabled in Demo Mode");
+            return;
+        }
 
         setIsAnalyzing(true);
         const newResults = { ...results };
@@ -150,7 +156,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     />
                     <Button
                         onClick={handleAnalyze}
-                        disabled={isAnalyzing || !text.trim()}
+                        disabled={isAnalyzing || !text.trim() || isReadOnly} // [NEW]
                         className="w-full sm:w-auto"
                     >
                         {isAnalyzing ? (

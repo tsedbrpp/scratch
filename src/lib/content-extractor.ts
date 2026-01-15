@@ -1,4 +1,6 @@
 import * as cheerio from 'cheerio';
+// Removed top-level import to avoid build errors with CommonJS module
+// import pdfParse from 'pdf-parse'; 
 
 interface ExtractedContent {
     text: string;

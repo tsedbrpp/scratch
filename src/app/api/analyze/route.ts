@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { getAuthenticatedUserId } from '@/lib/auth-helper';
+import { getAuthenticatedUserId, isReadOnlyAccess } from '@/lib/auth-helper';
 import {
   getAnalysisConfig,
   runCritiqueLoop,
@@ -20,6 +20,11 @@ const PROMPT_VERSION = 'v28-add-algo'; // Incremented to invalidate cache for al
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
+
+  // BLOCK READ-ONLY DEMO USERS
+  if (await isReadOnlyAccess()) {
+    return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
+  }
 
   const userId = await getAuthenticatedUserId(request);
 
@@ -41,6 +46,31 @@ export async function POST(request: NextRequest) {
           'X-RateLimit-Reset': rateLimit.reset.toString()
         }
       }
+    );
+  }
+
+  // --- CREDIT CHECK (ATOMIC) ---
+  // Deduct 1 credit for the analysis run.
+  // If insufficient credits, this returns -1 (blocking).
+  try {
+    const { deductCredits } = await import('@/lib/redis-scripts');
+    const newBalance = await deductCredits(userId, 1, 'SYSTEM', `run-${Date.now()}-${Math.random().toString(36).substring(7)}`);
+
+    if (newBalance === -1) {
+      console.log(`[ANALYSIS] Insufficient credits for user ${userId}`);
+      return NextResponse.json(
+        { error: "Insufficient Credits. Please top up to continue." },
+        { status: 402 }
+      );
+    }
+    console.log(`[ANALYSIS] Credit deducted. New balance: ${newBalance}`);
+  } catch (creditError) {
+    console.error('Credit deduction failed:', creditError);
+    // Fallback: If Redis fails, we might choose to fail-open or fail-closed.
+    // For a paid tool, fail-closed is safer to prevent free abuse during outages.
+    return NextResponse.json(
+      { error: "Payment Service Unavailable" },
+      { status: 503 }
     );
   }
 

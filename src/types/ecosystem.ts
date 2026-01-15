@@ -93,6 +93,11 @@ export interface AssemblageAnalysis {
         territorialization_audit?: string[];
         coding_audit?: string[];
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    assemblage?: any; // Full assemblage object from API
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    impacts?: any[]; // Impact analysis from API
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     traces?: any[]; // To store ANT trace objects if included
 }
 

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { executeGoogleSearch, curateResultsWithAI, getMockResults, SearchResult } from '@/lib/search-service';
 import { auth } from '@clerk/nextjs/server';
+import { isReadOnlyAccess } from '@/lib/auth-helper';
 
 export async function POST(req: Request) {
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Search is Disabled", success: false }, { status: 403 });
+    }
+
     let { userId } = await auth();
 
     // Check for demo user if not authenticated

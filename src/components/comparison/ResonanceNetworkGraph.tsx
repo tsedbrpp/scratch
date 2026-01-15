@@ -8,6 +8,7 @@ import { Network, Maximize2, Minimize2, Sparkles, Loader2, Info } from 'lucide-r
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { SynthesisComparisonResult } from '@/types/synthesis';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface ResonanceNetworkGraphProps {
     data: NonNullable<SynthesisComparisonResult['resonances']>['resonance_graph'];
@@ -36,6 +37,7 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500 }: Reson
     const [dimensions, setDimensions] = useState({ width, height });
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: ResonanceNode | ResonanceLink } | null>(null);
+    const { isReadOnly } = useDemoMode();
 
     // AI Interpretation State
     const [isInterpreting, setIsInterpreting] = useState(false);
@@ -268,8 +270,8 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500 }: Reson
                         size="sm"
                         className={`h-8 px-2 text-xs font-medium ${isInterpreting ? "text-indigo-600 bg-indigo-50" : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"}`}
                         onClick={handleInterpret}
-                        disabled={isInterpreting}
-                        title="AI Interpret Graph"
+                        disabled={isInterpreting || isReadOnly}
+                        title={isReadOnly ? "Sign in to use AI features" : "AI Interpret Graph"}
                     >
                         {isInterpreting ? (
                             <Loader2 className="w-4 h-4 animate-spin mr-1" />

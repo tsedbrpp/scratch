@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PromptRegistry, PromptId } from '@/lib/prompts/registry';
 import { auth } from '@clerk/nextjs/server';
+import { isAdmin } from '@/lib/auth-helper';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     let { userId } = await auth();
@@ -17,6 +20,8 @@ export async function GET(request: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const userIsAdmin = await isAdmin(userId);
+
     const definitions = PromptRegistry.getAllDefinitions();
 
     // Fetch values for all prompts in parallel
@@ -25,7 +30,8 @@ export async function GET(request: NextRequest) {
         return {
             ...def,
             currentValue: effectiveValue,
-            isModified: effectiveValue !== def.defaultValue
+            isModified: effectiveValue !== def.defaultValue,
+            isEditable: userIsAdmin // Only admins can edit
         };
     }));
 
@@ -45,6 +51,10 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
         return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    if (!await isAdmin(userId)) {
+        return new NextResponse("Forbidden: Admin access required", { status: 403 });
     }
 
     try {

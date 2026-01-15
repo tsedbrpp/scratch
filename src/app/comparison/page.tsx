@@ -14,6 +14,7 @@ import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisVi
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { MutationTable } from "@/components/comparison/MutationTable";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { StabilizationCard } from "@/components/comparison/StabilizationCard";
 import { RhizomeNetwork } from "@/components/comparison/RhizomeNetwork";
 import { LensSelector, InterpretationLens } from "@/components/comparison/LensSelector";
@@ -23,6 +24,7 @@ import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 
 export default function ComparisonPage() {
     const { sources, isLoading, updateSource } = useSources();
+    const { isReadOnly } = useDemoMode();
 
     // Filter for policy documents (non-traces)
     const policyDocs = useMemo(() => sources.filter(s => s.type !== "Trace"), [sources]);
@@ -168,9 +170,15 @@ export default function ComparisonPage() {
             await updateSource(sourceId, updates);
             // alert(`Deep analysis complete for ${source.title}!`); // Optional: maybe too noisy
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Deep analysis failed:", error);
-            alert("Failed to complete deep analysis. Check console for details.");
+            if (error.message?.includes("Insufficient Credits")) {
+                if (confirm("Insufficient Credits. Would you like to top up now?")) {
+                    window.location.href = "/settings/billing";
+                }
+            } else {
+                alert(`Failed to complete deep analysis: ${error.message || "Unknown error"}`);
+            }
         } finally {
             setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: false }));
         }
@@ -195,7 +203,7 @@ export default function ComparisonPage() {
                         className="absolute top-0 right-0 z-10 bg-white/50 hover:bg-white backdrop-blur-sm border border-slate-200 shadow-sm gap-2"
                         title="Re-run Analysis"
                         onClick={() => initiateDeepAnalysis(source.id)}
-                        disabled={isDeepAnalyzing[source.id]}
+                        disabled={isDeepAnalyzing[source.id] || isReadOnly}
                     >
                         {isDeepAnalyzing[source.id] ? (
                             <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
@@ -222,8 +230,9 @@ export default function ComparisonPage() {
                 </p>
                 <Button
                     onClick={() => initiateDeepAnalysis(source.id)}
-                    disabled={isDeepAnalyzing[source.id]}
+                    disabled={isDeepAnalyzing[source.id] || isReadOnly}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                    title={isReadOnly ? "Deep analysis disabled in Demo Mode" : ""}
                 >
                     {isDeepAnalyzing[source.id] ? (
                         <>
@@ -376,6 +385,8 @@ export default function ComparisonPage() {
                             <Button
                                 variant={activeTab === "synthesis" ? "default" : "outline"}
                                 onClick={handleSynthesize}
+                                disabled={isSynthesizing || isReadOnly}
+                                title={isReadOnly ? "Synthesis disabled in Demo Mode" : ""}
                                 className="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
                             >
                                 {isSynthesizing ? (
@@ -399,7 +410,8 @@ export default function ComparisonPage() {
                                             });
                                         }
                                     }}
-                                    title="Clear Cache & Force Refresh Next Run"
+                                    disabled={isReadOnly}
+                                    title={isReadOnly ? "Cache clearing disabled in Demo Mode" : "Clear Cache & Force Refresh Next Run"}
                                     className="text-slate-400 hover:text-red-600 shrink-0"
                                 >
                                     <RefreshCw className="h-4 w-4" />
@@ -755,7 +767,8 @@ export default function ComparisonPage() {
                         </div>
                     )}
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

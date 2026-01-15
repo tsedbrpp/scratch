@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { MessageSquarePlus, Save, Flag } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface RebuttalPopoverProps {
     targetId: string; // Unique ID of the claim being contested
@@ -14,6 +15,7 @@ interface RebuttalPopoverProps {
 }
 
 export function RebuttalPopover({ targetId, initialRebuttal, onSave, children }: RebuttalPopoverProps) {
+    const { isReadOnly } = useDemoMode();
     const [text, setText] = useState(initialRebuttal || "");
     const [isOpen, setIsOpen] = useState(false);
 
@@ -50,7 +52,7 @@ export function RebuttalPopover({ targetId, initialRebuttal, onSave, children }:
                         className="text-xs min-h-[80px]"
                     />
                     <div className="flex justify-end">
-                        <Button size="sm" onClick={handleSave} className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700">
+                        <Button size="sm" onClick={handleSave} disabled={isReadOnly} className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700" title={isReadOnly ? "Rebuttals disabled in Demo Mode" : ""}>
                             <Save className="h-3 w-3 mr-1" />
                             Save Note
                         </Button>

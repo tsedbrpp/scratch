@@ -12,6 +12,7 @@ interface DocumentToolbarProps {
     onAddUrlClick: () => void;
     onExportReport: () => void;
     isExporting: boolean;
+    isReadOnly?: boolean;
 }
 
 export function DocumentToolbar({
@@ -23,7 +24,8 @@ export function DocumentToolbar({
     onAddClick,
     onAddUrlClick,
     onExportReport,
-    isExporting
+    isExporting,
+    isReadOnly = false
 }: DocumentToolbarProps) {
     return (
         <div className="space-y-4">
@@ -42,7 +44,8 @@ export function DocumentToolbar({
                     />
                     <Button
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
+                        disabled={isUploading || isReadOnly}
+                        title={isReadOnly ? "Uploads disabled in Demo Mode" : ""}
                         className="bg-purple-600 text-white hover:bg-purple-700"
                     >
                         {isUploading ? (
@@ -60,12 +63,16 @@ export function DocumentToolbar({
                     <Button
                         onClick={onAddUrlClick}
                         variant="outline"
+                        disabled={isReadOnly}
+                        title={isReadOnly ? "Adding URLs disabled in Demo Mode" : ""}
                         className="border-slate-300 hover:bg-slate-100"
                     >
                         <Globe className="mr-2 h-4 w-4" /> Add from URL
                     </Button>
                     <Button
                         onClick={onAddClick}
+                        disabled={isReadOnly}
+                        title={isReadOnly ? "Adding documents disabled in Demo Mode" : ""}
                         className="bg-slate-900 text-white hover:bg-slate-800"
                     >
                         <Plus className="mr-2 h-4 w-4" /> Add Document
@@ -89,7 +96,8 @@ export function DocumentToolbar({
                 </Button>
                 <Button
                     onClick={onExportReport}
-                    disabled={isExporting}
+                    disabled={isExporting || isReadOnly}
+                    title={isReadOnly ? "Export disabled in Demo Mode" : ""}
                     variant="outline"
                     className="border-slate-200 hover:bg-slate-100 text-slate-700"
                 >

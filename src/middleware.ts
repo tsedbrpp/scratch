@@ -13,19 +13,34 @@ const isProtectedRoute = createRouteMatcher([
     "/timeline(.*)",
     "/empirical(.*)",
     "/comparison(.*)",
-    "/admin(.*)"
+    "/admin(.*)",
+    "/settings(.*)",
+    "/api(.*)" // [NEW] Protect all API routes by default
+]);
+
+// Explicitly define public routes (webhooks must be public for Stripe)
+const isPublicRoute = createRouteMatcher([
+    "/",
+    "/api/webhooks(.*)"
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-    // Explicitly allow the landing page
-    if (request.nextUrl.pathname === "/") {
+    // Explicitly allow landin page and public routes (webhooks)
+    if (isPublicRoute(request)) {
+        console.log('[MIDDLEWARE] Allowing public route:', request.nextUrl.pathname);
         return;
     }
 
-    // Bypass auth if demo mode is enabled
+    // Bypass auth if demo mode is enabled (but NOT for API routes generally, unless specific logic handles it - though here we might want to be careful. 
+    // Actually, demo mode usually implies read-only access to protected UI, but API access still needs control. 
+    // However, the previous logic was: if demo mode, return. This effectively disables auth for the whole app in demo mode. 
+    // We should probably keep that for the UI but maybe enforced stricter for API? 
+    // For now, I will preserve existing behavior but ensure API catch-all works when NOT in demo mode.)
     if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
         return;
     }
+
+
 
     if (isProtectedRoute(request)) {
         console.log('[MIDDLEWARE] Protecting route:', request.nextUrl.pathname);

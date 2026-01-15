@@ -23,6 +23,7 @@ import { DEFAULT_PERSPECTIVE_A, DEFAULT_PERSPECTIVE_B } from "@/lib/perspectives
 import { BASELINE_SOURCES } from '@/lib/data/baselines';
 import { MaterializeDialog } from "@/components/policy/MaterializeDialog";
 import { EcosystemActor } from "@/types/ecosystem";
+import { useDemoMode } from "@/hooks/useDemoMode";
 
 interface AnalysisResultsProps {
     analysis: NonNullable<AnalysisResult>;
@@ -83,8 +84,13 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     // Interpretation Sets (DR2) State
     const [perspectiveResults, setPerspectiveResults] = useState<Record<string, string> | null>(effectiveAnalysis.perspectives || null);
     const [isSimulating, setIsSimulating] = useState(false);
+    const { isReadOnly } = useDemoMode();
 
     const handleGeneratePerspectives = async () => {
+        if (isReadOnly) {
+            alert('Simulation is disabled in Demo Mode.');
+            return;
+        }
         setIsSimulating(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -155,6 +161,10 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     const currentDisplay = getCurrentContent();
 
     const handleRunCritique = async () => {
+        if (isReadOnly) {
+            alert('System Reflexivity is disabled in Demo Mode.');
+            return;
+        }
         setIsCritiqueLoading(true);
         setCritiqueError(null);
         try {
@@ -227,6 +237,10 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                         detail: materializeDialog.detail
                     }}
                     onConfirm={async (actorData) => {
+                        if (isReadOnly) {
+                            alert("Creating actors is disabled in Demo Mode.");
+                            return;
+                        }
                         if (onAddActor) {
                             const newActor: EcosystemActor = {
                                 ...actorData, // Spread the Omit<EcosystemActor, "id"> properties
@@ -510,7 +524,8 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
                         <Button
                             onClick={handleRunCritique}
-                            disabled={isCritiqueLoading}
+                            disabled={isCritiqueLoading || isReadOnly}
+                            title={isReadOnly ? "Audit disabled in Demo Mode" : ""}
                             variant="outline"
                             className="gap-2"
                         >

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Wand2, Globe, Search } from 'lucide-react';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -45,6 +46,8 @@ export function ActorList({
     setIsExtractionDialogOpen,
     onClose
 }: ActorListProps) {
+    const { isReadOnly } = useDemoMode();
+
     return (
         <Card className="h-[500px] lg:h-full flex flex-col">
             <CardHeader className="pb-2">
@@ -64,8 +67,14 @@ export function ActorList({
                         {/* Extraction Dialog */}
                         <Dialog open={isExtractionDialogOpen} onOpenChange={setIsExtractionDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" title="Extract from Text">
-                                    <FileText className="h-4 w-4 text-emerald-600" />
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                    title={isReadOnly ? "Sign in to extract actors" : "Extract from Text"}
+                                    disabled={isReadOnly}
+                                >
+                                    <FileText className={`h-4 w-4 ${isReadOnly ? 'text-slate-300' : 'text-emerald-600'}`} />
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -73,12 +82,12 @@ export function ActorList({
                                     <DialogTitle>Extract Assemblage</DialogTitle>
                                     <DialogDescription>
                                         Paste text to trace actants and create a Super-Node configuration.
-                                        This adheres to the "Strategic Subtraction" principle: only empirical traces are visualized.
+                                        This adheres to the &quot;Strategic Subtraction&quot; principle: only empirical traces are visualized.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="py-4">
                                     <Textarea
-                                        placeholder="Paste text here (e.g., 'The CCP uses the SIFARE server to regulate pharmaceutical distribution...')"
+                                        placeholder="Paste text here (e.g., &apos;The CCP uses the SIFARE server to regulate pharmaceutical distribution...&apos;)"
                                         value={extractionText}
                                         onChange={(e) => setExtractionText(e.target.value)}
                                         className="min-h-[150px]"

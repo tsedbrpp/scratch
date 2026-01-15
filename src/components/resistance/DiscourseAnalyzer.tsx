@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, BookOpen, MessageCircle, Network } from "lucide-react";
+import { useDemoMode } from "@/hooks/useDemoMode";
 
 interface DiscourseAnalyzerProps {
     artifact: ResistanceArtifact;
@@ -13,6 +14,7 @@ interface DiscourseAnalyzerProps {
 }
 
 export function DiscourseAnalyzer({ artifact, onAnalysisComplete }: DiscourseAnalyzerProps) {
+    const { isReadOnly } = useDemoMode();
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysis, setAnalysis] = useState<ArtifactAnalysisResult | null>(
         artifact.frames ? {
@@ -66,7 +68,7 @@ export function DiscourseAnalyzer({ artifact, onAnalysisComplete }: DiscourseAna
                             Analyze this artifact to extract discourse frames, rhetorical strategies,
                             and assemblage reconfiguration potential.
                         </p>
-                        <Button onClick={handleAnalyze} disabled={isAnalyzing}>
+                        <Button onClick={handleAnalyze} disabled={isAnalyzing || isReadOnly} title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}>
                             {isAnalyzing ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -211,7 +213,7 @@ export function DiscourseAnalyzer({ artifact, onAnalysisComplete }: DiscourseAna
 
                     {/* Re-analyze button */}
                     <div className="flex justify-center">
-                        <Button variant="outline" onClick={handleAnalyze} disabled={isAnalyzing}>
+                        <Button variant="outline" onClick={handleAnalyze} disabled={isAnalyzing || isReadOnly} title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}>
                             {isAnalyzing ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

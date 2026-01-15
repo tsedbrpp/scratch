@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
+import { isReadOnlyAccess } from '@/lib/auth-helper';
 import { executeGoogleSearch, curateResultsWithAI, curateResultsWithOpenAI, SearchResult } from '@/lib/search-service';
 import { createRateLimitResponse, createUnauthorizedResponse, createErrorResponse } from '@/lib/api-helpers';
 import { PromptRegistry } from '@/lib/prompts/registry';
@@ -22,6 +23,9 @@ interface Trace {
 }
 
 export async function POST(request: NextRequest) {
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Search is Disabled. Read-Only Mode." }, { status: 403 });
+    }
     let { userId } = await auth();
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
         const demoUserId = request.headers.get('x-demo-user-id');
@@ -345,6 +349,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Mode is Read-Only." }, { status: 403 });
+    }
+
     let { userId } = await auth();
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
         const demoUserId = request.headers.get('x-demo-user-id');

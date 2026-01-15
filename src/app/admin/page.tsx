@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, ShieldAlert, RotateCcw, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, RefreshCw, ShieldAlert, RotateCcw, Settings, Coins, History, Plus, Minus } from "lucide-react";
 
 interface UserRateLimit {
     userId: string;
@@ -13,6 +14,7 @@ interface UserRateLimit {
     name: string;
     usage: number;
     totalUsage: number;
+    credits: number; // Added
     limitOverride: number | null;
     capOverride: number | null;
     ttl: number;
@@ -25,6 +27,12 @@ export default function AdminPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingMode, setEditingMode] = useState<'limit' | 'cap' | null>(null);
     const [newValue, setNewValue] = useState<string>("");
+
+    // Credit Management State
+    const [creditUser, setCreditUser] = useState<UserRateLimit | null>(null);
+    const [history, setHistory] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [adjustAmount, setAdjustAmount] = useState("");
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -96,6 +104,48 @@ export default function AdminPage() {
         }
     };
 
+    const handleOpenCreditDialog = async (user: UserRateLimit) => {
+        setCreditUser(user);
+        setHistoryLoading(true);
+        try {
+            const res = await fetch(`/api/admin/history?userId=${user.userId}`);
+            const data = await res.json();
+            setHistory(data.history || []);
+        } catch (e) {
+            console.error("Failed to fetch history", e);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleAdjustCredits = async () => {
+        if (!creditUser || !adjustAmount) return;
+        const amount = parseInt(adjustAmount, 10);
+        if (isNaN(amount) || amount === 0) return;
+
+        try {
+            await fetch('/api/admin/ratelimit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId: creditUser.userId, action: 'add_credits', amount })
+            });
+            // Refresh main users list
+            fetchUsers();
+
+            // Allow time for propagation or just optimistic update?
+            // Let's reload the history to confirm transaction logged
+            const res = await fetch(`/api/admin/history?userId=${creditUser.userId}`);
+            const data = await res.json();
+            setHistory(data.history || []);
+
+            // Optimistically update the dialog's balance view
+            setCreditUser(prev => prev ? { ...prev, credits: (prev.credits || 0) + amount } : null);
+            setAdjustAmount("");
+        } catch (error) {
+            console.error("Failed to adjust credits", error);
+        }
+    };
+
     if (!isAuthorized) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -157,6 +207,9 @@ export default function AdminPage() {
                                                     Cap: {user.capOverride}
                                                 </Badge>
                                             )}
+                                            <Badge variant="outline" className="border-indigo-200 text-indigo-700 bg-indigo-50">
+                                                {user.credits ?? 0} Credits
+                                            </Badge>
                                         </div>
                                         <div className="text-xs font-mono text-slate-400">{user.userId}</div>
                                         <div className="text-xs text-slate-500 flex gap-4">
@@ -195,6 +248,10 @@ export default function AdminPage() {
                                                 <Button size="sm" variant="ghost" onClick={() => handleResetUsage(user.userId)} title="Reset All Usage">
                                                     <RotateCcw className="h-4 w-4 text-slate-500" />
                                                 </Button>
+                                                <Button size="sm" variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100" onClick={() => handleOpenCreditDialog(user)}>
+                                                    <Coins className="mr-2 h-3 w-3" />
+                                                    Credits
+                                                </Button>
                                             </>
                                         )}
                                     </div>
@@ -204,6 +261,68 @@ export default function AdminPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Dialog open={!!creditUser} onOpenChange={(open) => !open && setCreditUser(null)}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Manage Credits: {creditUser?.name}</DialogTitle>
+                        <DialogDescription>UserId: {creditUser?.userId}</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                        {/* Actions */}
+                        <div className="space-y-4">
+                            <div className="p-4 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-500">Current Balance</span>
+                                <div className="text-3xl font-bold text-indigo-600">{creditUser?.credits ?? '...'}</div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-medium">Adjust Balance</h4>
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="number"
+                                        placeholder="Amount (+/-)"
+                                        value={adjustAmount}
+                                        onChange={(e) => setAdjustAmount(e.target.value)}
+                                    />
+                                    <Button onClick={handleAdjustCredits} disabled={!adjustAmount}>Apply</Button>
+                                </div>
+                                <div className="flex gap-2 text-xs">
+                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("10")}>+10</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("100")}>+100</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-10")}>-10</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-100")}>-100</Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* History */}
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto border rounded-md p-2">
+                            <h4 className="text-sm font-medium sticky top-0 bg-white pb-2 border-b">Transaction History</h4>
+                            {historyLoading ? (
+                                <div className="flex justify-center p-4"><Loader2 className="animate-spin h-5 w-5" /></div>
+                            ) : history.length === 0 ? (
+                                <div className="text-sm text-slate-400 text-center p-4">No transactions</div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {history.map((tx: any) => (
+                                        <div key={tx.id} className="text-xs flex justify-between items-center border-b pb-1 last:border-0">
+                                            <div>
+                                                <div className="font-medium text-slate-700">{tx.type}</div>
+                                                <div className="text-slate-400">{new Date(tx.createdAt).toLocaleString()}</div>
+                                            </div>
+                                            <div className={`font-mono font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-slate-600'}`}>
+                                                {tx.amount > 0 ? '+' : ''}{tx.amount}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

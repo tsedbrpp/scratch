@@ -19,6 +19,9 @@ import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { useRouter } from "next/navigation"; // [NEW] For Deep Linking
 
 import { SynthesisComparisonResult as ComparisonResult } from "@/types/synthesis";
+import { useDemoMode } from "@/hooks/useDemoMode";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 const SYNTHESIS_FINDINGS = [
     {
@@ -70,6 +73,9 @@ const EXCLUDED_KEYS = new Set([
 
 export default function SynthesisPage() {
     const { sources, isLoading } = useSources();
+    const { isReadOnly } = useDemoMode();
+    const { hasCredits } = useCredits(); // [NEW] Credit Check
+    const [showTopUp, setShowTopUp] = useState(false); // [NEW] Top Up Dialog State
     const [isExporting, setIsExporting] = useState(false);
 
     // Comparison State
@@ -88,10 +94,23 @@ export default function SynthesisPage() {
     );
 
     const handleExport = () => {
+        if (isReadOnly) {
+            alert("Export disabled in Demo Mode");
+            return;
+        }
+
+        // [NEW] Credit Check
+        if (!hasCredits && !process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE) {
+            setShowTopUp(true);
+            return;
+        }
+
         if (!comparisonResult) {
             alert("Please run a comparison first to generate a report.");
             return;
         }
+
+        // ... rest of handleExport
 
         setIsExporting(true);
         try {
@@ -119,6 +138,10 @@ export default function SynthesisPage() {
 
     const handleCompare = async (forceRefresh = false) => {
         if (!sourceA || !sourceB) return;
+        if (isReadOnly) {
+            alert("Comparison disabled in Demo Mode");
+            return;
+        }
 
         // [NEW] Soft Preflight: Check for AssemblageExport in SessionStorage
         const exportA = sessionStorage.getItem(`assemblage_export_${sourceA.id}`);
@@ -221,7 +244,8 @@ export default function SynthesisPage() {
                 <Button
                     onClick={handleExport}
                     className="bg-slate-900 text-white hover:bg-slate-800"
-                    disabled={isExporting}
+                    disabled={isExporting || isReadOnly}
+                    title={isReadOnly ? "Export disabled in Demo Mode" : ""}
                 >
                     <FileDown className="mr-2 h-4 w-4" />
                     {isExporting ? "Generating PDF..." : "Export Report"}
@@ -303,9 +327,9 @@ export default function SynthesisPage() {
                             <div className="flex flex-col gap-2 w-full">
                                 <Button
                                     onClick={() => handleCompare(false)}
-                                    disabled={!sourceA || !sourceB || isComparing}
+                                    disabled={!sourceA || !sourceB || isComparing || isReadOnly}
                                     className="w-full bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={(!sourceA || !sourceB) ? "Please select two documents to compare" : "Run comparison"}
+                                    title={isReadOnly ? "Sign in to run comparisons" : (!sourceA || !sourceB) ? "Please select two documents to compare" : "Run comparison"}
                                 >
                                     {isComparing ? (
                                         <>
@@ -328,9 +352,9 @@ export default function SynthesisPage() {
                             {comparisonResult && (
                                 <Button
                                     onClick={() => handleCompare(true)}
-                                    disabled={isComparing}
+                                    disabled={isComparing || isReadOnly}
                                     variant="outline"
-                                    title="Force Regenerate (Bypass Cache)"
+                                    title={isReadOnly ? "Sign in to regenerate" : "Force Regenerate (Bypass Cache)"}
                                     className="shrink-0"
                                 >
                                     <RefreshCw className={`mr-2 h-4 w-4 ${isComparing ? 'animate-spin' : ''}`} />
@@ -344,23 +368,31 @@ export default function SynthesisPage() {
                         {sourceA && !sessionStorage.getItem(`assemblage_export_${sourceA.id}`) && (
                             <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-xs flex items-center justify-between">
                                 <span>⚠️ Missing Assemblage Analysis for Source A ({sourceA.title}). Comparison will lack provenance.</span>
-                                <a
-                                    href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceA.id}`} // Deep Link
-                                    className="font-bold underline hover:text-amber-900"
-                                >
-                                    Analyze in Ecosystem
-                                </a>
+                                {!isReadOnly ? (
+                                    <a
+                                        href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceA.id}`} // Deep Link
+                                        className="font-bold underline hover:text-amber-900"
+                                    >
+                                        Analyze in Ecosystem
+                                    </a>
+                                ) : (
+                                    <span className="font-bold text-slate-400 cursor-not-allowed" title="Analysis disabled in Demo Mode">Analyze in Ecosystem</span>
+                                )}
                             </div>
                         )}
                         {sourceB && !sessionStorage.getItem(`assemblage_export_${sourceB.id}`) && (
                             <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-xs flex items-center justify-between">
                                 <span>⚠️ Missing Assemblage Analysis for Source B ({sourceB.title}). Comparison will lack provenance.</span>
-                                <a
-                                    href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceB.id}`} // Deep Link
-                                    className="font-bold underline hover:text-amber-900"
-                                >
-                                    Analyze in Ecosystem
-                                </a>
+                                {!isReadOnly ? (
+                                    <a
+                                        href={`/ecosystem?returnTo=synthesis&mode=auto-generate&sourceId=${sourceB.id}`} // Deep Link
+                                        className="font-bold underline hover:text-amber-900"
+                                    >
+                                        Analyze in Ecosystem
+                                    </a>
+                                ) : (
+                                    <span className="font-bold text-slate-400 cursor-not-allowed" title="Analysis disabled in Demo Mode">Analyze in Ecosystem</span>
+                                )}
                             </div>
                         )}
 
@@ -553,58 +585,8 @@ export default function SynthesisPage() {
                 )
             }
 
-            {/* System Critique Section */}
-            {
-                comparisonResult?.system_critique && (
-                    <Card className="border-purple-200 bg-purple-50/50">
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <Brain className="h-5 w-5 text-purple-600" />
-                                <CardTitle>Systemic Critique (Devil's Advocate)</CardTitle>
-                            </div>
-                            <CardDescription>Synthesized critical analysis and blind-spot detection</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {typeof comparisonResult.system_critique === 'string' ? (
-                                <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
-                                    {comparisonResult.system_critique}
-                                </p>
-                            ) : (
-                                <>
-                                    {/* Blind Spots */}
-                                    {comparisonResult.system_critique.blind_spots && comparisonResult.system_critique.blind_spots.length > 0 && (
-                                        <div className="p-3 bg-red-50 rounded-md border border-red-100">
-                                            <p className="text-xs font-bold text-red-800 uppercase mb-2">Potential Blind Spots</p>
-                                            <ul className="list-disc list-inside space-y-1">
-                                                {comparisonResult.system_critique.blind_spots.map((spot, idx) => (
-                                                    <li key={idx} className="text-sm text-red-900">{spot}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {/* Over Interpretation */}
-                                    {comparisonResult.system_critique.over_interpretation && (
-                                        <div className="p-3 bg-amber-50 rounded-md border border-amber-100">
-                                            <p className="text-xs font-bold text-amber-800 uppercase mb-1">Over-Interpretation Check</p>
-                                            <p className="text-sm text-amber-900">{comparisonResult.system_critique.over_interpretation}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Legitimacy Correction */}
-                                    {comparisonResult.system_critique.legitimacy_correction && (
-                                        <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
-                                            <p className="text-xs font-bold text-blue-800 uppercase mb-1">Legitimacy Correction</p>
-                                            <p className="text-sm text-blue-900">{comparisonResult.system_critique.legitimacy_correction}</p>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                )
-            }
-
+            {/* Credit Top Up Dialog */}
+            <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => setShowTopUp(false)} />
 
         </div >
     );

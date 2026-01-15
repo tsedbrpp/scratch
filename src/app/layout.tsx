@@ -21,6 +21,7 @@ export const metadata: Metadata = {
 
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";
 import { Toaster } from "sonner";
+import { DemoModeAlert } from "@/components/DemoModeAlert";
 
 export default function RootLayout({
   children,
@@ -41,6 +42,7 @@ export default function RootLayout({
             </main>
           </div>
           <ResearchWorkflowGuide />
+          <DemoModeAlert />
           <Toaster />
         </body>
       </html>

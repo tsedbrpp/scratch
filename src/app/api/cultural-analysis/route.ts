@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { getAuthenticatedUserId } from '@/lib/auth-helper';
+import { getAuthenticatedUserId, isReadOnlyAccess } from '@/lib/auth-helper';
 import { performCulturalAnalysis } from '@/lib/cultural-analysis-service';
+import fs from 'fs';
 
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
     const startTime = Date.now();
     console.log(`[CULTURAL ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
+
+    // BLOCK READ-ONLY DEMO USERS
+    if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
+    }
 
     const userId = await getAuthenticatedUserId(request);
 
@@ -47,7 +53,6 @@ export async function POST(request: NextRequest) {
             baseURL: process.env.OPENAI_BASE_URL,
         });
 
-        const fs = require('fs');
         const log = (msg: string) => fs.appendFileSync('debug_cultural.log', msg + '\n');
         log(`[START] Analyzing ${sources.length} sources with lens: ${lensId}`);
 

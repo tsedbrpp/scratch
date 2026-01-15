@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { auth } from '@clerk/nextjs/server';
+import { isAdmin } from '@/lib/auth-helper';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -19,6 +20,10 @@ export async function POST(req: Request) {
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!await isAdmin(userId)) {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
         const { systemPrompt, userContent } = await req.json();

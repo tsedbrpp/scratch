@@ -517,10 +517,12 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
                 )}
             </div>
 
-            {/* Empty State / Prompt if nothing selected */}
-            {!selectedVector && isFullScreen && (
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none">
-                    <p className="text-slate-400 text-sm animate-pulse">Drag nodes to test elastic tension • Click for details</p>
+            {/* User Instructions */}
+            {!selectedVector && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 pointer-events-none w-full text-center px-4">
+                    <p className="text-slate-500 text-xs bg-white/60 backdrop-blur-md py-1.5 px-4 rounded-full inline-block shadow-sm border border-slate-200 font-medium">
+                        Drag and stretch vectors to assess the strength of moving the regime
+                    </p>
                 </div>
             )}
         </div>

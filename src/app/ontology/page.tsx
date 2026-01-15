@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
+import { useDemoMode } from "@/hooks/useDemoMode"; // [NEW]
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ const STATIC_NETWORK_LINKS = [
 
 export default function OntologyPage() {
     const { sources } = useSources();
+    const { isReadOnly } = useDemoMode(); // [NEW]
     const [selectedSourceId, setSelectedSourceId] = useServerStorage<string>("ontology_selected_source_id", "");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [ontologyMaps, setOntologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
@@ -115,6 +117,17 @@ export default function OntologyPage() {
         : null;
 
     const handleGenerateOntology = async () => {
+        if (selectedSourceId && analyzedSources.find(s => s.id === selectedSourceId) && ontologyMaps && ontologyMaps[selectedSourceId]) {
+            // Allow viewing cached maps
+        } else if (isAnalyzing) {
+            return;
+        }
+        // NOTE: We don't strictly block generation if it's cached, but if new generation is required:
+        if (isReadOnly) {
+            alert("Ontology generation is disabled in Demo Mode.");
+            return;
+        }
+
         const source = analyzedSources.find(s => s.id === selectedSourceId);
         if (!source || !source.extractedText) return;
 
@@ -169,6 +182,10 @@ export default function OntologyPage() {
     };
 
     const handleCompareOntologies = async () => {
+        if (isReadOnly) {
+            alert("Comparison is disabled in Demo Mode.");
+            return;
+        }
         if (selectedForComparison.length < 2 || selectedForComparison.length > 3) return;
         if (isComparisonResultLoading) return; // Prevent run if still loading
 
@@ -354,8 +371,9 @@ export default function OntologyPage() {
                             </Select>
                             <Button
                                 onClick={handleGenerateOntology}
-                                disabled={!selectedSourceId || isAnalyzing}
+                                disabled={!selectedSourceId || isAnalyzing || (isReadOnly && analyzedSources.find(s => s.id === selectedSourceId) && !ontologyMaps?.[selectedSourceId])}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                title={isReadOnly && (!ontologyMaps?.[selectedSourceId!]) ? "Generation disabled in Demo Mode" : ""}
                             >
                                 {isAnalyzing ? (
                                     <>

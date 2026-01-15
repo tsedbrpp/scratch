@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSources } from "@/hooks/useSources";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ const PILLAR_DEFINITIONS = {
 
 export default function GovernancePage() {
     const { sources, isLoading } = useSources();
+    const { isReadOnly } = useDemoMode();
 
     // Combine baseline sources with user analyzed sources
     const allSources: Source[] = [
@@ -87,6 +89,10 @@ export default function GovernancePage() {
         console.log("Running drift analysis with:", { policyLength: policy?.length, techLength: tech?.length });
         if (!policy || !tech) {
             setError("Please select both policy and technical documents with valid text content.");
+            return;
+        }
+        if (isReadOnly) {
+            setError("Drift Analysis disabled in Demo Mode");
             return;
         }
 
@@ -310,7 +316,8 @@ export default function GovernancePage() {
                             <Button
                                 className="w-full"
                                 onClick={() => runDriftAnalysis(selectedPolicyText, selectedTechText)}
-                                disabled={!selectedPolicyText || !selectedTechText || isAnalyzingDrift}
+                                disabled={!selectedPolicyText || !selectedTechText || isAnalyzingDrift || isReadOnly}
+                                title={isReadOnly ? "Drift Analysis disabled in Demo Mode" : ""}
                             >
                                 {isAnalyzingDrift ? (
                                     <>

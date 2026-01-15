@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { Source } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { AnalysisResults } from "@/components/policy/AnalysisResults";
 
 export default function EmpiricalPage() {
     const { sources, isLoading, addSource, updateSource, deleteSource } = useSources();
+    const { isReadOnly } = useDemoMode();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -59,6 +61,10 @@ export default function EmpiricalPage() {
 
     const handleAddSource = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isReadOnly) {
+            toast.error("Adding traces is disabled in Demo Mode.");
+            return;
+        }
         if (!selectedPolicyId) {
             toast.error("Please select a policy document first.");
             return;
@@ -85,6 +91,10 @@ export default function EmpiricalPage() {
     // ... handleSearchTraces ...
 
     const handleSearchTraces = async () => {
+        if (isReadOnly) {
+            toast.error("Searching traces is disabled in Demo Mode.");
+            return;
+        }
         // ... existing implementation ...
         if (!selectedPolicyId) {
             toast.error("Please select a policy document first.");
@@ -165,6 +175,10 @@ export default function EmpiricalPage() {
 
 
     const handleAnalyze = async (sourceId: string) => {
+        if (isReadOnly) {
+            toast.error("Analysis is disabled in Demo Mode.");
+            return;
+        }
         const source = sources.find(s => s.id === sourceId);
         if (!source || !source.extractedText) {
             toast.error('No text available to analyze.');
@@ -193,7 +207,7 @@ export default function EmpiricalPage() {
             if (result.success) {
                 await updateSource(sourceId, { analysis: result.analysis });
                 // Un-minimize if it was legally minimized before re-analysis
-                setMinimizedAnalysisIds(prev => prev.filter(id => id !== sourceId));
+                // setMinimizedAnalysisIds(prev => prev.filter(id => id !== sourceId));
 
                 toast.success('Analysis complete!', {
                     action: {
@@ -213,12 +227,20 @@ export default function EmpiricalPage() {
     };
 
     const handleDelete = async (sourceId: string) => {
+        if (isReadOnly) {
+            toast.error("Deleting traces is disabled in Demo Mode.");
+            return;
+        }
         if (confirm('Are you sure you want to delete this source?')) {
             await deleteSource(sourceId);
         }
     };
 
     const handleDeleteAll = async () => {
+        if (isReadOnly) {
+            toast.error("Deleting traces is disabled in Demo Mode.");
+            return;
+        }
         if (!selectedPolicyId) return;
         if (confirm('Are you sure you want to delete ALL empirical traces for this policy? This action cannot be undone.')) {
             const traceIds = filteredSources.map(s => s.id);
@@ -306,14 +328,19 @@ export default function EmpiricalPage() {
                                 <Button
                                     variant="destructive"
                                     onClick={handleDeleteAll}
-                                    disabled={filteredSources.length === 0}
+                                    disabled={filteredSources.length === 0 || isReadOnly}
+                                    title={isReadOnly ? "Deletion disabled in Demo Mode" : ""}
                                 >
                                     <Trash className="mr-2 h-4 w-4" /> Delete All
                                 </Button>
 
                                 <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                                        <Button
+                                            className="bg-blue-600 text-white hover:bg-blue-700"
+                                            disabled={isReadOnly}
+                                            title={isReadOnly ? "Search disabled in Demo Mode" : ""}
+                                        >
                                             <Search className="mr-2 h-4 w-4" /> Search Web
                                         </Button>
                                     </DialogTrigger>
@@ -391,7 +418,11 @@ export default function EmpiricalPage() {
 
                                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="bg-slate-900 text-white hover:bg-slate-800">
+                                        <Button
+                                            className="bg-slate-900 text-white hover:bg-slate-800"
+                                            disabled={isReadOnly}
+                                            title={isReadOnly ? "Adding traces disabled in Demo Mode" : ""}
+                                        >
                                             <Plus className="mr-2 h-4 w-4" /> Add Manual Trace
                                         </Button>
                                     </DialogTrigger>
@@ -482,6 +513,8 @@ export default function EmpiricalPage() {
                                                     size="sm"
                                                     onClick={() => handleDelete(source.id)}
                                                     className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                                                    disabled={isReadOnly}
+                                                    title={isReadOnly ? "Deletion disabled in Demo Mode" : ""}
                                                 >
                                                     <Trash className="h-4 w-4" />
                                                 </Button>
@@ -503,7 +536,8 @@ export default function EmpiricalPage() {
                                                 <div className="mt-4">
                                                     <Button
                                                         onClick={() => handleAnalyze(source.id)}
-                                                        disabled={analyzingId === source.id}
+                                                        disabled={analyzingId === source.id || isReadOnly}
+                                                        title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}
                                                         className="w-full bg-purple-600 text-white hover:bg-purple-700"
                                                         size="sm"
                                                     >

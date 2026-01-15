@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ import {
 
 export default function ResistancePage() {
     const { sources, addSource, updateSource, deleteSource, isLoading } = useSources();
+    const { isReadOnly } = useDemoMode();
     const [selectedTraceId, setSelectedTraceId] = useServerStorage<string | null>("resistance_selected_trace_id", null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
@@ -51,6 +53,10 @@ export default function ResistancePage() {
 
     const handleDeepFetch = async (trace: Source) => {
         if (!trace.sourceUrl) return;
+        if (isReadOnly) {
+            toast.error("Deep fetch disabled in Demo Mode");
+            return;
+        }
 
         setIsFetching(true);
         toast.info("Fetching full content...", { description: "Retrieving original article text." });
@@ -99,6 +105,10 @@ export default function ResistancePage() {
     // Existing handleAnalyzeTrace...
     const handleAnalyzeTrace = async (trace: Source) => {
         if (!trace.extractedText) return;
+        if (isReadOnly) {
+            toast.error("Analysis disabled in Demo Mode");
+            return;
+        }
 
         setIsAnalyzing(true);
         try {
@@ -165,6 +175,10 @@ export default function ResistancePage() {
     };
 
     const handleSearchTraces = async () => {
+        if (isReadOnly) {
+            toast.error("Search disabled in Demo Mode");
+            return;
+        }
         if (!selectedPolicyId) {
             alert("Please select a policy document first.");
             return;
@@ -259,6 +273,10 @@ export default function ResistancePage() {
     };
 
     const handleDeleteTrace = async (traceId: string) => {
+        if (isReadOnly) {
+            toast.error("Deletion disabled in Demo Mode");
+            return;
+        }
         if (confirm(`Are you sure you want to delete this trace?`)) {
             await deleteSource(traceId);
             if (selectedTraceId === traceId) {
@@ -269,6 +287,10 @@ export default function ResistancePage() {
 
     const handleResetTraces = async () => {
         if (!selectedPolicyId) return;
+        if (isReadOnly) {
+            toast.error("Reset disabled in Demo Mode");
+            return;
+        }
 
         if (confirm("Are you sure? This will DELETE ALL traces for this policy and CLEAR the search cache. This action cannot be undone.")) {
             // 1. Delete all traces for this policy
@@ -325,6 +347,10 @@ export default function ResistancePage() {
     );
 
     const handleSynthesizeFindings = async () => {
+        if (isReadOnly) {
+            toast.error("Synthesis disabled in Demo Mode");
+            return;
+        }
         const analyzedTraces = traces.filter(t => t.resistance_analysis);
         if (analyzedTraces.length < 2) {
             toast.error("Not enough data", { description: "Please analyze at least 2 traces before synthesizing." });
@@ -431,7 +457,7 @@ export default function ResistancePage() {
                             <Button
                                 variant="outline"
                                 onClick={handleSynthesizeFindings}
-                                disabled={isSynthesizing || traces.filter(t => t.resistance_analysis).length < 2}
+                                disabled={isSynthesizing || traces.filter(t => t.resistance_analysis).length < 2 || isReadOnly}
                                 className="border-purple-200 hover:bg-purple-50 text-purple-700"
                             >
                                 {isSynthesizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
@@ -440,6 +466,7 @@ export default function ResistancePage() {
                             <Button
                                 variant="outline"
                                 onClick={handleResetTraces}
+                                disabled={isReadOnly}
                                 className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 mr-2"
                             >
                                 <Trash className="mr-2 h-4 w-4" />
@@ -524,7 +551,7 @@ export default function ResistancePage() {
                                     <DialogFooter>
                                         <Button
                                             onClick={handleSearchTraces}
-                                            disabled={isSearching}
+                                            disabled={isSearching || isReadOnly}
                                             className="bg-blue-600 hover:bg-blue-700"
                                         >
                                             {isSearching ? (
@@ -712,6 +739,7 @@ export default function ResistancePage() {
                                                                 handleDeleteTrace(trace.id);
                                                             }}
                                                             title="Delete Trace"
+                                                            disabled={isReadOnly}
                                                         >
                                                             <Trash className="h-4 w-4" />
                                                         </Button>
@@ -735,7 +763,7 @@ export default function ResistancePage() {
                                                         {!currentAnalysis && (
                                                             <Button
                                                                 onClick={() => handleAnalyzeTrace(selectedTrace)}
-                                                                disabled={isAnalyzing}
+                                                                disabled={isAnalyzing || isReadOnly}
                                                                 className="bg-purple-600 hover:bg-purple-700"
                                                             >
                                                                 {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
@@ -746,7 +774,7 @@ export default function ResistancePage() {
                                                             <Button
                                                                 variant="outline"
                                                                 onClick={() => handleDeepFetch(selectedTrace)}
-                                                                disabled={isFetching || isAnalyzing}
+                                                                disabled={isFetching || isAnalyzing || isReadOnly}
                                                                 className="ml-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                                                             >
                                                                 {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}

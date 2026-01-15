@@ -41,6 +41,7 @@ interface EcosystemMapProps {
     configLayout?: Record<string, { x: number; y: number }>;
     onConfigSelect?: (configId: string) => void;
     extraToolbarContent?: React.ReactNode;
+    isReadOnly?: boolean; // [NEW]
 }
 
 // --- Swiss Design System Constants ---
@@ -71,7 +72,8 @@ export function EcosystemMap({
     setAnalysisMode,
     configLayout = {},
     onConfigSelect,
-    extraToolbarContent
+    extraToolbarContent,
+    isReadOnly = false
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     // ... existing state ...
@@ -118,6 +120,10 @@ export function EcosystemMap({
 
     const handleExplainMap = React.useCallback(async () => {
         if (!analysisMode) return;
+        if (isReadOnly) {
+            alert("Trace analysis is disabled in Demo Mode.");
+            return;
+        }
         setIsExplaining(true);
         // Clear previous explanation to indicate change
         setExplanation(null);
@@ -368,7 +374,7 @@ export function EcosystemMap({
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-    const [hoveredLink, setHoveredLink] = useState<{ source: string | Object, target: string | Object, type: string } | null>(null);
+    const [hoveredLink, setHoveredLink] = useState<{ source: string | object, target: string | object, type: string } | null>(null);
 
     // Node Event Handlers
     const handleNodeHover = (e: React.MouseEvent, actor: EcosystemActor) => {
@@ -491,7 +497,8 @@ export function EcosystemMap({
                             size="sm"
                             className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isExplaining || explanation ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-900"}`}
                             onClick={handleExplainMap}
-                            title="Generate AI Analysis of current view"
+                            disabled={isReadOnly}
+                            title={isReadOnly ? "Trace analysis disabled in Demo Mode" : "Generate AI Analysis of current view"}
                         >
                             <MessageSquare className="h-3 w-3 mr-1.5" />
                             {isExplaining ? "Tracing..." : "Open Trace"}
