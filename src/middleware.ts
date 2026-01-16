@@ -36,7 +36,13 @@ export default clerkMiddleware(async (auth, request) => {
     // However, the previous logic was: if demo mode, return. This effectively disables auth for the whole app in demo mode. 
     // We should probably keep that for the UI but maybe enforced stricter for API? 
     // For now, I will preserve existing behavior but ensure API catch-all works when NOT in demo mode.)
-    if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true") {
+    // Bypass auth if demo mode is enabled
+    // We log the value to debug Vercel environment behavior
+    const demoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE;
+    console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname, 'Demo Mode Env:', demoMode);
+
+    if (demoMode === "true") {
+        console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode');
         return;
     }
 
