@@ -56,7 +56,6 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
 
                 // Save to server
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                const headers: HeadersInit = { 'Content-Type': 'application/json' };
                 if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
                     headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
                 }
