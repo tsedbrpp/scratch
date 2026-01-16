@@ -50,7 +50,7 @@ export function HeroSection() {
                     </blockquote>
                 </div>
                 <div className="mt-10 flex items-center justify-center gap-x-6">
-                    <Link href="/explore">
+                    <Link href="/data">
                         <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 px-8 transition-all hover:scale-105 group shadow-lg shadow-emerald-900/20">
                             <Activity className="mr-2 h-4 w-4 group-hover:animate-pulse" />
                             Explore Demo Mode
