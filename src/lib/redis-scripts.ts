@@ -50,6 +50,7 @@ export async function addCredits(userId: string, amount: number, source: string,
     // Check idempotency
     const processed = await redis.get(idempotencyKey);
     if (processed) {
+        console.log(`[Redis] Idempotency hit for ${referenceId}. Skipping credit addition.`);
         return { success: true, message: 'Already processed' };
     }
 
