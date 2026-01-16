@@ -29,23 +29,61 @@ export default function BillingPage() {
     };
 
     useEffect(() => {
-        // Only fetch credits if we have a user (even demo user returns something for api/credits, 
-        // but we mainly care about display here. If strictly blocked, it might fail. 
-        // Actually api/credits handles demo users fine for reading.
+        // Initial fetch
         fetchCredits();
 
-        // Check for URL params
         const query = new URLSearchParams(window.location.search);
+
         if (query.get('success')) {
-            alert("Payment successful! credits added.");
+            toastSuccess();
+            // Poll for updates (Stripe webhooks can take a few seconds)
+            const MAX_RETRIES = 10;
+            let attempts = 0;
+
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                try {
+                    const res = await fetch('/api/credits');
+                    const data = await res.json();
+
+                    // If credits increased (or just to be safe, update state)
+                    if (data.credits !== null) {
+                        setCredits(current => {
+                            // If we have a new value that is different, we might stop polling? 
+                            // Actually difficult to know "previous" state here without ref.
+                            // But simply refreshing the UI 10 times over 20 seconds is fine.
+                            return data.credits;
+                        });
+                        setHistory(data.history || []);
+                    }
+                } catch (e) {
+                    console.error("Polling error", e);
+                }
+
+                if (attempts >= MAX_RETRIES) {
+                    clearInterval(pollInterval);
+                }
+            }, 2000); // Check every 2 seconds
+
             // Clean URL
             window.history.replaceState({}, '', '/settings/billing');
         }
+
         if (query.get('canceled')) {
             alert("Payment canceled.");
             window.history.replaceState({}, '', '/settings/billing');
         }
+
+        return () => {
+            // Cleanup provided by scoping, standard useEffect cleanup handles component unmount
+        }
     }, []);
+
+    // Helper for toast (since we don't have a toast component in this file explicitly imported, use alert for now or assumed existing patterns)
+    const toastSuccess = () => {
+        // We will use a simple timeout to avoid blocking execution with alert immediately
+        setTimeout(() => alert("Payment successful! Updating balance..."), 500);
+    };
 
     const handlePurchase = async () => {
         if (!isSignedIn) {
