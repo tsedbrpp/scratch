@@ -38,7 +38,9 @@ export default clerkMiddleware(async (auth, request) => {
     // For now, I will preserve existing behavior but ensure API catch-all works when NOT in demo mode.)
     // Bypass auth if demo mode is enabled
     // We log the value to debug Vercel environment behavior
-    const demoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE;
+    // Robust check: Next.js middleware sometimes only sees server-side vars or public vars depending on bundling.
+    // We check both to be safe.
+    const demoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE || process.env.ENABLE_DEMO_MODE;
     console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname, 'Demo Mode Env:', demoMode);
 
     if (demoMode === "true") {
