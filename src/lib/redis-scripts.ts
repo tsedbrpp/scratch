@@ -63,24 +63,30 @@ export async function addCredits(userId: string, amount: number, source: string,
         createdAt: new Date().toISOString()
     });
 
-    // Pipeline the updates
-    const pipeline = redis.pipeline();
-    pipeline.incrby(creditKey, amount); // If key missing, INCRBY creates it at 0 then adds amount. 
-    // Logic gap: if I add 10 to a new user, they get 0+10=10. 
-    // They missed their free 5! 
-    // Fix: Check exist in addCredits too? 
-    // Actually, if they PAY, maybe we don't care about the free 5? 
-    // Or we should be generous. 
-    // Let's stick to simple for now. If they pay, they get what they paid for.
-    // Wait, if they assume they have 5, then buy 10, they expect 15.
-    // If I do nothing here, they get 10. 
-    // Small edge case. I'll leave addCredits as is for now to minimize complexity risk, 
-    // as "New User" usually means "Sign up then try", not "Sign up then immediately pay".
-    pipeline.lpush(txKey, transaction);
-    pipeline.set(idempotencyKey, '1', 'EX', 86400); // 24h idempotency
+    // Standardize lazy-init logic: If key doesn't exist, we assume they had the virtual 5.
+    // So we should set it to 5 + amount.
+    // We can't easily do this atomic with just INCRBY if we want to respect the "virtual 5".
+    // Let's use a small LUA script for addCredits too to be consistent and safe.
 
-    await pipeline.exec();
-    return { success: true };
+    const ADD_CREDITS_SCRIPT = `
+        local current_credits = redis.call("GET", KEYS[1])
+        if not current_credits then
+            current_credits = 5
+        end
+        local new_balance = tonumber(current_credits) + tonumber(ARGV[1])
+        redis.call("SET", KEYS[1], new_balance)
+        redis.call("LPUSH", KEYS[2], ARGV[2])
+        redis.call("SET", KEYS[3], "1", "EX", 86400)
+        return new_balance
+    `;
+
+    try {
+        await redis.eval(ADD_CREDITS_SCRIPT, 3, creditKey, txKey, idempotencyKey, amount, transaction);
+        return { success: true };
+    } catch (err: any) {
+        console.error("Redis Add Credits Error", err);
+        throw err;
+    }
 }
 
 export async function getCredits(userId: string): Promise<number> {
