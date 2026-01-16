@@ -12,8 +12,10 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             try {
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
                 // Send demo user ID if configured (relaxed check to match EcosystemPage)
-                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                // Send demo user ID if configured (relaxed check to match EcosystemPage)
+                // Fix: Must match auth-helper logic (check enable flag, fallback to 'demo-user')
+                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
                 }
 
                 const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
@@ -54,8 +56,9 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
 
                 // Save to server
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
                 }
 
                 fetch('/api/storage', {
