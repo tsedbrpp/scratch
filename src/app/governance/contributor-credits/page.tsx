@@ -205,6 +205,11 @@ export default function ContributorCreditPolicyPage() {
                                 Contribute on GitHub
                             </Button>
                         </Link>
+                        <Link href="/governance/submit">
+                            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20">
+                                Submit Contribution Form
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
