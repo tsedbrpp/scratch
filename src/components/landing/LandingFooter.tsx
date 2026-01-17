@@ -28,6 +28,7 @@ export function LandingFooter() {
                     <h4 className="text-white font-semibold mb-4">Resources</h4>
                     <ul className="space-y-2 text-sm">
                         <li><Link href="/docs/user" className="hover:text-blue-400 transition-colors">User Guide</Link></li>
+                        <li><Link href="/why-credits" className="hover:text-emerald-400 transition-colors">Why Costs/Credits?</Link></li>
                         <li><Link href="/docs" className="hover:text-blue-400 transition-colors">System Documentation</Link></li>
                         <li><Link href="https://github.com/tsedbrpp/scratch" className="hover:text-blue-400 transition-colors">GitHub Repository</Link></li>
                         <li><Link href="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link></li>
