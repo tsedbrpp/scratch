@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, Coins, Check, History, LogIn } from "lucide-react";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function BillingPage() {
     const { userId, isLoaded, isSignedIn } = useAuth();
@@ -170,7 +171,12 @@ export default function BillingPage() {
                                 <CreditCard className="h-5 w-5 text-indigo-600" />
                                 Standard Pack
                             </CardTitle>
-                            <CardDescription>Perfect for standard research projects.</CardDescription>
+                            <CardDescription>
+                                Perfect for standard research projects.
+                                <Link href="/why-credits" className="ml-1 text-indigo-600 hover:text-indigo-700 underline decoration-indigo-300 underline-offset-2">
+                                    Why credits?
+                                </Link>
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex justify-between items-baseline mb-4">

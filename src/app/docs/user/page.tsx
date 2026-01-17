@@ -129,6 +129,10 @@ export default function UserDocsPage() {
                                 <p className="text-slate-600 text-sm mb-4">
                                     Viewing results and uploading documents is free. To top up, click the <strong>Credits badge</strong> in the dashboard and select a package via Stripe.
                                 </p>
+                                <Link href="/why-credits" className="text-amber-700 font-medium hover:text-amber-900 hover:underline inline-flex items-center gap-1 transition-colors">
+                                    <HelpCircle className="h-4 w-4" />
+                                    Why do we use a credit system?
+                                </Link>
                             </div>
                         </section>
 
