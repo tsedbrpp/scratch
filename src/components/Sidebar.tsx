@@ -19,11 +19,13 @@ import {
     LucideIcon,
     PanelLeftClose,
     PanelLeftOpen,
-    Coins
+    Coins,
+    LogIn,
+    UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useDemoMode } from "@/hooks/useDemoMode";
 
@@ -173,6 +175,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { pathname: string; isMounted: boolean; isCollapsed: boolean; toggleCollapse?: () => void }) {
     const { isReadOnly } = useDemoMode();
+    const { isSignedIn } = useAuth();
 
     return (
         <div className="flex flex-col h-full bg-slate-950 text-slate-100 border-r border-slate-900 shadow-2xl">
@@ -245,17 +248,67 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
             </div>
 
             <div className={cn("border-t border-slate-900 bg-slate-950 flex flex-col gap-2 transition-all duration-300", isCollapsed ? "p-2 items-center" : "p-4")}>
-                <div className="flex items-center gap-3 justify-center w-full">
+                <div className="flex flex-col gap-2 w-full">
                     {isMounted && (
-                        <div className="bg-slate-900 rounded-full p-0.5 ring-1 ring-white/10">
-                            <UserButton showName={!isCollapsed} appearance={{
-                                elements: {
-                                    userButtonBox: "flex flex-row-reverse",
-                                    userButtonOuterIdentifier: "text-slate-300 font-semibold pl-2",
-                                    avatarBox: "w-8 h-8"
-                                }
-                            }} />
-                        </div>
+                        isSignedIn ? (
+                            <div className="flex items-center gap-3 justify-center w-full">
+                                <div className="bg-slate-900 rounded-full p-0.5 ring-1 ring-white/10">
+                                    <UserButton showName={!isCollapsed} appearance={{
+                                        elements: {
+                                            userButtonBox: "flex flex-row-reverse",
+                                            userButtonOuterIdentifier: "text-slate-300 font-semibold pl-2",
+                                            avatarBox: "w-8 h-8"
+                                        }
+                                    }} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className={cn("flex flex-col gap-2", isCollapsed ? "items-center" : "w-full")}>
+                                {isCollapsed ? (
+                                    <>
+                                        <TooltipProvider delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Link href="/login">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800">
+                                                            <LogIn className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right">Log In</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <TooltipProvider delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Link href="/sign-up">
+                                                        <Button size="icon" className="h-8 w-8 bg-blue-600 hover:bg-blue-500 text-white">
+                                                            <UserPlus className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right">Get Started</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link href="/login" className="w-full">
+                                            <Button variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-900">
+                                                <LogIn className="mr-2 h-4 w-4" />
+                                                Log In
+                                            </Button>
+                                        </Link>
+                                        <Link href="/sign-up" className="w-full">
+                                            <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20">
+                                                <UserPlus className="mr-2 h-4 w-4" />
+                                                Get Started
+                                            </Button>
+                                        </Link>
+                                    </>
+                                )}
+                            </div>
+                        )
                     )}
                 </div>
                 {toggleCollapse && (
@@ -263,7 +316,7 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                         variant="ghost"
                         size="sm"
                         onClick={toggleCollapse}
-                        className={cn("w-full text-slate-500 hover:text-slate-300 hover:bg-slate-900", isCollapsed ? "h-8 px-0" : "h-8")}
+                        className={cn("w-full text-slate-500 hover:text-slate-300 hover:bg-slate-900 mt-2", isCollapsed ? "h-8 px-0" : "h-8")}
                         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                     >
                         {isCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <><PanelLeftClose className="w-4 h-4 mr-2" /> Collapse</>}
