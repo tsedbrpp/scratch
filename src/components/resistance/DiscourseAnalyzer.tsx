@@ -81,6 +81,12 @@ export function DiscourseAnalyzer({ artifact, onAnalysisComplete }: DiscourseAna
                                 </>
                             )}
                         </Button>
+                        <p className="text-xs text-slate-500 text-center mt-2">
+                            <span className="inline-flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-indigo-400" />
+                                AI-Generated Content. Inputs processed by OpenAI.
+                            </span>
+                        </p>
                     </CardContent>
                 </Card>
             )}

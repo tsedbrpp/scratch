@@ -59,7 +59,17 @@ export default function PrivacyPolicyPage() {
                                     Your data is used exclusively to provide the instantTEA service.
                                 </p>
                                 <ul>
-                                    <li><strong>Analysis:</strong> Text extracted from your documents is sent to <strong>OpenAI</strong> (via their API) for processing. We do not opt-in to any model training programs; your data is ephemeral to the analysis process.</li>
+                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg my-4">
+                                        <h3 className="font-bold text-blue-900 mb-2">Use of Third-Party AI Services</h3>
+                                        <p className="text-sm text-blue-800 mb-2">
+                                            To provide our analysis features, User Inputs (including prompts and uploaded text) are transmitted to third-party Large Language Model (LLM) providers via API.
+                                        </p>
+                                        <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
+                                            <li><strong>Primary Provider:</strong> OpenAI (GPT-4o / GPT-4 Turbo)</li>
+                                            <li><strong>Processing Purpose:</strong> To generate the requested analysis, summary, or critique.</li>
+                                            <li><strong>Data Retention:</strong> Data is shared for the sole purpose of generating a response. We do not opt-in to model training. Providers may retain data temporarily (e.g., 30 days) for abuse monitoring.</li>
+                                        </ul>
+                                    </div>
                                     <li><strong>Payments:</strong> All payment processing is handled by <strong>Stripe</strong>. We do not store credit card numbers.</li>
                                     <li><strong>Storage:</strong> Data is stored in a secure <strong>Redis</strong> database hosted on appropriate infrastructure.</li>
                                 </ul>

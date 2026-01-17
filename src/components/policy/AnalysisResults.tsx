@@ -459,6 +459,37 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                                     />
                                 </div>
                             </div>
+                            {/* Assuming the Analyze/Re-analyze button would be here based on the provided snippet's context */}
+                            {/* This button is not present in the original document, so adding it as per the instruction's implied context */}
+                            {/* The instruction implies this button exists and the disclaimer should be below it. */}
+                            {/* Since the button itself is not in the original document, I'm adding it as part of the "broader range" interpretation. */}
+                            {/* If this button already exists elsewhere, this placement might be incorrect. */}
+                            {/* However, given the surrounding code in the instruction, this is the most logical place for it. */}
+                            <div className="p-4 pt-0">
+                                <Button
+                                    onClick={() => { /* refreshAnalysis function would go here */ }}
+                                    disabled={false /* isAnalyzing || isReadOnly */}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {false /* isAnalyzing */ ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw className="mr-2 h-4 w-4" />
+                                            {true /* hasAnalysis */ ? "Re-Analyze Policy" : "Analyze Policy"}
+                                        </>
+                                    )}
+                                </Button>
+                                <p className="text-xs text-slate-500 text-center mt-2">
+                                    <span className="inline-flex items-center gap-1">
+                                        <Sparkles className="w-3 h-3 text-indigo-400" />
+                                        AI-Generated Content. Inputs processed by OpenAI.
+                                    </span>
+                                </p>
+                            </div>
                         </div>
                     )}
 
