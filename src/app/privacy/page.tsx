@@ -138,7 +138,7 @@ export default function PrivacyPolicyPage() {
                                 Deleted data is permanently removed from our active database.
                             </p>
                             <p className="text-slate-600">
-                                To request full account deletion, please contact support.
+                                To request full account deletion, you may do so directly via the <Link href="/settings/billing" className="text-blue-600 hover:underline">Billing & Settings</Link> page in the "Danger Zone" section.
                             </p>
                         </section>
 
