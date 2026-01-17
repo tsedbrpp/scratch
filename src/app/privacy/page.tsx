@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Shield, Lock, Eye, Server, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, Server, Trash2, Globe } from "lucide-react";
 
 export default function PrivacyPolicyPage() {
     return (
@@ -110,11 +110,28 @@ export default function PrivacyPolicyPage() {
                             </div>
                         </section>
 
-                        {/* 5. Your Rights */}
+                        {/* 5. International Data Transfers */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                                <Globe className="h-6 w-6 text-blue-500" />
+                                5. International Data Transfers
+                            </h2>
+                            <p className="text-slate-600 mb-4">
+                                Your information, including Personal Data, is processed at the Company's operating offices and in any other places where the parties involved in the processing are located. It means that this information may be transferred to — and maintained on — computers located outside of your state, province, country, or other governmental jurisdiction where the data protection laws may differ than those from your jurisdiction.
+                            </p>
+                            <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                                <h3 className="font-bold text-slate-900 mb-2">GDPR & Cross-Border Transfers</h3>
+                                <p className="text-sm text-slate-600">
+                                    If you are located in the European Economic Area (EEA), please note that we rely on **Standard Contractual Clauses (SCCs)** approved by the European Commission, and/or the **Data Privacy Framework (DPF)** where applicable, to ensure your data is protected during transfer to the United States or other jurisdictions.
+                                </p>
+                            </div>
+                        </section>
+
+                        {/* 6. Your Rights */}
                         <section>
                             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
                                 <Trash2 className="h-6 w-6 text-red-600" />
-                                5. Your Rights
+                                6. Your Rights
                             </h2>
                             <p className="text-slate-600 mb-4">
                                 You retain full ownership of your research data. You may delete your uploaded documents and analysis results at any time via the Dashboard.

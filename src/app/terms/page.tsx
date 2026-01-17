@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Scale, AlertTriangle, FileText, Gavel, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Scale, AlertTriangle, FileText, Gavel, ShieldCheck, Globe } from "lucide-react";
 
 export default function TermsOfServicePage() {
     return (
@@ -90,6 +90,22 @@ export default function TermsOfServicePage() {
                             <p className="text-slate-600">
                                 These Terms shall be governed and construed in accordance with the laws of the jurisdiction in which the provider is established, without regard to its conflict of law provisions.
                             </p>
+                        </section>
+
+                        {/* 5. Export Control & Sanctions */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                                <Globe className="h-6 w-6 text-indigo-600" />
+                                5. Export Control & Sanctions
+                            </h2>
+                            <p className="text-slate-600 mb-4">
+                                You represent and warrant that you are not located in, under the control of, or a national or resident of any country to which the United States has embargoed goods (including, without limitation, Cuba, Iran, North Korea, Sudan, Syria, and the Crimea region of Ukraine), or on the U.S. Treasury Department's List of Specially Designated Nationals or the U.S. Commerce Department's Table of Deny Orders.
+                            </p>
+                            <div className="bg-red-50 border border-red-100 p-4 rounded-lg">
+                                <p className="text-sm text-red-800 font-medium">
+                                    Usage of this platform in violation of U.S. export laws is strictly prohibited.
+                                </p>
+                            </div>
                         </section>
 
                         {/* Contact */}
