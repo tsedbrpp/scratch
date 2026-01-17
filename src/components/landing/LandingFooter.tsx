@@ -34,7 +34,7 @@ export function LandingFooter() {
                         <li><Link href="https://github.com/tsedbrpp/scratch" className="hover:text-blue-400 transition-colors">GitHub Repository</Link></li>
                         <li><Link href="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link></li>
                         <li><Link href="/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link></li>
-                        <li><Link href="#" className="hover:text-blue-400 transition-colors">Contact</Link></li>
+                        <li><Link href="/contact" className="hover:text-blue-400 transition-colors">Contact</Link></li>
                     </ul>
                 </div>
             </div>
