@@ -13,6 +13,7 @@ import { Visualization } from "@/components/landing/Visualization";
 import { Community } from "@/components/landing/Community";
 import { TrustEthics } from "@/components/landing/TrustEthics";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { ContactSection } from "@/components/landing/ContactSection";
 
 function LandingPage() {
   return (
@@ -24,6 +25,7 @@ function LandingPage() {
       <Visualization />
       <Community />
       <TrustEthics />
+      <ContactSection />
       <LandingFooter />
     </div>
   );
