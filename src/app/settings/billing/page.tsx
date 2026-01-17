@@ -220,19 +220,7 @@ export default function BillingPage() {
                         </CardFooter>
                     </Card>
 
-                    <Card className="opacity-75 grayscale hover:grayscale-0 transition-all cursor-not-allowed">
-                        <CardHeader>
-                            <CardTitle className="text-slate-500">Pro Subscription</CardTitle>
-                            <CardDescription>Unlimited analysis for power users.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex justify-between items-baseline mb-4">
-                                <span className="text-3xl font-bold text-slate-400">$49</span>
-                                <span className="text-slate-400">/ month</span>
-                            </div>
-                            <p className="text-sm text-slate-500 italic">Coming soon...</p>
-                        </CardContent>
-                    </Card>
+
 
                     {/* Contributor Card */}
                     <Card className="border-emerald-500/20 bg-emerald-900/5">
