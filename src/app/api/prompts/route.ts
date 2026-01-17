@@ -2,11 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PromptRegistry, PromptId } from '@/lib/prompts/registry';
 import { auth } from '@clerk/nextjs/server';
 import { isAdmin } from '@/lib/auth-helper';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     let { userId } = await auth();
+
+    // Rate Limit Check (Apply to both authed and unauthed if possible, using IP fallback?)
+    // For now, we only strictly limit authenticated users to protect expensive DB calls.
+    // Unauthenticated access is blocked by auth() check below anyway.
+
+    // [NEW] Rate Limit: 20 requests per minute per user
+    if (userId) {
+        const { success } = await checkRateLimit(userId, 20, 60);
+        if (!success) {
+            return new NextResponse("Too Many Requests", { status: 429 });
+        }
+    }
 
     // Demo Mode Override
     if (!userId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
