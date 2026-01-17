@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Questions?</h3>
                             <p className="text-slate-600 mb-4">If you have any questions about this Privacy Policy, please contact us.</p>
-                            <a href="mailto:privacy@instantTEA.research" className="text-blue-600 font-semibold hover:underline">privacy@instantTEA.research</a>
+                            <a href="mailto:admin@instanttea.com" className="text-blue-600 font-semibold hover:underline">admin@instanttea.com</a>
                         </section>
 
                     </div>

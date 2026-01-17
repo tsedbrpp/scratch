@@ -35,11 +35,11 @@ export default function ContactPage() {
                                     For all general inquiries, support requests, and bug reports.
                                 </p>
                             </div>
-                            <a href="mailto:admin@instanttea.com" className="inline-block">
-                                <Button size="lg" className="bg-slate-900 text-white hover:bg-slate-800 px-8">
+                            <Button asChild size="lg" className="bg-slate-900 text-white hover:bg-slate-800 px-8">
+                                <a href="mailto:admin@instanttea.com">
                                     admin@instanttea.com
-                                </Button>
-                            </a>
+                                </a>
+                            </Button>
                             <p className="text-sm text-slate-400">
                                 Typical response time: Less than 24 hours
                             </p>

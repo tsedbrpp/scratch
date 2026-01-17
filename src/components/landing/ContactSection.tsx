@@ -21,12 +21,12 @@ export function ContactSection() {
                     </p>
 
                     <div className="pt-4">
-                        <a href="mailto:admin@instanttea.com">
-                            <Button size="lg" className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-6 text-lg h-auto">
+                        <Button asChild size="lg" className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-6 text-lg h-auto">
+                            <a href="mailto:admin@instanttea.com">
                                 <Mail className="mr-2 h-5 w-5" />
                                 admin@instanttea.com
-                            </Button>
-                        </a>
+                            </a>
+                        </Button>
                         <p className="mt-4 text-xs text-slate-500 uppercase tracking-widest font-medium">
                             Response time: Within 24 hours
                         </p>
