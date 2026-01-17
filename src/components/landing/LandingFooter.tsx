@@ -19,6 +19,7 @@ export function LandingFooter() {
                 <div>
                     <h4 className="text-white font-semibold mb-4">Platform</h4>
                     <ul className="space-y-2 text-sm">
+                        <li><Link href="/about" className="hover:text-blue-400 transition-colors">About Us</Link></li>
                         <li><Link href="/data" className="hover:text-blue-400 transition-colors">Data Collection</Link></li>
                         <li><Link href="/ecosystem" className="hover:text-blue-400 transition-colors">Ecosystem Map</Link></li>
                         <li><Link href="/synthesis" className="hover:text-blue-400 transition-colors">Analysis Tools</Link></li>
