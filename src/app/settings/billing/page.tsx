@@ -7,6 +7,7 @@ import { Loader2, CreditCard, Coins, Check, History, LogIn } from "lucide-react"
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 
 export default function BillingPage() {
     const { userId, isLoaded, isSignedIn } = useAuth();

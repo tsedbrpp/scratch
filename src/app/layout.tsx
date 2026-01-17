@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";
 import { Toaster } from "sonner";
 import { DemoModeAlert } from "@/components/DemoModeAlert";
+import { CookieConsent } from "@/components/privacy/CookieConsent";
 
 export default function RootLayout({
   children,
@@ -44,6 +45,7 @@ export default function RootLayout({
           <ResearchWorkflowGuide />
           <DemoModeAlert />
           <Toaster />
+          <CookieConsent />
         </body>
       </html>
     </ClerkProvider>
