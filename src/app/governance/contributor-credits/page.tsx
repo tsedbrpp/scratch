@@ -133,17 +133,17 @@ export default function ContributorCreditPolicyPage() {
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Minor</td>
                                     <td className="px-6 py-4">Clarifications, small corrections, targeted suggestions</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">1–3</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">5–10</td>
                                 </tr>
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Moderate</td>
                                     <td className="px-6 py-4">Well-argued critique, documented bias, useful review</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">4–8</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">10–20</td>
                                 </tr>
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Substantial</td>
                                     <td className="px-6 py-4">Deep theoretical intervention, major fix, validated redesign</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">9–20</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">20+</td>
                                 </tr>
                             </tbody>
                         </table>
