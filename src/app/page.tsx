@@ -16,6 +16,8 @@ import { TrustEthics } from "@/components/landing/TrustEthics";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { ContactSection } from "@/components/landing/ContactSection";
 
+import { Suspense } from "react";
+
 function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -32,7 +34,7 @@ function LandingPage() {
   );
 }
 
-export default function Home() {
+function MainContent() {
   const { isLoaded, isSignedIn } = useUser();
   const { sources } = useSources();
   const searchParams = useSearchParams();
@@ -48,4 +50,12 @@ export default function Home() {
   }
 
   return <Dashboard sources={sources} />;
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <MainContent />
+    </Suspense>
+  );
 }
