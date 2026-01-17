@@ -162,6 +162,11 @@ export default function WhyCreditsPage() {
                                 Log In
                             </Button>
                         </Link>
+                        <Link href="/settings/billing">
+                            <Button size="lg" className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-900/20">
+                                Purchase Credits
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>
