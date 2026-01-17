@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { stripe } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { amount, credits } = body;
 
+        // Fetch user email from Clerk to pre-fill Stripe Checkout
+        const client = await clerkClient();
+        const user = await client.users.getUser(userId);
+        const userEmail = user.emailAddresses[0]?.emailAddress;
+
         // In a real app, you should look up Price ID from your DB or constants
         // For this implementation, we will create an ad-hoc price or use a standard one
         // To keep it simple and flexible, we'll use line_items with price_data
@@ -25,6 +30,7 @@ export async function POST(req: NextRequest) {
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
+            customer_email: userEmail, // Pre-fill user email for better UX/Trust
             line_items: [
                 {
                     price_data: {
