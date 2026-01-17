@@ -149,7 +149,7 @@ export default function WhyCreditsPage() {
                     <p className="text-lg text-slate-300 mb-6">
                         Credits are not a paywall; they are a <strong>cost-allocation mechanism</strong>.
                         They ensure that Assemblage-AI remains economically sustainable, fair, and capable of supporting
-                        serious, computationally intensive interpretive work.
+                        serious, computationally intensive interpretive work. <Link href="/governance/contributor-credits" className="text-emerald-400 hover:underline">Learn how to earn credits via contribution.</Link>
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link href="/sign-up">

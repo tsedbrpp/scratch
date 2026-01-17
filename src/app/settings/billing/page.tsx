@@ -230,7 +230,9 @@ export default function BillingPage() {
                                 <span className="text-3xl font-bold text-slate-400">$49</span>
                                 <span className="text-slate-400">/ month</span>
                             </div>
-                            <p className="text-sm text-slate-500 italic">Coming soon...</p>
+                            <p className="text-sm text-slate-500 italic">
+                                Coming soon... Want to earn credits instead? <Link href="/governance/contributor-credits" className="text-indigo-400 hover:underline">Read the Contributor Policy</Link>.
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
