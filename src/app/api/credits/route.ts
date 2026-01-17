@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
             getCredits(userId),
             getTransactions(userId, 50)
         ]);
-        console.log(`[API] /credits for user ${userId} => Balance: ${balance}`);
         return NextResponse.json({ credits: balance, history });
     } catch (error) {
         console.error('Error fetching credits:', error);
