@@ -230,9 +230,30 @@ export default function BillingPage() {
                                 <span className="text-3xl font-bold text-slate-400">$49</span>
                                 <span className="text-slate-400">/ month</span>
                             </div>
-                            <p className="text-sm text-slate-500 italic">
-                                Coming soon... Want to earn credits instead? <Link href="/governance/contributor-credits" className="text-indigo-400 hover:underline">Read the Contributor Policy</Link>.
+                            <p className="text-sm text-slate-500 italic">Coming soon...</p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Contributor Card */}
+                    <Card className="border-emerald-500/20 bg-emerald-900/5">
+                        <CardHeader>
+                            <CardTitle className="text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                                <Coins className="h-5 w-5" />
+                                Earn Credits
+                            </CardTitle>
+                            <CardDescription>
+                                Contribute to the ecosystem relative to your expertise.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                                Research-grade contributions (critiques, bias reviews, or code) can earn you usage credits.
                             </p>
+                            <Link href="/governance/contributor-credits">
+                                <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/50">
+                                    View Contributor Policy
+                                </Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 </div>
