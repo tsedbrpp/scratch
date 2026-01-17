@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
 import { useSources } from "@/hooks/useSources";
 import { Dashboard } from "@/components/Dashboard";
 
@@ -34,12 +35,15 @@ function LandingPage() {
 export default function Home() {
   const { isLoaded, isSignedIn } = useUser();
   const { sources } = useSources();
+  const searchParams = useSearchParams();
+  const showLanding = searchParams.get("view") === "landing";
 
   if (!isLoaded) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  if (!isSignedIn) {
+  // Show Landing Page if not signed in OR if explicitly requested via query param
+  if (!isSignedIn || showLanding) {
     return <LandingPage />;
   }
 

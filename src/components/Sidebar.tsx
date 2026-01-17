@@ -49,6 +49,12 @@ const NAV_GROUPS: NavGroup[] = [
                 href: "/",
                 icon: LayoutDashboard,
                 description: "High-level view of the algorithmic assemblage and research progress."
+            },
+            {
+                name: "Landing Page",
+                href: "/?view=landing",
+                icon: BookOpen,
+                description: "View the project landing page and overview."
             }
         ]
     },
