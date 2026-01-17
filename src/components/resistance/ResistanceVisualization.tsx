@@ -83,8 +83,9 @@ export function ResistanceVisualization({ result, monitoredVectors = [], onToggl
     const radarData = useMemo(() => {
         if (!result.lines_of_flight?.scoring_breakdown) return [];
 
-        const getScore = (val: string) => {
-            const v = val.toLowerCase();
+        const getScore = (val: any) => {
+            if (!val) return 0;
+            const v = String(val).toLowerCase();
             if (v.includes("high")) return 3;
             if (v.includes("medium")) return 2;
             if (v.includes("low")) return 1;

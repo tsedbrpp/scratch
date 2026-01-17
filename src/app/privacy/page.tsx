@@ -65,8 +65,8 @@ export default function PrivacyPolicyPage() {
                                             To provide our analysis features, User Inputs (including prompts and uploaded text) are transmitted to third-party Large Language Model (LLM) providers via API.
                                         </p>
                                         <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
-                                            <li><strong>Primary Provider:</strong> OpenAI (GPT-4o / GPT-4 Turbo)</li>
-                                            <li><strong>Processing Purpose:</strong> To generate the requested analysis, summary, or critique.</li>
+                                            <li><strong>Primary Providers:</strong> OpenAI (GPT-5.1) & Google (Gemini 3 Pro Preview / Google Search)</li>
+                                            <li><strong>Processing Purpose:</strong> To generate the requested analysis, summary, critique, or perform web-connected research.</li>
                                             <li><strong>Data Retention:</strong> Data is shared for the sole purpose of generating a response. We do not opt-in to model training. Providers may retain data temporarily (e.g., 30 days) for abuse monitoring.</li>
                                         </ul>
                                     </div>

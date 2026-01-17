@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnalysisResult } from "@/types";
-import { Sparkles, Scale, Users, Hand, Eye, ShieldCheck, Landmark, Activity, AlertTriangle, LayoutDashboard, Layers, BadgeCheck, MessageSquareDashed } from "lucide-react";
+import { Sparkles, Scale, Users, Hand, Eye, ShieldCheck, Landmark, Activity, AlertTriangle, LayoutDashboard, Layers, BadgeCheck, MessageSquareDashed, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GovernanceCompass } from "./GovernanceCompass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -486,7 +486,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                                 <p className="text-xs text-slate-500 text-center mt-2">
                                     <span className="inline-flex items-center gap-1">
                                         <Sparkles className="w-3 h-3 text-indigo-400" />
-                                        AI-Generated Content. Inputs processed by OpenAI.
+                                        AI inputs processed by OpenAI (GPT-5.1) & Google (Gemini 3 Pro / Search).
                                     </span>
                                 </p>
                             </div>

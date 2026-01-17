@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText, VolumeX } from 'lucide-react';
+import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText, VolumeX, Sparkles } from 'lucide-react';
 import { analyzeDocument, AnalysisMode } from '@/services/analysis';
 import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
 import { SpectralRadar } from './SpectralRadar';
@@ -174,7 +174,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     <p className="text-xs text-slate-500 text-center mt-2">
                         <span className="inline-flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-indigo-400" />
-                            AI-Generated Content. Inputs processed by OpenAI.
+                            AI inputs processed by OpenAI (GPT-5.1) & Google (Gemini 3 Pro / Search).
                         </span>
                     </p>
                 </CardContent>
