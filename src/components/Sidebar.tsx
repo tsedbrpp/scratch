@@ -21,7 +21,8 @@ import {
     PanelLeftOpen,
     Coins,
     LogIn,
-    UserPlus
+    UserPlus,
+    Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -168,6 +169,12 @@ const NAV_GROUPS: NavGroup[] = [
                 href: "/settings/billing",
                 icon: Coins,
                 description: "Manage credits and subscription."
+            },
+            {
+                name: "Earn Free Credits",
+                href: "/governance/contributor-credits",
+                icon: Gift,
+                description: "Contribute to the ecosystem and earn usage credits."
             }
         ]
     }
