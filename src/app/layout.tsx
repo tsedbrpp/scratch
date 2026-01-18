@@ -15,9 +15,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://instanttea.com"),
   title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
   description: "Rapidly translate complex socio-technical systems into provisional snapshots. The premier research tool for Actor-Network Theory (ANT), Assemblage Theory, and AI Governance analysis.",
   keywords: ["AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
+  openGraph: {
+    title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
+    description: "Rapidly translate complex socio-technical systems into provisional snapshots.",
+    url: "https://instanttea.com",
+    siteName: "Instant TEA",
+    locale: "en_US",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";
