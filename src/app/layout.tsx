@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Instant TEA",
-  description: "A comparative algorithmic assemblage analysis tool",
+  title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
+  description: "Rapidly translate complex socio-technical systems into provisional snapshots. The premier research tool for Actor-Network Theory (ANT), Assemblage Theory, and AI Governance analysis.",
+  keywords: ["AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
 };
 
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";

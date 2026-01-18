@@ -8,7 +8,7 @@ import { Dashboard } from "@/components/Dashboard";
 // Landing Page Components
 import { HeroSection } from "@/components/landing/HeroSection";
 import { TheoreticalGrounding } from "@/components/landing/TheoreticalGrounding";
-import { TechStack } from "@/components/landing/TechStack";
+import { StepByStep } from "@/components/landing/StepByStep";
 import { Methodology } from "@/components/landing/Methodology";
 import { Visualization } from "@/components/landing/Visualization";
 import { Community } from "@/components/landing/Community";
@@ -24,8 +24,9 @@ function LandingPage() {
     <div className="flex flex-col min-h-screen bg-white">
       <HeroSection />
       <SocialProof />
+      <StepByStep />
       <TheoreticalGrounding />
-      <TechStack />
+      {/* <TechStack /> - Removed to de-emphasize tech stack */}
       <Methodology />
       <Visualization />
       <Community />

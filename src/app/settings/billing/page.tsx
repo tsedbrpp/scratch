@@ -143,7 +143,23 @@ export default function BillingPage() {
                 <p className="text-slate-500">Manage your credits and subscription plan.</p>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-3">
+            {/* Academic Banking Grant Offer */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                        <span className="text-2xl">🎓</span> Student & Researcher Grant
+                    </h3>
+                    <p className="text-indigo-700 mt-1 max-w-xl">
+                        Are you a student or academic researcher? We support open science!
+                        Email us from your <strong>.edu</strong> or institutional address to receive <span className="font-bold underline">50 Free Credits</span> for your work.
+                    </p>
+                </div>
+                <a href="mailto:support@instanttea.com?subject=Academic Grant Request" className="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+                    Claim Academic Grant
+                </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Current Balance Card */}
                 <Card className="md:col-span-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0">
                     <CardHeader>
@@ -156,6 +172,25 @@ export default function BillingPage() {
                                 {isLoadingCredits ? "..." : credits}
                             </div>
                             <div className="text-indigo-200 self-end mb-2">credits available</div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Credit Value Explanation */}
+                <Card className="md:col-span-3 bg-slate-50 border-slate-200">
+                    <CardContent className="pt-6 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-indigo-100 p-2 rounded-lg">
+                                <span className="text-2xl">💡</span>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-slate-900">What is a Credit?</h4>
+                                <p className="text-sm text-slate-600">
+                                    <strong>1 Credit = 1 Document Analysis</strong>.
+                                    Looking at a document through a single lens (e.g., "Legitimacy" or "Cultural Framing") costs 1 credit.
+                                    Complex synthesis tasks may cost more.
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

@@ -24,7 +24,7 @@ export function HeroSection() {
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56 text-center">
                 <div className="hidden sm:mb-8 sm:flex sm:justify-center">
                     <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-400/20 bg-emerald-400/10 hover:ring-emerald-400/30 transition-all">
-                        Quick insight. Slow truth.
+                        <span className="mr-1">🍵</span> Instant Insight. Steeped in Theory.
                     </div>
                 </div>
                 {/* Replaced Text Title with Branding Image */}
@@ -38,10 +38,11 @@ export function HeroSection() {
                     <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-4">
                         <h3 className="text-2xl font-bold text-white mb-2 text-center">What is instantTEA?</h3>
                         <p>
-                            <strong>instantTEA</strong> is a methodological tool and analytical framework for rapidly translating complex socio-technical assemblages into provisional, situated snapshots. Drawing from Actor-Network Theory (ANT) and assemblage theory, it generates quick insights into relational networks—tracing actors, connections, and emergences—while explicitly acknowledging the temporality and incompleteness of these translations.
+                            <strong>Instant TEA</strong> rapidly maps complex socio-technical systems using <strong>Actor-Network Theory (ANT) and Assemblage Theory</strong>.
+                            It generates provisional, situational snapshots of policy and governance assemblages—tracing actors and connections in seconds, not weeks.
                         </p>
                         <p>
-                            Unlike traditional &quot;instant&quot; tools that imply finality, instantTEA embraces ephemerality: outputs are fast to produce but inherently provisional, inviting deeper, slower interpretation. It resists black-boxing, compliance theater, and reification, making it ideal for analyzing dynamic systems like global AI governance.
+                            Unlike tools that imply finality, Instant TEA embraces ephemerality. It delivers quick, transparent insights into dynamic systems like global policy and governance, inviting deeper interpretation without the black box.
                         </p>
                     </div>
 
@@ -51,10 +52,14 @@ export function HeroSection() {
                 </div>
                 <div className="mt-10 flex flex-col items-center justify-center gap-6">
                     <div className="flex flex-wrap justify-center gap-4">
-                        <Link href="/data">
-                            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 px-8 transition-all hover:scale-105 group shadow-lg shadow-emerald-900/20">
-                                <Activity className="mr-2 h-4 w-4 group-hover:animate-pulse" />
-                                Explore Demo Mode
+                        <Link href="/data" className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                            <Button size="lg" className="relative bg-black hover:bg-slate-900 text-emerald-400 border border-emerald-500/50 px-8 py-6 text-lg font-bold shadow-2xl transition-all hover:scale-[1.02] flex flex-col gap-0 items-center leading-tight">
+                                <div className="flex items-center gap-2">
+                                    <Activity className="h-5 w-5 animate-pulse" />
+                                    <span>Explore Sample Analysis</span>
+                                </div>
+                                <span className="text-[10px] font-normal text-emerald-600/80 uppercase tracking-widest">Interactive Demo</span>
                             </Button>
                         </Link>
 
