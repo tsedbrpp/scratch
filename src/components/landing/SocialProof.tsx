@@ -1,5 +1,5 @@
 
-"use client";
+
 
 import React from "react";
 import { Terminal, Shield, Cpu, CreditCard } from "lucide-react";

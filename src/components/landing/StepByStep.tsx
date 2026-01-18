@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { Upload, Search, Share2, ArrowRight } from "lucide-react";

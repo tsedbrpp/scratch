@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
+import { useSources } from "@/hooks/useSources"; // Import hook
 import { EcosystemActor } from "@/types/ecosystem";
 import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,8 @@ import Link from "next/link";
 import { GalaxyGraph } from "@/components/landing/GalaxyGraph";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 
-export function Dashboard({ sources }: { sources: Source[] }) {
+export function Dashboard() {
+    const { sources } = useSources(); // Fetch sources internally
     const docCount = sources.filter(s => s.type !== 'Trace').length;
     const traceCount = sources.filter(s => s.type === 'Trace').length;
     const analyzedCount = sources.filter(s => s.analysis || s.cultural_framing || s.institutional_logics).length;

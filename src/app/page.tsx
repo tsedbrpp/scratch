@@ -1,8 +1,4 @@
-"use client";
-
-import { useUser } from "@clerk/nextjs";
-import { useSearchParams } from "next/navigation";
-import { useSources } from "@/hooks/useSources";
+import { auth } from "@clerk/nextjs/server";
 import { Dashboard } from "@/components/Dashboard";
 
 // Landing Page Components
@@ -17,8 +13,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { SocialProof } from "@/components/landing/SocialProof";
 
-import { Suspense } from "react";
-
+// This is a Server Component now
 function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -37,28 +32,21 @@ function LandingPage() {
   );
 }
 
-function MainContent() {
-  const { isLoaded, isSignedIn } = useUser();
-  const { sources } = useSources();
-  const searchParams = useSearchParams();
-  const showLanding = searchParams.get("view") === "landing";
+// Server Component Entry Point
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { userId } = await auth();
+  const params = await searchParams; // Await params in newer Next.js versions
+  const showLanding = params?.view === "landing";
 
-  if (!isLoaded) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  // If user is authenticated and NOT specifically requesting the landing page, show Dashboard
+  if (userId && !showLanding) {
+    return <Dashboard />;
   }
 
-  // Show Landing Page if not signed in OR if explicitly requested via query param
-  if (!isSignedIn || showLanding) {
-    return <LandingPage />;
-  }
-
-  return <Dashboard sources={sources} />;
-}
-
-export default function Home() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-      <MainContent />
-    </Suspense>
-  );
+  // Otherwise, render the server-side Landing Page (SEO Friendly)
+  return <LandingPage />;
 }
