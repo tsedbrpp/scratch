@@ -75,7 +75,7 @@ export function PositionalityDialog({ isOpen, onClose, onConfirm }: Positionalit
                     </div>
                     <DialogTitle className="text-xl">Calibrate Interpretive Lenses</DialogTitle>
                     <DialogDescription>
-                        Assemblage-AI uses your inputs to adjust its "Decolonial Prompts" and flag potential cultural misunderstandings.
+                        Instant TEA uses your inputs to adjust its "Decolonial Prompts" and flag potential cultural misunderstandings.
                     </DialogDescription>
                 </DialogHeader>
 

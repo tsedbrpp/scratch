@@ -183,17 +183,7 @@ export default function GlossaryPage() {
                                         <Quote className="h-3 w-3 text-indigo-400" />
                                         <span className="font-medium">Scholarship:</span>
                                         <span className="italic">{item.scholar}</span>
-                                        {item.url && (
-                                            <a
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="ml-auto flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
-                                            >
-                                                <ExternalLink className="h-3 w-3" />
-                                                <span className="hidden sm:inline">View Source</span>
-                                            </a>
-                                        )}
+
                                     </div>
                                 </CardContent>
                             </Card>

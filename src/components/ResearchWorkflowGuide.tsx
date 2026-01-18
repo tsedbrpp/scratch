@@ -20,7 +20,7 @@ export function ResearchWorkflowGuide() {
                 title="Open Research Guide"
             >
                 <BookOpen size={20} />
-                <span className="font-medium text-sm pr-1">CFP Guide</span>
+                <span className="font-medium text-sm pr-1">WF Guide</span>
             </button>
         );
     }
@@ -74,7 +74,7 @@ export function ResearchWorkflowGuide() {
                 <div>
                     <h3 className="font-bold text-sm flex items-center gap-2">
                         <BookOpen size={16} className="text-blue-400" />
-                        Assemblage AI Guide
+                        Instant TEA workflow
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
                         Critical Analysis Workflow

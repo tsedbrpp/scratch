@@ -23,6 +23,7 @@ export function LandingFooter() {
                         <li><Link href="/data" className="hover:text-blue-400 transition-colors">Data Collection</Link></li>
                         <li><Link href="/ecosystem" className="hover:text-blue-400 transition-colors">Ecosystem Map</Link></li>
                         <li><Link href="/synthesis" className="hover:text-blue-400 transition-colors">Analysis Tools</Link></li>
+                        <li><Link href="/pricing" className="hover:text-blue-400 transition-colors">Pricing</Link></li>
                     </ul>
                 </div>
                 <div>

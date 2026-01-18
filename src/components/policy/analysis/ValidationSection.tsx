@@ -54,7 +54,7 @@ export function ValidationSection({
                         systemProposition: {
                             placement: analysis.verification_gap?.high_rhetoric_low_verification ? "HIGH_RHETORIC" : "ALIGNED",
                             evidence: analysis.key_insight || "Automated analysis",
-                            ontologicalSource: "Assemblage-AI Default Ontology"
+                            ontologicalSource: "Instant TEA Default Ontology"
                         },
                         humanAnchor: {
                             placement: "USER_DEFINED",

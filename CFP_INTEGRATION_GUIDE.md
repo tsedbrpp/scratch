@@ -12,7 +12,27 @@ The data page file keeps getting corrupted during edits. Rather than continuing 
 
 2. **Comparison Page** - Fully functional at `/comparison`
 
-## 🎯 What Needs to Be Added
+## 🗺️ Workflow Integration Map
+
+## 🗺️ Critical Analysis Workflow Map
+
+This diagram visualizes the **Instant TEA** methodological workflow:
+
+```mermaid
+graph TD
+    A[<b>Data Collection</b><br>Ingest documents & capture traces] --> B[<b>Micro Analysis</b><br>Analyze resistance & reflexivity]
+    B --> C[<b>Meso Analysis</b><br>Map ecosystems & networks]
+    C --> D[<b>Macro Analysis</b><br>Governance & cultural framing]
+    D --> E[<b>Synthesis</b><br>Generate reports & visualize]
+
+    style A fill:#f0f9ff,stroke:#0284c7,stroke-width:2px
+    style B fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+    style C fill:#fdf4ff,stroke:#c026d3,stroke-width:2px
+    style D fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    style E fill:#f8fafc,stroke:#475569,stroke-width:2px
+```
+
+## 🎯 Technical Integration Needed
 
 Add these two handler functions to `src/app/data/page.tsx` after the `handleAnalyze` function:
 

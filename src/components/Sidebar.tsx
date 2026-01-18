@@ -55,6 +55,12 @@ const NAV_GROUPS: NavGroup[] = [
                 href: "/?view=landing",
                 icon: BookOpen,
                 description: "View the project landing page and overview."
+            },
+            {
+                name: "Pricing",
+                href: "/pricing",
+                icon: Coins,
+                description: "View pricing tiers and academic grants."
             }
         ]
     },
@@ -165,7 +171,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Settings",
         items: [
             {
-                name: "Tune Prompts",
+                name: "System Prompts",
                 href: "/settings/prompts",
                 icon: Scan,
                 description: "Customize system prompts for analysis and extraction."
@@ -181,6 +187,12 @@ const NAV_GROUPS: NavGroup[] = [
                 href: "/governance/contributor-credits",
                 icon: Gift,
                 description: "Contribute to the ecosystem and earn usage credits."
+            },
+            {
+                name: "Referral Program",
+                href: "/referrals",
+                icon: Users,
+                description: "Invite friends and earn credits."
             }
         ]
     }

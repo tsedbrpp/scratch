@@ -64,7 +64,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <div>
                             <div className="flex items-center gap-2 font-bold tracking-tight mb-8">
                                 <Network className="h-5 w-5 text-emerald-400" />
-                                Assemblage AI
+                                Instant TEA
                             </div>
                             <div className="space-y-4">
                                 {[1, 2, 3, 4].map(s => (

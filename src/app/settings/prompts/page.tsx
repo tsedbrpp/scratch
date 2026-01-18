@@ -245,8 +245,11 @@ export default function PromptSettingsPage() {
         <div className="container mx-auto py-10 max-w-4xl">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Prompt Customization</h1>
-                    <p className="text-slate-500">Fine-tune the AI's instructions to better fit your research context.</p>
+                    <h1 className="text-3xl font-bold text-slate-900">System Prompts</h1>
+                    <p className="text-slate-500 text-sm mt-1">
+                        <AlertCircle className="w-4 h-4 inline mr-1" />
+                        Prompt customizations only available to administrators of forked git hub systems.
+                    </p>
                 </div>
 
             </div>
