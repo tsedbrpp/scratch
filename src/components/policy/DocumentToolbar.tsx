@@ -31,7 +31,7 @@ export function DocumentToolbar({
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Policy Documents</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Documents</h2>
                     <p className="text-slate-500">Manage and analyze official policy texts (PDFs) and web content.</p>
                 </div>
                 <div className="flex gap-2">

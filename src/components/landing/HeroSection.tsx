@@ -72,8 +72,11 @@ export function HeroSection() {
                     <Link href="/login" className="text-sm font-semibold leading-6 text-white hover:text-blue-300">
                         Log in to your account <span aria-hidden="true">→</span>
                     </Link>
-                    <Link href="/sign-up">
-                        <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8">
+                    <Link href="/sign-up" className="relative group">
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg transform group-hover:scale-110 transition-transform whitespace-nowrap">
+                            🎁 GET 5 FREE CREDITS
+                        </div>
+                        <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 mt-2">
                             Get Started
                         </Button>
                     </Link>

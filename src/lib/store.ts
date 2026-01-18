@@ -7,8 +7,9 @@ export const getSources = async (userId: string): Promise<Source[]> => {
     let sources = await StorageService.get<Source[]>(userId, 'sources');
 
     // Seed if empty
-    if (!sources || sources.length === 0) {
-        sources = BASELINE_SOURCES;
+    // Seed if empty (Initialize as blank for new users)
+    if (!sources) {
+        sources = [];
         await saveSources(userId, sources);
     }
 

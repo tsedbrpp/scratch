@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Assemblage-AI",
+  title: "Instant TEA",
   description: "A comparative algorithmic assemblage analysis tool",
 };
 
