@@ -72,7 +72,11 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
             console.log("DEV MODE: Email would have been sent:", rawFormData);
             return { success: true };
         }
-        return { success: false, error: "Email service not configured on server." };
+        const missing = [];
+        if (!smtpHost) missing.push("SMTP_HOST");
+        if (!smtpUser) missing.push("SMTP_USER");
+        if (!smtpPass) missing.push("SMTP_PASS");
+        return { success: false, error: `Email service not configured. Missing variables: ${missing.join(", ")}` };
     }
 
     try {
