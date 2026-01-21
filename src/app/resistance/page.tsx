@@ -5,11 +5,11 @@ import { toast } from "sonner";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { useDemoMode } from "@/hooks/useDemoMode";
-import { Source } from "@/types";
+import { Source, ResistanceSynthesisResult } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ResistanceVisualization, ResistanceSynthesisResult } from "@/components/resistance/ResistanceVisualization";
+import { ResistanceVisualization } from "@/components/resistance/ResistanceVisualization";
 
 import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash, FileText, ExternalLink } from "lucide-react";
 
@@ -242,12 +242,12 @@ export default function ResistancePage() {
 
                 // Add each new trace to the store
                 for (const trace of newTraces) {
-                    await addSource(trace);
+                    const addedSource = await addSource(trace);
 
                     // Auto-Analyze "Weak" classifications to get specific strategy
                     const weakStrategies = ["Potential Resistance", "Friction", "Unclassified"];
                     if (!trace.resistance_analysis?.strategy_detected || weakStrategies.includes(trace.resistance_analysis.strategy_detected)) {
-                        handleAnalyzeTrace(trace);
+                        handleAnalyzeTrace(addedSource);
                     }
                 }
 

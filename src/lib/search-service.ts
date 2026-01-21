@@ -17,11 +17,15 @@ export interface SearchResult {
 export async function executeGoogleSearch(query: string, apiKey: string, cx: string, maxResults: number = 10): Promise<SearchResult[]> {
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&num=${Math.min(maxResults, 10)}`;
     try {
+        console.log(`DEBUG: Executing Search: ${url}`);
         const res = await fetch(url);
         const d = await res.json();
         if (!res.ok) {
-            console.error("Search API invalid:", d);
+            console.error("Search API ERROR:", JSON.stringify(d, null, 2));
             return [];
+        }
+        if (!d.items) {
+            console.warn("Search API returned OK but NO ITEMS:", JSON.stringify(d, null, 2));
         }
         return d.items?.map((item: { title: string; link: string; snippet: string }) => ({
             title: item.title,
@@ -101,7 +105,7 @@ export async function curateResultsWithAI(
     results: SearchResult[],
     policyText: string,
     apiKey: string,
-    modelName: string = "gemini-1.5-flash-001",
+    modelName: string = "gemini-1.5-flash",
     userId?: string
 ): Promise<SearchResult[]> {
     if (results.length === 0) return [];

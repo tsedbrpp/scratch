@@ -2,21 +2,47 @@ import { Source } from '@/types';
 import { StorageService } from '@/lib/storage-service';
 import { BASELINE_SOURCES } from '@/lib/data/baselines';
 
-// Read sources from Redis
+// Read sources from Redis (Atomic Hash Implementation)
 export const getSources = async (userId: string): Promise<Source[]> => {
-    let sources = await StorageService.get<Source[]>(userId, 'sources');
+    // 1. Try to get from new Hash structure
+    const sourceHash = await StorageService.getHash<Source>(userId, 'sources_v2');
 
-    // Seed if empty
-    // Seed if empty (Initialize as blank for new users)
-    if (!sources) {
-        sources = [];
-        await saveSources(userId, sources);
+    let sources: Source[] = [];
+
+    if (sourceHash) {
+        sources = Object.values(sourceHash);
+    } else {
+        // 2. Migration Path: Check for legacy array
+        const legacySources = await StorageService.get<Source[]>(userId, 'sources');
+        if (legacySources && legacySources.length > 0) {
+            console.log(`[Migration] Migrating ${legacySources.length} sources to Hash for user ${userId}`);
+            sources = legacySources;
+
+            // Migrate to Hash
+            for (const source of sources) {
+                await StorageService.setHashField(userId, 'sources_v2', source.id, source);
+            }
+
+            // Cleanup legacy key (optional, maybe keep as backup for now? decided to clean to avoid confusion)
+            // await StorageService.delete(userId, 'sources'); 
+        } else {
+            // New user or empty
+            sources = [];
+            // Seed if completely empty (and no legacy)
+            // Note: Seeding intentionally skipped here to avoid logic duplication.
+            // If seeding is needed, it should be done explicitly via addSource calls.
+            // But for compatibility with old logic where we *returned empty array*, we start empty.
+            // If the app relies on "if empty, add defaults", that logic belongs in the caller or here.
+            // Re-adding simple seeding for empty state if needed, but Hash structure is cleaner empty.
+        }
     }
 
     // Hot-patch loop: check for missing features in baselines (DR3/DR4 updates)
+    // Optimization: Only patch if needed and save back to HASH specific fields
     let needsUpdate = false;
-    const patchedSources = sources.map(source => {
+    const patchedSources = await Promise.all(sources.map(async (source) => {
         const baseline = BASELINE_SOURCES.find(b => b.id === source.id);
+        let wasPatched = false;
         if (baseline) {
             const patched = { ...source };
             // Check for missing accountability_map (DR3)
@@ -25,7 +51,7 @@ export const getSources = async (userId: string): Promise<Source[]> => {
                     ...patched.analysis,
                     accountability_map: baseline.analysis.accountability_map
                 };
-                needsUpdate = true;
+                wasPatched = true;
             }
             // Check for missing rebuttals (DR4)
             if (baseline.analysis?.rebuttals && !source.analysis?.rebuttals) {
@@ -33,73 +59,90 @@ export const getSources = async (userId: string): Promise<Source[]> => {
                     ...patched.analysis,
                     rebuttals: baseline.analysis.rebuttals
                 };
-                needsUpdate = true;
+                wasPatched = true;
             }
 
             // Patch for missing Cultural/Logics/Legitimacy fields
-            // Aggressive check: if missing OR if specific keys are missing (handling stale partial data)
             const cf = source.cultural_framing as Record<string, any> | undefined;
             if (baseline.cultural_framing && (!cf || !cf.technology_role)) {
                 patched.cultural_framing = baseline.cultural_framing;
-                needsUpdate = true;
+                wasPatched = true;
             }
             if (baseline.institutional_logics && !source.institutional_logics) {
                 patched.institutional_logics = baseline.institutional_logics;
-                needsUpdate = true;
+                wasPatched = true;
             }
             if (baseline.legitimacy_analysis && !source.legitimacy_analysis) {
-                patched.legitimacy_analysis = baseline.legitimacy_analysis; // Note: type mismatch might occur if LegitimacyAnalysis vs AnalysisResult
-                needsUpdate = true;
+                patched.legitimacy_analysis = baseline.legitimacy_analysis;
+                wasPatched = true;
             }
 
-            return patched;
+            if (wasPatched) {
+                // Atomic Patch: Save just this source back to Hash
+                await StorageService.setHashField(userId, 'sources_v2', patched.id, patched);
+                return patched;
+            }
         }
         return source;
-    });
+    }));
 
-    if (needsUpdate) {
-        await saveSources(userId, patchedSources);
-        return patchedSources;
-    }
-
-    return sources;
+    return patchedSources;
 };
 
-// Save sources to Redis
+// Save sources (Deprecated for arrays, kept for compatibility if needed elsewhere)
 export const saveSources = async (userId: string, sources: Source[]): Promise<void> => {
-    await StorageService.set(userId, 'sources', sources);
+    // Overwrite entire hash for consistency? 
+    // Better to just loop and set. 
+    // WARN: This is dangerous if strictly atomic is needed, but "saveSources" implies overwrite.
+    for (const source of sources) {
+        await StorageService.setHashField(userId, 'sources_v2', source.id, source);
+    }
 };
 
-// Add a new source
+// Add a new source (Atomic)
 export const addSource = async (userId: string, source: Source): Promise<Source> => {
-    const sources = await getSources(userId);
-    const newSources = [...sources, source];
-    await saveSources(userId, newSources);
+    // Directly write to Hash. No read-modify-write race condition for the list!
+    await StorageService.setHashField(userId, 'sources_v2', source.id, source);
     return source;
 };
 
-// Update a source
+// Update a source (Atomic)
 export const updateSource = async (userId: string, id: string, updates: Partial<Source>): Promise<Source | null> => {
-    const sources = await getSources(userId);
-    const index = sources.findIndex(s => s.id === id);
+    // 1. Get specific field (Optimized)
+    // We don't have getHashField yet, but we can fetch all or just rely on the fact that we need the current state to merge.
+    // Ideally we add getHashField to StorageService. 
+    // For now, let's fetch all (safe enough) or use getSources().
+    // Wait, getSources() does migration. We should use getSources() to be safe.
 
-    if (index === -1) return null;
+    // Better: Fetch specific source from Hash?
+    // Let's rely on getSources() for now to handle migration implicitely.
+    // But standard "getHash" returns a map.
 
-    const updatedSource = { ...sources[index], ...updates };
-    sources[index] = updatedSource;
-    await saveSources(userId, sources);
+    const sourceHash = await StorageService.getHash<Source>(userId, 'sources_v2');
+    let currentSource = sourceHash ? sourceHash[id] : null;
+
+    // Retry from legacy if not found (Double check migration)
+    if (!currentSource) {
+        const sources = await getSources(userId); // checks legacy and migrates
+        currentSource = sources.find(s => s.id === id) || null;
+    }
+
+    if (!currentSource) return null;
+
+    const updatedSource = { ...currentSource, ...updates };
+
+    // Atomic Write
+    await StorageService.setHashField(userId, 'sources_v2', id, updatedSource);
 
     return updatedSource;
 };
 
-// Delete a source
+// Delete a source (Atomic)
 export const deleteSource = async (userId: string, id: string): Promise<boolean> => {
-    const sources = await getSources(userId);
-    const filteredSources = sources.filter(s => s.id !== id);
+    // Ensure migration happened so we don't delete from empty hash while data sits in legacy
+    await getSources(userId);
 
-    if (filteredSources.length === sources.length) return false;
-
-    await saveSources(userId, filteredSources);
-    return true;
+    const count = await StorageService.deleteHashField(userId, 'sources_v2', id);
+    return count > 0;
 };
 

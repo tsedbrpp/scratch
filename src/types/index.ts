@@ -286,7 +286,33 @@ export interface ComparativeSynthesis {
 
 export interface ResistanceSynthesisResult {
     executive_summary: string;
-    dominant_strategies: { strategy: string; frequency: string; description: string }[];
-    emerging_themes: string[];
-    implications_for_policy: string;
+    dominant_strategies: {
+        strategy: string;
+        frequency: "High" | "Medium" | "Low";
+        description: string;
+        minor_actor_verification?: string;
+    }[];
+    lines_of_flight: {
+        narrative_aggregate: string;
+        scoring_breakdown: {
+            connectivity: string;
+            intensity: string;
+            decoding_impact: string;
+            exteriority: string;
+            trajectory: string;
+        };
+        recapture_pressure: "High" | "Medium" | "Low";
+        vectors_of_deterritorialization: {
+            name: string;
+            intensity: "High" | "Medium" | "Low";
+            description: string;
+        }[];
+    };
+    reflexive_audit?: {
+        analyst_positionality: string;
+        uncertainty_flags: string;
+    };
+    implications_for_legitimacy: string;
+    implications_for_policy?: string; // Legacy optional
+    emerging_themes?: string[]; // Legacy optional
 }

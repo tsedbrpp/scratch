@@ -109,8 +109,11 @@ export async function performAnalysis(
     const aiStartTime = Date.now();
 
     // AI Call
+    const modelUsed = process.env.OPENAI_MODEL || "gpt-4o";
+    logger.analysis(`Invoking OpenAI. Model: ${modelUsed}`);
+
     const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
+        model: modelUsed,
         messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userContent }
@@ -118,9 +121,16 @@ export async function performAnalysis(
         max_completion_tokens: 16384,
         response_format: { type: "json_object" }
     });
-    logger.analysis(`OpenAI response received in ${Date.now() - aiStartTime} ms`);
 
-    const responseText = completion.choices[0]?.message?.content || '';
+    const choice = completion.choices[0];
+    const responseText = choice?.message?.content || '';
+
+    logger.analysis(`OpenAI Response: received in ${Date.now() - aiStartTime} ms`);
+    logger.analysis(`Diagnostics: Finish Reason: ${choice?.finish_reason}, Prompt Tokens: ${completion.usage?.prompt_tokens}, Completion Tokens: ${completion.usage?.completion_tokens}`);
+
+    if (!responseText) {
+        logger.analysis(`[CRITICAL] Empty response received from OpenAI!`);
+    }
 
     // Parsing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

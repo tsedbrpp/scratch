@@ -44,8 +44,14 @@ export default clerkMiddleware(async (auth, request) => {
     console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname, 'Demo Mode Env:', demoMode);
 
     if (demoMode === "true") {
-        console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode');
-        return;
+        const { userId } = await auth();
+        // Only bypass auth if user is NOT logged in. 
+        // If logged in, we proceed to standard protection checks.
+        if (!userId) {
+            console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode (No Session)');
+            return;
+        }
+        console.log('[MIDDLEWARE] Valid Session detected in Demo Environment. Proceeding with Auth.');
     }
 
 

@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Fast model sufficient for summary
+            model: process.env.OPENAI_MODEL || "gpt-4o", // Fast model sufficient for summary
             messages: [{ role: 'system', content: prompt }],
             temperature: 0.3,
             max_tokens: 150

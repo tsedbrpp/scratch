@@ -19,36 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-export interface ResistanceSynthesisResult {
-    executive_summary: string;
-    dominant_strategies: {
-        strategy: string;
-        frequency: string;
-        description: string;
-        minor_actor_verification?: string;
-    }[];
-    lines_of_flight?: { // Optional to handle old data
-        narrative_aggregate: string;
-        scoring_breakdown: {
-            connectivity: string;
-            intensity: string;
-            decoding_impact: string;
-            exteriority: string;
-            trajectory: string;
-        };
-        recapture_pressure: string;
-        vectors_of_deterritorialization: (string | {
-            name: string;
-            intensity: string;
-            description: string;
-        })[];
-    };
-    reflexive_audit?: {
-        analyst_positionality: string;
-        uncertainty_flags: string;
-    };
-    implications_for_legitimacy: string;
-}
+import { ResistanceSynthesisResult } from "@/types";
 
 const SCORE_MAP: Record<string, number> = {
     "High": 3,

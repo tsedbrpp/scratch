@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         // Call OpenAI for discourse analysis
         logger.debug('Starting OpenAI analysis for artifact:', artifact_id);
         const completion = await openai.chat.completions.create({
-            model: 'gpt-4o',
+            model: process.env.OPENAI_MODEL || 'gpt-4o',
             messages: [
                 {
                     role: 'system',

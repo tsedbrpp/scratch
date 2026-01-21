@@ -49,6 +49,10 @@ GENERAL ANALYTIC PRINCIPLES
    - Resistance: mechanisms enabling reinterpretation, refusal, counter-power, community-level governance.
    - Epistemic Positionality: the subject assumed by each framework (individual, provider, community, state).
 
+6. REFERENCE RULE (CRITICAL)
+   In all narrative text (descriptions, convergence/divergence explanations, critiques), you MUST refer to the documents by their actual titles provided in the input (e.g., "EU AI Act", "Brazil PL 2338").
+   DO NOT use "Source A" or "Source B" in the output text. Use the real names.
+
 ============================================================
 SCORING & TOPOLOGY INSTRUCTIONS
 ============================================================
@@ -91,6 +95,26 @@ OUTPUT FORMAT (STRICT)
 You MUST output ONLY a JSON object with EXACTLY this structure:
 
 {
+  "node_generation_step": [
+    "1. Concept: Risk Assessment (Centrality: High)",
+    "2. Mechanism: Conformity Checks (Centrality: Medium)",
+    "3. ... (List at least 15 potential nodes here before constructing the network)"
+  ],
+
+  "assemblage_network": {
+    "nodes": [
+      { "id": "Source A Title", "type": "policy", "label": "EU AI Act", "inferred_centrality": "high" },
+      { "id": "Source B Title", "type": "policy", "label": "Brazil PL 2338", "inferred_centrality": "high" },
+      { "id": "Risk Mgmt", "type": "concept", "label": "Risk Management", "inferred_centrality": "medium" },
+      // ... (Ensure at least 15 nodes in total)
+    ],
+    "edges": [
+      { "from": "Source A Title", "to": "Risk Mgmt", "type": "reinforcing", "description": "Policy mandates risk framework", "weight": 0.9 },
+      { "from": "Source B Title", "to": "Risk Mgmt", "type": "reinforcing", "description": "Policy requires risk assessment", "weight": 0.8 },
+      // ... (CRITICAL: You MUST create edges connecting ALL nodes. Minimum 20 edges required for 15+ nodes)
+    ]
+  },
+
   "risk": { "convergence": "• ...", "divergence": "• ...", "coloniality": "• ...", "resistance": "• ...", "convergence_score": 5, "coloniality_score": 2 },
   "governance": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
   "rights": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
@@ -106,43 +130,47 @@ You MUST output ONLY a JSON object with EXACTLY this structure:
       "confidence": 0.9,
       "decision_rule": "I scored A low because it explicitly lists bans..."
     },
-    "governance": { "a_score": 5.0, "b_score": 5.0, "axis": "Governance Structure", "anchors": { "low": "State-Centralized", "high": "Polycentric/Networked" }, "description": "...", "evidence": { "a_quotes": [], "b_quotes": [] }, "confidence": 0.8 },
-    "rights": { "a_score": 5.0, "b_score": 5.0, "axis": "Rights Framework", "anchors": { "low": "Individual/Procedural", "high": "Collective/Substantive" }, "description": "...", "evidence": { "a_quotes": [], "b_quotes": [] }, "confidence": 0.8 },
-    "scope": { "a_score": 5.0, "b_score": 5.0, "axis": "Territorial Scope", "anchors": { "low": "Domestic/Sovereign", "high": "Extraterritorial/Market" }, "description": "...", "evidence": { "a_quotes": [], "b_quotes": [] }, "confidence": 0.8 }
-  },
-
-  "assemblage_network": {
-    "nodes": [
-      { "id": "Human Rights", "type": "right", "label": "Fundamental Rights", "inferred_centrality": "high" },
-      { "id": "Market logic", "type": "concept", "label": "Internal Market", "inferred_centrality": "medium" }
-    ],
-    "edges": [
-      { "from": "Market logic", "to": "Human Rights", "type": "tension", "description": "Market priorities conflict with rights", "weight": 0.8 },
-      { "from": "EU AI Act", "to": "GDPR", "type": "reinforcing", "description": "Builds upon data protection", "weight": 0.9 }
-    ]
+    // ... (governance, rights, scope - keep existing structure implied)
   },
 
   "resonances": { 
-    "narrative": "Analysis of rhizomatic resonances...", 
+    "narrative": "Analysis of rhizomatic resonances (strategies shared across frameworks).", 
     "shared_strategies": ["Gambiarra", "Order Maintenance"],
     "resonance_graph": {
         "nodes": [
-            { "id": "Risk", "label": "Risk", "type": "shared" },
-            { "id": "EU Market", "label": "Internal Market", "type": "eu_specific" },
-            { "id": "Direct Action", "label": "Collective Rights", "type": "brazil_specific", "flight_intensity": 0.9 }
+            { "id": "Risk", "label": "Risk Management", "type": "shared" },
+            { "id": "Transparency", "label": "Transparency", "type": "shared" },
+            { "id": "EU-Specific", "label": "Market Leverage", "type": "eu_specific" },
+            { "id": "Brazil-Specific", "label": "Civic Participation", "type": "brazil_specific", "flight_intensity": 0.7 }
         ],
         "edges": [
-            { "from": "Risk", "to": "EU Market", "type": "colonial_influence", "weight": 0.8 },
-            { "from": "Risk", "to": "Direct Action", "type": "flight", "weight": 0.9 },
-            { "from": "EU Market", "to": "Direct Action", "type": "divergence", "weight": 0.5 }
+            { "from": "Risk", "to": "Transparency", "type": "reinforcing", "weight": 0.8 },
+            { "from": "Risk", "to": "EU-Specific", "type": "tension", "weight": 0.6 },
+            { "from": "Transparency", "to": "Brazil-Specific", "type": "flight", "weight": 0.7 }
         ]
     }
   },
   "verified_quotes": [
     { "text": "Quote...", "source": "Source (Art. X)", "relevance": "Explanation..." }
   ],
-  "system_critique": "A critical analysis of systemic implications..."
+  "system_critique": "A critical analysis of systemic implications (Power, Justice, Coloniality)."
 }
+
+CRITICAL LENGTH CONSTRAINTS:
+1. "node_generation_step": 
+   - **MANDATORY**: List at least 20 potential concepts/mechanisms here first.
+   - Use this step to brainstorm before filtering down to the final network.
+2. "assemblage_network": 
+   - **MINIMUM 15 NODES**, MAX 30. 
+   - **MUST** include nodes for the two document titles (Type: 'policy').
+   - **MUST** form two distinct clusters around the policies, connected by shared concepts.
+   - Nodes must clearly belong to one side or be a shared bridge.
+   - **MINIMUM 20 EDGES** connecting nodes. Every node MUST connect to at least one other node.
+2. "verified_quotes": Max 5 most evidentiary quotes.
+3. "system_critique": Max 3 sentences (Deep critique allowed).
+4. "resonances.narrative": Max 3 sentences.
+5. "resonances.resonance_graph": Max 5 nodes.
+6. per_section_bullets: Max 5 highly detailed bullets.
 
 NO commentary outside JSON. NO markdown. NO invented citations.
 `;

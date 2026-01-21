@@ -68,8 +68,19 @@ const EXCLUDED_KEYS = new Set([
     'assemblage_network',
     'resonances',
     'topology_analysis',
-    'key_insight'
+    'key_insight',
+    'node_generation_step' // Internal AI brainstorming step, not for display
 ]);
+
+// Type guard to check if a value is a valid synthesis section
+const isSynthesisSection = (value: unknown): value is ComparisonResult["risk"] => {
+    return value !== null &&
+        typeof value === 'object' &&
+        'convergence' in value &&
+        'divergence' in value &&
+        'coloniality' in value &&
+        'resistance' in value;
+};
 
 export default function SynthesisPage() {
     const { sources, isLoading } = useSources();
@@ -84,14 +95,37 @@ export default function SynthesisPage() {
     const [isComparing, setIsComparing] = useState(false);
     const [comparisonResult, setComparisonResult] = useServerStorage<ComparisonResult | null>("synthesis_comparison_result", null);
 
-    // Ecosystem State (REMOVED: isMapping, ecosystemImpacts, selectedEcosystemSourceId)
-    // Replaced with Preflight Logic
+    // [NEW] Local Session Cache to restore results without re-fetching
+    const [runCache, setRunCache] = useState<Record<string, ComparisonResult>>({});
 
     // Filter sources that have text available for analysis AND are Policy Documents (not Traces/Web)
     const analyzedSources = sources.filter(s =>
         (s.analysis || s.extractedText) &&
         (s.type === 'PDF' || s.type === 'Text')
     );
+
+    // [NEW] Helper to update selection and check cache
+    const updateSelection = (newA: Source | null, newB: Source | null) => {
+        setSourceA(newA);
+        setSourceB(newB);
+
+        if (newA && newB) {
+            const cacheKey = `${newA.id}:${newB.id}`;
+            const reverseKey = `${newB.id}:${newA.id}`;
+
+            if (runCache[cacheKey]) {
+                setComparisonResult(runCache[cacheKey]);
+            } else if (runCache[reverseKey]) {
+                // Determine if we need to swap axis in the future, for now just load the data
+                // In a perfect world we would flip the axis scores here, but reusing is OK for now
+                setComparisonResult(runCache[reverseKey]);
+            } else {
+                setComparisonResult(null);
+            }
+        } else {
+            setComparisonResult(null);
+        }
+    };
 
     const handleExport = () => {
         if (isReadOnly) {
@@ -109,8 +143,6 @@ export default function SynthesisPage() {
             alert("Please run a comparison first to generate a report.");
             return;
         }
-
-        // ... rest of handleExport
 
         setIsExporting(true);
         try {
@@ -166,6 +198,13 @@ export default function SynthesisPage() {
         setIsComparing(true);
         // setComparisonResult(null); // Keep previous result while loading so button stays visible
 
+        // Check for missing text
+        if (!sourceA.extractedText || sourceA.extractedText.length < 50 || !sourceB.extractedText || sourceB.extractedText.length < 50) {
+            alert("One or both selected documents appear to have no extracted text. Please check the Data Source Manager.");
+            setIsComparing(false);
+            return;
+        }
+
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
             if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
@@ -177,6 +216,9 @@ export default function SynthesisPage() {
             // Find associated traces for Source B
             const tracesB = sources.filter(s => s.type === 'Trace' && s.policyId === sourceB.id);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000); // 5m Client Timeout (Max safe limit)
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: headers,
@@ -184,41 +226,53 @@ export default function SynthesisPage() {
                     analysisMode: 'comparison',
                     sourceA: {
                         title: sourceA.title,
-                        text: sourceA.extractedText?.substring(0, 15000) || '',
+                        text: sourceA.extractedText?.substring(0, 15000) || '', // [MAX] Increased to 15k context
                         // [NEW] Inject Assemblage Narrative if available (Provenance)
-                        assemblageNarrative: assemblageA?.impactNarrative,
-                        assemblageActors: assemblageA?.nodes?.map(n => ({ name: n.name, type: n.type, description: n.description })) || [],
-                        traces: tracesA.map(t => ({
+                        assemblageNarrative: assemblageA?.impactNarrative?.summary?.substring(0, 2000), // Increased narrative
+                        assemblageActors: assemblageA?.nodes?.slice(0, 10).map(n => ({ name: n.name, type: n.type, description: n.description })) || [], // Top 10
+                        traces: tracesA.slice(0, 3).map(t => ({ // Top 3 traces
                             title: t.title,
                             description: t.description,
-                            extractedText: t.extractedText // Include full text if Deep Fetched
+                            extractedText: t.extractedText?.substring(0, 1000)
                         }))
                     },
                     sourceB: {
                         title: sourceB.title,
-                        text: sourceB.extractedText?.substring(0, 15000) || '',
+                        text: sourceB.extractedText?.substring(0, 15000) || '', // [MAX] Increased to 15k context
                         // [NEW] Inject Assemblage Narrative if available (Provenance)
-                        assemblageNarrative: assemblageB?.impactNarrative,
-                        assemblageActors: assemblageB?.nodes?.map(n => ({ name: n.name, type: n.type, description: n.description })) || [],
-                        traces: tracesB.map(t => ({
+                        assemblageNarrative: assemblageB?.impactNarrative?.summary?.substring(0, 2000),
+                        assemblageActors: assemblageB?.nodes?.slice(0, 10).map(n => ({ name: n.name, type: n.type, description: n.description })) || [],
+                        traces: tracesB.slice(0, 3).map(t => ({
                             title: t.title,
                             description: t.description,
-                            extractedText: t.extractedText
+                            extractedText: t.extractedText?.substring(0, 1000)
                         }))
                     },
                     force: forceRefresh
-                })
+                }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             const data = await response.json();
             if (data.success && data.analysis) {
                 setComparisonResult(data.analysis);
+                // [NEW] Update Session Cache
+                setRunCache(prev => ({
+                    ...prev,
+                    [`${sourceA.id}:${sourceB.id}`]: data.analysis
+                }));
             } else {
                 alert("Comparison failed: " + (data.error || "Unknown error"));
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Comparison error:", error);
-            alert("Failed to generate comparison.");
+            if (error.name === 'AbortError') {
+                alert("Analysis timed out (60s limit). The documents may be too large or the AI service is busy. Please try again.");
+            } else {
+                alert("Failed to generate comparison. " + (error.message || ""));
+            }
         } finally {
             setIsComparing(false);
         }
@@ -297,7 +351,7 @@ export default function SynthesisPage() {
                                     value={sourceA?.id || ""}
                                     onChange={(e) => {
                                         const source = analyzedSources.find(s => s.id === e.target.value);
-                                        setSourceA(source || null);
+                                        updateSelection(source || null, sourceB);
                                     }}
                                 >
                                     <option value="">Select first document...</option>
@@ -313,7 +367,7 @@ export default function SynthesisPage() {
                                     value={sourceB?.id || ""}
                                     onChange={(e) => {
                                         const source = analyzedSources.find(s => s.id === e.target.value);
-                                        setSourceB(source || null);
+                                        updateSelection(sourceA, source || null);
                                     }}
                                 >
                                     <option value="">Select second document...</option>
@@ -322,7 +376,7 @@ export default function SynthesisPage() {
                                     ))}
                                 </select>
                             </div>
-                        </div >
+                        </div>
                         <div className="flex gap-2">
                             <div className="flex flex-col gap-2 w-full">
                                 <Button
@@ -437,6 +491,7 @@ export default function SynthesisPage() {
                     <div className="grid gap-4">
                         {Object.entries(comparisonResult)
                             .filter(([key]) => !EXCLUDED_KEYS.has(key))
+                            .filter(([_, value]) => isSynthesisSection(value))
                             .map(([key, value]) => {
                                 const typedValue = value as ComparisonResult["risk"];
                                 const finding = SYNTHESIS_FINDINGS.find(f => f.key === key);
@@ -591,3 +646,4 @@ export default function SynthesisPage() {
         </div >
     );
 }
+

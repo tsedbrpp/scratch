@@ -15,7 +15,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v28-add-algo'; // Incremented to invalidate cache for algorithm support
+const PROMPT_VERSION = 'v36-resonance-fix'; // Incremented to fix blank resonance graph
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -249,9 +249,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (analysisMode === 'comparison') {
-      if (!sourceA?.text || sourceA.text.length < 50 || !sourceB?.text || sourceB.text.length < 50) {
+      const textA = sourceA?.text || '';
+      const textB = sourceB?.text || '';
+
+      console.log(`[ANALYSIS] Comparison Text Checks - A: ${textA.length}, B: ${textB.length}`);
+
+      if (textA.length < 50 || textB.length < 50) {
         return NextResponse.json(
-          { error: 'Insufficient text content in selected sources for comparison.' },
+          { error: 'Insufficient text content in selected sources. Please ensure both documents have extracted text.' },
           { status: 400 }
         );
       }
@@ -283,22 +288,42 @@ export async function POST(request: NextRequest) {
       textForCache += `| pos:${posString} `;
     }
 
-    if (analysisMode === 'comparison' && sourceA && sourceB) {
-      textForCache = `${sourceA.title}:${sourceA.text}| ${sourceB.title}:${sourceB.text} `;
-    } else if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
-      // Use titles and summary/node count for cache key to avoid huge JSON strings
-      textForCache = `ONTOLOGY_COMPARE:${sourceA.title} (${sourceA.data.nodes.length})| ${sourceB.title} (${sourceB.data.nodes.length})`;
-      if (sourceC) {
-        textForCache += `| ${sourceC.title} (${sourceC.data.nodes.length})`;
+    // Helper function to generate cache text for comparison modes
+    const generateComparisonCacheText = () => {
+      if (analysisMode === 'comparison' && sourceA && sourceB) {
+        // Sort sources alphabetically to make cache key order-independent
+        const sources = [
+          { title: sourceA.title, text: sourceA.text },
+          { title: sourceB.title, text: sourceB.text }
+        ].sort((a, b) => a.title.localeCompare(b.title));
+        return `${sources[0].title}:${sources[0].text}| ${sources[1].title}:${sources[1].text}`;
       }
-    } else if (analysisMode === 'comparative_synthesis' && documents) {
-      textForCache = documents.map((d: { id: string }) => d.id).sort().join(',');
-      if (lens) {
-        textForCache += `| lens:${lens}`;
+
+      if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
+        // Use titles and summary/node count for cache key to avoid huge JSON strings
+        let cacheText = `ONTOLOGY_COMPARE:${sourceA.title} (${sourceA.data.nodes.length})| ${sourceB.title} (${sourceB.data.nodes.length})`;
+        if (sourceC) {
+          cacheText += `| ${sourceC.title} (${sourceC.data.nodes.length})`;
+        }
+        return cacheText;
       }
-    } else if (analysisMode === 'resistance_synthesis' && documents) {
-      textForCache = documents.map((d: { title: string }) => d.title).sort().join(',');
-    }
+
+      if (analysisMode === 'comparative_synthesis' && documents) {
+        let cacheText = documents.map((d: { id: string }) => d.id).sort().join(',');
+        if (lens) {
+          cacheText += `| lens:${lens}`;
+        }
+        return cacheText;
+      }
+
+      if (analysisMode === 'resistance_synthesis' && documents) {
+        return documents.map((d: { title: string }) => d.title).sort().join(',');
+      }
+
+      return textForCache;
+    };
+
+    textForCache = generateComparisonCacheText();
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown', PROMPT_VERSION);
 
@@ -377,6 +402,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime} ms`);
+
+    // [DEBUG] Log Node Count
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const debugNodes = (analysis as any)?.assemblage_network?.nodes;
+    if (Array.isArray(debugNodes)) {
+      console.log(`[DEBUG_DENSITY] AI Generated Node Count: ${debugNodes.length}`);
+    } else {
+      console.log(`[DEBUG_DENSITY] No assemblage_network found or nodes is not an array.`);
+    }
 
     return NextResponse.json({
       success: true,

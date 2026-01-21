@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { executeGoogleSearch, curateResultsWithAI, getMockResults, SearchResult } from '@/lib/search-service';
+import { executeGoogleSearch, curateResultsWithOpenAI, getMockResults, SearchResult } from '@/lib/search-service';
 import { auth } from '@clerk/nextjs/server';
 import { isReadOnlyAccess } from '@/lib/auth-helper';
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
     try {
-        const { query, policyText, maxResults = 5 } = await req.json();
+        const { query, policyText } = await req.json();
 
         // Determine the search query
         let searchQuery = query;
@@ -30,14 +30,16 @@ export async function POST(req: Request) {
         // If policyText is provided but no query, generate search terms from the policy text
         if (!searchQuery && policyText) {
             const apiKey = process.env.GOOGLE_API_KEY;
+
             if (!apiKey) {
                 return NextResponse.json(
-                    { success: false, error: 'Google API key not configured for search term generation. Please set GOOGLE_API_KEY in .env.local' },
+                    { success: false, error: 'Google API key not configured for search term generation.' },
                     { status: 500 }
                 );
             }
 
             try {
+                // Keep Gemini for Search Term Generation (as requested, only curation was broken/complained about)
                 const { GoogleGenerativeAI } = await import('@google/generative-ai');
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const modelName = process.env.GOOGLE_AI_MODEL || "gemini-1.5-flash-latest";
@@ -153,8 +155,10 @@ Example: ["${policySubject} workaround reddit", "${policySubject} bypass trick f
         }
 
         // AI CURATION STEP using Service
-        console.log("Starting AI Curation Service...");
-        const curatedResults = await curateResultsWithAI(results, policyText, aiApiKey);
+        console.log("Starting AI Curation Service (OpenAI)...");
+        const openaiKey = process.env.OPENAI_API_KEY;
+        // Default to OpenAI as requested
+        const curatedResults = await curateResultsWithOpenAI(results, policyText, openaiKey || "", process.env.OPENAI_MODEL || 'gpt-4o');
 
         return NextResponse.json({
             success: true,

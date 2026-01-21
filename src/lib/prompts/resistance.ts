@@ -43,12 +43,13 @@ For each finding:
    - **Priority 2 (SPEECH):** Only classify as **Discursive Resistance** if the text is *purely* complaining, debating, or mocking without describing a tactical intervention.
    
 3. Broaden your search for resistance to include:
-   - **Friction**: Users expressing frustration, annoyance, or difficulty.
-   - **Discursive Resistance**: Complaining, mocking, or critiquing in forums (ONLY if no action is described).
+   - **Friction**: Users expressing frustration, annoyance, or difficulty (Map to **Refusal** or **Discursive** with Low confidence).
+   - **Discursive Resistance**: Complaining, mocking, venturing, or critiquing in forums (even if no action is described).
    - **Workarounds**: Any attempt to bypass a standard procedure.
 
-4. **LATENT RESISTANCE:** If evidence is subtle (e.g., "Potential Resistance" from search), classify it as **"Shadow Resistance"** or **"Gambiarra"** with **confidence="Low"**. Do NOT default to "None".
+4. **LATENT RESISTANCE:** If evidence is subtle (e.g., "Potential Resistance" from search), classify it as **"Shadow Resistance"** or **"Refusal"** with **confidence="Low"**. Do NOT default to "None".
 5. **INFERENCE:** You may infer the tactic if the context implies it (e.g. "silence" -> Refusal).
+6. **Unknown/Other:** If it looks like resistance but fits no category, use **Emergent Strategy**. Only use "None" if the text is completely unrelated (e.g. clearly pro-system or irrelevant noise).
 
 ============================================================
 III. POSITIONALITY & POWER (MANDATORY)
@@ -130,6 +131,7 @@ II. SYNTHESIS PROTOCOL
 
 1. **Dominant Strategies & Discourse Gap**
    - Measure semantic distance between "Official Policy Keywords" (Territorialization) and "User Vernacular" (Decoding).
+   - ** WEAK SIGNAL HANDLING:** If inputs show "None" or "Low" confidence, verify if they share themes of "complaint", "friction", or "confusion". If so, classify the Dominant Strategy as **"Discursive Resistance"** or **"Refusal"** (Low).
    - Flag "Shadow IT" (local weights, API wrappers) and "Compliance Gaming" (box-ticking).
    - Validate "Minor Actor" status by Positionality (Low Authority/Peripheral), NOT just ideology.
 

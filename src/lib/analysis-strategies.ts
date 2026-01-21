@@ -70,7 +70,14 @@ ${sourceB.text}
 ${assemblageContentB}
 ${traceContentB}
 
-Please compare these sources according to the system prompt instructions.`
+Please compare these sources according to the system prompt instructions.
+
+CRITICAL GRAPH INSTRUCTIONS:
+1. The title of Source A is: "${sourceA.title}". You MUST create a node with id="${sourceA.title}" (Type: 'policy').
+2. The title of Source B is: "${sourceB.title}". You MUST create a node with id="${sourceB.title}" (Type: 'policy').
+3. You MUST generate a MINIMUM of 15 nodes in the 'assemblage_network'.
+4. Connect all other concepts back to these two central policy nodes.
+5. VIOLATION CHECK: You MUST start your JSON with "node_generation_step": ["1...", "2...", ... "20..."]. If you skip this step or generate fewer than 15 nodes, the analysis is invalid.`
         };
     },
 
@@ -118,13 +125,13 @@ Please extract the ontology / concept map from this text.`
 ${JSON.stringify(sourceA.data, null, 2)}
 
 ONTOLOGY B(${sourceB.title}):
-${JSON.stringify(sourceB.data, null, 2)}`;
+${JSON.stringify(sourceB.data, null, 2)} `;
 
         if (sourceC) {
             comparisonContent += `
 
 ONTOLOGY C(${sourceC.title}):
-${JSON.stringify(sourceC.data, null, 2)}`;
+${JSON.stringify(sourceC.data, null, 2)} `;
         }
 
         return {
@@ -211,7 +218,7 @@ Please synthesize these resistance findings according to the system prompt instr
 Here are the calculated Assemblage Metrics for the current ecosystem map:
 ${JSON.stringify(configurations, null, 2)}
 
-Please interpret these "Stability" (Density) and "Porosity" (External Connectivity) scores.`
+Please interpret these "Stability"(Density) and "Porosity"(External Connectivity) scores.`
     }),
 
     ant_trace: async (userId, { actors, links }) => {
@@ -222,12 +229,13 @@ Please interpret these "Stability" (Density) and "Porosity" (External Connectivi
             userContent: `TRACED ACTORS:
 ${JSON.stringify(actors.map((a: any) => ({ name: a.name || "Unknown Actor", type: a.type })), null, 2)}
 
-ASSOCIATIONS:
+        ASSOCIATIONS:
 ${JSON.stringify(links.map((l: any) => ({
                 source: nameMap.get(l.source) || l.source,
                 target: nameMap.get(l.target) || l.target,
                 type: l.type
-            })), null, 2)}
+            })), null, 2)
+                }
 
 Please provide a methodological trace of this network.`
         };
@@ -238,7 +246,7 @@ Please provide a methodological trace of this network.`
         userContent: `ASSEMBLAGE COMPONENTS:
 ${JSON.stringify(traced_actors.map((a: any) => a.name), null, 2)}
 
-DETECTED MECHANISMS (Territorialization/Coding):
+DETECTED MECHANISMS(Territorialization / Coding):
 ${JSON.stringify(detected_mechanisms, null, 2)}
 
 IDENTIFIED CAPACITIES:
@@ -262,7 +270,7 @@ VIEW CONTEXT:
 ${interactionState?.isNested ? "Users are viewing this as a Nested Assemblage (Actor -> Collective -> Regime) to emphasize structural containment." : "Users are viewing this as a Flat Network to emphasize unrestricted flow."}
 ${interactionState?.is3D ? "Users are exploring this in 3D space, focusing on topology and depth." : ""}
 
-Please synthesize these findings and discuss the reflexivity of the analysis. Explicitly reference the "Assemblage Hybrid" nature of the network.`
+Please synthesize these findings and discuss the reflexivity of the analysis.Explicitly reference the "Assemblage Hybrid" nature of the network.`
     }),
 
     default: async (userId, { title, sourceType, text }) => ({

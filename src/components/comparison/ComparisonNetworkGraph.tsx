@@ -42,6 +42,12 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 }
 
 export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 }: ComparisonNetworkGraphProps) {
+    console.log("DEBUG: ComparisonNetworkGraph received data:", {
+        nodeCount: networkData?.nodes?.length,
+        edgeCount: networkData?.edges?.length,
+        nodes: networkData?.nodes
+    });
+
     const svgRef = useRef<SVGSVGElement>(null);
     const gRef = useRef<SVGGElement>(null); // Container for zoomable content
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -484,19 +490,19 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
     return (
         <Card className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen rounded-none bg-white dark:bg-slate-950' : 'h-full bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm relative overflow-hidden'}`}>
             <CardHeader className="pb-2 border-b bg-white/50 dark:bg-slate-950/50">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                            <Network className="w-5 h-5 text-indigo-600" />
-                            Assemblage Network
+                <div className="flex justify-between items-center gap-4">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <CardTitle className="text-lg flex items-center gap-2 text-slate-800 dark:text-slate-100 truncate shrink-0">
+                            <Network className="w-5 h-5 text-indigo-600 shrink-0" />
+                            <span className="truncate">Assemblage Network</span>
                         </CardTitle>
                         {activeCenterId && (
-                            <Badge variant="secondary" className="animate-in fade-in zoom-in bg-indigo-100 text-indigo-800 border-indigo-200">
-                                Territorializing: {nodes.find(n => n.id === activeCenterId)?.label}
+                            <Badge variant="secondary" className="animate-in fade-in zoom-in bg-indigo-100 text-indigo-800 border-indigo-200 truncate min-w-0 hidden sm:inline-flex">
+                                <span className="truncate">Territorializing: {nodes.find(n => n.id === activeCenterId)?.label}</span>
                             </Badge>
                         )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                         {/* Zoom Controls */}
                         <div className="flex items-center bg-white/50 dark:bg-slate-800/50 rounded-md border mr-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={handleZoomOut} title="Zoom Out">
@@ -518,7 +524,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                             title="Export as PNG"
                         >
                             <Download className="w-3 h-3" />
-                            <span className="sr-only sm:not-sr-only sm:inline-block">Export</span>
+                            <span className="sr-only 2xl:not-sr-only 2xl:inline-block">Export</span>
                         </Button>
 
                         <Button
@@ -529,7 +535,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                             disabled={isInterpreting}
                         >
                             {isInterpreting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                            AI Explain
+                            <span className="hidden 2xl:inline">AI Explain</span>
                         </Button>
 
                         <Button

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { auth } from '@clerk/nextjs/server';
 import { isReadOnlyAccess } from '@/lib/auth-helper';
-import { executeGoogleSearch, curateResultsWithAI, curateResultsWithOpenAI, SearchResult } from '@/lib/search-service';
+import { executeGoogleSearch, curateResultsWithOpenAI, SearchResult, getMockResults } from '@/lib/search-service';
 import { createRateLimitResponse, createUnauthorizedResponse, createErrorResponse } from '@/lib/api-helpers';
-import { PromptRegistry } from '@/lib/prompts/registry';
-import { safeJSONParse } from '@/lib/analysis-utils';
 
 // Removed KEY_TERM_EXTRACTION_PROMPT - moved to registry
 
@@ -49,7 +46,12 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { policyText, policyTitle, customQuery, platforms } = body;
-        console.log(`DEBUG: Received request. PolicyText length: ${policyText?.length}, Query: ${customQuery}`);
+        console.log("DEBUG: Search Request Received:", {
+            policyTitle,
+            customQuery,
+            platforms,
+            policyTextLength: policyText?.length
+        });
 
         // Generate cache key
         const cacheKey = `user:${userId}:search-traces-v27-classified:${Buffer.from(JSON.stringify({ policyText: policyText?.slice(0, 100), customQuery, platforms })).toString('base64')}`;
@@ -57,9 +59,19 @@ export async function POST(request: NextRequest) {
         // Check cache
         try {
             const cachedData = await StorageService.getCache(userId, cacheKey);
+            // Define expected structure
+            interface CachedSearchResult {
+                traces: Trace[];
+                queriesUsed: string[];
+                success: boolean;
+            }
+
             if (cachedData) {
-                console.log('Returning cached search traces');
-                return NextResponse.json(cachedData);
+                const typedCache = cachedData as unknown as CachedSearchResult;
+                if (typedCache.traces && typedCache.traces.length > 0) {
+                    console.log('Returning cached search traces');
+                    return NextResponse.json(typedCache);
+                }
             }
         } catch (error) {
             console.error('Redis cache check failed:', error);
@@ -68,7 +80,7 @@ export async function POST(request: NextRequest) {
         // Check for required API keys
         const googleApiKey = process.env.GOOGLE_SEARCH_API_KEY;
         const searchEngineId = process.env.GOOGLE_SEARCH_CX || process.env.GOOGLE_SEARCH_ENGINE_ID;
-        const openaiApiKey = process.env.OPENAI_API_KEY;
+
 
         if (!googleApiKey || !searchEngineId) {
             return createErrorResponse(new Error("Google Search API not configured"), "Server Configuration Error");
@@ -201,6 +213,26 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // ==========================================
+        // FALLBACK: BROAD SEARCH (If Strict Failed)
+        // ==========================================
+        if (allTraces.length === 0) {
+            console.log("Strict search yielded 0 results. Attempting Broad Search...");
+
+            // Remove quotes and strict strategy groups, just look for the subject + broad resistance terms
+            const cleanSubject = policyContext.replace(/["']/g, "");
+            const broadQuery = `${cleanSubject} (controversy OR criticism OR problem OR resistance)`;
+
+            console.log(`Fallback Broad Query: ${broadQuery}`);
+
+            // Run a simple, single search
+            const broadResults = await executeGoogleSearch(broadQuery, googleApiKey, searchEngineId);
+
+            broadResults.forEach(item => {
+                processItem(item, broadQuery);
+            });
+        }
+
         function processItem(item: SearchResult, query: string) {
             let detectedPlatform = 'web';
             const link = item.link.toLowerCase();
@@ -228,95 +260,88 @@ export async function POST(request: NextRequest) {
         console.log(`DEBUG: Traces found before AI: ${allTraces.length}`);
 
         if (allTraces.length > 0) {
-            if (allTraces.length > 0) {
-                let curatedFinal: SearchResult[] = [];
-                let curationSource = "None";
+            let curatedFinal: SearchResult[] = [];
+            let curationSource = "None";
 
-                const googleGenKey = process.env.GOOGLE_API_KEY;
-                const openaiKey = process.env.OPENAI_API_KEY;
+            const openaiKey = process.env.OPENAI_API_KEY;
 
-                // [Refactor] Centralized Policy Subject Logic
-                let policySubject = "AI Resistance";
-                if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
-                else if (customQuery) policySubject = customQuery;
+            // [Refactor] Centralized Policy Subject Logic
+            let policySubject = "AI Resistance";
+            if (policyText) policySubject = policyText.substring(0, 100).split('\n')[0];
+            else if (customQuery) policySubject = customQuery;
 
-                const searchResults: SearchResult[] = allTraces.map(t => ({
-                    title: t.title,
-                    link: t.sourceUrl,
-                    snippet: t.content
-                }));
+            const searchResults: SearchResult[] = allTraces.map(t => ({
+                title: t.title,
+                link: t.sourceUrl,
+                snippet: t.content
+            }));
 
-                // 1. Try Google Gemini
-                if (googleGenKey) {
-                    console.log("Starting AI Curation Service (Google Gemini)...");
-                    const results = await curateResultsWithAI(searchResults, policySubject, googleGenKey, 'gemini-1.5-flash-001', userId);
 
-                    // Check if it actually worked (look for strategy on first item)
-                    if (results.length > 0 && results[0].strategy) {
-                        curatedFinal = results;
-                        curationSource = "Google Gemini";
-                    } else {
-                        console.log("Google Gemini returned unclassified results. Falling back...");
-                    }
-                }
 
-                // 2. Try OpenAI Fallback (if Google failed or key missing)
-                if (curationSource === "None" && openaiKey) {
-                    console.log("Starting AI Curation Service (OpenAI Fallback)...");
-                    curatedFinal = await curateResultsWithOpenAI(searchResults, policySubject, openaiKey, 'gpt-4o', userId);
+            // 2. OpenAI Curation (Primary)
+            if (openaiKey) {
+                console.log("Starting AI Curation Service (OpenAI Primary)...");
+                try {
+                    curatedFinal = await curateResultsWithOpenAI(searchResults, policySubject, openaiKey, process.env.OPENAI_MODEL || 'gpt-4o', userId);
                     curationSource = "OpenAI";
+                } catch (e) {
+                    console.error("OpenAI Curation Failed:", e);
                 }
+            }
 
-                // [Enhanced Fallback] If we have extremely low yield (< 3) but many raw results, 
-                // fill the gap with raw results labeled as "Potential Resistance".
-                if (curatedFinal.length < 3 && allTraces.length >= 3) {
-                    console.log(`Low yield (${curatedFinal.length}) detected. Backfilling with raw traces.`);
+            // [Enhanced Fallback] If we have extremely low yield (< 3) but many raw results, 
+            // fill the gap with raw results labeled as "Potential Resistance".
+            if (curatedFinal.length < 3 && allTraces.length >= 3) {
+                console.log(`Low yield (${curatedFinal.length}) detected. Backfilling with raw traces.`);
 
-                    // Find indices already curated
-                    const curatedLinks = new Set(curatedFinal.map(c => c.link));
+                // Find indices already curated
+                const curatedLinks = new Set(curatedFinal.map(c => c.link));
 
-                    // Filter un-curated
-                    const remaining = allTraces.filter(t => !curatedLinks.has(t.sourceUrl));
+                // Filter un-curated
+                const remaining = allTraces.filter(t => !curatedLinks.has(t.sourceUrl));
 
-                    // Add up to 5 more
-                    remaining.slice(0, 5).forEach(t => {
-                        curatedFinal.push({
-                            title: t.title,
-                            link: t.sourceUrl,
-                            snippet: t.content,
-                            strategy: "Potential Resistance",
-                            explanation: "Identified by keyword matching (AI classification skipped or low confidence)."
-                        });
-                    });
-                }
-
-                if (curatedFinal.length === 0) {
-                    // If everything failed, use original
-                    curatedFinal = allTraces.map(t => ({
+                // Add up to 5 more
+                remaining.slice(0, 5).forEach(t => {
+                    curatedFinal.push({
                         title: t.title,
                         link: t.sourceUrl,
                         snippet: t.content,
-                        strategy: "Unclassified",
-                        explanation: "Automated keyword match."
-                    }));
-                }
-
-                // Merge back
-                finalTraces = curatedFinal.map(curated => {
-                    const original = allTraces.find(t => t.sourceUrl === curated.link);
-                    return {
-                        title: curated.title,
-                        description: original?.description || `From ${new URL(curated.link).hostname}`,
-                        content: curated.snippet,
-                        sourceUrl: curated.link,
-                        platform: original?.platform || 'web',
-                        query: original?.query || customQuery || '',
-                        strategy: curated.strategy,
-                        explanation: curated.explanation
-                    };
+                        strategy: "Potential Resistance",
+                        explanation: "Identified by keyword matching (AI classification skipped or low confidence)."
+                    });
                 });
-                console.log("Curation Source:", curationSource);
             }
+
+            if (curatedFinal.length === 0) {
+                // If everything failed, use original
+                curatedFinal = allTraces.map(t => ({
+                    title: t.title,
+                    link: t.sourceUrl,
+                    snippet: t.content,
+                    strategy: "Unclassified",
+                    explanation: "Automated keyword match."
+                }));
+            }
+
+            // Merge back
+            finalTraces = curatedFinal.map(curated => {
+                const original = allTraces.find(t => t.sourceUrl === curated.link);
+                return {
+                    title: curated.title,
+                    description: original?.description || `From ${new URL(curated.link).hostname}`,
+                    content: curated.snippet,
+                    sourceUrl: curated.link,
+                    platform: original?.platform || 'web',
+                    query: original?.query || customQuery || '',
+                    strategy: curated.strategy,
+                    explanation: curated.explanation
+                };
+            });
+            console.log("Curation Source:", curationSource);
+        }
+
+        if (finalTraces.length === 0) {
+            console.log("Zero results found from Live Search API.");
         }
 
         const result = {
