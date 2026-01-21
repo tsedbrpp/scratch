@@ -23,6 +23,11 @@ export const redis =
     globalForRedis.redis ||
     new Redis(getRedisUrl());
 
+// Prevent unhandled error events from crashing the process
+redis.on('error', (err) => {
+    console.error('Redis Client Error:', err);
+});
+
 if (process.env.NODE_ENV !== 'production') {
     globalForRedis.redis = redis;
 }

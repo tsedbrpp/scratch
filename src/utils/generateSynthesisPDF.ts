@@ -1,89 +1,174 @@
 import { jsPDF } from "jspdf";
+import { SynthesisComparisonResult } from "@/types/synthesis";
 
-interface SynthesisFinding {
-    dimension: string;
-    convergence: string;
-    divergence: string;
-    coloniality: string;
-    resistance: string;
-}
-
-export function generateSynthesisPDF(findings: SynthesisFinding[]) {
+export function generateSynthesisPDF(data: SynthesisComparisonResult, sourceA: string, sourceB: string) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
-    const maxWidth = pageWidth - 2 * margin;
-    let yPosition = margin;
+    const contentWidth = pageWidth - 2 * margin;
+    let y = margin;
 
-    // Helper function to add text with word wrapping
-    const addText = (text: string, fontSize: number, isBold: boolean = false, color: [number, number, number] = [0, 0, 0]) => {
-        doc.setFontSize(fontSize);
-        doc.setFont("helvetica", isBold ? "bold" : "normal");
-        doc.setTextColor(...color);
-
-        const lines = doc.splitTextToSize(text, maxWidth);
-
-        // Check if we need a new page
-        if (yPosition + (lines.length * fontSize * 0.4) > pageHeight - margin) {
+    // Helper: Add Page Check
+    const checkPageBreak = (heightNeeded: number) => {
+        if (y + heightNeeded > pageHeight - margin) {
             doc.addPage();
-            yPosition = margin;
+            y = margin;
+            return true;
         }
-
-        doc.text(lines, margin, yPosition);
-        yPosition += lines.length * fontSize * 0.4 + 5;
+        return false;
     };
 
-    // Title
-    addText("Cross-Case Synthesis Report", 20, true, [30, 41, 59]);
-    addText(`Decolonial Situatedness in Global AI Governance`, 14, false, [71, 85, 105]);
-    yPosition += 5;
-    addText(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, 10, false, [100, 116, 139]);
-    addText("Synthesis Matrix", 16, true, [30, 41, 59]);
-    yPosition += 5;
+    // Helper: Add Title
+    const addTitle = (text: string, size = 16) => {
+        checkPageBreak(size);
+        doc.setFontSize(size);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 41, 59); // Slate-900
+        doc.text(text, margin, y + 6);
+        y += size * 0.8 + 8;
+    };
 
-    findings.forEach((finding, index) => {
-        // Dimension title
-        addText(`${index + 1}. ${finding.dimension}`, 13, true, [30, 41, 59]);
-        yPosition += 2;
+    // Helper: Add Section Header
+    const addSection = (text: string) => {
+        y += 5;
+        checkPageBreak(20);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(71, 85, 105); // Slate-600
+        doc.text(text, margin, y + 5);
+        // Underline
+        doc.setDrawColor(203, 213, 225); // Slate-300
+        doc.line(margin, y + 8, pageWidth - margin, y + 8);
+        y += 18;
+    };
 
-        // Convergence
-        doc.setFillColor(220, 252, 231);
-        doc.rect(margin, yPosition - 5, maxWidth, 8, "F");
-        addText(`Convergence: ${finding.convergence}`, 10);
+    // Helper: Add Paragraph
+    const addParagraph = (text: string, size = 10, color: [number, number, number] = [0, 0, 0]) => {
+        if (!text) return;
+        doc.setFontSize(size);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, contentWidth);
+        const height = lines.length * size * 0.45; // Approx line height
 
-        // Divergence
-        doc.setFillColor(219, 234, 254);
-        doc.rect(margin, yPosition - 5, maxWidth, 8, "F");
-        addText(`Divergence: ${finding.divergence}`, 10);
+        checkPageBreak(height + 5);
+        doc.text(lines, margin, y);
+        y += height + 4;
+    };
 
-        // Coloniality
-        doc.setFillColor(254, 226, 226);
-        doc.rect(margin, yPosition - 5, maxWidth, 8, "F");
-        addText(`Coloniality: ${finding.coloniality}`, 10);
+    // Helper: Add Key-Value Box
+    const addBox = (label: string, text: string, bgColor: [number, number, number]) => {
+        if (!text || text === "...") return; // Skip empty
 
-        // Resistance
-        doc.setFillColor(243, 232, 255);
-        doc.rect(margin, yPosition - 5, maxWidth, 8, "F");
-        addText(`Resistance: ${finding.resistance}`, 10);
+        doc.setFontSize(10);
+        const lines = doc.splitTextToSize(text, contentWidth - 6); // Padding
+        const height = lines.length * 5 + 12; // Text height + Padding
 
-        yPosition += 5;
+        checkPageBreak(height + 5);
+
+        // Background
+        doc.setFillColor(...bgColor);
+        doc.setDrawColor(bgColor[0] - 20, bgColor[1] - 20, bgColor[2] - 20); // Darker border
+        doc.roundedRect(margin, y, contentWidth, height, 2, 2, "FD");
+
+        // Label
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(50, 50, 50);
+        doc.text(label.toUpperCase(), margin + 3, y + 6);
+
+        // Content
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text(lines, margin + 3, y + 14);
+
+        y += height + 4;
+    };
+
+    // --- REPORT GENERATION ---
+
+    // 1. Cover / Header
+    addTitle("Decolonial Situatedness Analysis", 22);
+    addParagraph(`Comparing: ${sourceA} vs ${sourceB}`, 12, [71, 85, 105]);
+    addParagraph(`Generated: ${new Date().toLocaleDateString()}`, 10, [148, 163, 184]);
+    y += 10;
+
+    // 2. Executive Summary (if available)
+    if (data.resonances?.narrative) {
+        addSection("Executive Summary");
+        addParagraph(data.resonances.narrative);
+    }
+
+    // 3. Matrix Analysis (Risk, Governance, Rights, Scope)
+    const dimensions = [
+        { key: 'risk', label: 'Risk Definition' },
+        { key: 'governance', label: 'Governance Structure' },
+        { key: 'rights', label: 'Rights Framework' },
+        { key: 'scope', label: 'Territorial Scope' }
+    ];
+
+    dimensions.forEach(dim => {
+        const item = data[dim.key as keyof SynthesisComparisonResult] as any;
+        if (!item) return;
+
+        addSection(dim.label);
+
+        addBox("Convergence", item.convergence, [220, 252, 231]); // Green-100
+        addBox("Divergence", item.divergence, [219, 234, 254]); // Blue-100
+        addBox("Coloniality", item.coloniality, [254, 226, 226]); // Red-100
+        addBox("Resistance", item.resistance, [243, 232, 255]); // Purple-100
     });
 
-    // Footer
+    // 4. Rhizomatic Resonances (Shared Strategies)
+    if (data.resonances?.shared_strategies && data.resonances.shared_strategies.length > 0) {
+        addSection("Rhizomatic Resonances");
+        doc.setFont("helvetica", "bold");
+        doc.text("Shared Strategies & Concepts:", margin, y);
+        y += 6;
+
+        data.resonances.shared_strategies.forEach(strat => {
+            checkPageBreak(8);
+            doc.setFont("helvetica", "normal");
+            doc.text(`• ${strat}`, margin + 5, y);
+            y += 6;
+        });
+    }
+
+    // 5. Verified Quotes
+    if (data.verified_quotes && data.verified_quotes.length > 0) {
+        addSection("Verified Canonical Evidence");
+        data.verified_quotes.forEach(quote => {
+            const text = `"${quote.text}"`;
+            const meta = `— ${quote.source} (${quote.relevance})`;
+
+            checkPageBreak(30); // Approx
+            addParagraph(text, 10, [51, 65, 85]); // Slate-700
+
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text(meta, margin + 5, y - 2); // Tweak y back up slightly
+            y += 6;
+        });
+    }
+
+    // Footer Page Numbers
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
+        doc.setTextColor(148, 163, 184); // Slate-400
         doc.text(
-            `Page ${i} of ${totalPages}`,
+            `Page ${i} of ${totalPages}  |  Generated by Antigravity`,
             pageWidth / 2,
             pageHeight - 10,
             { align: "center" }
         );
     }
 
-    // Save the PDF
-    doc.save(`synthesis-report-${new Date().toISOString().split('T')[0]}.pdf`);
+    // Save
+    const filename = `analysis-${sourceA.substring(0, 10)}-vs-${sourceB.substring(0, 10)}.pdf`.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(filename);
 }

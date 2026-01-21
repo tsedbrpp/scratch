@@ -95,7 +95,6 @@ export default function BillingPage() {
         }
 
         setLoading(true);
-        console.log("Purchase initiated");
 
         const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
         if (!publishableKey) {
@@ -106,7 +105,6 @@ export default function BillingPage() {
         }
 
         try {
-            console.log("Calling Checkout API...");
             // Create Checkout Session
             const res = await fetch('/api/payments/checkout', {
                 method: 'POST',
@@ -117,15 +115,12 @@ export default function BillingPage() {
                 })
             });
 
-            console.log("API Response Status:", res.status);
             const data = await res.json();
-            console.log("API Response Data:", data);
 
             if (data.error) throw new Error(data.error);
             if (!data.url) throw new Error("No checkout URL returned");
 
             // Direct Redirect to Stripe URL
-            console.log("Redirecting to:", data.url);
             window.location.href = data.url;
 
         } catch (error: any) {
@@ -282,9 +277,12 @@ export default function BillingPage() {
                         </CardContent>
                     </Card>
 
-                    <DeleteAccountSection />
-
-                    <DataExportSection />
+                    {isSignedIn && (
+                        <>
+                            <DeleteAccountSection />
+                            <DataExportSection />
+                        </>
+                    )}
                 </div>
 
                 {/* Transaction History Placeholder */}

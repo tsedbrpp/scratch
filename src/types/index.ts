@@ -168,7 +168,7 @@ export interface Source {
     id: string;
     title: string;
     description: string;
-    type: "PDF" | "Web" | "Text" | "Trace";
+    type: "PDF" | "Web" | "Text" | "Trace" | "Word";
     traceType?: "provenance" | "resistance"; // Distinguish between empirical evidence and resistance reactions
     url?: string;
     sourceUrl?: string; // For Traces

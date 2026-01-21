@@ -216,7 +216,7 @@ export default function ResistancePage() {
             });
 
             const result = await response.json();
-            console.log("DEBUG: Search Result Traces:", result.traces); // Check raw response in browser console
+
 
             if (result.success && Array.isArray(result.traces)) {
                 const newTraces = result.traces.map((trace: { title: string; description: string; query: string; content: string; sourceUrl: string; strategy?: string; explanation?: string }) => ({

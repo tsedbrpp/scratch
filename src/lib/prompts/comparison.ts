@@ -130,7 +130,33 @@ You MUST output ONLY a JSON object with EXACTLY this structure:
       "confidence": 0.9,
       "decision_rule": "I scored A low because it explicitly lists bans..."
     },
-    // ... (governance, rights, scope - keep existing structure implied)
+    "governance": {
+      "a_score": 3.0, "b_score": 7.5,
+      "axis": "Governance Structure",
+      "anchors": { "low": "State-Centralized", "high": "Polycentric/Networked" },
+      "description": "Source A centralizes power in a single agency...",
+      "evidence": { "a_quotes": ["Quotes..."], "b_quotes": ["Quotes..."] },
+      "confidence": 0.85,
+      "decision_rule": "Reasoning..."
+    },
+    "rights": {
+      "a_score": 4.0, "b_score": 6.0,
+      "axis": "Rights Framework",
+      "anchors": { "low": "Individual/Procedural", "high": "Collective/Substantive" },
+      "description": "Source A focuses on individual data rights...",
+      "evidence": { "a_quotes": ["Quotes..."], "b_quotes": ["Quotes..."] },
+      "confidence": 0.8,
+      "decision_rule": "Reasoning..."
+    },
+    "scope": {
+      "a_score": 1.5, "b_score": 9.0,
+      "axis": "Territorial Scope",
+      "anchors": { "low": "Domestic/Sovereign", "high": "Extraterritorial/Market" },
+      "description": "Source A is strictly domestic, while B applies rules to any market participant...",
+      "evidence": { "a_quotes": ["Quotes..."], "b_quotes": ["Quotes..."] },
+      "confidence": 0.9,
+      "decision_rule": "Reasoning..."
+    }
   },
 
   "resonances": { 

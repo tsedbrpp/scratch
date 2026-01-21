@@ -105,7 +105,7 @@ export default function SynthesisPage() {
     );
 
     // [NEW] Helper to update selection and check cache
-    const updateSelection = (newA: Source | null, newB: Source | null) => {
+    const updateSelection = async (newA: Source | null, newB: Source | null) => {
         setSourceA(newA);
         setSourceB(newB);
 
@@ -113,13 +113,52 @@ export default function SynthesisPage() {
             const cacheKey = `${newA.id}:${newB.id}`;
             const reverseKey = `${newB.id}:${newA.id}`;
 
+            // Check client-side session cache first
             if (runCache[cacheKey]) {
                 setComparisonResult(runCache[cacheKey]);
+                return;
             } else if (runCache[reverseKey]) {
-                // Determine if we need to swap axis in the future, for now just load the data
-                // In a perfect world we would flip the axis scores here, but reusing is OK for now
                 setComparisonResult(runCache[reverseKey]);
-            } else {
+                return;
+            }
+
+            // If not in session cache, check Redis cache via API
+            try {
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (isReadOnly && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                }
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        analysisMode: 'comparison',
+                        sourceA: {
+                            title: newA.title,
+                            text: newA.extractedText?.substring(0, 15000) || ''
+                        },
+                        sourceB: {
+                            title: newB.title,
+                            text: newB.extractedText?.substring(0, 15000) || ''
+                        },
+                        checkCacheOnly: true // [NEW] Flag to only check cache, not run analysis
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success && data.analysis && data.fromCache) {
+                    setComparisonResult(data.analysis);
+                    // Also update session cache
+                    setRunCache(prev => ({
+                        ...prev,
+                        [cacheKey]: data.analysis
+                    }));
+                } else {
+                    setComparisonResult(null);
+                }
+            } catch (error) {
+                console.error('Error checking cache:', error);
                 setComparisonResult(null);
             }
         } else {
@@ -146,20 +185,11 @@ export default function SynthesisPage() {
 
         setIsExporting(true);
         try {
-            // Transform comparisonResult into the format expected by generateSynthesisPDF
-            const findings = Object.entries(comparisonResult).map(([key, value]) => {
-                const typedValue = value as ComparisonResult["risk"]; // All keys have same structure
-                const findingDef = SYNTHESIS_FINDINGS.find(f => f.key === key);
-                return {
-                    dimension: findingDef?.dimension || key,
-                    convergence: typedValue.convergence,
-                    divergence: typedValue.divergence,
-                    coloniality: typedValue.coloniality,
-                    resistance: typedValue.resistance
-                };
-            });
-
-            generateSynthesisPDF(findings);
+            generateSynthesisPDF(
+                comparisonResult,
+                sourceA?.title || "Source A",
+                sourceB?.title || "Source B"
+            );
         } catch (error) {
             console.error("Error generating PDF:", error);
             alert("Failed to generate PDF. Please try again.");
@@ -170,10 +200,6 @@ export default function SynthesisPage() {
 
     const handleCompare = async (forceRefresh = false) => {
         if (!sourceA || !sourceB) return;
-        if (isReadOnly) {
-            alert("Comparison disabled in Demo Mode");
-            return;
-        }
 
         // [NEW] Soft Preflight: Check for AssemblageExport in SessionStorage
         const exportA = sessionStorage.getItem(`assemblage_export_${sourceA.id}`);
@@ -248,7 +274,8 @@ export default function SynthesisPage() {
                             extractedText: t.extractedText?.substring(0, 1000)
                         }))
                     },
-                    force: forceRefresh
+                    force: forceRefresh,
+                    checkCacheOnly: isReadOnly // Demo users can only load cached analyses
                 }),
                 signal: controller.signal
             });
@@ -264,7 +291,11 @@ export default function SynthesisPage() {
                     [`${sourceA.id}:${sourceB.id}`]: data.analysis
                 }));
             } else {
-                alert("Comparison failed: " + (data.error || "Unknown error"));
+                if (isReadOnly && !data.fromCache) {
+                    alert("No cached analysis found for this comparison. Sign in to run new analyses.");
+                } else {
+                    alert("Comparison failed: " + (data.error || "Unknown error"));
+                }
             }
         } catch (error: any) {
             console.error("Comparison error:", error);
@@ -356,7 +387,9 @@ export default function SynthesisPage() {
                                 >
                                     <option value="">Select first document...</option>
                                     {analyzedSources.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
+                                        <option key={s.id} value={s.id} disabled={s.id === sourceB?.id}>
+                                            {s.title} {s.id === sourceB?.id ? "(Selected as Source B)" : ""}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -372,7 +405,9 @@ export default function SynthesisPage() {
                                 >
                                     <option value="">Select second document...</option>
                                     {analyzedSources.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
+                                        <option key={s.id} value={s.id} disabled={s.id === sourceA?.id}>
+                                            {s.title} {s.id === sourceA?.id ? "(Selected as Source A)" : ""}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -381,9 +416,9 @@ export default function SynthesisPage() {
                             <div className="flex flex-col gap-2 w-full">
                                 <Button
                                     onClick={() => handleCompare(false)}
-                                    disabled={!sourceA || !sourceB || isComparing || isReadOnly}
+                                    disabled={!sourceA || !sourceB || isComparing}
                                     className="w-full bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={isReadOnly ? "Sign in to run comparisons" : (!sourceA || !sourceB) ? "Please select two documents to compare" : "Run comparison"}
+                                    title={isReadOnly ? "Load cached analysis (demo mode)" : (!sourceA || !sourceB) ? "Please select two documents to compare" : "Run comparison"}
                                 >
                                     {isComparing ? (
                                         <>
@@ -393,7 +428,7 @@ export default function SynthesisPage() {
                                     ) : (
                                         <>
                                             <Sparkles className="mr-2 h-4 w-4" />
-                                            Compare Frameworks
+                                            {isReadOnly ? "Load Cached Analysis" : "Compare Frameworks"}
                                         </>
                                     )}
                                 </Button>
@@ -452,7 +487,7 @@ export default function SynthesisPage() {
 
                         {comparisonResult && (
                             <div className="mt-8 space-y-6 pt-4 border-t">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[800px] lg:h-[600px]">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[800px] lg:min-h-[600px]">
                                     {/* PRIMARY: FORCE GRAPH */}
                                     {comparisonResult.assemblage_network && comparisonResult.assemblage_network.nodes.length > 0 ? (
                                         <div className="col-span-1 lg:col-span-1 h-full min-h-[400px]">
@@ -469,6 +504,7 @@ export default function SynthesisPage() {
                                     {/* SECONDARY: RELATIONAL TOPOLOGY */}
                                     <div className="col-span-1 lg:col-span-1 h-full min-h-[400px]">
                                         <RelationalAxisMap
+                                            key={`${sourceA?.id}-${sourceB?.id}-topology`}
                                             topology={comparisonResult.topology_analysis}
                                             sourceAName={sourceA?.title || "Source A"}
                                             sourceBName={sourceB?.title || "Source B"}
@@ -594,8 +630,11 @@ export default function SynthesisPage() {
                             {comparisonResult.resonances.resonance_graph && (
                                 <div className="mt-4 border rounded-lg overflow-hidden bg-white/50 h-[400px]">
                                     <ResonanceNetworkGraph
+                                        key={`${sourceA?.id}-${sourceB?.id}-resonance`}
                                         data={comparisonResult.resonances.resonance_graph}
                                         height={400}
+                                        sourceAName={sourceA?.title || "Source A"}
+                                        sourceBName={sourceB?.title || "Source B"}
                                     />
                                 </div>
                             )}

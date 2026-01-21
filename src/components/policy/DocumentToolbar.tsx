@@ -32,13 +32,13 @@ export function DocumentToolbar({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Documents</h2>
-                    <p className="text-slate-500">Manage and analyze official policy texts (PDFs) and web content.</p>
+                    <p className="text-slate-500">Manage and analyze policy texts (PDFs, Word docs) and web content. Drag & drop to upload.</p>
                 </div>
                 <div className="flex gap-2">
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".pdf"
+                        accept=".pdf,.docx,.doc"
                         onChange={onUpload}
                         className="hidden"
                     />
@@ -56,7 +56,7 @@ export function DocumentToolbar({
                         ) : (
                             <>
                                 <Upload className="mr-2 h-4 w-4" />
-                                Upload PDF
+                                Upload Document
                             </>
                         )}
                     </Button>

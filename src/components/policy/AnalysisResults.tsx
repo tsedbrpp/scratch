@@ -67,11 +67,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
         }
     }
 
-    console.log("DEBUG: AnalysisResults Rendered", {
-        hasAccountability: !!effectiveAnalysis.accountability_map,
-        hasRebuttals: !!effectiveAnalysis.rebuttals,
-        keys: Object.keys(effectiveAnalysis)
-    });
+
 
     const [activeLens, setActiveLens] = useState<string>('default');
     const riskAnalysis = calculateMicroFascismRisk(effectiveAnalysis);

@@ -15,16 +15,23 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v36-resonance-fix'; // Incremented to fix blank resonance graph
+const PROMPT_VERSION = 'v37-scope-fix'; // Incremented to fix missing territorial scope graph
+
+/**
+ * Determines the user ID to use for cache operations.
+ * Comparison analyses use a shared namespace (demo user ID) to allow all users to access the same cached results.
+ * Other analysis types use the actual user ID for user-specific caching.
+ */
+function getCacheUserId(analysisMode: string, actualUserId: string): string {
+  return analysisMode === 'comparison'
+    ? (process.env.NEXT_PUBLIC_DEMO_USER_ID || actualUserId)
+    : actualUserId;
+}
+
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
-
-  // BLOCK READ-ONLY DEMO USERS
-  if (await isReadOnlyAccess()) {
-    return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
-  }
 
   const userId = await getAuthenticatedUserId(request);
 
@@ -33,51 +40,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate Limiting
-  const rateLimit = await checkRateLimit(userId); // Uses default 25 requests per minute
-  if (!rateLimit.success) {
-    return NextResponse.json(
-      { error: rateLimit.error || "Too Many Requests" },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': rateLimit.limit.toString(),
-          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-          'X-RateLimit-Reset': rateLimit.reset.toString()
-        }
-      }
-    );
-  }
-
-  // --- CREDIT CHECK (ATOMIC) ---
-  // Deduct 1 credit for the analysis run.
-  // If insufficient credits, this returns -1 (blocking).
-  try {
-    const { deductCredits } = await import('@/lib/redis-scripts');
-    const newBalance = await deductCredits(userId, 1, 'SYSTEM', `run-${Date.now()}-${Math.random().toString(36).substring(7)}`);
-
-    if (newBalance === -1) {
-      console.log(`[ANALYSIS] Insufficient credits for user ${userId}`);
-      return NextResponse.json(
-        { error: "Insufficient Credits. Please top up to continue." },
-        { status: 402 }
-      );
-    }
-    console.log(`[ANALYSIS] Credit deducted. New balance: ${newBalance}`);
-  } catch (creditError) {
-    console.error('Credit deduction failed:', creditError);
-    // Fallback: If Redis fails, we might choose to fail-open or fail-closed.
-    // For a paid tool, fail-closed is safer to prevent free abuse during outages.
-    return NextResponse.json(
-      { error: "Payment Service Unavailable" },
-      { status: 503 }
-    );
-  }
-
   try {
     const requestData = await request.json();
-    const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode } = requestData;
-    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, Positionality: ${!!positionality}`);
+    const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode, checkCacheOnly } = requestData;
+    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
+
+    // [NEW] BLOCK READ-ONLY DEMO USERS (unless they're only checking cache)
+    if (!checkCacheOnly && await isReadOnlyAccess()) {
+      return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
+    }
+
+    // [NEW] Rate Limiting (skip for cache-only requests)
+    if (!checkCacheOnly) {
+      const rateLimit = await checkRateLimit(userId);
+      if (!rateLimit.success) {
+        return NextResponse.json(
+          { error: rateLimit.error || "Too Many Requests" },
+          {
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': rateLimit.limit.toString(),
+              'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+              'X-RateLimit-Reset': rateLimit.reset.toString()
+            }
+          }
+        );
+      }
+    }
+
+    // [NEW] CREDIT CHECK (skip for cache-only requests)
+    if (!checkCacheOnly) {
+      try {
+        const { deductCredits } = await import('@/lib/redis-scripts');
+        const newBalance = await deductCredits(userId, 1, 'SYSTEM', `run-${Date.now()}-${Math.random().toString(36).substring(7)}`);
+
+        if (newBalance === -1) {
+          console.log(`[ANALYSIS] Insufficient credits for user ${userId}`);
+          return NextResponse.json(
+            { error: "Insufficient Credits. Please top up to continue." },
+            { status: 402 }
+          );
+        }
+        console.log(`[ANALYSIS] Credit deducted. New balance: ${newBalance}`);
+      } catch (creditError) {
+        console.error('Credit deduction failed:', creditError);
+        return NextResponse.json(
+          { error: "Payment Service Unavailable" },
+          { status: 503 }
+        );
+      }
+    }
+
 
     // Check for API key and Initialize OpenAI
     // Check for API key and Initialize OpenAI
@@ -331,7 +344,9 @@ export async function POST(request: NextRequest) {
       // Skip cache if force is true
       if (!force) {
         console.log('[ANALYSIS] Checking Redis cache...');
-        let cachedAnalysis = await StorageService.getCache(userId, cacheKey);
+
+        const cacheUserId = getCacheUserId(analysisMode, userId);
+        let cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
 
         if (cachedAnalysis) {
           console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey} `);
@@ -357,6 +372,16 @@ export async function POST(request: NextRequest) {
           });
         }
         console.log('[ANALYSIS] Cache Miss.');
+
+        // [NEW] If checkCacheOnly flag is set, return early without running analysis
+        if (requestData.checkCacheOnly) {
+          console.log('[ANALYSIS] checkCacheOnly=true, no cache found, returning null');
+          return NextResponse.json({
+            success: true,
+            analysis: null,
+            fromCache: false
+          });
+        }
       }
     } catch (cacheError) {
       console.warn('Redis cache read failed:', cacheError);
@@ -392,7 +417,9 @@ export async function POST(request: NextRequest) {
     // Cache the result
     try {
       if (analysis && typeof analysis === 'object' && !analysis.error) {
-        await StorageService.setCache(userId, cacheKey, analysis, 86400); // 24 hours
+        const cacheUserId = getCacheUserId(analysisMode, userId);
+
+        await StorageService.setCache(cacheUserId, cacheKey, analysis, 86400); // 24 hours
         console.log(`[ANALYSIS] Saved to cache: ${cacheKey}`);
       } else {
         console.warn(`[ANALYSIS] Skipping cache for failed/partial analysis. Key: ${cacheKey}`);
@@ -410,6 +437,35 @@ export async function POST(request: NextRequest) {
       console.log(`[DEBUG_DENSITY] AI Generated Node Count: ${debugNodes.length}`);
     } else {
       console.log(`[DEBUG_DENSITY] No assemblage_network found or nodes is not an array.`);
+    }
+
+    // [FIX] Normalize topology keys (AI sometimes uses 'territorial' or 'territorial_scope' instead of 'scope')
+    const topology = (analysis as any)?.topology_analysis;
+    if (topology) {
+      const keys = Object.keys(topology);
+      console.log(`[DEBUG_TOPOLOGY] Received topology keys: ${keys.join(', ')}`);
+
+      if (!topology.scope) {
+        console.warn('[DEBUG_TOPOLOGY] "scope" key missing! Attempting to find alias...');
+        const alias = keys.find(k => k.includes('territorial') || k.includes('scope'));
+        if (alias && topology[alias]) {
+          console.log(`[DEBUG_TOPOLOGY] Found alias "${alias}", mapping to "scope"`);
+          topology.scope = topology[alias];
+        } else {
+          console.warn('[DEBUG_TOPOLOGY] No alias found. Injecting default empty scope to prevent UI collapse.');
+          // Inject default to prevent UI disappearing solely due to missing data
+          topology.scope = {
+            axis: "Territorial Scope",
+            a_score: 5, b_score: 5,
+            anchors: { low: "Domestic/Sovereign", high: "Extraterritorial/Market" },
+            description: "Data for this axis was not generated by the AI model.",
+            confidence: 0,
+            evidence: { a_quotes: [], b_quotes: [] }
+          };
+        }
+      }
+    } else {
+      console.warn('[DEBUG_TOPOLOGY] topology_analysis object is MISSING entirely.');
     }
 
     return NextResponse.json({

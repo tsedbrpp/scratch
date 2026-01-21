@@ -24,9 +24,16 @@ const AxisRow = ({
 }) => {
     if (!data) return null;
 
+    // Safety check: ensure scores are numbers
+    const rawA = Number(data.a_score);
+    const rawB = Number(data.b_score);
+
+    const safeA = isNaN(rawA) ? 5 : Math.max(0, Math.min(10, rawA));
+    const safeB = isNaN(rawB) ? 5 : Math.max(0, Math.min(10, rawB));
+
     // Scale 0-10 to 0-100%
-    const posA = (data.a_score / 10) * 100;
-    const posB = (data.b_score / 10) * 100;
+    const posA = (safeA / 10) * 100;
+    const posB = (safeB / 10) * 100;
 
     // Confidence Halo Size (inverse of confidence? or direct?)
     // Higher confidence = smaller, tighter halo. Lower confidence = larger, fuzzy halo.
@@ -97,7 +104,7 @@ const AxisRow = ({
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs">
                                 <div className="font-bold text-blue-500 mb-1">{sourceAName}</div>
-                                <div className="text-xs mb-2">Score: {data.a_score.toFixed(1)} / 10</div>
+                                <div className="text-xs mb-2">Score: {safeA.toFixed(1)} / 10</div>
                                 <div className="text-xs text-muted-foreground border-l-2 border-blue-500 pl-2 italic">
                                     {data.evidence?.a_quotes && data.evidence.a_quotes.length > 0
                                         ? `"${data.evidence.a_quotes[0]}"`
@@ -128,7 +135,7 @@ const AxisRow = ({
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs">
                                 <div className="font-bold text-orange-500 mb-1">{sourceBName}</div>
-                                <div className="text-xs mb-2">Score: {data.b_score.toFixed(1)} / 10</div>
+                                <div className="text-xs mb-2">Score: {safeB.toFixed(1)} / 10</div>
                                 <div className="text-xs text-muted-foreground border-l-2 border-orange-500 pl-2 italic">
                                     {data.evidence?.b_quotes && data.evidence.b_quotes.length > 0
                                         ? `"${data.evidence.b_quotes[0]}"`
@@ -167,7 +174,7 @@ export function RelationalAxisMap({
     ].filter(a => a.data);
 
     return (
-        <Card className="h-full border-l-4 border-l-primary/20 shadow-none overflow-hidden">
+        <Card className="h-full border-l-4 border-l-primary/20 shadow-none">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-mono flex items-center gap-2">

@@ -171,7 +171,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Settings",
         items: [
             {
-                name: "System Prompts",
+                name: "Lens Definitions",
                 href: "/settings/prompts",
                 icon: Scan,
                 description: "Customize system prompts for analysis and extraction."

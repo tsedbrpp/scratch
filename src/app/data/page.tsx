@@ -29,7 +29,7 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
 import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
-import { AnalysisResults } from "@/components/policy/AnalysisResults";
+
 import { PolicyFocusView } from "@/components/policy/PolicyFocusView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,9 @@ import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifa
 import { ResistanceArtifact } from "@/types/resistance";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
+import { FileDropZone } from "@/components/ui/FileDropZone";
+import { extractTextFromDOCX } from "@/utils/docxExtractor";
+import { MethodLog } from "@/types/logs";
 
 export default function PolicyDocumentsPage() {
     // ----------------------------------------------------------------------
@@ -120,48 +123,85 @@ export default function PolicyDocumentsPage() {
         }
     };
 
-    const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFiles = async (files: File[]) => {
         if (isReadOnly) {
             alert('Document uploads are disabled in Demo Mode.');
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            return;
-        }
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Enforce 10MB Limit
-        const MAX_SIZE_MB = 10;
-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-            alert(`File is too large. Maximum size is ${MAX_SIZE_MB}MB.`);
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
         setIsUploading(true);
+        let successCount = 0;
+        const errors: string[] = [];
+
         try {
-            const extractionResult = await extractTextFromPDF(file);
-            const text = typeof extractionResult === 'string' ? extractionResult : extractionResult.text;
-            const newDoc: Source = {
-                id: Date.now().toString(),
-                title: file.name.replace('.pdf', ''),
-                description: `Uploaded ${new Date().toLocaleDateString()} `,
-                type: "PDF",
-                addedDate: new Date().toLocaleDateString(),
-                status: "Active Case",
-                colorClass: "bg-purple-100",
-                iconClass: "text-purple-600",
-                extractedText: text
-            };
-            await addSource(newDoc);
-            alert('PDF uploaded successfully!');
-        } catch (error) {
-            console.error('PDF upload error:', error);
-            alert('Failed to upload PDF. Please try again.');
+            for (const file of files) {
+                // Enforce 10MB Limit
+                const MAX_SIZE_MB = 10;
+                if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+                    errors.push(`${file.name}: File too large (Max ${MAX_SIZE_MB}MB)`);
+                    continue;
+                }
+
+                try {
+                    let text = "";
+                    let type: "PDF" | "Word" = "PDF";
+                    let iconClass = "text-purple-600";
+                    let colorClass = "bg-purple-100";
+
+                    const ext = file.name.split('.').pop()?.toLowerCase();
+
+                    if (ext === 'pdf') {
+                        const result = await extractTextFromPDF(file);
+                        text = typeof result === 'string' ? result : result.text;
+                        type = "PDF";
+                        iconClass = "text-red-500";
+                        colorClass = "bg-red-50";
+                    } else if (ext === 'docx' || ext === 'doc') {
+                        const result = await extractTextFromDOCX(file);
+                        text = result.text;
+                        type = "Word";
+                        iconClass = "text-blue-600";
+                        colorClass = "bg-blue-50";
+                    } else {
+                        throw new Error("Unsupported file type");
+                    }
+
+                    const newDoc: Source = {
+                        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+                        title: file.name.replace(/\.[^/.]+$/, ""),
+                        description: `Uploaded ${new Date().toLocaleDateString()} (${type}) `,
+                        type: type, // "PDF" | "Word"
+                        addedDate: new Date().toLocaleDateString(),
+                        status: "Active Case",
+                        colorClass,
+                        iconClass,
+                        extractedText: text
+                    };
+                    await addSource(newDoc);
+                    successCount++;
+                } catch (err: unknown) {
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    console.error(`Error processing ${file.name}:`, err);
+                    errors.push(`${file.name}: ${errorMessage}`);
+                }
+            }
+
+            if (successCount > 0) {
+                // alert(`Successfully uploaded ${successCount} document(s)!`);
+            }
+            if (errors.length > 0) {
+                alert(`Some files failed:\n${errors.join('\n')}`);
+            }
+
         } finally {
             setIsUploading(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
         }
     };
 
@@ -460,7 +500,7 @@ export default function PolicyDocumentsPage() {
             }
 
             // Fetch methodological logs
-            const methodLogs = await fetchServerStorage<any[]>('methodological_logs') || [];
+            const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
 
             // Fetch resistance artifacts
             const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
@@ -473,10 +513,10 @@ export default function PolicyDocumentsPage() {
                     configurations: finalConfigs,
 
                     absenceAnalysis: finalAbsence,
-                    assemblage: finalAbsence as any
+                    assemblage: finalAbsence as unknown as undefined
                 },
                 synthesis: {
-                    comparison: (comparativeSynthesisResults['assemblage'] as any) || synthesisComparison,
+                    comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
                     ecosystemImpacts: synthesisImpacts
                 },
                 ontology: {
@@ -525,7 +565,7 @@ export default function PolicyDocumentsPage() {
                     <DocumentToolbar
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onUpload={handlePDFUpload}
+                        onUpload={handleFileUpload}
                         isUploading={isUploading}
                         fileInputRef={fileInputRef}
                         onAddClick={() => setIsAddDialogOpen(true)}
@@ -559,27 +599,29 @@ export default function PolicyDocumentsPage() {
                             <p className="text-slate-500 text-sm mt-1">Upload a PDF or add a URL to get started.</p>
                         </div>
                     ) : (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
-                            {filteredSources.map((source) => (
-                                <DocumentCard
-                                    key={source.id}
-                                    source={source}
-                                    isAnalyzing={analyzingId === source.id}
-                                    isSearching={searchingId === source.id}
-                                    isSelected={selectedIds.includes(source.id)}
-                                    onSelect={(selected) => toggleSelection(source.id, selected)}
-                                    onAnalyze={handleAnalyze}
-                                    onDelete={handleDelete}
-                                    onEdit={(s) => { setEditingSource(s); }}
-                                    onFindTraces={handleFindTraces}
-                                    onView={(s) => setViewingSource(s)}
-                                    onUpdateSource={handleEditSource}
-                                    isFocused={focusedSourceId === source.id}
-                                    onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
-                                    isReadOnly={isReadOnly}
-                                />
-                            ))}
-                        </div>
+                        <FileDropZone isReadOnly={isReadOnly} onFilesDropped={handleFiles}>
+                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
+                                {filteredSources.map((source) => (
+                                    <DocumentCard
+                                        key={source.id}
+                                        source={source}
+                                        isAnalyzing={analyzingId === source.id}
+                                        isSearching={searchingId === source.id}
+                                        isSelected={selectedIds.includes(source.id)}
+                                        onSelect={(selected) => toggleSelection(source.id, selected)}
+                                        onAnalyze={handleAnalyze}
+                                        onDelete={handleDelete}
+                                        onEdit={(s) => { setEditingSource(s); }}
+                                        onFindTraces={handleFindTraces}
+                                        onView={(s) => setViewingSource(s)}
+                                        onUpdateSource={handleEditSource}
+                                        isFocused={focusedSourceId === source.id}
+                                        onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
+                                        isReadOnly={isReadOnly}
+                                    />
+                                ))}
+                            </div>
+                        </FileDropZone>
                     )}
 
                     {/* Focus Mode View */}

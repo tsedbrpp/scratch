@@ -2,10 +2,11 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Unde
 import { saveAs } from "file-saver";
 // import { Source } from "../types"; // Imported via ReportData
 import { ReportData, ReportSectionSelection } from "../types/report";
-import { Source } from "../types";
+import { Source, ComparativeSynthesis, AnalysisResult, LegitimacyAnalysis, ResistanceAnalysis } from "../types";
+import { SynthesisComparisonResult } from "../types/synthesis";
 import { CulturalAnalysisResult } from "../types/cultural";
-import { calculateMicroFascismRisk } from "../lib/risk-calculator";
-import { calculateLiberatoryCapacity } from "../lib/liberatory-calculator";
+import { calculateMicroFascismRisk, MicroFascismRisk } from "../lib/risk-calculator";
+import { calculateLiberatoryCapacity, LiberatoryCapacity } from "../lib/liberatory-calculator";
 
 // --- Configuration ---
 
@@ -254,7 +255,7 @@ class ReportGeneratorDOCX {
         if (source.analysis) this.renderGovernanceAnalysis(source.analysis);
     }
 
-    private renderCulturalFraming(framing: any) {
+    private renderCulturalFraming(framing: AnalysisResult) {
         this.addSubHeader("Cultural Framing Analysis");
 
         if (framing.state_market_society) {
@@ -275,7 +276,7 @@ class ReportGeneratorDOCX {
         }
     }
 
-    private renderInstitutionalLogics(logics: any) {
+    private renderInstitutionalLogics(logics: AnalysisResult) {
         this.addSubHeader("Institutional Logics");
 
         if (logics.dominant_logic) {
@@ -294,13 +295,13 @@ class ReportGeneratorDOCX {
 
         if (logics.logic_conflicts && logics.logic_conflicts.length > 0) {
             this.addText("Key Institutional Conflicts:", STYLE.colors.secondary, 0, true);
-            logics.logic_conflicts.forEach((c: any) => {
+            logics.logic_conflicts.forEach((c) => {
                 this.addText(`• ${c.between}: ${c.site_of_conflict} (Resolution: ${c.resolution_strategy})`);
             });
         }
     }
 
-    private renderLegitimacyAnalysis(legitimacy: any) {
+    private renderLegitimacyAnalysis(legitimacy: LegitimacyAnalysis) {
         this.addSubHeader("Legitimacy Analysis");
 
         if (legitimacy.dominant_order) {
@@ -339,7 +340,7 @@ class ReportGeneratorDOCX {
         }
     }
 
-    private renderGovernanceAnalysis(analysis: any) {
+    private renderGovernanceAnalysis(analysis: AnalysisResult) {
         if (!analysis.governance_scores) return;
 
         this.addSubHeader("Governance Compass & Decolonial Analysis (DSF)");
@@ -376,7 +377,7 @@ class ReportGeneratorDOCX {
         this.renderGovernanceScoreExplanations(analysis);
     }
 
-    private renderAssemblageDynamics(analysis: any) {
+    private renderAssemblageDynamics(analysis: AnalysisResult) {
         if (analysis.assemblage_dynamics) {
             this.addSubHeader("Assemblage Dynamics");
             const dyn = analysis.assemblage_dynamics;
@@ -386,7 +387,7 @@ class ReportGeneratorDOCX {
         }
     }
 
-    private renderStructuralPillars(analysis: any) {
+    private renderStructuralPillars(analysis: AnalysisResult) {
         if (analysis.structural_pillars) {
             this.addSubHeader("Structural Pillars");
             const pillars = analysis.structural_pillars;
@@ -397,7 +398,7 @@ class ReportGeneratorDOCX {
         }
     }
 
-    private renderGovernanceScoreExplanations(analysis: any) {
+    private renderGovernanceScoreExplanations(analysis: AnalysisResult) {
         if (analysis.governance_score_explanations) {
             this.addText("Score Explanations:", STYLE.colors.secondary, 0, true);
             const e = analysis.governance_score_explanations;
@@ -570,20 +571,20 @@ class ReportGeneratorDOCX {
     }
 
     // New helper methods for narrative interpretation
-    private interpretRiskNarrative(risk: any): string {
-        if (risk.level === 'High') {
+    private interpretRiskNarrative(risk: MicroFascismRisk): string {
+        if (risk.level === 'Micro-Fascist Hardening') {
             return "The assemblage exhibits pronounced authoritarian characteristics, manifested through exclusionary boundaries, opaque decision-making, and punitive enforcement mechanisms that concentrate power while marginalizing affected communities. These dynamics create conditions for micro-fascist organizing where bureaucratic authority supersedes democratic accountability.";
-        } else if (risk.level === 'Medium') {
+        } else if (risk.level === 'Directional Drift') {
             return "Moderate authoritarian tendencies emerge in bureaucratic rigidity and limited participatory channels, though countervailing democratic elements provide some accountability. The assemblage oscillates between technocratic efficiency and inclusive governance, creating friction points where power concentrates.";
         } else {
             return "The assemblage demonstrates democratic robustness with distributed authority, transparent procedures, and meaningful participation mechanisms. While not without hierarchies, power relations remain contestable and subject to procedural checks that prevent authoritarian drift.";
         }
     }
 
-    private interpretCapacityNarrative(capacity: any): string {
-        if (capacity.level === 'High') {
+    private interpretCapacityNarrative(capacity: LiberatoryCapacity): string {
+        if (capacity.level === 'Structural/Robust') {
             return "The assemblage creates substantive openings for emancipatory practice through collective rights frameworks, participatory governance structures, and explicit recognition of marginalized epistemologies. These enabling conditions support bottom-up organizing and resist neoliberal enclosure of political possibility.";
-        } else if (capacity.level === 'Medium') {
+        } else if (capacity.level === 'Partial/Conditional') {
             return "Liberatory potential exists but remains constrained by institutional inertia and market logics. While formal rights and consultation mechanisms provide some agency, systemic barriers limit transformative capacity. The assemblage offers tactical openings rather than strategic reconfigurations of power.";
         } else {
             return "Limited liberatory capacity emerges within a predominantly technocratic framework that forecloses radical alternatives. Participation channels privilege expert knowledge over lived experience, and accountability mechanisms reinforce existing hierarchies rather than enabling collective self-determination.";
@@ -629,7 +630,7 @@ class ReportGeneratorDOCX {
         if (!data || !data.comparison) return;
         this.addSectionHeader("Cross-Case Synthesis", true);
 
-        const comp = data.comparison as any; // Using any for ComparativeSynthesis fields
+        const comp = data.comparison as unknown as (ComparativeSynthesis & SynthesisComparisonResult);
 
         // Synthesis Summary (Relational Summary)
         if (comp.synthesis_summary) {
@@ -647,11 +648,14 @@ class ReportGeneratorDOCX {
             this.addText("How concepts travel and mutate across jurisdictions:");
             this.addSpacer();
 
-            comp.concept_mutations.forEach((mutation: any) => {
+            comp.concept_mutations.forEach((mutation) => {
                 this.addText(`• ${mutation.concept}`, STYLE.colors.primary, 0, true);
                 this.addText(`Origin: ${mutation.origin_context}`, undefined, 1);
-                this.addText(`Local Mutation: ${mutation.local_mutation}`, undefined, 1);
-                this.addText(`Mechanism: ${mutation.mechanism}`, STYLE.colors.subtle, 1);
+
+                mutation.local_mutations.forEach(lm => {
+                    this.addText(`Local Mutation (${lm.policy}): ${lm.mutation}`, undefined, 1);
+                    this.addText(`Mechanism: ${lm.mechanism}`, STYLE.colors.subtle, 1);
+                });
                 this.addSpacer();
             });
         }
@@ -662,7 +666,7 @@ class ReportGeneratorDOCX {
             this.addText("How assemblages maintain coherence across territorial boundaries:");
             this.addSpacer();
 
-            comp.stabilization_mechanisms.forEach((mech: any) => {
+            comp.stabilization_mechanisms.forEach((mech) => {
                 this.addText(`• [${mech.type}] ${mech.jurisdiction}`, STYLE.colors.secondary, 0, true);
                 this.addText(mech.mechanism, undefined, 1);
             });
@@ -675,7 +679,7 @@ class ReportGeneratorDOCX {
             this.addText("Tensions between policy aspirations and structural constraints:");
             this.addSpacer();
 
-            comp.desire_and_friction.forEach((item: any) => {
+            comp.desire_and_friction.forEach((item) => {
                 this.addText(`${item.topic}`, STYLE.colors.primary, 0, true);
                 this.addText(`Friction: ${item.friction_point}`, undefined, 1);
                 this.addText(`Underlying Desire: ${item.underlying_desire}`, STYLE.colors.secondary, 1);
@@ -686,11 +690,12 @@ class ReportGeneratorDOCX {
         // Institutional Conflicts
         if (comp.institutional_conflict && comp.institutional_conflict.length > 0) {
             this.addSubHeader("Institutional Conflicts");
-            comp.institutional_conflict.forEach((conf: any) => {
+            comp.institutional_conflict.forEach((conf) => {
                 this.addText(conf.conflict_type, STYLE.colors.primary, 0, true);
                 this.addText(conf.description, undefined, 1);
-                this.addText(`Policy A Evidence: "${conf.policy_a_evidence}"`, STYLE.colors.subtle, 1);
-                this.addText(`Policy B Evidence: "${conf.policy_b_evidence}"`, STYLE.colors.subtle, 1);
+                conf.evidence.forEach(ev => {
+                    this.addText(`${ev.policy} Evidence: "${ev.text}"`, STYLE.colors.subtle, 1);
+                });
                 this.addSpacer();
             });
         }
@@ -698,11 +703,12 @@ class ReportGeneratorDOCX {
         // Legitimacy Tensions
         if (comp.legitimacy_tensions && comp.legitimacy_tensions.length > 0) {
             this.addSubHeader("Legitimacy Tensions");
-            comp.legitimacy_tensions.forEach((tens: any) => {
+            comp.legitimacy_tensions.forEach((tens) => {
                 this.addText(tens.tension_type, STYLE.colors.primary, 0, true);
                 this.addText(tens.description, undefined, 1);
-                this.addText(`Policy A Evidence: "${tens.policy_a_evidence}"`, STYLE.colors.subtle, 1);
-                this.addText(`Policy B Evidence: "${tens.policy_b_evidence}"`, STYLE.colors.subtle, 1);
+                tens.evidence.forEach(ev => {
+                    this.addText(`${ev.policy} Evidence: "${ev.text}"`, STYLE.colors.subtle, 1);
+                });
                 this.addSpacer();
             });
         }
@@ -727,7 +733,7 @@ class ReportGeneratorDOCX {
         if (comp.assemblage_network) this.renderAssemblageRhizome(comp.assemblage_network);
     }
 
-    private renderSynthesisMatrix(comp: any) {
+    private renderSynthesisMatrix(comp: SynthesisComparisonResult) {
         this.addSubHeader("Synthesis Framework Matrix");
 
         ['Risk', 'Governance', 'Rights', 'Scope'].forEach(dim => {
@@ -743,7 +749,7 @@ class ReportGeneratorDOCX {
         });
     }
 
-    private renderSynthesisCritique(crit: any) {
+    private renderSynthesisCritique(crit: NonNullable<SynthesisComparisonResult['system_critique']>) {
         this.addSubHeader("System-Level Critique");
         if (typeof crit === 'string') {
             this.addText(crit);
