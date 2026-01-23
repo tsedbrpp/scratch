@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Wand2, Globe, Search } from 'lucide-react';
+import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Search, Globe } from 'lucide-react';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { AssemblageExtractionDialog } from './AssemblageExtractionDialog';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -29,6 +30,16 @@ interface ActorListProps {
     setIsExtractionDialogOpen: (open: boolean) => void;
 
     onClose?: () => void;
+    // New Props for Discovery
+    discoveryQuery?: string;
+    setDiscoveryQuery?: (query: string) => void;
+    extractionMode?: "text" | "discovery";
+    setExtractionMode?: (mode: "text" | "discovery") => void;
+
+    // Link Enrichment
+    onEnrichLinks?: () => void;
+    isEnriching?: boolean;
+    enrichProgress?: number;
 }
 
 export function ActorList({
@@ -44,7 +55,14 @@ export function ActorList({
     onExtract,
     isExtractionDialogOpen,
     setIsExtractionDialogOpen,
-    onClose
+    onClose,
+    discoveryQuery = "",
+    setDiscoveryQuery,
+    extractionMode = "text",
+    setExtractionMode,
+    onEnrichLinks,
+    isEnriching = false,
+    enrichProgress = 0
 }: ActorListProps) {
     const { isReadOnly } = useDemoMode();
 
@@ -65,6 +83,7 @@ export function ActorList({
                             </Button>
                         )}
                         {/* Extraction Dialog */}
+                        {/* Extraction Dialog */}
                         <Dialog open={isExtractionDialogOpen} onOpenChange={setIsExtractionDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button
@@ -77,42 +96,35 @@ export function ActorList({
                                     <FileText className={`h-4 w-4 ${isReadOnly ? 'text-slate-300' : 'text-emerald-600'}`} />
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Extract Assemblage</DialogTitle>
-                                    <DialogDescription>
-                                        Paste text to trace actants and create a Super-Node configuration.
-                                        This adheres to the &quot;Strategic Subtraction&quot; principle: only empirical traces are visualized.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4">
-                                    <Textarea
-                                        placeholder="Paste text here (e.g., &apos;The CCP uses the SIFARE server to regulate pharmaceutical distribution...&apos;)"
-                                        value={extractionText}
-                                        onChange={(e) => setExtractionText(e.target.value)}
-                                        className="min-h-[150px]"
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <Button onClick={onExtract} disabled={isExtracting} className="bg-slate-900 text-white">
-                                        {isExtracting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Adhering Source...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Wand2 className="mr-2 h-4 w-4" />
-                                                Adhere Empirical Source
-                                            </>
-                                        )}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
+                            {/* Content Rendered via Portal by DialogContent inside the component */}
                         </Dialog>
 
+                        <AssemblageExtractionDialog
+                            open={isExtractionDialogOpen}
+                            onOpenChange={setIsExtractionDialogOpen}
+                            isExtracting={isExtracting}
+                            extractionText={extractionText}
+                            setExtractionText={setExtractionText}
+                            discoveryQuery={discoveryQuery}
+                            onExtract={onExtract}
+                            extractionMode={extractionMode || "text"}
+                            setExtractionMode={setExtractionMode || (() => { })}
+                            setDiscoveryQuery={setDiscoveryQuery || (() => { })}
+                        />
 
-
+                        {/* Link Enrichment Button */}
+                        {onEnrichLinks && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50"
+                                onClick={onEnrichLinks}
+                                disabled={isEnriching}
+                                title="Find Actor Links"
+                            >
+                                {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                            </Button>
+                        )}
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button size="icon" variant="ghost" className="h-8 w-8" title="Clear All Actors">
@@ -134,9 +146,16 @@ export function ActorList({
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-
                     </div>
                 </div>
+
+                {/* Enrichment Progress Bar if active */}
+                {isEnriching && (
+                    <div className="mt-2 text-[10px] text-indigo-600 flex items-center gap-2 bg-indigo-50 p-1 rounded px-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Finding Links... {enrichProgress}%
+                    </div>
+                )}
                 <div className="relative mt-2">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
                     <input
@@ -146,7 +165,7 @@ export function ActorList({
                 </div>
 
                 {/* Explicit Actions Row */}
-            </CardHeader>
+            </CardHeader >
             <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
                 {actors.length === 0 && (
                     <div className="text-center p-6 text-slate-500 text-sm border-2 border-dashed border-slate-200 rounded-lg m-2 bg-slate-50/50">

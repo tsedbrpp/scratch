@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ShieldCheck, Info, Globe, Loader2 } from 'lucide-react';
+import { ShieldCheck, Info, Globe, Loader2, Layers } from 'lucide-react';
 import { AssemblageAnalysis, EcosystemActor, ReflexiveLogEntry } from '@/types/ecosystem';
 import { FragilityIndicator } from '@/components/ui/provisional-badge';
 import { RatificationControls } from './RatificationControls';
@@ -112,12 +112,60 @@ export function AssemblageAnalysisView({
                         ))}
                     </div>
                 </div>
+                {/* Structural Voids List */}
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Structural Voids</h4>
                     <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
                         {analysis.structural_voids?.map((v, i) => <li key={i}>{v}</li>)}
                     </ul>
                 </div>
+
+                {/* System Critique (Comprehensive Scan) */}
+                {analysis.system_critique && (
+                    <div className="bg-red-50 p-3 rounded-lg border border-red-100 mt-4">
+                        <h4 className="text-xs font-bold text-red-800 uppercase mb-2 flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3" /> Critical Voids Report
+                        </h4>
+
+                        {/* Handle String or Object */}
+                        {typeof analysis.system_critique === 'string' ? (
+                            <p className="text-xs text-red-900 whitespace-pre-wrap leading-relaxed">
+                                {analysis.system_critique}
+                            </p>
+                        ) : (
+                            <div className="space-y-3">
+                                {analysis.system_critique.critique && (
+                                    <p className="text-xs text-red-900 whitespace-pre-wrap leading-relaxed">
+                                        {analysis.system_critique.critique}
+                                    </p>
+                                )}
+
+                                {analysis.system_critique.blind_spots && analysis.system_critique.blind_spots.length > 0 && (
+                                    <div>
+                                        <span className="text-[10px] font-bold text-red-700 uppercase block mb-1">Detected Blind Spots</span>
+                                        <ul className="list-disc list-inside text-xs text-red-800 space-y-1 pl-1">
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {analysis.system_critique.blind_spots.map((bs: string, i: number) => (
+                                                <li key={i}>{bs}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {analysis.system_critique.over_interpretation && (
+                                    <div className="bg-white/50 p-2 rounded border border-red-200">
+                                        <span className="text-[10px] font-bold text-red-700 uppercase block mb-1">Over-Interpretation Check</span>
+                                        <p className="text-xs text-red-800">
+                                            {Array.isArray(analysis.system_critique.over_interpretation)
+                                                ? analysis.system_critique.over_interpretation.join(' ')
+                                                : analysis.system_critique.over_interpretation}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </TabsContent>
 
             <TabsContent value="actants" className="space-y-4">
@@ -132,29 +180,7 @@ export function AssemblageAnalysisView({
                     </div>
                 </div>
 
-                {/* Link Enrichment Controls */}
-                <div className="flex items-center justify-between bg-white p-2 rounded border border-slate-200">
-                    <span className="text-xs text-slate-500 font-medium">Missing Data: {actors.filter(a => !a.url).length} actors without links</span>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs gap-2"
-                        onClick={onEnrichLinks}
-                        disabled={!onEnrichLinks || isEnriching || actors.filter(a => !a.url).length === 0}
-                    >
-                        {isEnriching ? (
-                            <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                {enrichProgress}% Finding...
-                            </>
-                        ) : (
-                            <>
-                                <Globe className="h-3 w-3 text-indigo-500" />
-                                Find Missing Links
-                            </>
-                        )}
-                    </Button>
-                </div>
+
 
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Infrastructures</h4>
@@ -262,6 +288,18 @@ export function AssemblageAnalysisView({
                         </div>
                     )) || <p className="text-xs text-slate-400">No mechanisms detected.</p>}
                 </div>
+
+                {/* Realist Interpretation (Comprehensive Scan) */}
+                {analysis.realist_narrative && (
+                    <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 mt-4">
+                        <h4 className="text-xs font-bold text-indigo-800 uppercase mb-2 flex items-center gap-1">
+                            <Layers className="h-3 w-3" /> Realist Interpretation
+                        </h4>
+                        <p className="text-xs text-indigo-900 whitespace-pre-wrap leading-relaxed">
+                            {analysis.realist_narrative}
+                        </p>
+                    </div>
+                )}
             </TabsContent>
         </Tabs>
     );

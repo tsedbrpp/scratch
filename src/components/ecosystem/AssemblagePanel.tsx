@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Loader2, Layers, Maximize2, Minimize2, X, Search } from 'lucide-react';
+import { Loader2, Layers, Maximize2, Minimize2, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
 import { ProvisionalBadge } from '@/components/ui/provisional-badge';
@@ -28,10 +29,12 @@ interface AssemblagePanelProps {
 
 export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSaveAnalysis, isExpanded = false, onToggleExpand, selectedConfig, onUpdateConfig, onClose, onUpdateActors }: AssemblagePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisType, setAnalysisType] = useState('comprehensive_scan');
 
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
+    const [forceRefresh, setForceRefresh] = useState(false);
 
     const handleRatify = () => {
         const currentData = savedAnalysis || selectedConfig?.analysisData;
@@ -151,9 +154,15 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 headers: headers,
                 body: JSON.stringify({
                     text: analyzedText || actors.map(a => `${a.name}: ${a.description}`).join("\n"),
-                    analysisMode: 'assemblage_extraction_v3', // Prompt V3 maps scores
+                    analysisMode: analysisType, // Use selected mode
                     sourceType: 'Trace',
-                    force: true // Force fresh analysis to bypass cache
+                    force: forceRefresh, // Use toggle state for cache control
+                    // [FIX] Pass existing analysis for Critique and Realist modes
+                    existingAnalysis: savedAnalysis || selectedConfig?.analysisData,
+                    // [FIX] Pass structured data for Realist/Explanation modes
+                    traced_actors: actors,
+                    detected_mechanisms: (savedAnalysis as any)?.stabilization_mechanisms || (savedAnalysis as any)?.assemblage?.stabilization_mechanisms || [],
+                    identified_capacities: (savedAnalysis as any)?.capacities || []
                 })
             });
 
@@ -331,29 +340,39 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 </CardDescription>
 
                 <div className="pt-2">
-                    <Button
-                        size="sm"
-                        onClick={handleDeepScan}
-                        disabled={isAnalyzing}
-                        className={`w-full text-xs font-medium gap-2 transition-all ${savedAnalysis ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200" : "bg-slate-900 text-white hover:bg-slate-800"}`}
-                    >
-                        {isAnalyzing ? (
-                            <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Analyzing Assemblage...
-                            </>
-                        ) : savedAnalysis ? (
-                            <>
-                                <Search className="h-3 w-3" />
-                                Re-Trace Inscriptions
-                            </>
-                        ) : (
-                            <>
-                                <Layers className="h-3 w-3" />
-                                Trace Inscriptions
-                            </>
-                        )}
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between px-1">
+                            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                                <span className="text-[10px] text-slate-400 font-medium">Force Fresh</span>
+                                <input
+                                    type="checkbox"
+                                    checked={forceRefresh}
+                                    onChange={(e) => setForceRefresh(e.target.checked)}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                />
+                            </label>
+
+                            {/* Comprehensive Component Analysis */}
+                            <Button
+                                size="sm"
+                                onClick={handleDeepScan}
+                                disabled={isAnalyzing}
+                                className={`w-full text-xs font-medium gap-2 transition-all ${savedAnalysis ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                            >
+                                {isAnalyzing ? (
+                                    <>
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Running Multi-Stage Scan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Layers className="h-3 w-3" />
+                                        Run Comprehensive Analysis
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-6 overflow-y-auto flex-1 p-4">

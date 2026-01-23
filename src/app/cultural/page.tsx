@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Lightbulb, Sparkles, Network, Loader2, BookOpen, HelpCircle, FileText } from "lucide-react";
+import { Lightbulb, Sparkles, Loader2, BookOpen, HelpCircle, FileText } from "lucide-react";
 
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { CulturalAnalysisResult } from "@/types/cultural";
@@ -20,47 +20,33 @@ export default function CulturalAnalysisPage() {
     const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
-    const [selectedLensId, setSelectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
+    const [selectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
     const [forceRefresh, setForceRefresh] = useState(false);
 
-    const theoreticalLenses = [
-        {
-            id: "default",
-            name: "Discursive Field Analysis",
-            description: "General analysis of cultural framing, legitimacy dynamics, and epistemic authority.",
-            explanation: "This lens views the text as a 'discursive field' (Miranda et al., 2022) where meaning is contested. It focuses on how specific terms and narratives circumscribe what is considered 'true' or 'legitimate' knowledge, often privileging Western/Global North epistemologies over local or indigenous ones.",
-            apiHint: "The AI is prompted to analyze 'cultural framing,' 'epistemic authority,' and 'legitimacy dynamics.' It looks for how the text constructs the 'state-market-society' relationship."
-        },
-        {
-            id: "institutional_logics",
-            name: "Institutional Logics",
-            description: "Focus on conflicting institutional orders (e.g., market vs. state).",
-            explanation: "Based on the work of Thornton et al. and applied by Jennings/Faraj, this lens analyzes the conflicting 'logics' (e.g., Market vs. State vs. Community) that shape the text. It identifies how these logics compete for dominance within the algorithmic assemblage.",
-            apiHint: "The AI is prompted to identify specific 'institutional logics' (Market, State, Professional, Community) and map their 'discursive and material interconnections.'"
-        },
-        {
-            id: "critical_data_studies",
-            name: "Critical Data Studies",
-            description: "Focus on power dynamics, surveillance, and data justice.",
-            explanation: "This lens focuses on power, surveillance, and data justice. It interrogates the 'data relations' and 'extractivist' practices embedded in the policy, asking who benefits from data flows and who is marginalized.",
-            apiHint: "The AI is prompted to look for 'data extractivism,' 'surveillance capitalism,' and 'algorithmic bias.' It questions the 'neutrality' of data."
-        },
-        {
-            id: "actor_network_theory",
-            name: "Actor-Network Theory",
-            description: "Focus on the agency of non-human actors and translation processes.",
-            explanation: "This lens views the policy as an 'assemblage' of human and non-human actors (Latour, Callon). It focuses on 'translation' processes—how goals are displaced and modified as they pass through different actors (e.g., how a 'fairness' goal becomes a 'bias metric').",
-            apiHint: "The AI is prompted to map the 'network of actors' and identify 'translation centers' and 'obligatory passage points.'"
-        }
-    ];
+    // Helper function to determine actual document type from both type field and title
+
+    // Helper function to determine actual document type from both type field and title
+    const getDocumentType = (source: typeof sources[0]): "Policy" | "Web" | "Trace" => {
+        // Check title prefix first (more reliable for user-added sources)
+        if (source.title.startsWith('[Web]')) return "Web";
+        if (source.title.startsWith('[Trace]')) return "Trace";
+
+        // Fall back to type field
+        if (source.type === 'Web') return "Web";
+        if (source.type === 'Trace') return "Trace";
+
+        // Default to Policy for PDF, Text, Word types
+        return "Policy";
+    };
 
     // Filter sources that have text available for analysis, checking for Policy Documents specifically or excluding Traces/Web.
     // User request: "filter out trace and web and just list the policy documents"
-    const analyzedSources = sources.filter(s =>
-        (s.analysis || s.extractedText) &&
-        s.type !== 'Trace' &&
-        s.type !== 'Web'
-    );
+    const analyzedSources = sources.filter(s => {
+        if (!(s.analysis || s.extractedText)) return false;
+
+        const docType = getDocumentType(s);
+        return docType === "Policy"; // Only show Policy documents
+    });
 
     const toggleSource = (sourceId: string) => {
         setSelectedSources((prev) =>
@@ -233,9 +219,23 @@ export default function CulturalAnalysisPage() {
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                                <h4 className="font-semibold text-slate-900">
-                                                    {source.title}
-                                                </h4>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h4 className="font-semibold text-slate-900">
+                                                        {source.title}
+                                                    </h4>
+                                                    <Badge
+                                                        className={
+                                                            getDocumentType(source) === "Policy"
+                                                                ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                                : getDocumentType(source) === "Web"
+                                                                    ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                                                    : "bg-green-100 text-green-700 border-green-200"
+                                                        }
+                                                        variant="outline"
+                                                    >
+                                                        {getDocumentType(source)}
+                                                    </Badge>
+                                                </div>
                                                 <p className="text-sm text-slate-600 mt-1">
                                                     {source.description}
                                                 </p>

@@ -28,12 +28,37 @@ const LENSES: { id: LensType; name: string; description: string }[] = [
 
 export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensAnalysisProps) {
     const { isReadOnly } = useDemoMode(); // [NEW]
+
+    // Helper function to determine actual document type from both type field and title
+    const getDocumentType = (source: Source): "Policy" | "Web" | "Trace" => {
+        // Check title prefix first (more reliable for user-added sources)
+        if (source.title.startsWith('[Web]')) return "Web";
+        if (source.title.startsWith('[Trace]')) return "Trace";
+
+        // Fall back to type field
+        if (source.type === 'Web') return "Web";
+        if (source.type === 'Trace') return "Trace";
+
+        // Default to Policy for PDF, Text, Word types
+        return "Policy";
+    };
+
+    // Filter to only show Policy documents
+    const policyDocuments = sources.filter(s => getDocumentType(s) === "Policy");
+
     // Persist text input
     const [text, setText] = useServerStorage("multi_lens_text", initialText);
 
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [progress, setProgress] = useState<string>('');
-    const [activeEvidence, setActiveEvidence] = useState<{ title: string; type: string; quotes: any[] } | null>(null);
+
+    interface Evidence {
+        title: string;
+        type: "Order of Worth" | "Cultural Cluster" | "Trace";
+        quotes: { text: string; source: string }[];
+    }
+
+    const [activeEvidence, setActiveEvidence] = useState<Evidence | null>(null);
 
     // Persist analysis results
     const [results, setResults] = useServerStorage<Record<LensType, AnalysisResult | null>>("multi_lens_results", {
@@ -101,11 +126,16 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                 return result.overall_assessment || 'No institutional insight.';
             case 'legitimacy':
                 const legitResult = result as unknown as LegitimacyAnalysis;
-                let justification = legitResult.justification_logic as any;
+                // Temporarily treat as unknown to safely check for object structure
+                const justificationRaw = legitResult.justification_logic as unknown;
+                let justification = "";
 
                 // Handle case where LLM returns object instead of string
-                if (typeof justification === 'object' && justification !== null) {
-                    justification = justification.summary || justification.text || justification.description || JSON.stringify(justification);
+                if (typeof justificationRaw === 'object' && justificationRaw !== null) {
+                    const jObj = justificationRaw as { summary?: string; text?: string; description?: string;[key: string]: unknown };
+                    justification = jObj.summary || jObj.text || jObj.description || JSON.stringify(jObj);
+                } else {
+                    justification = String(justificationRaw);
                 }
 
                 if (legitResult.dominant_order) {
@@ -130,7 +160,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {sources.length > 0 && (
+                    {policyDocuments.length > 0 && (
                         <div className="flex items-center gap-2 mb-2">
                             <FileText className="h-4 w-4 text-slate-500" />
                             <Select onValueChange={handleSourceSelect}>
@@ -138,7 +168,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                                     <SelectValue placeholder="Select artifact to assemble..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {sources.map(source => (
+                                    {policyDocuments.map(source => (
                                         <SelectItem key={source.id} value={source.id}>
                                             {source.title}
                                         </SelectItem>
@@ -224,8 +254,8 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                                                     <span className="text-xs font-semibold text-slate-500 block mb-2">Orders of Worth (Click for Evidence)</span>
                                                     <div className="flex flex-wrap gap-2">
                                                         {Object.entries((results['legitimacy'] as unknown as LegitimacyAnalysis).orders || {})
-                                                            .filter(([_, score]) => score > 0)
-                                                            .sort(([_, scoreA], [__, scoreB]) => scoreB - scoreA)
+                                                            .filter(([, score]) => score > 0)
+                                                            .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
                                                             .map(([order, score]) => (
                                                                 <div
                                                                     key={order}
@@ -300,7 +330,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                 title={activeEvidence?.title || ""}
                 description="Verbatim text segments that triggered this classification."
                 quotes={activeEvidence?.quotes || []}
-                sourceType={activeEvidence?.type as any || "Trace"}
+                sourceType={activeEvidence?.type || "Trace"}
             />
         </div>
     );

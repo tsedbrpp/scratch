@@ -48,122 +48,100 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Dashboard",
                 href: "/",
                 icon: LayoutDashboard,
-                description: "High-level view of the algorithmic assemblage and research progress."
+                description: "Research hub and multiple entry points."
             },
             {
                 name: "Landing Page",
                 href: "/?view=landing",
                 icon: BookOpen,
                 description: "View the project landing page and overview."
-            },
-            {
-                name: "Pricing",
-                href: "/pricing",
-                icon: Coins,
-                description: "View pricing tiers and academic grants."
             }
         ]
     },
     {
-        title: "Material Collection",
+        title: "Trace (The Making)",
         items: [
             {
-                name: "Policy Archive",
+                name: "Materials Archive",
                 href: "/data",
                 icon: Database,
-                description: "Archive of primary policy texts and source materials."
+                description: "Ingest and manage policy texts."
+            },
+            {
+                name: "Assemblage Compass",
+                href: "/ecosystem",
+                icon: Network,
+                description: "Trace actors, territories, and flows."
             },
             {
                 name: "Trace Provenance",
                 href: "/empirical",
                 icon: Users,
-                description: "Collect and organize empirical traces from web sources."
+                description: "Ingest and trace web sources."
             }
         ]
     },
     {
-        title: "Counter-Conduct",
+        title: "Analyze (The Thinking)",
         items: [
             {
-                name: "Micro-Resistance",
-                href: "/resistance",
-                icon: Users,
-                description: "Analyze micro-resistance strategies and counter-conduct."
-            },
-            {
-                name: "Reflexive Positioning",
-                href: "/reflexivity",
-                icon: Scan,
-                description: "Examine how your own perspective and context shape the analysis."
-            },
-        ]
-    },
-    {
-        title: "Assemblage Cartography",
-        items: [
-            {
-                name: "Assemblage Compass",
-                href: "/ecosystem",
-                icon: Network,
-                description: "Trace territories, flows, and coding intensities of the assemblage."
-            },
-            {
-                name: "Cross-Case Synthesis",
-                href: "/synthesis",
-                icon: Network,
-                description: "Cross-case analysis and comparative framework synthesis."
-            },
-        ]
-    },
-    {
-        title: "Structural Analysis",
-        items: [
-            {
-                name: "Policy Mobilities",
+                name: "Dynamics & Mobilities",
                 href: "/comparison",
                 icon: ArrowLeftRight,
-                description: "Trace policy mutations and translations across jurisdictions."
-            },
-            {
-                name: "Institutional Logics",
-                href: "/governance",
-                icon: Scale,
-                description: "Analyze resource orchestration and institutional logics."
+                description: "Trace policy translations and mobilities."
             },
             {
                 name: "Cultural Framing",
                 href: "/cultural",
                 icon: Lightbulb,
-                description: "Examine cultural framing and epistemic authority."
+                description: "Analyze epistemic framing and absences."
             },
             {
-                name: "Concept Network",
-                href: "/ontology",
-                icon: BookOpen,
-                description: "Visual map of key concepts and their relationships."
+                name: "Institutional Logics",
+                href: "/governance",
+                icon: Scale,
+                description: "Analyze resource orchestration and logics."
             },
             {
                 name: "Temporal Dynamics",
                 href: "/timeline",
                 icon: Clock,
-                description: "Track the evolution of discourse and policy over time."
+                description: "Track evolution of discourse over time."
             },
+            {
+                name: "Cross-Case Synthesis",
+                href: "/synthesis",
+                icon: Network,
+                description: "Comparative synthesis across cases."
+            },
+            {
+                name: "Micro-Resistance",
+                href: "/resistance",
+                icon: Users, // Using Users as proxy for "Resistance" group
+                description: "Analyze counter-conduct and resistance."
+            }
         ]
     },
     {
-        title: "Theoretical Resources",
+        title: "Manage (The Infrastructure)",
         items: [
             {
-                name: "Critical Glossary",
-                href: "/glossary",
+                name: "Concept Network",
+                href: "/ontology",
                 icon: BookOpen,
-                description: "Definitions of key theoretical concepts and terms."
+                description: "Map key concepts and relationships."
             },
             {
-                name: "Literature Review",
-                href: "/literature",
+                name: "Glossary & Theory",
+                href: "/glossary",
                 icon: BookOpen,
-                description: "Theoretical framework and key scholarship."
+                description: "Theoretical resources and definitions."
+            },
+            {
+                name: "Reflexivity",
+                href: "/reflexivity",
+                icon: Scan,
+                description: "Examine positionality and analytical lens."
             }
         ]
     },
@@ -171,28 +149,22 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Settings",
         items: [
             {
-                name: "Lens Definitions",
-                href: "/settings/prompts",
-                icon: Scan,
-                description: "Customize system prompts for analysis and extraction."
-            },
-            {
                 name: "Billing & Credits",
                 href: "/settings/billing",
                 icon: Coins,
                 description: "Manage credits and subscription."
             },
             {
-                name: "Earn Free Credits",
-                href: "/governance/contributor-credits",
-                icon: Gift,
-                description: "Contribute to the ecosystem and earn usage credits."
+                name: "Lens Configuration",
+                href: "/settings/prompts",
+                icon: Scan,
+                description: "Customize analysis prompts."
             },
             {
-                name: "Referral Program",
-                href: "/referrals",
-                icon: Users,
-                description: "Invite friends and earn credits."
+                name: "Earn Credits",
+                href: "/governance/contributor-credits",
+                icon: Gift,
+                description: "Contributor program."
             }
         ]
     }

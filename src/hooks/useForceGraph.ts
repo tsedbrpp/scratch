@@ -43,8 +43,14 @@ export function useForceGraph(
     // Initialize Nodes
     useEffect(() => {
         setNodes(prevNodes => {
+            // Create a map of current actor IDs for quick lookup
+            const currentActorIds = new Set(actors.map(a => a.id));
+
+            // Only preserve previous nodes that still exist in the new actors array
+            const validPrevNodes = prevNodes.filter(n => currentActorIds.has(n.id));
+
             const newNodes: SimulationNode[] = actors.map(actor => {
-                const existing = prevNodes.find(n => n.id === actor.id);
+                const existing = validPrevNodes.find(n => n.id === actor.id);
                 return {
                     id: actor.id,
                     type: actor.type,
@@ -160,14 +166,14 @@ export function useForceGraph(
         return () => {
             simulation.stop();
         };
-    }, [nodes.length, links.length, width, height, configurations.length, enableClustering, isPaused]); // Removed configOffsets from deps
+    }, [nodes, links, width, height, configurations, enableClustering, isPaused]);
 
     // Custom interface to compatible with both D3 internal events and manual React triggers
     interface GraphDragEvent {
         active?: boolean | number;
         x: number;
         y: number;
-        subject?: any;
+        subject?: unknown;
     }
 
     const drag = (node: SimulationNode) => {

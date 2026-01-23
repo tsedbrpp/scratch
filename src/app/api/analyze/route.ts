@@ -7,7 +7,8 @@ import {
   getAnalysisConfig,
   runCritiqueLoop,
   performAnalysis,
-  generateCacheKey
+  generateCacheKey,
+  runComprehensiveAnalysis
 } from '@/lib/analysis-service';
 import { AnalysisResult } from '@/types';
 
@@ -253,6 +254,48 @@ export async function POST(request: NextRequest) {
 
     // --- STANDARD ANALYSIS FLOW ---
 
+    // [Feature] Assemblage Extraction & Discovery
+    if (analysisMode === 'text_extraction' || analysisMode === 'topic_discovery') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Extraction" }, { status: 500 });
+      }
+
+      console.log(`[ANALYSIS] Mode is ${analysisMode}. Routing to AssemblageExtractionService.`);
+      const { AssemblageExtractionService } = await import('@/lib/assemblage-extraction-service');
+
+      let result;
+      try {
+        if (analysisMode === 'text_extraction') {
+          console.log(`[ANALYSIS] Text Extraction. Text length: ${text?.length}`);
+          if (!text || text.length < 10) return NextResponse.json({ error: "Text content required" }, { status: 400 });
+          result = await AssemblageExtractionService.extractAssemblageFromText(text, openai);
+        } else {
+          // topic_discovery
+          console.log(`[ANALYSIS] Topic Discovery. Query: ${requestData.query}`);
+          if (!requestData.query) return NextResponse.json({ error: "Query required for discovery" }, { status: 400 });
+          result = await AssemblageExtractionService.discoverActorsFromTopic(requestData.query, openai);
+        }
+
+        console.log("[ANALYSIS] Extraction Result:", JSON.stringify(result, null, 2));
+
+        if (!result) {
+          console.error("[ANALYSIS] Result is undefined!");
+          return NextResponse.json({ error: "Extraction returned undefined" }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          success: true,
+          analysis: result
+        });
+      } catch (err) {
+        console.error("Extraction failed", err);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return NextResponse.json({ error: "Extraction failed", details: (err as Error).message }, { status: 500 });
+      }
+    }
+
+
+
     if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
@@ -404,6 +447,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         analysis: { system_critique: critique } // Wrap in analysis object for consistency
+      });
+    }
+
+
+
+    // [Feature] Comprehensive Scan
+    if (analysisMode === 'comprehensive_scan') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Comprehensive Scan" }, { status: 500 });
+      }
+
+      // Check cache unless force=true
+      if (!force) {
+        console.log('[COMPREHENSIVE] Checking cache...');
+        const cacheUserId = getCacheUserId(analysisMode, userId);
+        const cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
+
+        if (cachedAnalysis) {
+          console.log(`[CACHE HIT] Returning cached comprehensive analysis for key: ${cacheKey}`);
+          console.log(`[ANALYSIS] Completed(Cache Hit) in ${Date.now() - startTime} ms`);
+          return NextResponse.json({
+            success: true,
+            analysis: cachedAnalysis,
+            cached: true
+          });
+        }
+        console.log('[COMPREHENSIVE] Cache miss, running fresh analysis.');
+      } else {
+        console.log('[COMPREHENSIVE] Force=true, skipping cache check.');
+      }
+
+      console.log('[ANALYSIS] Mode is COMPREHENSIVE. Running multi-stage workflow.');
+      const result = await runComprehensiveAnalysis(openai, userId, requestData);
+
+      // Cache the comprehensive result
+      try {
+        if (result.analysis && typeof result.analysis === 'object') {
+          const cacheUserId = getCacheUserId(analysisMode, userId);
+          await StorageService.setCache(cacheUserId, cacheKey, result.analysis, 86400); // 24 hours
+          console.log(`[COMPREHENSIVE] Saved to cache: ${cacheKey}`);
+        }
+      } catch (saveError) {
+        console.warn('[COMPREHENSIVE] Failed to save to cache:', saveError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        analysis: result.analysis,
+        usage: result.usage
       });
     }
 

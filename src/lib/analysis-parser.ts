@@ -125,6 +125,9 @@ function fixAssemblageExtractionV3(analysis: any): any {
     // 2. Hoist nested assemblage fields to root for UI compatibility
     if (analysis.assemblage) {
         const keysToHoist = [
+            'actors',
+            'assemblage_network',
+            'topology_analysis',
             'missing_voices',
             'structural_voids',
             'narrative',

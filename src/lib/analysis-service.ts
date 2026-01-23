@@ -148,5 +148,79 @@ export async function performAnalysis(
     };
 }
 
+export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, requestData: any) {
+    logger.analysis(`[COMPREHENSIVE] Starting Comprehensive Scan for User ${userId}`);
+
+    // 1. Run Standard Scan (Assemblage V3)
+    logger.analysis(`[COMPREHENSIVE] Step 1: Standard Trace`);
+    const standardResult = await performAnalysis(openai, userId, { ...requestData, analysisMode: 'assemblage_extraction_v3' });
+    const baseAnalysis = standardResult.analysis;
+
+    if (!baseAnalysis) {
+        throw new Error("Standard Trace failed, cannot proceed with Comprehensive Scan.");
+    }
+
+    // 2. Run Realist Scan (Second Order)
+    let realistAnalysis: any = {};
+    if (baseAnalysis.actors || (baseAnalysis.assemblage && baseAnalysis.assemblage.actors)) {
+        logger.analysis(`[COMPREHENSIVE] Step 2: Realist Scan`);
+        // Extract actors for the prompt
+        const actors = baseAnalysis.actors || baseAnalysis.assemblage?.actors || [];
+        const mechanisms = baseAnalysis.stabilization_mechanisms || baseAnalysis.assemblage?.stabilization_mechanisms || [];
+
+        const realistPayload = {
+            ...requestData,
+            analysisMode: 'assemblage_realist',
+            traced_actors: actors,
+            detected_mechanisms: mechanisms,
+            identified_capacities: baseAnalysis.capacities || []
+        };
+
+        try {
+            const realistResult = await performAnalysis(openai, userId, realistPayload);
+            realistAnalysis = realistResult.analysis;
+        } catch (err) {
+            logger.analysis(`[COMPREHENSIVE] Realist Scan failed (non-fatal): ${(err as Error).message}`);
+        }
+    }
+
+    // 3. Run Critique (Critical Voids)
+    let critiqueAnalysis: any = {};
+    try {
+        logger.analysis(`[COMPREHENSIVE] Step 3: Critical Voids`);
+        const critiqueResult = await runCritiqueLoop(openai, userId, requestData.text, baseAnalysis);
+        critiqueAnalysis = { system_critique: critiqueResult };
+    } catch (err) {
+        logger.analysis(`[COMPREHENSIVE] Critique failed (non-fatal): ${(err as Error).message}`);
+    }
+
+    // 4. Merge Results
+    logger.analysis(`[COMPREHENSIVE] Merging results...`);
+
+    // Combine narratives if both exist
+    let combinedNarrative = baseAnalysis.narrative || "";
+    if (realistAnalysis.narrative) {
+        combinedNarrative += "\n\n### Realist Interpretation\n" + realistAnalysis.narrative;
+    }
+
+    return {
+        analysis: {
+            ...baseAnalysis,
+            // Merge specialized fields
+            realist_narrative: realistAnalysis.narrative,
+            system_critique: critiqueAnalysis.system_critique,
+
+            // Ensure fields required for tabs are populated
+            // Mechanism Tab is already populated by baseAnalysis.stabilization_mechanisms (Standard Trace does extraction)
+            // But Realist scan might add depth? 'assemblage_realist' output schema is just narrative? 
+            // In registry.ts: outputSchema: requiredKeys: ['narrative']. 
+            // So Realist Scan is mostly an INTERPRETATION text.
+
+            narrative: combinedNarrative
+        },
+        usage: standardResult.usage // Primary usage stats (approximate)
+    };
+}
+
 export { runStressTest } from '@/lib/analysis/stress-test-service';
 export { runCritiqueLoop } from '@/lib/analysis/critique-service';

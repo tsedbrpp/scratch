@@ -8,7 +8,9 @@ import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { inferActorType } from "@/lib/ecosystem-utils";
 import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep Linking
+
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useAssemblageExtraction } from "@/hooks/useAssemblageExtraction";
 
 
 // Components
@@ -76,7 +78,9 @@ function EcosystemContent() {
     // Extraction State
     const [isExtractionDialogOpen, setIsExtractionDialogOpen] = useState(false);
     const [extractionText, setExtractionText] = useState("");
-    const [isExtracting, setIsExtracting] = useState(false);
+    const [discoveryQuery, setDiscoveryQuery] = useState("");
+    const [extractionMode, setExtractionMode] = useState<"text" | "discovery">("text");
+    // const [isExtracting, setIsExtracting] = useState(false); // Managed by hook
 
     // Theoretical Analysis Mode
     const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("hybrid_reflexive");
@@ -94,6 +98,75 @@ function EcosystemContent() {
     // Graph interaction state
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
     const [mounted, setMounted] = useState(false);
+
+    // Link Enrichment State
+    const [isEnriching, setIsEnriching] = useState(false);
+    const [enrichProgress, setEnrichProgress] = useState(0);
+
+    const handleEnrichLinks = async () => {
+        if (!actors || actors.length === 0) return;
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setIsTopUpOpen(true);
+            return;
+        }
+
+        setIsEnriching(true);
+        setEnrichProgress(0);
+
+        const actorsToEnrich = actors.filter(a => !a.url);
+        const total = actorsToEnrich.length;
+        let processed = 0;
+        const updatedActors = [...actors];
+
+        // Process in batches of 3 to avoid rate limits
+        const BATCH_SIZE = 3;
+
+        try {
+            for (let i = 0; i < total; i += BATCH_SIZE) {
+                const batch = actorsToEnrich.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(batch.map(async (actor) => {
+                    try {
+                        const response = await fetch('/api/enrich-actor', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                actorName: actor.name,
+                                context: actor.type === 'Policymaker' ? 'government ministry' : 'official website, home page'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.url) {
+                                const index = updatedActors.findIndex(a => a.id === actor.id);
+                                if (index !== -1) {
+                                    updatedActors[index] = { ...updatedActors[index], url: data.url };
+                                }
+                                refetchCredits();
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to enrich ${actor.name}`, err);
+                    }
+                }));
+
+                processed += batch.length;
+                setEnrichProgress(Math.round((processed / total) * 100));
+
+                // Update text as we go
+                setActors([...updatedActors]);
+            }
+        } catch (error) {
+            console.error("Enrichment failed", error);
+            alert("Failed to complete link enrichment.");
+        } finally {
+            setIsEnriching(false);
+            setEnrichProgress(0);
+        }
+    };
 
     // Graph Effects
     useEffect(() => {
@@ -131,162 +204,53 @@ function EcosystemContent() {
             console.log("Deep Link: Setting Policy ID", sourceIdParam);
             setSelectedPolicyId(sourceIdParam);
         }
-    }, [searchParams, selectedPolicyId, setSelectedPolicyId]);
+
+        const modeParam = searchParams.get("mode");
+        if (modeParam === 'discovery') {
+            setExtractionMode('discovery');
+            setIsExtractionDialogOpen(true);
+        } else if (modeParam === 'text' || modeParam === 'extraction') {
+            setExtractionMode('text');
+            setIsExtractionDialogOpen(true);
+        }
+    }, [searchParams, selectedPolicyId, setSelectedPolicyId, setExtractionMode, setIsExtractionDialogOpen]);
 
     // Handlers
 
 
+
+    // Extraction Hook
+    const { isExtracting, extractAssemblage } = useAssemblageExtraction({
+        isReadOnly,
+        hasCredits,
+        creditsLoading,
+        setIsTopUpOpen
+    });
+
     const handleExtractAssemblage = async () => {
-        if (isReadOnly) {
-            alert("This feature is disabled in Demo Mode.");
-            return;
-        }
+        const input = extractionMode === 'text' ? extractionText : discoveryQuery;
+        const result = await extractAssemblage(extractionMode, input);
 
-        if (!creditsLoading && !hasCredits) {
-            setIsTopUpOpen(true);
-            return;
-        }
+        if (result.success && result.newActors && result.memberIds && result.newConfig) {
+            setActors(prev => [...prev, ...result.newActors!]);
 
-        if (!extractionText.trim()) return;
-        setIsExtracting(true);
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    text: extractionText,
-                    analysisMode: 'assemblage_extraction_v3',
-                    sourceType: 'User Input'
-                })
+            // Assign Positions
+            setPositions(prev => {
+                const nextPos = { ...prev };
+                result.newActors!.forEach(actor => {
+                    nextPos[actor.id] = { x: Math.random() * 600 + 100, y: Math.random() * 300 + 50 };
+                });
+                return nextPos;
             });
 
-            const data = await response.json();
-            // 2. Extract Actors
+            setConfigurations(prev => [...prev, result.newConfig!]);
+            setSelectedConfigId(result.newConfig.id);
+            setActiveTab("analysis");
+            setIsSidebarOpen(true);
 
-            const analysis = data.analysis;
-
-            const impacts = (analysis && !Array.isArray(analysis)) ? (analysis.impacts || []) : (Array.isArray(analysis) ? analysis : []);
-
-
-            const assemblage = analysis.assemblage || { name: "New Assemblage", description: "Extracted from text", properties: {} };
-
-            const memberIds: string[] = [];
-            const currentActors = [...actors];
-
-            // [NEW] Prefer explicit actors from V2 Prompt
-
-            if (!Array.isArray(analysis) && analysis.actors && Array.isArray(analysis.actors)) {
-                console.log("Using Explicit Actors from Analysis:", analysis.actors);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                analysis.actors.forEach((a: any) => {
-                    // Compute Dimensional Scores
-                    const m = a.metrics || {};
-
-                    // Influence = Average of (Territoriality + Coding + Centrality)
-                    let influenceScore = 5;
-                    if (m.territoriality !== undefined && m.coding !== undefined && m.centrality !== undefined) {
-                        influenceScore = Math.round((m.territoriality + m.coding + m.centrality) / 3);
-                    } else if (m.influence !== undefined) {
-                        influenceScore = m.influence; // Fallback to prompt output if direct score provided
-                    }
-
-                    // Resistance = Max of (Counter-Conduct, Discursive Opposition)
-                    let resistanceScore = 5;
-                    if (m.counter_conduct !== undefined && m.discursive_opposition !== undefined) {
-                        resistanceScore = Math.max(m.counter_conduct, m.discursive_opposition);
-                    } else if (m.resistance !== undefined) {
-                        resistanceScore = m.resistance; // Fallback
-                    }
-
-                    const id = crypto.randomUUID();
-                    currentActors.push({
-                        id,
-                        name: a.name,
-                        type: a.type || 'Civil Society',
-                        description: a.description || `Identified as ${a.type}`,
-                        influence: "Medium", // Legacy field
-                        metrics: {
-                            territorialization: "Moderate",
-                            coding: "Moderate",
-                            deterritorialization: "Moderate",
-                            rationale: m.rationale || "No rationale provided.",
-                            // Store dimensions for tooltip
-                            territoriality: m.territoriality,
-                            centrality: m.centrality,
-                            counter_conduct: m.counter_conduct,
-                            discursive_opposition: m.discursive_opposition
-                        },
-                        quotes: a.evidence_quotes || [],
-                        region: a.region || "Unknown",
-                        role_type: a.role_type
-                    });
-                    memberIds.push(id);
-                    setPositions(prev => ({ ...prev, [id]: { x: Math.random() * 600 + 100, y: Math.random() * 300 + 50 } }));
-                });
-
-            } else {
-                // Fallback: Infer from Impacts (Legacy)
-                // We deduce actors from the "actor" field in impacts
-                const uniqueActors = new Set<string>();
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                impacts.forEach((imp: any) => {
-                    if (imp.actor) uniqueActors.add(imp.actor);
-                });
-
-                Array.from(uniqueActors).forEach(name => {
-                    const id = crypto.randomUUID();
-                    currentActors.push({
-                        id,
-                        name,
-                        type: inferActorType(name),
-                        description: `Actor identified via impact analysis.`,
-                        influence: "Medium",
-                        metrics: { territorialization: "Moderate", deterritorialization: "Moderate", coding: "Moderate" },
-                        quotes: [],
-                        region: "Unknown"
-                    });
-                    memberIds.push(id);
-                    setPositions(prev => ({ ...prev, [id]: { x: Math.random() * 600 + 100, y: Math.random() * 300 + 50 } }));
-                });
-            }
-
-            setActors(currentActors);
-
-            if (memberIds.length > 0) {
-                const newConfig: EcosystemConfiguration = {
-                    id: crypto.randomUUID(),
-                    name: assemblage.name || "New Assemblage",
-                    description: assemblage.description || "Extracted from text",
-                    memberIds,
-                    properties: {
-                        stability: assemblage.properties.stability || "Medium",
-                        generativity: assemblage.properties.generativity || "Medium",
-                        territorialization_score: assemblage.properties.territorialization_score,
-                        coding_intensity_score: assemblage.properties.coding_intensity_score
-                    },
-                    // Store the full analysis result (including traces/metrics) for the details panel
-                    analysisData: data.analysis,
-                    color: `hsl(${Math.random() * 360}, 70%, 80%)`
-                };
-                setConfigurations(prev => [...prev, newConfig]);
-
-                // Auto-select the new assemblage and open the panel
-                setSelectedConfigId(newConfig.id);
-
-                setActiveTab("analysis");
-                setIsSidebarOpen(true);
-            }
             setIsExtractionDialogOpen(false);
             setExtractionText("");
-        } catch (error) {
-            console.error("Extraction failed:", error);
-        } finally {
-            setIsExtracting(false);
+            setDiscoveryQuery("");
         }
     };
 
@@ -549,6 +513,14 @@ function EcosystemContent() {
                                                 isExtractionDialogOpen={isExtractionDialogOpen}
                                                 setIsExtractionDialogOpen={setIsExtractionDialogOpen}
                                                 onClose={() => setIsSidebarOpen(false)}
+                                                discoveryQuery={discoveryQuery}
+                                                setDiscoveryQuery={setDiscoveryQuery}
+                                                extractionMode={extractionMode}
+                                                setExtractionMode={setExtractionMode}
+                                                // Link Enrichment
+                                                onEnrichLinks={handleEnrichLinks}
+                                                isEnriching={isEnriching}
+                                                enrichProgress={enrichProgress}
                                             />
                                         </div>
                                     </TabsContent>

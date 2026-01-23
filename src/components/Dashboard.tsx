@@ -7,7 +7,7 @@ import { EcosystemActor } from "@/types/ecosystem";
 import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, Activity, Upload, Scale, Zap, Coins, Plus } from "lucide-react";
+import { FileText, Search, Activity, Upload, Scale, Zap, Coins, Plus, Network } from "lucide-react";
 import Link from "next/link";
 import { GalaxyGraph } from "@/components/landing/GalaxyGraph";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
@@ -129,44 +129,52 @@ export function Dashboard() {
                 </div>
             </div>
 
-            {/* Quick Actions (Secondary) */}
+            {/* Entry Points (Primary Navigation) */}
             <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Assemblage Operations</h3>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">How do you want to begin?</h3>
+                <div className="grid gap-6 md:grid-cols-3">
                     <Link href="/data">
-                        <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer">
-                            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
-                                <Upload className="h-6 w-6 text-blue-600" />
+                        <div className="group relative h-full flex flex-col items-start p-6 bg-white border border-slate-200 rounded-xl hover:border-indigo-500 hover:shadow-md transition-all duration-200 cursor-pointer">
+                            <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4 group-hover:bg-indigo-600 transition-colors duration-200">
+                                <Upload className="h-6 w-6 text-indigo-600 group-hover:text-white" />
                             </div>
-                            <span className="font-semibold text-slate-900 group-hover:text-blue-700">Upload Document</span>
-                            <span className="text-xs text-slate-500 mt-1">Add new PDF policy text</span>
+                            <h4 className="text-xl font-bold text-slate-900 group-hover:text-indigo-700 mb-2">Upload Material</h4>
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                                Curate your archive. Upload PDF policy documents, white papers, or datasets to serve as the ground for your analysis.
+                            </p>
+                            <div className="mt-auto pt-4 flex items-center text-xs font-semibold text-indigo-600 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                                Go to Archive &rarr;
+                            </div>
                         </div>
                     </Link>
-                    <Link href="/empirical">
-                        <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50/50 transition-all duration-200 cursor-pointer">
-                            <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
-                                <Search className="h-6 w-6 text-indigo-600" />
+
+                    <Link href="/ecosystem?mode=discovery">
+                        <div className="group relative h-full flex flex-col items-start p-6 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all duration-200 cursor-pointer">
+                            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors duration-200">
+                                <Network className="h-6 w-6 text-blue-600 group-hover:text-white" />
                             </div>
-                            <span className="font-semibold text-slate-900 group-hover:text-indigo-700">Find Traces</span>
-                            <span className="text-xs text-slate-500 mt-1">Search web for evidence</span>
+                            <h4 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 mb-2">Trace an Actor</h4>
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                                Don't have a doc? Start with an actor (e.g., "AI Act") and let the system trace associations via the web.
+                            </p>
+                            <div className="mt-auto pt-4 flex items-center text-xs font-semibold text-blue-600 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                                Launch Discovery &rarr;
+                            </div>
                         </div>
                     </Link>
-                    <Link href="/comparison">
-                        <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-cyan-500 hover:bg-cyan-50/50 transition-all duration-200 cursor-pointer">
-                            <div className="h-12 w-12 rounded-full bg-cyan-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
-                                <Scale className="h-6 w-6 text-cyan-600" />
+
+                    <Link href="/ecosystem?mode=text">
+                        <div className="group relative h-full flex flex-col items-start p-6 bg-white border border-slate-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-all duration-200 cursor-pointer">
+                            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center mb-4 group-hover:bg-emerald-600 transition-colors duration-200">
+                                <FileText className="h-6 w-6 text-emerald-600 group-hover:text-white" />
                             </div>
-                            <span className="font-semibold text-slate-900 group-hover:text-cyan-700">Compare Frameworks</span>
-                            <span className="text-xs text-slate-500 mt-1">Side-by-side analysis</span>
-                        </div>
-                    </Link>
-                    <Link href="/synthesis">
-                        <div className="group relative flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50/50 transition-all duration-200 cursor-pointer">
-                            <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
-                                <Zap className="h-6 w-6 text-teal-600" />
+                            <h4 className="text-xl font-bold text-slate-900 group-hover:text-emerald-700 mb-2">Paste & Analyze</h4>
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                                Quickly paste text segments, interview transcripts, or field notes for immediate ad-hoc extraction.
+                            </p>
+                            <div className="mt-auto pt-4 flex items-center text-xs font-semibold text-emerald-600 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                                Start Analysis &rarr;
                             </div>
-                            <span className="font-semibold text-slate-900 group-hover:text-teal-700">Generate Report</span>
-                            <span className="text-xs text-slate-500 mt-1">Create synthesis PDF</span>
                         </div>
                     </Link>
                 </div>

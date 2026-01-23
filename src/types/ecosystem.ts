@@ -71,6 +71,9 @@ export interface EcosystemConfiguration {
 
 export interface AssemblageAnalysis {
     narrative: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    system_critique?: any;
+    realist_narrative?: string;
     missing_voices: { name: string; reason: string; category: string }[];
     structural_voids: string[];
     blindspot_intensity: "Low" | "Medium" | "High";

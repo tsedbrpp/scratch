@@ -94,6 +94,10 @@ export function EcosystemMap({
 
     const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
 
+    // Edge filtering state
+    const [showSolidEdges, setShowSolidEdges] = useState(true);
+    const [showGhostEdges, setShowGhostEdges] = useState(true);
+
     // Zoom/Pan State
     const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
 
@@ -101,6 +105,18 @@ export function EcosystemMap({
     const mergedActors = useMemo(() => {
         return mergeGhostNodes(actors, absenceAnalysis || null);
     }, [actors, absenceAnalysis]);
+
+    // Filter actors based on ghost toggle
+    const filteredActors = useMemo(() => {
+        if (showGhostEdges) {
+            return mergedActors;
+        }
+        // Filter out ghost nodes when toggle is off
+        return mergedActors.filter(actor => {
+            const isGhost = 'isGhost' in actor && (actor as GhostActor).isGhost;
+            return !isGhost;
+        });
+    }, [mergedActors, showGhostEdges]);
 
     // Assemblage Explanation State
     const [isExplaining, setIsExplaining] = useState(false);
@@ -111,18 +127,18 @@ export function EcosystemMap({
     const [showTopUp, setShowTopUp] = useState(false);
 
     const links = useMemo(() => {
-        const generated = generateEdges(mergedActors);
+        const generated = generateEdges(filteredActors);
         return generated.map(e => ({
             source: e.source.id,
             target: e.target.id,
             type: e.label
         }));
-    }, [mergedActors]);
+    }, [filteredActors]);
 
     // Simplified Actor Hydration (No Simulation)
     const hydratedActors = useMemo(() => {
-        return mergedActors;
-    }, [mergedActors]);
+        return filteredActors;
+    }, [filteredActors]);
 
     const handleExplainMap = React.useCallback(async () => {
         if (!analysisMode) return;
@@ -152,7 +168,7 @@ export function EcosystemMap({
                     analysisMode: 'assemblage_explanation', // Legacy required field
                     mode: analysisMode, // NEW: Theoretical mode for backward compatible routing
                     configurations: configurations, // Pass metrics implicitly via configs
-                    actors: mergedActors, // Pass actors for tracing
+                    actors: filteredActors, // Pass actors for tracing
                     links: links, // Pass links for tracing
                     interactionState: { // NEW: Pass visual context
                         isNested: isNestedMode,
@@ -172,7 +188,7 @@ export function EcosystemMap({
         } finally {
             setIsExplaining(false);
         }
-    }, [analysisMode, configurations, mergedActors, links, isNestedMode, is3DMode]);
+    }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode]);
 
 
 
@@ -402,7 +418,7 @@ export function EcosystemMap({
         setHoveredLink(null);
     };
 
-    const handleLinkHover = (e: React.MouseEvent, link: any) => {
+    const handleLinkHover = (e: React.MouseEvent, link: { source: string; target: string; type: string }) => {
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
             setTooltipPos({
@@ -539,7 +555,7 @@ export function EcosystemMap({
                     {/* ... (Existing Map Content) ... */}
                     {is3DMode ? (
                         <EcosystemMap3D
-                            actors={actors}
+                            actors={filteredActors}
                             configurations={configurations}
                             selectedForGrouping={selectedForGrouping}
                             onToggleSelection={onToggleSelection}
@@ -606,6 +622,20 @@ export function EcosystemMap({
                                         const s = getNodePos(link.source as string);
                                         const t = getNodePos(link.target as string);
                                         if (s.x === 0 || t.x === 0) return null;
+
+                                        // Check if source or target is a ghost node
+                                        const sourceActor = hydratedActors.find((a: EcosystemActor) => a.id === link.source);
+                                        const targetActor = hydratedActors.find((a: EcosystemActor) => a.id === link.target);
+
+                                        // A link is a ghost link if either endpoint is a ghost node
+                                        const sourceIsGhost = sourceActor && 'isGhost' in sourceActor && (sourceActor as GhostActor).isGhost;
+                                        const targetIsGhost = targetActor && 'isGhost' in targetActor && (targetActor as GhostActor).isGhost;
+                                        const isGhostLink = sourceIsGhost || targetIsGhost;
+
+                                        // Filter based on edge type toggles
+                                        if (isGhostLink && !showGhostEdges) return null;
+                                        if (!isGhostLink && !showSolidEdges) return null;
+
                                         const isFocused = focusedNodeId && (link.source === focusedNodeId || link.target === focusedNodeId);
                                         const isHovered = hoveredLink && hoveredLink.source === link.source && hoveredLink.target === link.target;
 
@@ -643,11 +673,14 @@ export function EcosystemMap({
                                     {nodes.map((node: SimulationNode) => {
                                         const actor = hydratedActors.find((a: EcosystemActor) => a.id === node.id);
                                         if (!actor) return null;
+
+                                        // Check if this is a ghost node
+                                        const isGhost = !!(actor && 'isGhost' in actor && (actor as GhostActor).isGhost);
+
                                         const color = getActorColor(actor.type);
                                         const isSelected = selectedForGrouping.includes(actor.id);
                                         const isFocused = focusedNodeId === actor.id;
                                         const isRelevant = isActorRelevant(actor, highlightedStage);
-                                        const isGhost = 'isGhost' in actor ? (actor as EcosystemActor & { isGhost?: boolean }).isGhost : false;
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
                                         if (isGhost) opacity *= 0.6;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
@@ -796,10 +829,38 @@ export function EcosystemMap({
                                         </div>
                                     )}
 
-                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-500">
-                                        <p className="mb-1"><span className="font-bold">─</span> Line Thickness: Connectivity</p>
-                                        <p><span className="font-bold">●</span> Node Size: Translation Strength</p>
-                                        <p><span className="font-bold">- -</span> Absent / Virtual (Ghost)</p>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
+                                        <p className="font-semibold text-slate-800 mb-2">Edge Filters</p>
+                                        <div className="space-y-1.5">
+                                            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={showSolidEdges}
+                                                    onChange={(e) => setShowSolidEdges(e.target.checked)}
+                                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                                />
+                                                <span className="text-slate-700 flex items-center gap-1">
+                                                    <span className="font-bold">─</span> Connectivity (Solid)
+                                                </span>
+                                            </label>
+                                            <label
+                                                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors"
+                                                title="Ghost nodes represent structurally absent actors identified by analysis. Run Comprehensive Analysis to detect missing voices."
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={showGhostEdges}
+                                                    onChange={(e) => setShowGhostEdges(e.target.checked)}
+                                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                                />
+                                                <span className="text-slate-700 flex items-center gap-1">
+                                                    <span className="font-bold">- -</span> Absent/Virtual (Ghost)
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-slate-100 text-slate-500">
+                                            <p><span className="font-bold">●</span> Node Size: Translation Strength</p>
+                                        </div>
                                     </div>
 
                                     {/* Hull Style Legend */}
