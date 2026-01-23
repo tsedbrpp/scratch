@@ -24,6 +24,8 @@ import { BASELINE_SOURCES } from '@/lib/data/baselines';
 import { MaterializeDialog } from "@/components/policy/MaterializeDialog";
 import { EcosystemActor } from "@/types/ecosystem";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 interface AnalysisResultsProps {
     analysis: NonNullable<AnalysisResult>;
@@ -82,9 +84,19 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     const [isSimulating, setIsSimulating] = useState(false);
     const { isReadOnly } = useDemoMode();
 
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
+
     const handleGeneratePerspectives = async () => {
         if (isReadOnly) {
             alert('Simulation is disabled in Demo Mode.');
+            return;
+        }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
             return;
         }
         setIsSimulating(true);
@@ -114,6 +126,9 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                 };
 
                 setPerspectiveResults(newPerspectives);
+
+                setPerspectiveResults(newPerspectives);
+                refetchCredits();
 
                 // Cache results to the database (via source update)
                 if (onUpdate) {
@@ -161,6 +176,12 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
             alert('System Reflexivity is disabled in Demo Mode.');
             return;
         }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
         setIsCritiqueLoading(true);
         setCritiqueError(null);
         try {
@@ -182,6 +203,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
             if (data.success && data.analysis?.system_critique) {
                 setCritiqueResult(data.analysis.system_critique);
+                refetchCredits();
                 if (onUpdate) {
                     onUpdate({ system_critique: data.analysis.system_critique });
                 }
@@ -218,6 +240,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
     return (
         <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
 
             {/* --- TOP LEVEL CONTEXT (Always Visible) --- */}
 

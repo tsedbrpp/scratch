@@ -11,6 +11,8 @@ import { Network, ArrowRightLeft, Sparkles, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OntologyData, OntologyNode, ComparisonResult } from "@/types/ontology";
 import { getColorForCategory } from "@/lib/ontology-utils";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog"; // [NEW]
+import { useCredits } from "@/hooks/useCredits"; // [NEW]
 
 // Components
 import { OntologyMap } from "@/components/ontology/OntologyMap";
@@ -108,6 +110,10 @@ export default function OntologyPage() {
     const [selectedNodeId, setSelectedNodeId] = useServerStorage<string | null>("ontology_selected_node_id", null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
+
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.extractedText);
 
@@ -125,6 +131,12 @@ export default function OntologyPage() {
         // NOTE: We don't strictly block generation if it's cached, but if new generation is required:
         if (isReadOnly) {
             alert("Ontology generation is disabled in Demo Mode.");
+            return;
+        }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
             return;
         }
 
@@ -170,6 +182,7 @@ export default function OntologyPage() {
                     ...ontologyMaps,
                     [selectedSourceId]: newMap
                 });
+                refetchCredits();
             } else {
                 alert("Analysis failed: " + (data.error || "Unknown error"));
             }
@@ -184,6 +197,12 @@ export default function OntologyPage() {
     const handleCompareOntologies = async () => {
         if (isReadOnly) {
             alert("Comparison is disabled in Demo Mode.");
+            return;
+        }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
             return;
         }
         if (selectedForComparison.length < 2 || selectedForComparison.length > 3) return;
@@ -327,6 +346,7 @@ export default function OntologyPage() {
 
     return (
         <div className="space-y-8">
+            <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-2">

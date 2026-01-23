@@ -201,6 +201,12 @@ export default function SynthesisPage() {
     const handleCompare = async (forceRefresh = false) => {
         if (!sourceA || !sourceB) return;
 
+        // [NEW] Credit Check
+        if (!hasCredits && !process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE && !isReadOnly) {
+            setShowTopUp(true);
+            return;
+        }
+
         // [NEW] Soft Preflight: Check for AssemblageExport in SessionStorage
         const exportA = sessionStorage.getItem(`assemblage_export_${sourceA.id}`);
         const exportB = sessionStorage.getItem(`assemblage_export_${sourceB.id}`);

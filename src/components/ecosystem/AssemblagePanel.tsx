@@ -8,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
 import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { AssemblageAnalysisView } from './AssemblageAnalysisView';
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 interface AssemblagePanelProps {
     actors: EcosystemActor[];
@@ -26,6 +28,10 @@ interface AssemblagePanelProps {
 
 export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSaveAnalysis, isExpanded = false, onToggleExpand, selectedConfig, onUpdateConfig, onClose, onUpdateActors }: AssemblagePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
 
     const handleRatify = () => {
         const currentData = savedAnalysis || selectedConfig?.analysisData;
@@ -125,6 +131,12 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
             return;
         }
 
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
+
         setIsAnalyzing(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -178,6 +190,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                     }
                 };
                 onSaveAnalysis(mergedAnalysis);
+                refetchCredits();
             }
 
             // 2. [NEW] Update Actor Metrics (Territorialization/Deterritorialization)
@@ -222,6 +235,12 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
         if (!actors || actors.length === 0) return;
         if (!onUpdateActors) return;
 
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
+
         setIsEnriching(true);
         setEnrichProgress(0);
 
@@ -255,6 +274,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                                 if (index !== -1) {
                                     updatedActors[index] = { ...updatedActors[index], url: data.url };
                                 }
+                                refetchCredits();
                             }
                         }
                     } catch (err) {
@@ -431,6 +451,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
             <div className="p-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-400 text-center italic">
                 Methodological constrained artifact. Outputs are provisional inscriptions.
             </div>
+            <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
         </Card >
     );
 }

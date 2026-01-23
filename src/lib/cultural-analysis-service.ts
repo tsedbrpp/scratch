@@ -24,7 +24,7 @@ export async function performCulturalAnalysis(
     const themeExtractions = await extractThemes(userId, sources, lensId, openai);
 
     // Step 2: Embeddings
-    const { validThemes, allThemeObjects, sourceIds } = await generateThemeEmbeddings(themeExtractions, openai);
+    const { validThemes, allThemeObjects, sourceIds } = await generateThemeEmbeddings(themeExtractions);
 
     if (validThemes.length === 0) {
         console.log('No valid themes found in sources.');
@@ -106,7 +106,7 @@ async function extractThemes(userId: string, sources: { id: string; title: strin
     );
 }
 
-async function generateThemeEmbeddings(themeExtractions: { sourceId: string; sourceTitle: string; themes: ThemeObject[] }[], openai: OpenAI) {
+async function generateThemeEmbeddings(themeExtractions: { sourceId: string; sourceTitle: string; themes: ThemeObject[] }[]) {
     console.log('Generating embeddings...');
     const allThemesText: string[] = [];
     const allThemeObjects: { theme: string; quote: string; source: string }[] = [];
@@ -140,7 +140,7 @@ async function clusterThemes(allThemeObjects: { theme: string; quote: string; so
         id: `cluster-${i}`,
         name: cluster.themes[0].theme,
         themes: cluster.themes.map(t => t.theme),
-        quotes: cluster.themes.map(t => ({ text: t.quote, source: t.source })).filter(q => q.text),
+        quotes: cluster.themes.map(t => ({ text: t.quote, source: t.source, theme: t.theme })).filter(q => q.text),
         sources: cluster.sources,
         centroid: cluster.centroid,
         size: cluster.themes.length,

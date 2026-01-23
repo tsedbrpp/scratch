@@ -8,7 +8,7 @@ export interface DiscourseCluster {
     sources: string[]; // Source IDs
     centroid: number[]; // Embedding vector
     size: number; // Number of themes in cluster
-    quotes?: { text: string; source: string }[]; // Evidence/citations for the themes
+    quotes?: { text: string; source: string; theme: string }[]; // Evidence/citations for the themes
 }
 
 export interface CulturalAnalysisResult {

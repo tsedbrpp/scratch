@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Lightbulb, Sparkles, Network, Loader2, BookOpen } from "lucide-react";
+import { Lightbulb, Sparkles, Network, Loader2, BookOpen, HelpCircle, FileText } from "lucide-react";
 
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
+import { exportSummaryToCSV, exportDetailedMatrixToCSV } from "@/lib/export-utils";
 
 export default function CulturalAnalysisPage() {
     const { sources, isLoading } = useSources();
@@ -174,27 +175,17 @@ export default function CulturalAnalysisPage() {
         );
     }
 
-    const exportToCSV = () => {
+    const handleExportSummary = () => {
         if (!culturalAnalysis) return;
-
-        // 1. Clusters CSV
-        const clustersHeader = "Type,Name,Themes,Sources\n";
-        const clustersRows = culturalAnalysis.clusters.map(c =>
-            `Cluster,"${c.name}","${c.themes.join(', ')}","${c.sources.join(', ')}"`
-        ).join("\n");
-
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + "Analysis Summary\n" + `"${(culturalAnalysis.summary || '').replace(/"/g, '""')}"\n\n`
-            + clustersHeader + clustersRows;
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `cultural_analysis_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        exportSummaryToCSV(culturalAnalysis);
     };
+
+    const handleExportDetailed = () => {
+        if (!culturalAnalysis) return;
+        exportDetailedMatrixToCSV(culturalAnalysis);
+    };
+
+
 
     return (
         <div className="space-y-8">
@@ -307,8 +298,12 @@ export default function CulturalAnalysisPage() {
                                         <Sparkles className="h-4 w-4 text-amber-600" />
                                         <CardTitle className="text-lg">Analysis Summary</CardTitle>
                                     </div>
-                                    <Button variant="outline" size="sm" onClick={exportToCSV}>
-                                        Export CSV
+                                    <Button variant="outline" size="sm" onClick={handleExportSummary}>
+                                        Export Summary
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={handleExportDetailed} className="gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Export Detailed Matrix
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -332,7 +327,7 @@ export default function CulturalAnalysisPage() {
                         <CardContent className="space-y-3 text-sm text-slate-700">
                             <div>
                                 <p className="font-semibold text-blue-900 mb-1">What are Discourse Clusters?</p>
-                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent &quot;discourse community&quot; or &quot;regime of truth&quot; regarding AI governance.</p>
+                                <p>Groups of related themes that use similar language and concepts. Each cluster represents a coherent &quot;discourse community&quot; or &quot;regime of truth&quot;.</p>
                             </div>
                             <div>
                                 <p className="font-semibold text-blue-900 mb-1">Epistemic Framing</p>
@@ -360,16 +355,20 @@ export default function CulturalAnalysisPage() {
                                             key={cluster.id}
                                             className="p-4 bg-blue-50 border border-blue-200 rounded-lg"
                                         >
-                                            <TooltipProvider>
+                                            <TooltipProvider delayDuration={0}>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <h4 className="font-semibold text-blue-900 mb-2 cursor-help underline decoration-dotted">
-                                                            {cluster.name}
-                                                        </h4>
+                                                        <div className="flex items-center gap-2 mb-2 cursor-help group w-fit">
+                                                            <h4 className="font-semibold text-blue-900 underline decoration-dotted decoration-blue-300">
+                                                                {cluster.name}
+                                                            </h4>
+                                                            <HelpCircle className="h-3.5 w-3.5 text-blue-400 group-hover:text-blue-600 transition-colors" />
+                                                        </div>
                                                     </TooltipTrigger>
                                                     {cluster.description && (
-                                                        <TooltipContent className="max-w-xs bg-white">
-                                                            <p className="text-xs text-slate-700">{cluster.description}</p>
+                                                        <TooltipContent className="max-w-xs bg-white shadow-xl border-blue-100 p-3">
+                                                            <p className="font-semibold text-xs text-blue-900 mb-1">Cluster Definition</p>
+                                                            <p className="text-xs text-slate-600 leading-snug">{cluster.description}</p>
                                                         </TooltipContent>
                                                     )}
                                                 </Tooltip>

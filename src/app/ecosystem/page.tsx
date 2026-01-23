@@ -16,14 +16,16 @@ import { ActorList } from "@/components/ecosystem/ActorList";
 import { EcosystemMap } from "@/components/ecosystem/EcosystemMap";
 import { ConfigurationDialog } from "@/components/ecosystem/ConfigurationDialog";
 import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
-import { AssemblageCompass } from "@/components/ecosystem/AssemblageCompass";
-import { DraggablePanel } from "@/components/ui/draggable-panel";
-import { Network, PanelLeftOpen, PanelRightOpen, Loader2, LayoutGrid, ArrowLeft } from "lucide-react";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Network, Loader2, LayoutGrid, ArrowLeft, PanelRightOpen } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnalysisMode } from "@/components/ui/mode-selector";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 
 
@@ -35,6 +37,9 @@ function EcosystemContent() {
     const mode = searchParams.get("mode");
 
     // Sources for policy selection
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+
     const { sources, isLoading: isSourcesLoading } = useSources();
     const [selectedPolicyId, setSelectedPolicyId] = useServerStorage<string | null>(STORAGE_KEYS.ECOSYSTEM_ACTIVE_POLICY, null);
     const policyDocuments = sources.filter(s => s.type !== "Trace");
@@ -55,11 +60,11 @@ function EcosystemContent() {
     // Config Layout State (for dragging)
     const [configLayout, setConfigLayout] = useState<Record<string, { x: number, y: number }>>({});
 
-    // Layout State (Zen Mode + Expansion)
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
-    const [isLeftExpanded, setIsLeftExpanded] = useState(false);
-    const [isRightExpanded, setIsRightExpanded] = useState(false);
+    // Layout State
+    const [activeTab, setActiveTab] = useState("actors");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+
 
     const [interactionMode, setInteractionMode] = useState<"drag" | "select">("drag");
     const [selectedForGrouping, setSelectedForGrouping] = useState<string[]>([]);
@@ -136,6 +141,12 @@ function EcosystemContent() {
             alert("This feature is disabled in Demo Mode.");
             return;
         }
+
+        if (!creditsLoading && !hasCredits) {
+            setIsTopUpOpen(true);
+            return;
+        }
+
         if (!extractionText.trim()) return;
         setIsExtracting(true);
         try {
@@ -267,7 +278,8 @@ function EcosystemContent() {
                 // Auto-select the new assemblage and open the panel
                 setSelectedConfigId(newConfig.id);
 
-                setShowRightPanel(true);
+                setActiveTab("analysis");
+                setIsSidebarOpen(true);
             }
             setIsExtractionDialogOpen(false);
             setExtractionText("");
@@ -315,6 +327,8 @@ function EcosystemContent() {
         setNewConfigDesc("");
         setSelectedForGrouping([]);
         setInteractionMode("drag");
+        setActiveTab("analysis");
+        setIsSidebarOpen(true);
     };
 
     const toggleSelection = (actorId: string) => {
@@ -343,14 +357,15 @@ function EcosystemContent() {
 
     const handleConfigClick = (configId: string) => {
         setSelectedConfigId(configId);
-        setShowRightPanel(true);
+        setActiveTab("analysis");
+        setIsSidebarOpen(true);
     };
 
     const handleDeleteConfiguration = (configId: string) => {
         setConfigurations(prev => prev.filter(c => c.id !== configId));
         if (selectedConfigId === configId) {
             setSelectedConfigId(null);
-            setShowRightPanel(false);
+            setActiveTab("actors");
         }
     };
 
@@ -371,14 +386,15 @@ function EcosystemContent() {
     }
 
 
-    const handleResetLayout = () => {
-        // Reset local logic if we were persisting positions, for now just ensures state validity
-        setShowLeftPanel(true);
-        setShowRightPanel(false);
-    };
+
 
     return (
         <div className="flex flex-col h-full gap-4 relative isolate">
+            <CreditTopUpDialog
+                open={isTopUpOpen}
+                onOpenChange={setIsTopUpOpen}
+                onSuccess={() => refetchCredits()}
+            />
 
             {/* NEW: Map Background Layer */}
             {!selectedPolicyId ? (
@@ -475,55 +491,27 @@ function EcosystemContent() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="w-px h-3 bg-slate-300 mx-0.5" />
-                                    <TooltipProvider>
-                                        <div className="flex items-center gap-1">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost" size="sm"
-                                                        className={`h-7 px-2 text-xs font-medium gap-1.5 ${showLeftPanel ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:text-slate-900"}`}
-                                                        onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                                    >
-                                                        <PanelLeftOpen className="h-3 w-3" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Toggle Actors List</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost" size="sm"
-                                                        className={`h-7 px-2 text-xs font-medium gap-1.5 ${showRightPanel ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:text-slate-900"}`}
-                                                        onClick={() => setShowRightPanel(!showRightPanel)}
-                                                    >
-                                                        <PanelRightOpen className="h-3 w-3" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Toggle Analysis Panel</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost" size="icon"
-                                                        className="h-7 w-7 text-slate-400 hover:text-slate-900"
-                                                        onClick={handleResetLayout}
-                                                    >
-                                                        <LayoutGrid className="h-3 w-3" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Reset Window Layout</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                    </TooltipProvider>
+                                    {!isSidebarOpen && (
+                                        <>
+                                            <div className="w-px h-3 bg-slate-300 mx-0.5" />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs font-medium gap-1.5 text-slate-500 hover:text-slate-900"
+                                                            onClick={() => setIsSidebarOpen(true)}
+                                                        >
+                                                            <PanelRightOpen className="h-4 w-4" />
+                                                            Open Panel
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Open Analysis Panel</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </>
+                                    )}
                                 </div>
                             }
                         />
@@ -531,62 +519,67 @@ function EcosystemContent() {
 
                     {/* Floating Windows (Draggable) */}
 
-                    {/* 1. Actor List Panel */}
-                    <DraggablePanel
-                        title="Actors & Extraction"
-                        isOpen={showLeftPanel}
-                        onClose={() => setShowLeftPanel(false)}
-                        defaultPosition={{ x: 20, y: 80 }}
-                        width={350}
-                        className="max-h-[80vh]"
-                    >
-                        <ActorList
-                            actors={actors}
-                            selectedActorId={selectedActorId}
-                            onSelectActor={setSelectedActorId}
-                            onClearAll={handleClearAll}
-                            isExpanded={true} // Always expanded in window mode
-                            onToggleExpand={() => { }} // No-op in window mode
-                            isExtracting={isExtracting}
-                            extractionText={extractionText}
-                            setExtractionText={setExtractionText}
-                            onExtract={handleExtractAssemblage}
-                            isExtractionDialogOpen={isExtractionDialogOpen}
-                            setIsExtractionDialogOpen={setIsExtractionDialogOpen}
-                            onClose={() => setShowLeftPanel(false)}
-                        />
-                    </DraggablePanel>
-
-                    {/* 2. Assemblage Analysis Panel */}
-                    <DraggablePanel
-                        title="Assemblage Analysis"
-                        isOpen={showRightPanel}
-                        onClose={() => setShowRightPanel(false)}
-                        defaultPosition={{ x: window.innerWidth - 450, y: 80 }}
-                        width={400}
-                        className="max-h-[80vh]"
-                    >
-                        <AssemblagePanel
-                            actors={actors}
-                            analyzedText={extractionText}
-                            savedAnalysis={selectedConfigId ? configurations.find(c => c.id === selectedConfigId)?.analysisData : absenceAnalysis}
-                            onSaveAnalysis={(analysis) => {
-                                if (selectedConfigId) {
-                                    setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
-                                } else {
-                                    setAbsenceAnalysis(analysis);
-                                }
-                            }}
-                            onToggleExpand={() => { }} // Window manages size
-                            isExpanded={true}
-                            selectedConfig={configurations.find(c => c.id === selectedConfigId)}
-                            onClose={() => { setShowRightPanel(false); setSelectedConfigId(null); }}
-                            onUpdateConfig={(updatedConfig) => {
-                                setConfigurations(prev => prev.map(c => c.id === updatedConfig.id ? updatedConfig : c));
-                            }}
-                            onUpdateActors={setActors}
-                        />
-                    </DraggablePanel>
+                    {/* Consolidated Right Sidebar */}
+                    <div className={`transition-all duration-300 border-l border-slate-200 bg-white flex flex-col shadow-xl z-20 shrink-0 h-full ${!isSidebarOpen
+                        ? "w-0 border-0 overflow-hidden opacity-0"
+                        : isSidebarExpanded
+                            ? "w-[800px] opacity-100"
+                            : "w-[400px] opacity-100"
+                        }`}>
+                        <div className="p-2 border-b border-slate-100 bg-white">
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                                <TabsList className="w-full grid grid-cols-2">
+                                    <TabsTrigger value="actors">Actors</TabsTrigger>
+                                    <TabsTrigger value="analysis">Analysis</TabsTrigger>
+                                </TabsList>
+                                <div className="mt-2 h-[calc(100vh-135px)] overflow-hidden">
+                                    <TabsContent value="actors" className="h-full m-0 p-0 border-0 outline-none data-[state=active]:flex flex-col">
+                                        <div className="h-full overflow-y-auto">
+                                            <ActorList
+                                                actors={actors}
+                                                selectedActorId={selectedActorId}
+                                                onSelectActor={setSelectedActorId}
+                                                onClearAll={handleClearAll}
+                                                isExpanded={isSidebarExpanded}
+                                                onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                                                isExtracting={isExtracting}
+                                                extractionText={extractionText}
+                                                setExtractionText={setExtractionText}
+                                                onExtract={handleExtractAssemblage}
+                                                isExtractionDialogOpen={isExtractionDialogOpen}
+                                                setIsExtractionDialogOpen={setIsExtractionDialogOpen}
+                                                onClose={() => setIsSidebarOpen(false)}
+                                            />
+                                        </div>
+                                    </TabsContent>
+                                    <TabsContent value="analysis" className="h-full m-0 p-0 border-0 outline-none data-[state=active]:flex flex-col">
+                                        <div className="h-full overflow-y-auto">
+                                            <AssemblagePanel
+                                                actors={actors}
+                                                analyzedText={extractionText}
+                                                savedAnalysis={selectedConfigId ? configurations.find(c => c.id === selectedConfigId)?.analysisData : absenceAnalysis}
+                                                onSaveAnalysis={(analysis) => {
+                                                    if (selectedConfigId) {
+                                                        setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
+                                                    } else {
+                                                        setAbsenceAnalysis(analysis);
+                                                    }
+                                                }}
+                                                onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                                                isExpanded={isSidebarExpanded}
+                                                selectedConfig={configurations.find(c => c.id === selectedConfigId)}
+                                                onClose={() => setIsSidebarOpen(false)}
+                                                onUpdateConfig={(updatedConfig) => {
+                                                    setConfigurations(prev => prev.map(c => c.id === updatedConfig.id ? updatedConfig : c));
+                                                }}
+                                                onUpdateActors={setActors}
+                                            />
+                                        </div>
+                                    </TabsContent>
+                                </div>
+                            </Tabs>
+                        </div>
+                    </div>
 
                     {/* 3. Assemblage Compass (Optional - could be another Tab or Window) */}
                     {/* Currently integrated into AssemblagePanel or separate - leaving as is or making separate window?

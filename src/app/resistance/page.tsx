@@ -13,6 +13,9 @@ import { ResistanceVisualization } from "@/components/resistance/ResistanceVisua
 
 import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash, FileText, ExternalLink } from "lucide-react";
 
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
+
 // Define Strategy Definitions with Icons for UI
 const STRATEGY_DEFINITIONS = [
     { title: "Gambiarra", icon: Wrench, color: "text-orange-600", bg: "bg-orange-100" },
@@ -39,6 +42,10 @@ export default function ResistancePage() {
     const [selectedTraceId, setSelectedTraceId] = useServerStorage<string | null>("resistance_selected_trace_id", null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
+
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
 
     // Identify Policy Documents (Not traces)
     const policyDocuments = sources.filter(s => s.type !== "Trace");
@@ -110,6 +117,12 @@ export default function ResistancePage() {
             return;
         }
 
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
+
         setIsAnalyzing(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -130,6 +143,7 @@ export default function ResistancePage() {
             const result = await response.json();
             if (result.success) {
                 await updateSource(trace.id, { resistance_analysis: result.analysis });
+                refetchCredits(); // Refresh credits after successful analysis
                 toast.success("Trace analyzed successfully!");
             } else {
                 if (response.status === 429 || result.error === "Quota Exceeded") {
@@ -177,6 +191,12 @@ export default function ResistancePage() {
     const handleSearchTraces = async () => {
         if (isReadOnly) {
             toast.error("Search disabled in Demo Mode");
+            return;
+        }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
             return;
         }
         if (!selectedPolicyId) {
@@ -351,6 +371,12 @@ export default function ResistancePage() {
             toast.error("Synthesis disabled in Demo Mode");
             return;
         }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
         const analyzedTraces = traces.filter(t => t.resistance_analysis);
         if (analyzedTraces.length < 2) {
             toast.error("Not enough data", { description: "Please analyze at least 2 traces before synthesizing." });
@@ -387,6 +413,7 @@ export default function ResistancePage() {
             const result = await response.json();
             if (result.success) {
                 setSynthesisResult(result.analysis);
+                refetchCredits();
                 toast.success("Synthesis complete!");
             } else {
                 toast.error("Synthesis failed", { description: result.details || result.error || "Unknown error" });
@@ -409,6 +436,11 @@ export default function ResistancePage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            <CreditTopUpDialog
+                open={showTopUp}
+                onOpenChange={setShowTopUp}
+                onSuccess={() => refetchCredits()}
+            />
             <div className="flex flex-col gap-6">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Micro-Resistance: Empirical Traces</h2>

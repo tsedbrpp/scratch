@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { DataExportSection } from "@/components/settings/DataExportSection";
+import { TransactionHistory } from "@/components/TransactionHistory";
 
 export default function BillingPage() {
     const { userId, isLoaded, isSignedIn } = useAuth();
@@ -285,44 +286,10 @@ export default function BillingPage() {
                     )}
                 </div>
 
-                {/* Transaction History Placeholder */}
+                {/* Transaction History */}
                 <div className="space-y-6">
                     <h2 className="text-xl font-semibold text-slate-900">History</h2>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                <History className="h-4 w-4" />
-                                Recent Transactions
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {history.length === 0 ? (
-                                    <div className="text-sm text-slate-500 text-center py-8">
-                                        No recent transactions found.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {history.map((tx) => (
-                                            <div key={tx.id} className="flex justify-between items-center text-sm border-b border-slate-100 pb-2 last:border-0 last:pb-0">
-                                                <div>
-                                                    <div className="font-medium text-slate-900">
-                                                        {tx.type === 'PURCHASE' ? 'Credit Purchase' : 'Usage'}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500">
-                                                        {new Date(tx.createdAt).toLocaleDateString()} • {new Date(tx.createdAt).toLocaleTimeString()}
-                                                    </div>
-                                                </div>
-                                                <div className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-slate-600'}`}>
-                                                    {tx.amount > 0 ? '+' : ''}{tx.amount}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <TransactionHistory transactions={history} />
                 </div>
             </div>
         </div >

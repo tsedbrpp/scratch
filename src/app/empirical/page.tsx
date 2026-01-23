@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Search, Filter, Sparkles, Loader2, Trash, Eye, FileText, Maximize } from "lucide-react";
 import { AnalysisResults } from "@/components/policy/AnalysisResults";
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 export default function EmpiricalPage() {
     const { sources, isLoading, addSource, updateSource, deleteSource } = useSources();
@@ -41,6 +43,10 @@ export default function EmpiricalPage() {
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
 
     const [fullScreenAnalysisSource, setFullScreenAnalysisSource] = useState<Source | null>(null);
+
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
 
     // ... existing search state ...
     const [isSearching, setIsSearching] = useState(false);
@@ -95,6 +101,13 @@ export default function EmpiricalPage() {
             toast.error("Searching traces is disabled in Demo Mode.");
             return;
         }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
+
         // ... existing implementation ...
         if (!selectedPolicyId) {
             toast.error("Please select a policy document first.");
@@ -179,6 +192,12 @@ export default function EmpiricalPage() {
             toast.error("Analysis is disabled in Demo Mode.");
             return;
         }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
         const source = sources.find(s => s.id === sourceId);
         if (!source || !source.extractedText) {
             toast.error('No text available to analyze.');
@@ -215,6 +234,7 @@ export default function EmpiricalPage() {
                         onClick: () => setFullScreenAnalysisSource(sources.find(s => s.id === sourceId) || null) // Re-fetch to get latest state
                     }
                 });
+                refetchCredits();
             } else {
                 toast.error(`Analysis failed: ${result.error || 'Unknown error'} `);
             }
@@ -264,6 +284,7 @@ export default function EmpiricalPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
             <div className="flex flex-col gap-6">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-slate-900">Empirical Data</h2>

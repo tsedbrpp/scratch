@@ -11,14 +11,14 @@ import { Community } from "@/components/landing/Community";
 import { TrustEthics } from "@/components/landing/TrustEthics";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { ContactSection } from "@/components/landing/ContactSection";
-import { SocialProof } from "@/components/landing/SocialProof";
+
 
 // This is a Server Component now
 function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <HeroSection />
-      <SocialProof />
+
       <StepByStep />
       <TheoreticalGrounding />
       {/* <TechStack /> - Removed to de-emphasize tech stack */}

@@ -17,6 +17,8 @@ const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.
 });
 
 import { AnalysisMode, ModeSelector } from '@/components/ui/mode-selector';
+import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { useCredits } from "@/hooks/useCredits";
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -104,6 +106,10 @@ export function EcosystemMap({
     const [isExplaining, setIsExplaining] = useState(false);
     const [explanation, setExplanation] = useState<AssemblageExplanation | null>(null);
 
+    // Credit System
+    const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
+    const [showTopUp, setShowTopUp] = useState(false);
+
     const links = useMemo(() => {
         const generated = generateEdges(mergedActors);
         return generated.map(e => ({
@@ -122,6 +128,12 @@ export function EcosystemMap({
         if (!analysisMode) return;
         if (isReadOnly) {
             alert("Trace analysis is disabled in Demo Mode.");
+            return;
+        }
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
             return;
         }
         setIsExplaining(true);
@@ -152,6 +164,7 @@ export function EcosystemMap({
             const data = await response.json();
             if (data.analysis) {
                 setExplanation(data.analysis);
+                refetchCredits();
                 setIsLegendOpen(false); // Close legend to show explanation
             }
         } catch (error) {
@@ -407,6 +420,8 @@ export function EcosystemMap({
                 className={`flex flex-col shadow-none border border-slate-200 bg-white transition-all duration-300 relative ${isFullScreen ? 'fixed inset-0 z-50 h-screen w-screen rounded-none' : 'h-[800px]'}`}
                 ref={containerRef}
             >
+                <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
+
                 {/* ... (Header remains) */}
                 <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row flex-wrap items-center justify-between gap-y-4 bg-white z-10 relative">
                     <div>
