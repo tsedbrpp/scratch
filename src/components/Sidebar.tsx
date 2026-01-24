@@ -185,7 +185,6 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
     const { isReadOnly } = useDemoMode();
     const { isSignedIn } = useAuth();
 
-    return (
     const { isGuided } = useViewMode(); // [PD]
 
     return (
