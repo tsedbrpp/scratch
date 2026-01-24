@@ -1,4 +1,6 @@
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, Cell, ReferenceLine, Label } from 'recharts';
+import { HelpTooltip } from "@/components/help/HelpTooltip";
+import { getGlossaryDefinition } from "@/lib/glossary-definitions";
 
 interface GovernanceCompassProps {
     rhetoricScore: number; // 0-100 (Y-Axis)
@@ -23,7 +25,14 @@ export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanatio
     return (
         <div id="governance-compass-chart" className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
             <div className="mb-4">
-                <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Governance Compass</h4>
+                <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Governance Compass</h4>
+                    <HelpTooltip
+                        title="Drift Analysis"
+                        description={getGlossaryDefinition('drift-analysis')}
+                        glossaryTerm="drift-analysis"
+                    />
+                </div>
                 <p className="text-xs text-slate-500">Mapping Discursive Claims (Rhetoric) vs. Material Operations (Reality)</p>
             </div>
 
