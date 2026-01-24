@@ -4,6 +4,7 @@ import { calculateMicroFascismRisk } from '@/lib/risk-calculator';
 import { AnalysisResult } from '@/types';
 import { fillRiskSummaryPrompt } from '@/lib/prompts/micro-fascism';
 import { PromptRegistry } from '@/lib/prompts/registry';
+import { capturePromptMetadata, calculateConfidenceScore } from '@/lib/transparency-utils';
 
 
 
@@ -27,9 +28,10 @@ export async function POST(req: NextRequest) {
 
         // 4. Generate Narrative Explanation via AI
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const modelVersion = process.env.OPENAI_MODEL || "gpt-4o";
 
         const completion = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL || "gpt-4o", // Fast model sufficient for summary
+            model: modelVersion,
             messages: [{ role: 'system', content: prompt }],
             temperature: 0.3,
             max_tokens: 150
@@ -37,10 +39,32 @@ export async function POST(req: NextRequest) {
 
         const narrative = completion.choices[0]?.message?.content || "Analysis complete.";
 
+        // [TRANSPARENCY] Capture prompt metadata
+        const metadata = capturePromptMetadata(
+            prompt,
+            modelVersion,
+            0.3,
+            150
+        );
+
+        // [TRANSPARENCY] Calculate confidence score (multi-step)
+        const apiKey = process.env.OPENAI_API_KEY || '';
+        const confidence = await calculateConfidenceScore(
+            `Risk Analysis: ${narrative}\nRisk Score: ${risk.score}\nRisk Level: ${risk.level}`,
+            apiKey
+        );
+
         return NextResponse.json({
             success: true,
             risk,
-            narrative
+            narrative,
+            // [TRANSPARENCY] Include transparency data
+            metadata,
+            confidence: {
+                score: confidence.score,
+                justification: confidence.justification,
+                calculated_at: new Date().toISOString()
+            }
         });
 
     } catch (error) {
