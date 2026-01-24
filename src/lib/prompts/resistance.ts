@@ -168,11 +168,11 @@ III. OUTPUT FORMAT (STRICT JSON)
   "lines_of_flight": {
     "narrative_aggregate": "Synthesis of how these vectors combine...",
     "scoring_breakdown": {
-      "connectivity": "Score",
-      "intensity": "Score",
-      "decoding_impact": "Score",
-      "exteriority": "Score",
-      "trajectory": "Score"
+      "connectivity": "High/Medium/Low",
+      "intensity": "High/Medium/Low",
+      "decoding_impact": "High/Medium/Low",
+      "exteriority": "High/Medium/Low",
+      "trajectory": "High/Medium/Low"
     },
     "recapture_pressure": "High/Med/Low",
     "vectors_of_deterritorialization": [

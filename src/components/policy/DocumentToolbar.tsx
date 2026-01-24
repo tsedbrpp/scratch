@@ -12,6 +12,8 @@ interface DocumentToolbarProps {
     onAddUrlClick: () => void;
     onExportReport: () => void;
     isExporting: boolean;
+    onGenerateTheory?: () => void;
+    isGeneratingTheory?: boolean;
     isReadOnly?: boolean;
 }
 
@@ -25,6 +27,8 @@ export function DocumentToolbar({
     onAddUrlClick,
     onExportReport,
     isExporting,
+    onGenerateTheory,
+    isGeneratingTheory,
     isReadOnly = false
 }: DocumentToolbarProps) {
     return (
@@ -104,6 +108,22 @@ export function DocumentToolbar({
                     <FileDown className="mr-2 h-4 w-4" />
                     {isExporting ? "Generating..." : "Export Report"}
                 </Button>
+                {onGenerateTheory && (
+                    <Button
+                        onClick={onGenerateTheory}
+                        disabled={isGeneratingTheory || isExporting || isReadOnly}
+                        title={isReadOnly ? "Export disabled in Demo Mode" : ""}
+                        variant="outline"
+                        className="bg-indigo-50 border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-medium"
+                    >
+                        {isGeneratingTheory ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <FileDown className="mr-2 h-4 w-4" />
+                        )}
+                        ANT & Assemblage Translation
+                    </Button>
+                )}
             </div>
         </div>
     );

@@ -21,7 +21,7 @@ export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanatio
     const isHighDrift = drift > 30;
 
     return (
-        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
+        <div id="governance-compass-chart" className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
             <div className="mb-4">
                 <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Governance Compass</h4>
                 <p className="text-xs text-slate-500">Mapping Discursive Claims (Rhetoric) vs. Material Operations (Reality)</p>

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResistanceVisualization } from "@/components/resistance/ResistanceVisualization";
 
-import { Zap, EyeOff, Activity, Wrench, Users, Play, Loader2, Quote, Search, Trash, FileText, ExternalLink } from "lucide-react";
+import { Zap, EyeOff, Activity, Wrench, Users, Loader2, Search, Trash } from "lucide-react";
 
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
@@ -406,7 +406,8 @@ export default function ResistancePage() {
                         title: t.title,
                         content: t.extractedText,
                         analysis: t.resistance_analysis
-                    }))
+                    })),
+                    force: !!synthesisResult // Force refresh if we are overwriting existing results
                 })
             });
 

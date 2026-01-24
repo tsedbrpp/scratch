@@ -75,6 +75,7 @@ export interface AnalysisResult {
     epistemic_authority?: string;
     cultural_distinctiveness_score?: number;
     dominant_cultural_logic?: string;
+    enforcement_culture?: string; // Added for Cultural Framing
     // Institutional Logics fields
     logics?: {
         market?: LogicAnalysis;
@@ -92,7 +93,7 @@ export interface AnalysisResult {
     };
     verification_pathways?: VerificationPathways; // Added new field
     // Micro-Fascism Risk Components
-    temporal_orientation?: TemporalAnalysis;
+    temporal_orientation?: TemporalAnalysis | string; // Union to support Cultural Framing (string) and Risk (object)
     economic_burden?: EconomicAnalysis;
     user_impression?: string;
     anchor_bias_choice?: "extractive_asymmetrical" | "regenerative_participatory";

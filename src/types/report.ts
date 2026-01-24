@@ -30,8 +30,16 @@ export interface ReportData {
         text: string;
     };
     cultural?: CulturalAnalysisResult | null;
+    theoreticalSynthesis?: string;
     logs?: MethodLog[];
     resistanceArtifacts?: ResistanceArtifact[];
+    images?: {
+        governanceCompass?: string;
+        ecosystemMap?: string;
+        ontologyMap?: string;
+        riskHeatmap?: string;
+        // visualNetwork?: string; // Add more as needed
+    };
 }
 
 export interface ReportSectionSelection {
@@ -47,4 +55,5 @@ export interface ReportSectionSelection {
     logs: boolean;
     configurations: boolean;
     resistanceArtifacts: boolean;
+    theoreticalSynthesis: boolean;
 }

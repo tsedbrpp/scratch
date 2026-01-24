@@ -27,7 +27,8 @@ export function ExportReportDialog({ open, onOpenChange, onGenerate, isGeneratin
         scenarios: true,
         logs: true,
         configurations: true,
-        resistanceArtifacts: true
+        resistanceArtifacts: true,
+        theoreticalSynthesis: false
     };
 
     const [selection, setSelection] = useState<ReportSectionSelection>(defaultSelection);
@@ -37,8 +38,13 @@ export function ExportReportDialog({ open, onOpenChange, onGenerate, isGeneratin
     };
 
     const handleGenerate = async () => {
-        await onGenerate(selection);
-        onOpenChange(false);
+        try {
+            await onGenerate(selection);
+            onOpenChange(false); // Only close on success
+        } catch (error) {
+            // Error is already handled in handleGenerateReport, dialog stays open
+            console.error("Report generation failed:", error);
+        }
     };
 
     return (

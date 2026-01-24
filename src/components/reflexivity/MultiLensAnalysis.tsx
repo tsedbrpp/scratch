@@ -11,10 +11,13 @@ import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
 import { SpectralRadar } from './SpectralRadar';
 import { SystemCritiqueSection } from '@/components/common/SystemCritiqueSection';
 import { EvidenceLineageModal } from '@/components/reflexivity/EvidenceLineageModal';
+import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
+import { RefreshCw, Wand2 } from 'lucide-react'; // Added Wand2, RefreshCw
 
 interface MultiLensAnalysisProps {
     initialText?: string;
     sources?: Source[];
+    onRefresh?: () => void;
 }
 
 type LensType = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'legitimacy';
@@ -26,7 +29,7 @@ const LENSES: { id: LensType; name: string; description: string }[] = [
     { id: 'legitimacy', name: 'Legitimacy Orders', description: 'Justification regimes and moral vocabulary' }
 ];
 
-export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensAnalysisProps) {
+export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }: MultiLensAnalysisProps) {
     const { isReadOnly } = useDemoMode(); // [NEW]
 
     // Helper function to determine actual document type from both type field and title
@@ -51,6 +54,20 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
 
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [progress, setProgress] = useState<string>('');
+
+    // [NEW] Granular Progress State for Graph
+    const [analysisProgress, setAnalysisProgress] = useState<{
+        decolonial: AnalysisStepStatus;
+        cultural: AnalysisStepStatus;
+        logics: AnalysisStepStatus;
+        legitimacy: AnalysisStepStatus;
+        message?: string;
+    }>({
+        decolonial: 'pending',
+        cultural: 'pending',
+        logics: 'pending',
+        legitimacy: 'pending'
+    });
 
     interface Evidence {
         title: string;
@@ -85,11 +102,45 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
         }
 
         setIsAnalyzing(true);
-        const newResults = { ...results };
+
+        // [FIX] Clear previous results immediately
+        const emptyResults: Record<LensType, AnalysisResult | null> = {
+            dsf: null,
+            cultural_framing: null,
+            institutional_logics: null,
+            legitimacy: null
+        };
+        setResults(emptyResults);
+
+        const newResults = { ...emptyResults };
+
+        // Reset Progress
+        setAnalysisProgress({
+            decolonial: 'pending',
+            cultural: 'pending',
+            logics: 'pending',
+            legitimacy: 'pending',
+            message: 'Initializing Entanglement...'
+        });
 
         try {
+            // Artificial delay to show start
+            setAnalysisProgress(prev => ({ ...prev, decolonial: 'analyzing', message: 'Calibrating Decolonial Framework...' }));
+            await new Promise(r => setTimeout(r, 800));
+
             for (const lens of LENSES) {
+                const stepKey = lens.id === 'dsf' ? 'decolonial' :
+                    lens.id === 'cultural_framing' ? 'cultural' :
+                        lens.id === 'institutional_logics' ? 'logics' : 'legitimacy';
+
+                setAnalysisProgress(prev => ({
+                    ...prev,
+                    [stepKey]: 'analyzing',
+                    message: `Running ${lens.name}...`
+                }));
+
                 setProgress(`Running ${lens.name}...`);
+
                 try {
                     const result = await analyzeDocument(
                         text,
@@ -99,8 +150,12 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     );
                     newResults[lens.id] = result;
                     setResults({ ...newResults });
+
+                    setAnalysisProgress(prev => ({ ...prev, [stepKey]: 'done' }));
+
                 } catch (error) {
                     console.error(`Error analyzing with ${lens.name}:`, error);
+                    setAnalysisProgress(prev => ({ ...prev, [stepKey]: 'error' }));
                 }
             }
         } catch (error) {
@@ -108,6 +163,13 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
         } finally {
             setIsAnalyzing(false);
             setProgress('');
+            // Keep the graph in "done" state for a moment or until reset?
+            // For now, we leave it. The graph will be replaced by the result content or we can keep showing it.
+            // Actually, usually we hide the graph when done or reset it.
+            // Let's reset it after a delay so the user sees "Done".
+            setTimeout(() => {
+                setAnalysisProgress(prev => ({ ...prev, message: 'Analysis Complete' }));
+            }, 1000);
         }
     };
 
@@ -160,22 +222,35 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {policyDocuments.length > 0 && (
-                        <div className="flex items-center gap-2 mb-2">
-                            <FileText className="h-4 w-4 text-slate-500" />
-                            <Select onValueChange={handleSourceSelect}>
-                                <SelectTrigger className="w-full md:w-[300px]">
-                                    <SelectValue placeholder="Select artifact to assemble..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {policyDocuments.map(source => (
-                                        <SelectItem key={source.id} value={source.id}>
-                                            {source.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <span className="text-xs text-slate-400">or paste text below</span>
+                    {policyDocuments.length > 0 && ( // Keep checks but improve UX below
+                        <div className="space-y-2 mb-4">
+                            <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-slate-500" />
+                                <Select onValueChange={handleSourceSelect}>
+                                    <SelectTrigger className="w-full md:w-[300px]">
+                                        <SelectValue placeholder="Select artifact to assemble..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {policyDocuments.map(source => (
+                                            <SelectItem key={source.id} value={source.id}>
+                                                {source.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {onRefresh && (
+                                    <Button variant="ghost" size="sm" onClick={onRefresh} title="Refresh Source List">
+                                        <Sparkles className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="text-xs text-slate-400 flex justify-between items-center px-1">
+                                <span>or paste text below</span>
+                                <span>
+                                    {policyDocuments.length} Policy docs available
+                                    {sources.length > policyDocuments.length && ` (${sources.length - policyDocuments.length} filtered)`}
+                                </span>
+                            </div>
                         </div>
                     )}
                     <Textarea
@@ -184,23 +259,33 @@ export function MultiLensAnalysis({ initialText = '', sources = [] }: MultiLensA
                         onChange={(e) => setText(e.target.value)}
                         className="min-h-[150px] font-mono text-sm"
                     />
-                    <Button
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || !text.trim() || isReadOnly} // [NEW]
-                        className="w-full sm:w-auto"
-                    >
-                        {isAnalyzing ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {progress}
-                            </>
-                        ) : (
-                            <>
-                                <Play className="mr-2 h-4 w-4" />
-                                Initiate Entanglement
-                            </>
-                        )}
-                    </Button>
+                    {isAnalyzing ? (
+                        <div className="min-h-[250px] flex items-center justify-center border border-slate-100 rounded-lg bg-slate-50/50">
+                            <DeepAnalysisProgressGraph status={analysisProgress} currentStepMessage={analysisProgress.message} />
+                        </div>
+                    ) : (
+                        <div className="relative min-h-[250px] bg-slate-50/30 rounded-lg border border-dashed border-slate-200 overflow-hidden group">
+                            {/* Background Graph (Idle) */}
+                            <div className="absolute inset-0 opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-50 transition-all duration-500 pointer-events-none">
+                                <DeepAnalysisProgressGraph status={{ decolonial: 'pending', cultural: 'pending', logics: 'pending', legitimacy: 'pending' }} />
+                            </div>
+
+                            {/* Overlay Action */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[1px] group-hover:bg-white/20 transition-all z-10">
+                                <Button
+                                    onClick={handleAnalyze}
+                                    disabled={!text.trim() || isReadOnly}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg animate-in zoom-in-95 duration-300 scale-110"
+                                >
+                                    <Wand2 className="mr-2 h-4 w-4" />
+                                    Initiate Entanglement
+                                </Button>
+                                <p className="text-xs text-slate-500 mt-3 font-medium bg-white/50 px-2 py-1 rounded">
+                                    Click to trace the artifact through 4 critical dimensions
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <p className="text-xs text-slate-500 text-center mt-2">
                         <span className="inline-flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-indigo-400" />

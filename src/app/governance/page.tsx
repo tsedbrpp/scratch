@@ -6,7 +6,6 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Scale, Shield, Globe, AlertTriangle, Users, Sparkles, Brain, Loader2, Info } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts';
 import {
@@ -17,10 +16,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { GovernanceCompass } from "@/components/governance/GovernanceCompass";
-import { DriftVector } from "@/lib/governance";
-import { BASELINE_SOURCES } from "@/lib/data/baselines";
 import { Source } from "@/types";
 
 const PILLAR_METADATA = [
@@ -64,66 +61,45 @@ const PILLAR_DEFINITIONS = {
 };
 
 export default function GovernancePage() {
-    const { sources, isLoading } = useSources();
+    const { sources, isLoading, refresh } = useSources();
     const { isReadOnly } = useDemoMode();
 
+    // Helper function to determine actual document type
+    const getDocumentType = (source: Source): "Policy" | "Web" | "Trace" => {
+        const title = source.title.toLowerCase();
+
+        // Explicit prefixes checking
+        if (source.title.startsWith('[Web]')) return "Web";
+        if (source.title.startsWith('[Trace]')) return "Trace";
+
+        // Keyword heuristic override (If it sounds like a policy, treat it as one, unless explicit web/trace type)
+        if (title.includes("policy") || title.includes("act") || title.includes("bill") || title.includes("regulation") || title.includes("framework")) {
+            return "Policy";
+        }
+
+        if (source.type === 'Web') return "Web";
+        if (source.type === 'Trace') return "Trace";
+
+        return "Policy";
+    };
+
     // Combine baseline sources with user analyzed sources
+    // Filter Step 1: Must have text or analysis
+    const validSources = sources.filter(s => s.analysis || s.extractedText);
+    const ignoredNoText = sources.length - validSources.length;
+
+    // Filter Step 2: Must be Policy type
+    const userPolicySources = validSources.filter(s => getDocumentType(s) === "Policy");
+    const ignoredWrongType = validSources.length - userPolicySources.length;
+
+    // Unified sources list (Store now autos-seeds baselines)
     const allSources: Source[] = [
-        ...BASELINE_SOURCES,
-        ...sources.filter(s => s.analysis)
+        ...userPolicySources
     ];
 
-    const [selectedSourceA, setSelectedSourceA] = useState<string>("EU");
+    const [selectedSourceA, setSelectedSourceA] = useState<string>("");
     const [selectedSourceB, setSelectedSourceB] = useState<string>("");
     const [selectedSourceC, setSelectedSourceC] = useState<string>("");
-
-    // Governance Compass State
-    const [selectedPolicyText, setSelectedPolicyText] = useState<string>("");
-    const [selectedTechText, setSelectedTechText] = useState<string>("");
-    const [driftAnalysis, setDriftAnalysis] = useState<DriftVector | null>(null);
-    const [isAnalyzingDrift, setIsAnalyzingDrift] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const runDriftAnalysis = async (policy: string, tech: string) => {
-        setError(null);
-        console.log("Running drift analysis with:", { policyLength: policy?.length, techLength: tech?.length });
-        if (!policy || !tech) {
-            setError("Please select both policy and technical documents with valid text content.");
-            return;
-        }
-        if (isReadOnly) {
-            setError("Drift Analysis disabled in Demo Mode");
-            return;
-        }
-
-        setIsAnalyzingDrift(true);
-        try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
-            const response = await fetch('/api/governance/compass', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({ policyText: policy, techText: tech })
-            });
-
-            const data = await response.json();
-            console.log("Drift analysis response:", data);
-
-            if (data.success) {
-                setDriftAnalysis(data.analysis);
-            } else {
-                setError(`Analysis failed: ${data.error || "Unknown error from server"}`);
-            }
-        } catch (err) {
-            console.error("Drift analysis failed", err);
-            setError("Failed to run analysis. Check console for details.");
-        } finally {
-            setIsAnalyzingDrift(false);
-        }
-    };
 
     // Helper to get governance scores or default values
     const getScores = (sourceId: string) => {
@@ -192,8 +168,30 @@ export default function GovernancePage() {
                 <CardHeader>
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div>
-                            <CardTitle>Framework Comparison</CardTitle>
-                            <CardDescription>Visual comparison of governance characteristics</CardDescription>
+                            <CardTitle className="flex items-center gap-2">
+                                Framework Comparison
+                                <Button variant="ghost" size="sm" onClick={refresh} title="Refresh Source List">
+                                    <Sparkles className="h-4 w-4 text-slate-400" />
+                                </Button>
+                            </CardTitle>
+                            <CardDescription className="flex items-center gap-2">
+                                <span>Visual comparison of governance characteristics. {allSources.length} Policy docs available.</span>
+
+                                {(ignoredNoText > 0 || ignoredWrongType > 0) && (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger className="underline decoration-dotted text-slate-400 hover:text-slate-600">
+                                                ({ignoredNoText + ignoredWrongType} hidden)
+                                            </TooltipTrigger>
+                                            <TooltipContent className="text-xs">
+                                                <p className="font-semibold pb-1">Hidden Files Strategy:</p>
+                                                {ignoredNoText > 0 && <p>• {ignoredNoText} missing text content</p>}
+                                                {ignoredWrongType > 0 && <p>• {ignoredWrongType} not classified as 'Policy'</p>}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
+                            </CardDescription>
                         </div>
                         <div className="flex flex-wrap gap-4">
                             {[
@@ -244,114 +242,7 @@ export default function GovernancePage() {
                 </CardContent>
             </Card>
 
-            {/* Governance Compass Section */}
-            <div className="space-y-4 pt-8 border-t">
-                <div className="flex items-center space-x-2">
-                    <Scale className="h-6 w-6 text-blue-600" />
-                    <h3 className="text-2xl font-bold text-slate-900">Governance Drift Analysis</h3>
-                    <Badge className="bg-blue-100 text-blue-700">
-                        New
-                    </Badge>
-                </div>
-                <p className="text-slate-500">
-                    Analyze the gap between ethical rhetoric (Policy) and technical reality (Implementation).
-                </p>
 
-                <div className="grid md:grid-cols-3 gap-6">
-                    <Card className="md:col-span-1">
-                        <CardHeader>
-                            <CardTitle>Analysis Input</CardTitle>
-                            <CardDescription>Select sources to compare</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Policy Rhetoric (Text A)</label>
-                                <select
-                                    className="w-full p-2 border rounded-md text-sm mb-2"
-                                    onChange={(e) => {
-                                        const source = sources.find(s => s.id === e.target.value);
-                                        // Fallback to 'text' if 'extractedText' is missing
-                                        const text = source?.extractedText || (source as unknown as { text?: string })?.text || "";
-                                        setSelectedPolicyText(text);
-                                    }}
-                                >
-                                    <option value="">Select Policy Document (Optional)...</option>
-                                    {sources.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
-                                    ))}
-                                </select>
-                                <Textarea
-                                    placeholder="Or paste policy text here..."
-                                    value={selectedPolicyText}
-                                    onChange={(e) => setSelectedPolicyText(e.target.value)}
-                                    className="h-32"
-                                />
-                                <p className="text-xs text-slate-400 text-right">{selectedPolicyText.length} chars</p>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Technical Reality (Text B)</label>
-                                <select
-                                    className="w-full p-2 border rounded-md text-sm mb-2"
-                                    onChange={(e) => {
-                                        const source = sources.find(s => s.id === e.target.value);
-                                        // Fallback to 'text' if 'extractedText' is missing
-                                        const text = source?.extractedText || (source as unknown as { text?: string })?.text || "";
-                                        setSelectedTechText(text);
-                                    }}
-                                >
-                                    <option value="">Select Technical Spec (Optional)...</option>
-                                    {sources.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title}</option>
-                                    ))}
-                                </select>
-                                <Textarea
-                                    placeholder="Or paste technical spec text here..."
-                                    value={selectedTechText}
-                                    onChange={(e) => setSelectedTechText(e.target.value)}
-                                    className="h-32"
-                                />
-                                <p className="text-xs text-slate-400 text-right">{selectedTechText.length} chars</p>
-                            </div>
-
-                            <Button
-                                className="w-full"
-                                onClick={() => runDriftAnalysis(selectedPolicyText, selectedTechText)}
-                                disabled={!selectedPolicyText || !selectedTechText || isAnalyzingDrift || isReadOnly}
-                                title={isReadOnly ? "Drift Analysis disabled in Demo Mode" : ""}
-                            >
-                                {isAnalyzingDrift ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Scale className="mr-2 h-4 w-4" />
-                                        Run Drift Analysis
-                                    </>
-                                )}
-                            </Button>
-
-                            {error && (
-                                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
-                                    Error: {error}
-                                </div>
-                            )}
-
-                            {isAnalyzingDrift && (
-                                <div className="flex items-center justify-center py-4">
-                                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                    <span className="ml-2 text-sm text-slate-500">Calculating drift...</span>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <div className="md:col-span-2">
-                        <GovernanceCompass analysis={driftAnalysis} />
-                    </div>
-                </div>
-            </div>
 
             {/* Detailed Insights Grid */}
             {(selectedSourceA || selectedSourceB) && (

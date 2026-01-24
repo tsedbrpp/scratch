@@ -15,7 +15,7 @@ import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
 import { exportSummaryToCSV, exportDetailedMatrixToCSV } from "@/lib/export-utils";
 
 export default function CulturalAnalysisPage() {
-    const { sources, isLoading } = useSources();
+    const { sources, isLoading, refresh } = useSources();
     const { isReadOnly } = useDemoMode();
     const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -185,7 +185,7 @@ export default function CulturalAnalysisPage() {
                 </p>
             </div>
 
-            <MultiLensAnalysis sources={sources} />
+            <MultiLensAnalysis sources={sources} onRefresh={refresh} />
 
 
 

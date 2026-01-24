@@ -289,14 +289,14 @@ export async function POST(request: NextRequest) {
         });
       } catch (err) {
         console.error("Extraction failed", err);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         return NextResponse.json({ error: "Extraction failed", details: (err as Error).message }, { status: 500 });
       }
     }
 
 
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -447,6 +447,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         analysis: { system_critique: critique } // Wrap in analysis object for consistency
+      });
+    }
+
+    // [Feature] Theoretical Synthesis Mode
+    if (analysisMode === 'theoretical_synthesis') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Theoretical Synthesis" }, { status: 500 });
+      }
+
+      console.log('[ANALYSIS] Mode is THEORETICAL SYNTHESIS.');
+      const reportContext = requestData.reportContext; // Expects JSON string of key findings
+
+      const prompt = `
+        You are an expert socio-technical theorist specializing in Actor-Network Theory (Latour, Callon, Law) and Assemblage Theory (Deleuze, Guattari, DeLanda).
+        
+        Your task is to translate the provided Policy Analysis Findings into high-level theoretical readings.
+        
+        INPUT DATA:
+        ${reportContext}
+        
+        INSTRUCTIONS:
+        For each suitable key finding (select the top 3-5 most structural/systemic findings):
+        1. State the Finding (Result N).
+        2. Provide an "ANT Reading": Use concepts like Obligatory Passage Point (OPP), Inscription Devices, Translation, Enrollment, Black-boxing, Immutable Mobiles.
+        3. Provide an "Assemblage Reading": Use concepts like Territorialization, Deterritorialization, Coding/Decoding, Stratification, Lines of Flight, Agencement.
+        4. Add a final "Theoretical Contribution" section summary (Hevner-style relevance).
+        
+        FORMAT:
+        Result 1: [Finding Summary]
+        
+        ANT Reading: [Analysis]
+        
+        Assemblage Reading: [Analysis]
+        
+        ...
+        
+        Theoretical Implications:
+        [Summary]
+        `;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o", // Strong model for theory
+        messages: [
+          { role: "system", content: "You are a senior STS (Science and Technology Studies) scholar." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+      });
+
+      const resultText = completion.choices[0].message.content || "Failed to generate synthesis.";
+
+      return NextResponse.json({
+        success: true,
+        analysis: { theoretical_synthesis: resultText }
       });
     }
 

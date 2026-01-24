@@ -213,6 +213,8 @@ export function EcosystemMap({
     };
 
     // Force Physics
+    const [isMetricMode, setIsMetricMode] = useState(true); // Default to True for "Assemblage Compass" feel
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nodes, simulation, drag } = useForceGraph(
         hydratedActors, // Use hydrated actors with dynamic power
@@ -222,7 +224,8 @@ export function EcosystemMap({
         links,
         isNestedMode,
         is3DMode,
-        configLayout // Renamed internally in hook, but prop name can stay configLayout or be renamed. Let's send the prop as 'configOffsets' arg.
+        configLayout, // Renamed internally in hook, but prop name can stay configLayout or be renamed. Let's send the prop as 'configOffsets' arg.
+        isMetricMode // [NEW] Pass metric mode
     );
 
     // Zoom Behavior Setup
@@ -477,6 +480,14 @@ export function EcosystemMap({
                                 <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isMetricMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                    onClick={() => setIsMetricMode(!isMetricMode)}
+                                >
+                                    <Layers className="h-3 w-3 mr-1" /> {isMetricMode ? "Metrics Aligned" : "Free Layout"}
+                                </Button>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                                <Button
+                                    variant="ghost" size="sm"
                                     className={`h-7 px-2.5 text-xs font-medium shrink-0 ${interactionMode === "drag" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                                     onClick={() => setInteractionMode("drag")}
                                 >
@@ -682,19 +693,20 @@ export function EcosystemMap({
                                         const isFocused = focusedNodeId === actor.id;
                                         const isRelevant = isActorRelevant(actor, highlightedStage);
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
-                                        if (isGhost) opacity *= 0.6;
+                                        // [FIX] Improved Ghost Visibility: Increased from 0.6 to 0.85
+                                        if (isGhost) opacity *= 0.85;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
                                         const power = actor.metrics?.dynamic_power || 0;
                                         const baseR = 5 + (power * 1.5);
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
-                                        const strokeDash = isGhost ? "3 2" : "none";
+                                        const strokeDash = isGhost ? "4 2" : "none"; // Slightly clearer dash
                                         return (
                                             <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => handleNodeClick(e, actor)} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
                                                 {isSelected && (getActorShape(actor.type) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />)}
-                                                {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "white" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={1.5} strokeDasharray={strokeDash} />}
+                                                {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />}
                                                 <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
                                                     <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
-                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-400 italic" : "text-slate-700"}`}>{actor.name} {isGhost && "(Missing)"}</span>
+                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>{actor.name} {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}</span>
                                                     </div>
                                                 </foreignObject>
                                             </g>

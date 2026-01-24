@@ -26,7 +26,8 @@ export function useForceGraph(
     links: { source: string; target: string; type: string }[] = [],
     enableClustering: boolean = false,
     isPaused: boolean = false,
-    configOffsets: Record<string, { x: number; y: number }> = {} // CHANGED: Offsets from default
+    configOffsets: Record<string, { x: number; y: number }> = {},
+    enableMetricAlignment: boolean = false // [NEW] Align to Territory/Deterritory axes
 ) {
     const [nodes, setNodes] = useState<SimulationNode[]>([]);
     const simulationRef = useRef<d3.Simulation<SimulationNode, SimulationLink> | null>(null);
@@ -58,7 +59,9 @@ export function useForceGraph(
                     x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 50,
                     y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 50,
                     vx: existing ? existing.vx : 0,
-                    vy: existing ? existing.vy : 0
+                    vy: existing ? existing.vy : 0,
+                    // Store metrics for force alignment
+                    metrics: actor.metrics
                 };
             });
             return newNodes;
@@ -76,10 +79,39 @@ export function useForceGraph(
 
         // 1. Initialize Simulation (Base Forces)
         const simulation = d3.forceSimulation(nodes)
-            .force("collide", d3.forceCollide().radius((d: d3.SimulationNodeDatum) => (d as SimulationNode).radius + 10).iterations(2));
+            .force("collide", d3.forceCollide().radius((d: d3.SimulationNodeDatum) => (d as SimulationNode).radius + 15).iterations(2)); // Increased padding
 
         // 2. Configure Layout Specific Forces
-        if (enableClustering) {
+        if (enableMetricAlignment) {
+            // [NEW] Metric Alignment Force (The "Compass" Logic)
+            const getMetricValue = (val: string | number | undefined) => {
+                if (typeof val === 'number') return val;
+                if (val === 'Weak' || val === 'Low') return 2;
+                if (val === 'Moderate' || val === 'Medium') return 5;
+                if (val === 'Strong' || val === 'High') return 8;
+                return 5;
+            };
+
+            // Map 0-10 metric scale to Screen Coordinates (with padding)
+            // X-Axis: Territorialization (0 -> 10) maps to (Left -> Right)
+            // Y-Axis: Deterritorialization (0 -> 10) maps to (Bottom -> Top) - NOTE: SVG Y is inverted (0 is top), so we flip it.
+            // Wait, usually Deterritorialization implies "flight" or "up". Let's map 10 to TOP (low Y) and 0 to BOTTOM (high Y).
+            const padding = 100;
+            const safeWidth = width - (padding * 2);
+            const safeHeight = height - (padding * 2);
+
+            simulation
+                .force("x", d3.forceX((d: SimulationNode & { metrics?: any }) => {
+                    const val = getMetricValue(d.metrics?.territorialization || d.metrics?.territoriality);
+                    return padding + (val / 10) * safeWidth;
+                }).strength(0.4)) // Strong pull
+                .force("y", d3.forceY((d: SimulationNode & { metrics?: any }) => {
+                    const val = getMetricValue(d.metrics?.deterritorialization || d.metrics?.counter_conduct);
+                    // Invert Y: High value (10) -> Low Y (Top)
+                    return (height - padding) - (val / 10) * safeHeight;
+                }).strength(0.4))
+                .force("charge", d3.forceManyBody().strength(-100)); // Gentle repulsion to prevent overlapping
+        } else if (enableClustering) {
             // Nested Assemblage Layout (Radial Rings)
             const getRadialRadius = (type: string) => {
                 const t = type.toLowerCase();
@@ -116,12 +148,22 @@ export function useForceGraph(
 
             if (validLinks.length > 0) {
                 // Tighter links in radial mode to keep rings coherent
-                simulation.force("link", d3.forceLink(validLinks).id((d: d3.SimulationNodeDatum) => (d as SimulationNode).id).distance(enableClustering ? 100 : 150));
+                // Looser links in Metric mode to allow metrics to dictate position mostly
+                const distance = enableMetricAlignment ? 0 : (enableClustering ? 100 : 150);
+                const strength = enableMetricAlignment ? 0 : 1; // Disable link pull in metric mode so X/Y dominates? Or weak pull?
+                // Actually, let's keep weak links in metric mode to show connections without distorting position too much
+                simulation.force("link", d3.forceLink(validLinks)
+                    .id((d: d3.SimulationNodeDatum) => (d as SimulationNode).id)
+                    .distance(enableClustering ? 100 : 150)
+                    .strength(enableMetricAlignment ? 0.05 : 0.7) // Very weak links in metric mode
+                );
             }
         }
 
         // 4. Custom Grouping (Configuration) Force - Radially Separates Macro Groups
         const groupForce = (alpha: number) => {
+            if (enableMetricAlignment) return; // Disable artificial group separation in metric mode
+
             configurations.forEach((config, i) => {
                 const members = nodes.filter(n => config.memberIds.includes(n.id));
                 if (members.length < 1) return;
@@ -166,7 +208,7 @@ export function useForceGraph(
         return () => {
             simulation.stop();
         };
-    }, [nodes, links, width, height, configurations, enableClustering, isPaused]);
+    }, [nodes, links, width, height, configurations, enableClustering, isPaused, enableMetricAlignment]);
 
     // Custom interface to compatible with both D3 internal events and manual React triggers
     interface GraphDragEvent {

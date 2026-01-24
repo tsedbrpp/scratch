@@ -18,6 +18,11 @@ export function getLinkDetails(sourceType: string, targetType: string) {
     if (sourceType === "Civil Society" && targetType === "Academic") return { label: "Studies", description: "Provides qualitative data and community context." };
     if (sourceType === "Policymaker" && targetType === "Algorithm") return { label: "Governs", description: "Attempts to regulate code behavior." };
 
+    // New Type Handlers
+    if (sourceType.includes("AlgorithmicAgent") || targetType.includes("AlgorithmicAgent")) return { label: "Operates", description: "Autonomous agentic action." };
+    if (sourceType === "LegalObject" || targetType === "LegalObject") return { label: "Codifies", description: "Materializes law into an object." };
+    if (sourceType === targetType) return { label: "Coordinates", description: "Internal coordination." };
+
     return { label: "Relates To", description: "Generic connection." };
 }
 
@@ -40,7 +45,15 @@ export function generateEdges(actors: EcosystemActor[]) {
                 (source.type === "Algorithm" && target.type === "Dataset") ||
                 (source.type === "Policymaker" && target.type === "Algorithm") ||
                 (source.type === "Infrastructure" && target.type === "Algorithm") ||
-                (source.type === "Infrastructure" && target.type === "Dataset")
+                (source.type === "Infrastructure" && target.type === "Dataset") ||
+                // Support for new types
+                (source.type === "AlgorithmicAgent" && (target.type === "Dataset" || target.type === "Infrastructure")) ||
+                ((source.type === "Dataset" || source.type === "Infrastructure") && target.type === "AlgorithmicAgent") ||
+                (source.type === "LegalObject" && (target.type === "Policymaker" || target.type === "Civil Society")) ||
+                ((source.type === "Policymaker" || source.type === "Civil Society") && target.type === "LegalObject") ||
+                // Broaden Policymaker connections
+                (source.type === "Policymaker" && target.type === "Policymaker") || // Inter-agency
+                (source.type === "Civil Society" && target.type === "Civil Society") // Coalitions
             );
 
             if (shouldConnect) {

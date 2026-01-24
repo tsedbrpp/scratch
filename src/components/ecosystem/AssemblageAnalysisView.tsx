@@ -144,7 +144,7 @@ export function AssemblageAnalysisView({
                                     <div>
                                         <span className="text-[10px] font-bold text-red-700 uppercase block mb-1">Detected Blind Spots</span>
                                         <ul className="list-disc list-inside text-xs text-red-800 space-y-1 pl-1">
-                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            { }
                                             {analysis.system_critique.blind_spots.map((bs: string, i: number) => (
                                                 <li key={i}>{bs}</li>
                                             ))}

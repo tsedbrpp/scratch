@@ -3,23 +3,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
-// import { useServerStorage } from "@/hooks/useServerStorage";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, GitGraph } from "lucide-react";
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
+import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
+import { DriftAnalysisResult } from "@/services/bridging-analysis";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { MutationTable } from "@/components/comparison/MutationTable";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { StabilizationCard } from "@/components/comparison/StabilizationCard";
 import { RhizomeNetwork } from "@/components/comparison/RhizomeNetwork";
 import { LensSelector, InterpretationLens } from "@/components/comparison/LensSelector";
 import { RebuttalPopover } from "@/components/comparison/RebuttalPopover";
-
+import { BridgingFramework } from '@/components/comparison/BridgingFramework';
 import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 
 export default function ComparisonPage() {
@@ -30,17 +31,27 @@ export default function ComparisonPage() {
     const policyDocs = useMemo(() => sources.filter(s => s.type !== "Trace"), [sources]);
 
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
+    const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis" | "drift">("cultural");
     const [activeLens, setActiveLens] = useState<InterpretationLens>("assemblage");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
     const [synthesisResults, setSynthesisResults, isStorageLoading] = useLocalStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v3", {});
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
     const [forceRefresh, setForceRefresh] = useState(false);
 
-    // Deep Analysis State
+    // Drift Analysis State
+    const [driftResults, setDriftResults] = useLocalStorage<Record<string, DriftAnalysisResult> | null>("comparison_drift_results_v1", null);
     const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
     const [analyzingSourceId, setAnalyzingSourceId] = useState<string | null>(null);
     const [isDeepAnalyzing, setIsDeepAnalyzing] = useState<Record<string, boolean>>({});
+
+    // Detailed Progress Tracking
+    const [analysisProgress, setAnalysisProgress] = useState<Record<string, {
+        decolonial: AnalysisStepStatus;
+        cultural: AnalysisStepStatus;
+        logics: AnalysisStepStatus;
+        legitimacy: AnalysisStepStatus;
+        message?: string;
+    }>>({});
 
     // Derived state for current lens
     const currentResult = synthesisResults?.[activeLens] || null;
@@ -101,8 +112,8 @@ export default function ComparisonPage() {
 
         try {
             // Prepare documents for synthesis
-            // Pass forceRefresh flag
-            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh);
+            // Pass forceRefresh flag and drift results if available
+            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh, driftResults);
 
             // Update the record
             setSynthesisResults(prev => {
@@ -140,21 +151,54 @@ export default function ComparisonPage() {
 
         setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: true }));
 
-        try {
-            // Run all 3 analyses in parallel
-            const modes = ['cultural_framing', 'institutional_logics', 'legitimacy'] as const;
+        // Initialize Progress
+        setAnalysisProgress(prev => ({
+            ...prev,
+            [sourceId]: {
+                decolonial: 'analyzing',
+                cultural: 'pending',
+                logics: 'pending',
+                legitimacy: 'pending',
+                message: "Calibrating Decolonial Framework..."
+            }
+        }));
 
-            const promises = modes.map(mode =>
-                analyzeDocument(
+        try {
+            // Artificial delay for the first step to show the "Decolonial" node active
+            await new Promise(r => setTimeout(r, 1500));
+
+            setAnalysisProgress(prev => ({
+                ...prev,
+                [sourceId]: { ...prev[sourceId], decolonial: 'done', cultural: 'analyzing', logics: 'analyzing', legitimacy: 'analyzing', message: "Running Parallel Lens Analysis..." }
+            }));
+
+            // Run all 3 analyses in parallel but wrapped to track individual completion if we wanted (simulated here since we await all)
+            // Realistically, to update progress individually, we need to not use Promise.all or wrap them.
+
+            const runMode = async (mode: 'cultural_framing' | 'institutional_logics' | 'legitimacy', stepName: 'cultural' | 'logics' | 'legitimacy') => {
+                const result = await analyzeDocument(
                     source.extractedText!.substring(0, 50000),
                     mode,
                     'Policy Document',
-                    true, // Forces refresh as this is an explicit user action
+                    true,
                     sourceId,
                     source.title,
                     positionality
-                ).then(result => ({ mode, result }))
-            );
+                );
+
+                setAnalysisProgress(prev => ({
+                    ...prev,
+                    [sourceId]: { ...prev[sourceId], [stepName]: 'done' }
+                }));
+
+                return { mode, result };
+            };
+
+            const promises = [
+                runMode('cultural_framing', 'cultural'),
+                runMode('institutional_logics', 'logics'),
+                runMode('legitimacy', 'legitimacy') // Note: legitimacy usually technically distinct but mapped here
+            ];
 
             const results = await Promise.all(promises);
 
@@ -168,7 +212,6 @@ export default function ComparisonPage() {
             });
 
             await updateSource(sourceId, updates);
-            // alert(`Deep analysis complete for ${source.title}!`); // Optional: maybe too noisy
 
         } catch (error: any) {
             console.error("Deep analysis failed:", error);
@@ -181,11 +224,28 @@ export default function ComparisonPage() {
             }
         } finally {
             setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: false }));
+            // Clear progress after a delay
+            setTimeout(() => {
+                setAnalysisProgress(prev => {
+                    const next = { ...prev };
+                    delete next[sourceId];
+                    return next;
+                });
+            }, 3000);
         }
     };
 
     // Helper to render the "Run Deep Analysis" button if data is missing
     const renderAnalysisButtonOrContent = (source: Source, type: 'cultural' | 'logics' | 'legitimacy', content: React.ReactNode) => {
+        // [NEW] If analyzing, show the graph overlay instead of the button/empty state
+        if (isDeepAnalyzing[source.id]) {
+            const progress = analysisProgress[source.id] || { decolonial: 'pending', cultural: 'pending', logics: 'pending', legitimacy: 'pending' };
+            return (
+                <div className="min-h-[250px] flex items-center justify-center">
+                    <DeepAnalysisProgressGraph status={progress} currentStepMessage={progress.message} />
+                </div>
+            );
+        }
 
         const data = (type === 'cultural' ? source.cultural_framing :
             type === 'logics' ? source.institutional_logics :
@@ -205,14 +265,8 @@ export default function ComparisonPage() {
                         onClick={() => initiateDeepAnalysis(source.id)}
                         disabled={isDeepAnalyzing[source.id] || isReadOnly}
                     >
-                        {isDeepAnalyzing[source.id] ? (
-                            <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
-                        ) : (
-                            <RefreshCw className="h-3 w-3 text-slate-500" />
-                        )}
-                        <span className="text-xs text-slate-500">
-                            {isDeepAnalyzing[source.id] ? "Running..." : "Re-run"}
-                        </span>
+                        <RefreshCw className="h-3 w-3 text-slate-500" />
+                        <span className="text-xs text-slate-500">Re-run</span>
                     </Button>
                     <div className="pt-8">
                         {content}
@@ -221,31 +275,33 @@ export default function ComparisonPage() {
             );
         }
 
+        // [NEW] Idle State: Show the graph structure in "pending" state with the start button overlay
+        const idleProgress: Record<string, AnalysisStepStatus> = { decolonial: 'pending', cultural: 'pending', logics: 'pending', legitimacy: 'pending' };
+
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center h-full min-h-[200px]">
-                <Sparkles className="h-8 w-8 text-indigo-300 mb-3" />
-                <h3 className="text-sm font-semibold text-slate-700 mb-1">Missing {type === 'cultural' ? 'Cultural' : type === 'logics' ? 'Logics' : 'Legitimacy'} Data</h3>
-                <p className="text-xs text-slate-500 max-w-xs mb-4">
-                    Run a deep analysis to generate {type} insights for this document.
-                </p>
-                <Button
-                    onClick={() => initiateDeepAnalysis(source.id)}
-                    disabled={isDeepAnalyzing[source.id] || isReadOnly}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                    title={isReadOnly ? "Deep analysis disabled in Demo Mode" : ""}
-                >
-                    {isDeepAnalyzing[source.id] ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Analyzing...
-                        </>
-                    ) : (
-                        <>
-                            <Wand2 className="mr-2 h-4 w-4" />
-                            Run Deep Analysis
-                        </>
-                    )}
-                </Button>
+            <div className="relative min-h-[250px] bg-slate-50/50 rounded-lg border border-dashed border-slate-200 overflow-hidden group">
+                {/* Background Graph (Blurred/Faded) */}
+                <div className="absolute inset-0 opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-60 transition-all duration-500 pointer-events-none">
+                    <DeepAnalysisProgressGraph status={idleProgress as any} />
+                </div>
+
+                {/* Overlay Action */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] group-hover:bg-white/40 transition-all z-10">
+                    <Sparkles className="h-8 w-8 text-indigo-400 mb-3 drop-shadow-sm" />
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Deep Analysis Required</h3>
+                    <p className="text-xs text-slate-500 max-w-[200px] text-center mb-4">
+                        Run the entanglement process to generate {type} insights.
+                    </p>
+                    <Button
+                        onClick={() => initiateDeepAnalysis(source.id)}
+                        disabled={isDeepAnalyzing[source.id] || isReadOnly}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md animate-in zoom-in-95 duration-300"
+                        title={isReadOnly ? "Deep analysis disabled in Demo Mode" : ""}
+                    >
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        initiate Entanglement
+                    </Button>
+                </div>
             </div>
         );
     };
@@ -276,7 +332,7 @@ export default function ComparisonPage() {
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base font-semibold text-slate-700">Analysis Definitions</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3 text-sm">
+                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 text-sm">
                     <div>
                         <div className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
                             <Globe2 className="h-4 w-4 text-blue-600" />
@@ -302,6 +358,15 @@ export default function ComparisonPage() {
                         </div>
                         <p className="text-slate-600">
                             The moral justifications used to defend or critique a system (based on Boltanski & Thévenot&apos;s Orders of Worth).
+                        </p>
+                    </div>
+                    <div>
+                        <div className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
+                            <GitGraph className="h-4 w-4 text-indigo-600" />
+                            Drift Analysis
+                        </div>
+                        <p className="text-slate-600">
+                            Tracing the implementation gap between policy rhetoric and technical reality, and how these gaps widen over time.
                         </p>
                     </div>
                 </CardContent>
@@ -380,6 +445,14 @@ export default function ComparisonPage() {
                         >
                             <Scale className="mr-2 h-4 w-4" />
                             Legitimacy
+                        </Button>
+                        <Button
+                            variant={activeTab === "drift" ? "default" : "outline"}
+                            onClick={() => setActiveTab("drift")}
+                            className="flex-1"
+                        >
+                            <GitGraph className="mr-2 h-4 w-4" />
+                            Drift Analysis
                         </Button>
                         <div className="flex-1 flex gap-2">
                             <Button
@@ -764,6 +837,18 @@ export default function ComparisonPage() {
                                     )}
                                 </CardContent>
                             </Card>
+                        </div>
+                    )}
+                    {/* Drift Analysis Tab */}
+                    {activeTab === "drift" && (
+                        <div className="space-y-6">
+                            <BridgingFramework
+                                initialMode="guide"
+                                policyText={sources.find(s => s.id === selectedDocs[0])?.extractedText || ""}
+                                technicalText={sources.find(s => s.id === selectedDocs[1])?.extractedText || ""}
+                                onAnalysisComplete={setDriftResults} // [NEW] Capture results
+                                initialResults={driftResults || undefined} // Restore from local storage
+                            />
                         </div>
                     )}
                 </>

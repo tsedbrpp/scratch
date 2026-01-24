@@ -158,4 +158,57 @@ export const BRAZIL_BASELINE: Source = {
     analysis: BRAZIL_GOVERNANCE_ANALYSIS
 };
 
-export const BASELINE_SOURCES = [EU_BASELINE, BRAZIL_BASELINE];
+export const MOCK_TECH_SPEC: Source = {
+    id: "METROSCAN_V1",
+    title: "MetroScan v1.0 System Card",
+    description: "Technical documentation for the deployed urban logic enforcement system.",
+    type: "Text", // Using Text type for now
+    extractedText: `
+SYSTEM CARD: METROSCAN INTELLIGENT TRAFFIC ENFORCEMENT
+VERSION: 1.0.4
+BUILD: 2024-Q3
+
+1. SYSTEM OVERVIEW
+MetroScan is an automated urban enforcement agent designed to optimize traffic flow and penalize "anti-social spatial behaviors" (jaywalking, double parking, loitering). It utilizes a distributed network of edge-compute cameras (NVIDIA Jetson) running distinct computer vision models.
+
+2. MODEL ARCHITECTURE
+- Primary Object Detection: YOLOv8-large fine-tuned on the "UrbanScapes2024" dataset.
+- Behavior Classification: LSTM network analyzing temporal movement patterns.
+- Classes: [Pedestrian, Vehicle, Cyclist, Suspicious_Gathering, Erratic_Motion].
+- Optimization Function: Maximize "Flow Throughput" (vehicles passing point A to B).
+- Confidence Threshold: 0.65 (lowered from 0.85 to increase detection rate of smaller infractions).
+
+3. TRAINING DATA & LIMITATIONS
+- Training set: 85% daytime footage / 15% nighttime. 
+- Geographic bias: Training data primarily collected in Central Business District (high policing visibility).
+- Known Issue #404: "Umbrella Effect" - umbrellas are occasionally misclassified as "Suspicious_Gathering" due to occlusion.
+- Privacy Preservation: Faces are blurred *after* behavior classification but *before* archival. Metadata (gait, trajectory) is retained indefinitely for pattern matching.
+
+4. DECISION LOGIC & AUTOMATION
+- Level 4 Automation: Fines are issued automatically for "Clear Violations" > 90% confidence.
+- Hybrid Workflow: "Ambiguous Violations" (65-89% confidence) are flagged for human review, but reviewers have an average review time of 4.2 seconds, defaulting to "Approve" 94% of the time.
+- Feedback Loop: Contested fines are fed back into the training set only if the appeal is successful (Appeal Success Rate: <2%).
+
+5. PERFORMANCE METRICS
+- Precision: 92% (Day), 76% (Night).
+- Recall: 88% (Overall).
+- Latency: <100ms inference time at edge.
+- False Positive Rate: 3.4% on "Loitering" class (often triggered by street performers or elderly pedestrians resting).
+
+6. DEPLOYMENT PARAMETERS
+- Zone A: Zero-tolerance setting (Auto-fine active).
+- Zone B: Warning setting (Data collection on "near misses").
+- Temporal Scaling: Surveillance density increases automatically during "High Risk" hours (22:00 - 04:00).
+    `,
+    jurisdiction: "US", // or Generic
+    addedDate: "2024-03-15",
+    status: "Active Case",
+    colorClass: "slate",
+    iconClass: "cpu",
+    // Minimal analysis placeholders to avoid crashes if deeply analyzed immediately
+    analysis: {} as AnalysisResult,
+    cultural_framing: {} as AnalysisResult,
+    institutional_logics: {} as AnalysisResult
+};
+
+export const BASELINE_SOURCES: Source[] = [MOCK_TECH_SPEC];

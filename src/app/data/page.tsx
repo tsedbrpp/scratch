@@ -3,6 +3,7 @@
 
 
 import { useState, useRef } from "react";
+import html2canvas from "html2canvas";
 import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
@@ -83,6 +84,7 @@ export default function PolicyDocumentsPage() {
 
     const [isUploading, setIsUploading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isGeneratingTheory, setIsGeneratingTheory] = useState(false);
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
     const [editingSource, setEditingSource] = useState<Source | null>(null);
     const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
@@ -467,75 +469,26 @@ export default function PolicyDocumentsPage() {
             alert("Report generation is disabled in Demo Mode.");
             return;
         }
+
+        // Check credits before starting
+        if (!hasCredits) {
+            setIsExportReportDialogOpen(false); // Close export dialog first
+            alert("⚠️ You have no credits remaining.\n\nReport generation requires credits for AI analysis. Please add credits to continue.");
+            setShowTopUp(true);
+            return;
+        }
+
         setIsExporting(true);
         try {
-            // Determine Context for Ecosystem Data
-            // Priority:
-            // 1. First selected document (if comparing or selecting)
-            // 2. Focused document
-            // 3. Fallback to global/temp keys (current behavior)
+            // Use the shared snapshot function to gather all data
+            const reportData = await getFullReportSnapshot();
 
-            const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
-
-            let finalActors = ecosystemActors;
-            let finalConfigs = ecosystemConfigs;
-
-            let finalAbsence = absenceAnalysis;
-
-            if (contextId) {
-                console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
-                const [actorsData, configsData, absenceData] = await Promise.all([
-                    fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
-                    fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
-                    fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
-                ]);
-
-                if (actorsData) finalActors = actorsData;
-                if (configsData) finalConfigs = configsData;
-                if (absenceData) finalAbsence = absenceData;
-
-                console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
-            } else {
-                console.warn('No contextId found for ecosystem data - using global state (likely empty)');
-            }
-
-            // Fetch methodological logs
-            const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
-
-            // Fetch resistance artifacts
-            const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
-
-            const reportData: ReportData = {
-                sources: sources, // Or just selectedSources? The generator filters internally based on 'analyzedSources' logic anyway.
-                resistance: resistanceSynthesis,
-                ecosystem: {
-                    actors: finalActors,
-                    configurations: finalConfigs,
-
-                    absenceAnalysis: finalAbsence,
-                    assemblage: finalAbsence as unknown as undefined
-                },
-                synthesis: {
-                    comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
-                    ecosystemImpacts: synthesisImpacts
-                },
-                ontology: {
-                    maps: ontologyMaps,
-                    comparison: ontologyComparison
-                },
-                multiLens: {
-                    results: multiLensResults as Record<LensType, AnalysisResult | null>,
-                    text: multiLensText
-                },
-                cultural: culturalAnalysis,
-                logs: methodLogs,
-                resistanceArtifacts: resistanceArtifacts
-            };
-
+            // Generate the report
             await generateFullReportDOCX(reportData, selection);
+            alert("✅ Report generated successfully! Check your Downloads folder.");
         } catch (error) {
             console.error("Export error:", error);
-            alert("Failed to generate report.");
+            alert(`❌ Failed to generate report.\n\nError: ${error instanceof Error ? error.message : String(error)}\n\nCheck the console for more details.`);
         } finally {
             setIsExporting(false);
         }
@@ -551,6 +504,210 @@ export default function PolicyDocumentsPage() {
             </div>
         );
     }
+
+    // Shared helper to gather full report data
+    const getFullReportSnapshot = async (): Promise<ReportData> => {
+        // Determine Context for Ecosystem Data
+        const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
+
+        let finalActors = ecosystemActors;
+        let finalConfigs = ecosystemConfigs;
+        let finalAbsence = absenceAnalysis;
+
+        if (contextId) {
+            console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
+            const [actorsData, configsData, absenceData] = await Promise.all([
+                fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
+                fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
+                fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
+            ]);
+
+            if (actorsData) finalActors = actorsData;
+            if (configsData) finalConfigs = configsData;
+            if (absenceData) finalAbsence = absenceData;
+        }
+
+        // Fetch methodological logs & artifacts
+        const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
+        const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
+
+        // Capture Charts if visible
+        const images: Record<string, string> = {};
+
+        try {
+            const compassEl = document.getElementById('governance-compass-chart');
+            if (compassEl) images.governanceCompass = (await html2canvas(compassEl, { scale: 2, useCORS: true, logging: false })).toDataURL('image/png');
+        } catch (e) { console.warn("Compass capture failed", e); }
+
+        try {
+            const riskEl = document.getElementById('risk-heatmap-chart');
+            if (riskEl) images.riskHeatmap = (await html2canvas(riskEl, { scale: 2, logging: false })).toDataURL('image/png');
+        } catch (e) { console.warn("Risk heatmap capture failed", e); }
+
+        try {
+            const ecoEl = document.getElementById('ecosystem-map-canvas');
+            if (ecoEl) images.ecosystemMap = (await html2canvas(ecoEl, { scale: 2, logging: false })).toDataURL('image/png');
+        } catch (e) { console.warn("Ecosystem map capture failed", e); }
+
+        return {
+            sources: sources,
+            resistance: resistanceSynthesis,
+            ecosystem: {
+                actors: finalActors,
+                configurations: finalConfigs,
+                absenceAnalysis: finalAbsence,
+                assemblage: finalAbsence as unknown as undefined
+            },
+            synthesis: {
+                comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
+                ecosystemImpacts: synthesisImpacts
+            },
+            ontology: {
+                maps: ontologyMaps,
+                comparison: ontologyComparison
+            },
+            multiLens: {
+                results: multiLensResults as Record<LensType, AnalysisResult | null>,
+                text: multiLensText
+            },
+            cultural: culturalAnalysis,
+            resistanceArtifacts: resistanceArtifacts,
+            images: images,
+            logs: methodLogs
+        };
+    };
+    const handleGenerateTheory = async () => {
+        // Check credits before starting
+        if (!hasCredits) {
+            alert("⚠️ You have no credits remaining.\n\nTheoretical synthesis requires credits for AI analysis. Please add credits to continue.");
+            setShowTopUp(true);
+            return;
+        }
+
+        setIsGeneratingTheory(true);
+        try {
+            // 1. Gather FULL Report Data
+            const reportData = await getFullReportSnapshot();
+
+            // 2. Serialize for AI Context
+            // [OPTIMIZATION] Aggressively summarize to avoid 128k token limit (currently ~360k)
+            const contextForAI: any = {
+                // Synthesis: Keep summary and themes, drop raw evidence lists
+                synthesis: reportData.synthesis?.comparison ? {
+                    synthesis_summary: (reportData.synthesis.comparison as any).synthesis_summary,
+                    key_divergences: (reportData.synthesis.comparison as any).key_divergences?.map((d: any) => ({
+                        theme: d.theme,
+                        description: d.description
+                    })),
+                    stabilization_mechanisms: (reportData.synthesis.comparison as any).stabilization_mechanisms
+                } : null,
+
+                // Resistance: Drop evidence quotes, keep strategies and interpretations
+                resistance: reportData.resistance ? {
+                    executive_summary: reportData.resistance.executive_summary,
+                    dominant_strategies: reportData.resistance.dominant_strategies?.map(s => ({
+                        strategy: s.strategy,
+                        description: s.description,
+                        frequency: s.frequency
+                    })),
+                    lines_of_flight: reportData.resistance.lines_of_flight
+                } : null,
+
+                // Ecosystem: Keep high-level configs, drop absence details
+                ecosystem_configs: reportData.ecosystem?.configurations?.map((c: any) => ({
+                    name: c.name,
+                    description: c.description,
+                    dynamics: c.dynamics
+                })),
+
+                // Cultural: Keep high-level summary fields only
+                cultural: reportData.cultural ? {
+                    executive_summary: (reportData.cultural as any).executive_summary,
+                    dominant_logic: (reportData.cultural as any).dominant_logic,
+                    state_market_society: (reportData.cultural as any).state_market_society
+                } : null,
+
+                // Ontology: Keep high-level comparison
+                ontology: reportData.ontology?.comparison ? {
+                    distances: (reportData.ontology.comparison as any).distances,
+                    implications: (reportData.ontology.comparison as any).implications
+                } : null
+            };
+
+            let context = JSON.stringify(contextForAI);
+
+            // [FIX] Fallback if no synthesis exists yet
+            // If main structural analyses are empty, use individual summaries
+            const hasStructuralData = contextForAI.synthesis || (contextForAI.resistance?.dominant_strategies?.length > 0);
+
+            if (!hasStructuralData) {
+                console.log("No synthesis found in full snapshot, falling back to individual summaries");
+                // Need to filter sources from reportData
+                const fallbackData = reportData.sources.filter(s => s.analysis).map(s => ({
+                    title: s.title,
+                    key_insight: s.analysis?.key_insight,
+                    governance_style: s.analysis?.governance_scores
+                }));
+
+                context = JSON.stringify({
+                    note: "No cross-case synthesis available. Using individual summaries.",
+                    individual_summaries: fallbackData,
+                    ...contextForAI // Include whatever fragments exist
+                });
+            }
+
+            // 3. Call API
+            let theoreticalSynthesis = null;
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysisMode: 'theoretical_synthesis',
+                    reportContext: context
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Theoretical synthesis received:", data.analysis?.theoretical_synthesis?.substring(0, 50) + "...");
+                theoreticalSynthesis = data.analysis?.theoretical_synthesis;
+            } else {
+                const errorText = await response.text();
+                console.error("API Error Details:", response.status, errorText);
+                throw new Error(`API failed (${response.status}): ${errorText.substring(0, 200)}`);
+            }
+
+            if (!theoreticalSynthesis) throw new Error("No synthesis returned");
+
+            // 4. Generate Report (Only Theory)
+            const theorySelection: ReportSectionSelection = {
+                documentAnalysis: false,
+                comparisonMatrix: false,
+                synthesis: false,
+                resistance: false,
+                ecosystem: false,
+                cultural: false,
+                ontology: false,
+                multiLens: false,
+                scenarios: false,
+                logs: false,
+                configurations: false,
+                resistanceArtifacts: false,
+                theoreticalSynthesis: true
+            };
+
+            // Inject the new synthesis into the report data
+            reportData.theoreticalSynthesis = theoreticalSynthesis;
+
+            await generateFullReportDOCX(reportData, theorySelection, `Theoretical_Analysis_${new Date().toISOString().split('T')[0]}.docx`);
+
+        } catch (err) {
+            console.error("Theory generation failed:", err);
+            alert("Failed to generate theoretical translation.");
+        } finally {
+            setIsGeneratingTheory(false);
+        }
+    };
 
     return (
         <div className="container mx-auto p-6 max-w-7xl animate-in fade-in duration-500">
@@ -572,6 +729,8 @@ export default function PolicyDocumentsPage() {
                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
                         onExportReport={() => setIsExportReportDialogOpen(true)}
                         isExporting={isExporting}
+                        onGenerateTheory={handleGenerateTheory}
+                        isGeneratingTheory={isGeneratingTheory}
                         isReadOnly={isReadOnly}
                     />
                 </div>

@@ -37,9 +37,21 @@ export const getSources = async (userId: string): Promise<Source[]> => {
         }
     }
 
+    // Seeding: Ensure all BASELINE_SOURCES exist in the user's list
+    // This allows us to push new examples (like the Technical Spec) dynamically
+    for (const baseline of BASELINE_SOURCES) {
+        const exists = sources.some(s => s.id === baseline.id);
+        if (!exists) {
+            console.log(`[Seeding] Adding new baseline source: ${baseline.id}`);
+            sources.push(baseline);
+            // Persist immediately so it behaves like a normal source (editable etc)
+            await StorageService.setHashField(userId, 'sources_v2', baseline.id, baseline);
+        }
+    }
+
     // Hot-patch loop: check for missing features in baselines (DR3/DR4 updates)
     // Optimization: Only patch if needed and save back to HASH specific fields
-    let needsUpdate = false;
+    const needsUpdate = false;
     const patchedSources = await Promise.all(sources.map(async (source) => {
         const baseline = BASELINE_SOURCES.find(b => b.id === source.id);
         let wasPatched = false;

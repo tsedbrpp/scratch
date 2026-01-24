@@ -57,11 +57,24 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
             // Ensure we have a valid name before adding
             if (!absent.name) return;
 
+            // Normalize type to ensure connections
+            let normalizedType = "Civil Society"; // Default fallback
+            const role = (absent.role || absent.category || "").toLowerCase();
+
+            if (role.includes("government") || role.includes("state") || role.includes("ministry")) normalizedType = "Policymaker";
+            else if (role.includes("academic") || role.includes("research") || role.includes("expert")) normalizedType = "Academic";
+            else if (role.includes("startup") || role.includes("business") || role.includes("private")) normalizedType = "Startup";
+            else if (role.includes("infra") || role.includes("platform")) normalizedType = "Infrastructure";
+            else if (role.includes("data") || role.includes("set")) normalizedType = "Dataset";
+            else if (role.includes("algo") || role.includes("ai")) normalizedType = "Algorithm";
+            else if (role.includes("agent")) normalizedType = "AlgorithmicAgent";
+            else if (role.includes("law") || role.includes("legal")) normalizedType = "LegalObject";
+
             baseActors.push({
                 id: `ghost-${absent.name.replace(/\s+/g, '-')}`,
                 name: absent.name,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: (absent.role || absent.category || "Civil Society") as any, // Cast to match stricter type if needed
+                type: normalizedType as any,
                 description: absent.reason || "Structurally absent actor",
                 metrics: {
                     territorialization: "Weak",

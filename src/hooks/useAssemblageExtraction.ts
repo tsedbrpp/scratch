@@ -80,7 +80,7 @@ export function useAssemblageExtraction({
             const newActors: EcosystemActor[] = [];
 
             // [NEW] Check if actors are already hydrated (Internal Service)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const firstActor = (analysis.actors && analysis.actors.length > 0) ? analysis.actors[0] : null;
 
             if (firstActor && firstActor.id && firstActor.metrics && typeof firstActor.metrics.territorialization !== 'undefined') {

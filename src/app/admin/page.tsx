@@ -263,62 +263,77 @@ export default function AdminPage() {
             </Card>
 
             <Dialog open={!!creditUser} onOpenChange={(open) => !open && setCreditUser(null)}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Manage Credits: {creditUser?.name}</DialogTitle>
                         <DialogDescription>UserId: {creditUser?.userId}</DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                        {/* Actions */}
-                        <div className="space-y-4">
-                            <div className="p-4 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-500">Current Balance</span>
-                                <div className="text-3xl font-bold text-indigo-600">{creditUser?.credits ?? '...'}</div>
-                            </div>
+                    <div className="space-y-6 py-4">
+                        {/* Current Balance - Full Width */}
+                        <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200">
+                            <span className="text-sm font-medium text-slate-600">Current Balance</span>
+                            <div className="text-4xl font-bold text-indigo-600 mt-1">{creditUser?.credits ?? 0}</div>
+                        </div>
 
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-medium">Adjust Balance</h4>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="number"
-                                        placeholder="Amount (+/-)"
-                                        value={adjustAmount}
-                                        onChange={(e) => setAdjustAmount(e.target.value)}
-                                    />
-                                    <Button onClick={handleAdjustCredits} disabled={!adjustAmount}>Apply</Button>
-                                </div>
-                                <div className="flex gap-2 text-xs">
-                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("10")}>+10</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("100")}>+100</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-10")}>-10</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-100")}>-100</Button>
-                                </div>
+                        {/* Adjust Balance */}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-700">Adjust Balance</h4>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Amount (+/-)"
+                                    value={adjustAmount}
+                                    onChange={(e) => setAdjustAmount(e.target.value)}
+                                    className="flex-1"
+                                />
+                                <Button onClick={handleAdjustCredits} disabled={!adjustAmount}>Apply</Button>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => setAdjustAmount("10")}>
+                                    <Plus className="h-3 w-3 mr-1" />+10
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setAdjustAmount("100")}>
+                                    <Plus className="h-3 w-3 mr-1" />+100
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-10")}>
+                                    <Minus className="h-3 w-3 mr-1" />-10
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setAdjustAmount("-100")}>
+                                    <Minus className="h-3 w-3 mr-1" />-100
+                                </Button>
                             </div>
                         </div>
 
-                        {/* History */}
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto border rounded-md p-2">
-                            <h4 className="text-sm font-medium sticky top-0 bg-white pb-2 border-b">Transaction History</h4>
-                            {historyLoading ? (
-                                <div className="flex justify-center p-4"><Loader2 className="animate-spin h-5 w-5" /></div>
-                            ) : history.length === 0 ? (
-                                <div className="text-sm text-slate-400 text-center p-4">No transactions</div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {history.map((tx: any) => (
-                                        <div key={tx.id} className="text-xs flex justify-between items-center border-b pb-1 last:border-0">
-                                            <div>
-                                                <div className="font-medium text-slate-700">{tx.type}</div>
-                                                <div className="text-slate-400">{new Date(tx.createdAt).toLocaleString()}</div>
+                        {/* Transaction History */}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <History className="h-4 w-4" />
+                                Transaction History
+                            </h4>
+                            <div className="max-h-[300px] overflow-y-auto border rounded-md bg-white">
+                                {historyLoading ? (
+                                    <div className="flex justify-center p-8">
+                                        <Loader2 className="animate-spin h-6 w-6 text-slate-400" />
+                                    </div>
+                                ) : history.length === 0 ? (
+                                    <div className="text-sm text-slate-400 text-center p-8">No transactions yet</div>
+                                ) : (
+                                    <div className="divide-y">
+                                        {history.map((tx: any) => (
+                                            <div key={tx.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-sm text-slate-700">{tx.type}</div>
+                                                    <div className="text-xs text-slate-400">{new Date(tx.createdAt).toLocaleString()}</div>
+                                                </div>
+                                                <div className={`font-mono font-bold text-lg ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {tx.amount > 0 ? '+' : ''}{tx.amount}
+                                                </div>
                                             </div>
-                                            <div className={`font-mono font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-slate-600'}`}>
-                                                {tx.amount > 0 ? '+' : ''}{tx.amount}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </DialogContent>

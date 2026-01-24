@@ -198,6 +198,18 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
             }
         }
 
+        // Cultural Framing Fixer
+        if (analysisMode === 'cultural_framing') {
+            if (!analysis.dominant_cultural_logic) {
+                // Synthesize from summary or other fields
+                analysis.dominant_cultural_logic = analysis.key_insight ||
+                    analysis.cultural_distinctiveness_rationale?.substring(0, 50) ||
+                    "Cultural Logic Unspecified";
+            }
+            // Ensure key_insight is populated meaningfuly
+            analysis.key_insight = analysis.dominant_cultural_logic;
+        }
+
         // Comparison Mode Fixer
         if (analysisMode === 'comparison') {
             if (!analysis.risk || !analysis.governance) {
