@@ -6,6 +6,7 @@ import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { Button } from "@/components/ui/button";
 import { GovernanceCompass } from "./GovernanceCompass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useViewMode } from "@/hooks/useViewMode";
 
 import { ValidationSection } from "./analysis/ValidationSection";
 import { DimensionCard } from "./analysis/DimensionCard";
