@@ -31,14 +31,12 @@ export interface ConfidenceScore {
  * A single step in the provenance chain
  */
 export interface ProvenanceStep {
-    type: 'source_extraction' | 'prompt_generation' | 'ai_response' | 'formatting';
+    step_id: string; // Unique ID for this step
+    description: string; // Human-readable description
+    agent: string; // Who performed this step (system, user, openai)
     timestamp: string;
-    data: {
-        input: string;
-        output: string;
-        raw_json?: any; // Store unformatted LLM response
-        transformation_logic?: string; // Code/rules used for formatting
-    };
+    inputs: Record<string, any>; // Flexible inputs
+    outputs: Record<string, any>; // Flexible outputs
 }
 
 /**
