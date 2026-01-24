@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { AnalysisResult } from "@/types";
 import { Sparkles, Scale, Users, Hand, Eye, ShieldCheck, Landmark, Activity, AlertTriangle, LayoutDashboard, Layers, BadgeCheck, MessageSquareDashed, Loader2, RefreshCw } from "lucide-react";
+import { PromptDialog } from "@/components/transparency/PromptDialog";
+import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { Button } from "@/components/ui/button";
 import { GovernanceCompass } from "./GovernanceCompass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -87,6 +89,9 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
+
+    // [TRANSPARENCY] State for transparency dialog
+    const [showTransparency, setShowTransparency] = useState(false);
 
     const handleGeneratePerspectives = async () => {
         if (isReadOnly) {
@@ -241,6 +246,38 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     return (
         <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
+
+            {/* [TRANSPARENCY] Transparency Dialog */}
+            <PromptDialog
+                open={showTransparency}
+                onOpenChange={setShowTransparency}
+                metadata={effectiveAnalysis.metadata}
+                provenance={effectiveAnalysis.provenance_chain}
+            />
+
+            {/* [TRANSPARENCY] Transparency Buttons */}
+            {effectiveAnalysis.metadata && (
+                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                    <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-indigo-900 mb-1">AI Transparency</h4>
+                        <p className="text-xs text-indigo-700">View the exact prompt and reasoning used for this analysis</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {effectiveAnalysis.confidence && (
+                            <ConfidenceBadge confidence={effectiveAnalysis.confidence} />
+                        )}
+                        <Button
+                            onClick={() => setShowTransparency(true)}
+                            variant="outline"
+                            size="sm"
+                            className="bg-white hover:bg-indigo-50 border-indigo-300"
+                        >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Show Prompt
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* --- TOP LEVEL CONTEXT (Always Visible) --- */}
 
