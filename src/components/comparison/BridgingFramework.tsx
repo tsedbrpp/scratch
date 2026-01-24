@@ -266,10 +266,6 @@ export function BridgingFramework({ initialMode = 'guide', policyText, technical
             (result) => {
                 setResults(prev => {
                     const next = { ...prev, [result.dimensionId]: result };
-                    // [NEW] Lift state to parent
-                    if (onAnalysisComplete) {
-                        onAnalysisComplete(next);
-                    }
                     return next;
                 });
                 // Auto-select the dimension being analyzed to show progress vividly
@@ -284,6 +280,13 @@ export function BridgingFramework({ initialMode = 'guide', policyText, technical
             if (status !== 'error') setStatus('done');
         });
     };
+
+    // [FIX] Call onAnalysisComplete in useEffect to avoid setState-in-render
+    useEffect(() => {
+        if (onAnalysisComplete && Object.keys(results).length > 0) {
+            onAnalysisComplete(results);
+        }
+    }, [results, onAnalysisComplete]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

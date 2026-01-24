@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, GitGraph } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, GitGraph, Eye } from "lucide-react";
+import { PromptDialog } from "@/components/transparency/PromptDialog";
+import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
 import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
@@ -37,6 +39,8 @@ export default function ComparisonPage() {
     const [synthesisResults, setSynthesisResults, isStorageLoading] = useLocalStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v3", {});
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
     const [forceRefresh, setForceRefresh] = useState(false);
+    // [TRANSPARENCY] State
+    const [showTransparency, setShowTransparency] = useState(false);
 
     // Drift Analysis State
     const [driftResults, setDriftResults] = useLocalStorage<Record<string, DriftAnalysisResult> | null>("comparison_drift_results_v1", null);
@@ -691,6 +695,38 @@ export default function ComparisonPage() {
 
                                     {currentResult && (
                                         <div className="space-y-8 animate-in fade-in duration-500">
+
+                                            {/* [TRANSPARENCY] Transparency Dialog */}
+                                            <PromptDialog
+                                                open={showTransparency}
+                                                onOpenChange={setShowTransparency}
+                                                metadata={currentResult.metadata}
+                                                provenance={undefined} // Provenance not yet tracked for synthesis
+                                            />
+
+                                            {/* [TRANSPARENCY] Banner */}
+                                            {currentResult.metadata && (
+                                                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                                                    <div className="flex-1">
+                                                        <h4 className="text-sm font-semibold text-indigo-900 mb-1">AI Transparency</h4>
+                                                        <p className="text-xs text-indigo-700">View the exact prompt used for this synthesis</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {currentResult.confidence && (
+                                                            <ConfidenceBadge confidence={currentResult.confidence} />
+                                                        )}
+                                                        <Button
+                                                            onClick={() => setShowTransparency(true)}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="bg-white hover:bg-indigo-50 border-indigo-300"
+                                                        >
+                                                            <Eye className="h-4 w-4 mr-2" />
+                                                            Show Prompt
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {/* Top Bar: Lens Selector */}
                                             <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200">
                                                 <div className="text-sm font-medium text-slate-600">Active Interpretation Lens:</div>

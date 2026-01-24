@@ -251,6 +251,9 @@ export interface LegitimacyAnalysis {
 }
 
 export interface ComparativeSynthesis {
+    // Transparency fields
+    metadata?: import('./provenance').PromptMetadata;
+    confidence?: import('./provenance').ConfidenceScore;
     synthesis_summary: string;
     key_divergences: {
         theme: string;
