@@ -2,7 +2,7 @@
 
 import { useViewMode } from "@/hooks/useViewMode";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Layers, Sparkles } from "lucide-react";
+import { BookOpen, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ViewModeToggle({ className }: { className?: string }) {

@@ -40,7 +40,7 @@ interface AnalysisResultsProps {
     onViewActor?: (name: string) => void;
 }
 
-type InterpretationLens = 'default' | string; // 'default' or perspective ID
+
 
 export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onAddActor, ecosystemActors = [], onViewActor }: AnalysisResultsProps) {
     // FALLBACK: Inject baseline data for demo logic if missing from props
@@ -258,7 +258,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
             />
 
             {/* [TRANSPARENCY] Transparency Buttons */}
-            {effectiveAnalysis.metadata && (
+            {isAdvanced && effectiveAnalysis.metadata && (
                 <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
                     <div className="flex-1">
                         <h4 className="text-sm font-semibold text-indigo-900 mb-1">AI Transparency</h4>
@@ -495,7 +495,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                     </div>
 
                     {/* Assemblage Dynamics Section */}
-                    {analysis.assemblage_dynamics && (
+                    {isAdvanced && analysis.assemblage_dynamics && (
                         <div className="rounded-xl border border-teal-200 bg-teal-50/50 overflow-hidden">
                             <div className="bg-teal-100/50 px-4 py-3 border-b border-teal-200 flex items-center gap-2">
                                 <Activity className="h-4 w-4 text-teal-700" />
@@ -558,7 +558,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                     )}
 
                     {/* Legitimacy */}
-                    {analysis.legitimacy_claims && (
+                    {isAdvanced && analysis.legitimacy_claims && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden">
                             <div className="bg-amber-100/50 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
                                 <Scale className="h-4 w-4 text-amber-700" />
@@ -588,7 +588,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
 
                     {/* Stress Test */}
-                    {analysis.stress_test_report && (
+                    {isAdvanced && analysis.stress_test_report && (
                         <StressTestSection report={analysis.stress_test_report} />
                     )}
 
@@ -611,7 +611,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-700">Audit this Analysis</h4>
                                     <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                                        Run the "Devil's Advocate" protocol to identify blind spots and over-interpretations.
+                                        Run the &quot;Devil&apos;s Advocate&quot; protocol to identify blind spots and over-interpretations.
                                     </p>
                                 </div>
                             </>

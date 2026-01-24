@@ -58,26 +58,24 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     // ... persists the new value to localStorage.
     const setValue = useCallback((value: T | ((val: T) => T)) => {
         try {
-            // Allow value to be a function so we have same API as useState
-            // Note: we can't use the previous 'storedValue' from closure if we want latest, 
-            // but for now we rely on the dependency array or functional update.
-            // Using functional update with setState is safer.
-
-            // We need to calculate the new value to save it to LS
-            // This is slightly tricky with functional updates if we don't have access to current state in this scope cleanly without dependency
-            // But we can just use the value as is if it's not a function for simplicity in this fix, 
-            // or better, pass it to setStoredValue first.
-
             setStoredValue((current) => {
                 const valueToStore = value instanceof Function ? value(current) : value;
 
                 // Save to local storage
                 if (typeof window !== "undefined") {
-                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
-                    // Dispatch custom event for same-window sync
-                    window.dispatchEvent(new CustomEvent('local-storage-update', {
-                        detail: { key, value: valueToStore }
-                    }));
+                    // Use setTimeout to avoid side effects during render/update cycle
+                    // and to prevent synchronous updates in other components listening to the event
+                    setTimeout(() => {
+                        try {
+                            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                            // Dispatch custom event for same-window sync
+                            window.dispatchEvent(new CustomEvent('local-storage-update', {
+                                detail: { key, value: valueToStore }
+                            }));
+                        } catch (error) {
+                            console.error(`Error saving to localStorage key "${key}":`, error);
+                        }
+                    }, 0);
                 }
 
                 return valueToStore;
