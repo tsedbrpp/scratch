@@ -141,7 +141,21 @@ export async function performAnalysis(
         analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
     }
 
-    // Return analysis result with usage stats
+    // [TRANSPARENCY] Capture prompt metadata
+    const { capturePromptMetadata } = await import('@/lib/transparency-utils');
+    const metadata = capturePromptMetadata(
+        systemPrompt + '\n\n' + userContent,
+        modelUsed,
+        0.7, // Default temperature for analysis
+        16384
+    );
+
+    // [TRANSPARENCY] Add metadata to analysis result
+    if (analysis && typeof analysis === 'object') {
+        analysis.metadata = metadata;
+    }
+
+    // Return analysis result with usage stats and transparency data
     return {
         analysis,
         usage: completion.usage
