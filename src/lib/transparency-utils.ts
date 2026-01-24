@@ -1,4 +1,5 @@
-import { PromptMetadata } from "@/types/provenance";
+import { PromptMetadata, ProvenanceChain, ProvenanceStep } from "@/types/provenance";
+import crypto from 'crypto';
 
 /**
  * Captures metadata about an LLM API call for transparency
@@ -110,5 +111,41 @@ Respond in JSON format:
     return {
         score: 50,
         justification: "Confidence score could not be calculated"
+    };
+}
+
+/**
+ * Creates a new empty provenance chain
+ */
+export function createProvenanceChain(): ProvenanceChain {
+    return {
+        insight_id: crypto.randomUUID(),
+        steps: [],
+        created_at: new Date().toISOString()
+    };
+}
+
+/**
+ * Adds a step to the provenance chain
+ */
+export function addProvenanceStep(
+    chain: ProvenanceChain,
+    description: string,
+    inputs: Record<string, any>,
+    outputs: Record<string, any>,
+    agent: string = "system"
+): ProvenanceChain {
+    const step: ProvenanceStep = {
+        step_id: crypto.randomUUID(),
+        description,
+        inputs,
+        outputs,
+        agent,
+        timestamp: new Date().toISOString()
+    };
+
+    return {
+        ...chain,
+        steps: [...chain.steps, step]
     };
 }

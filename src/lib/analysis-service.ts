@@ -141,8 +141,21 @@ export async function performAnalysis(
         analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
     }
 
-    // [TRANSPARENCY] Capture prompt metadata
-    const { capturePromptMetadata } = await import('@/lib/transparency-utils');
+    // [TRANSPARENCY] Create and populate provenance chain
+    const { capturePromptMetadata, createProvenanceChain, addProvenanceStep } = await import('@/lib/transparency-utils');
+
+    // 1. Initialize Chain
+    let chain = createProvenanceChain();
+
+    // 2. Add Prompt Construction Step
+    chain = addProvenanceStep(
+        chain,
+        "Prompt Construction",
+        { analysisMode, positionality },
+        { systemPrompt, userContent },
+        "system"
+    );
+
     const metadata = capturePromptMetadata(
         systemPrompt + '\n\n' + userContent,
         modelUsed,
@@ -150,9 +163,19 @@ export async function performAnalysis(
         16384
     );
 
-    // [TRANSPARENCY] Add metadata to analysis result
+    // 3. Add AI Analysis Step
+    chain = addProvenanceStep(
+        chain,
+        "AI Analysis Execution",
+        { model: modelUsed, prompt_tokens: completion.usage?.prompt_tokens },
+        { raw_response: responseText.substring(0, 1000) + "..." }, // Truncate for storage
+        "openai"
+    );
+
+    // [TRANSPARENCY] Add metadata and chain to analysis result
     if (analysis && typeof analysis === 'object') {
         analysis.metadata = metadata;
+        analysis.provenance_chain = chain;
     }
 
     // Return analysis result with usage stats and transparency data
