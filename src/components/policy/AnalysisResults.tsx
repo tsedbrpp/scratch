@@ -475,6 +475,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                             icon={<Eye className="h-4 w-4 text-amber-600" />}
                             content={analysis.reflexivity_situated_praxis || 'No analysis available.'}
                             color="amber"
+                            glossaryTerm="reflexivity"
                         />
                         {analysis.coloniality_of_power && (
                             <DimensionCard
@@ -482,6 +483,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                                 icon={<span className="text-red-600 font-bold text-xs border border-red-600 rounded px-0.5">CP</span>}
                                 content={analysis.coloniality_of_power}
                                 color="red"
+                                glossaryTerm="coloniality-of-power"
                             />
                         )}
                     </div>
