@@ -444,7 +444,14 @@ export function EcosystemMap({
                 {/* ... (Header remains) */}
                 <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row flex-wrap items-center justify-between gap-y-4 bg-white z-10 relative">
                     <div>
-                        <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Assemblage Compass</CardTitle>
+                        <div className="flex items-center gap-2">
+                            <CardTitle className="text-sm font-semibold text-slate-900 tracking-tight">Assemblage Compass</CardTitle>
+                            <HelpTooltip
+                                title="Assemblage Compass"
+                                description={getGlossaryDefinition('assemblage-compass')}
+                                glossaryTerm="assemblage-compass"
+                            />
+                        </div>
                         <CardDescription className="text-xs text-slate-500 font-normal">
                             {is3DMode ? "3D WebGL Visualization" : (isNestedMode ? "Nested Assemblage (Actor → Collective → Regime)" : "Relational view of heterogeneous associations")}
                         </CardDescription>
