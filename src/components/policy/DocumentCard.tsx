@@ -96,10 +96,19 @@ export function DocumentCard({
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onEdit(source)}>
+                                <DropdownMenuItem
+                                    onClick={() => onEdit(source)}
+                                    disabled={isReadOnly}
+                                    title={isReadOnly ? "Editing disabled in Demo Mode" : ""}
+                                >
                                     <Pencil className="mr-2 h-4 w-4" /> Edit Metadata
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onDelete(source.id)} className="text-red-600">
+                                <DropdownMenuItem
+                                    onClick={() => onDelete(source.id)}
+                                    className="text-red-600"
+                                    disabled={isReadOnly}
+                                    title={isReadOnly ? "Deletion disabled in Demo Mode" : ""}
+                                >
                                     <Trash className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

@@ -133,6 +133,11 @@ export interface AnalysisResult {
     }[];
     perspectives?: Record<string, string>;
     provisional_status?: import('./provisional').ProvisionalInscription;
+
+    // Transparency & Provenance fields (Phase 1)
+    confidence?: import('./provenance').ConfidenceScore;
+    metadata?: import('./provenance').PromptMetadata;
+    provenance_chain?: import('./provenance').ProvenanceChain;
 }
 
 // Core interfaces for analysis
