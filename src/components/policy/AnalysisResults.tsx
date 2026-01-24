@@ -243,6 +243,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
 
     const hasUserImpression = !!(userImpression && userImpression.trim().length > 0);
+    const { isAdvanced } = useViewMode();
 
     return (
         <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -356,7 +357,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
 
             {/* --- TABS --- */}
             <Tabs defaultValue="diagnostic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 bg-slate-100/50 p-1">
+                <TabsList className={`grid w-full bg-slate-100/50 p-1 ${isAdvanced ? 'grid-cols-5' : 'grid-cols-3'}`}>
                     <TabsTrigger value="diagnostic" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
                         <LayoutDashboard className="h-3 w-3 mr-2" /> Diagnostic
                     </TabsTrigger>
@@ -366,12 +367,16 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                     <TabsTrigger value="deep-analysis" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
                         <Layers className="h-3 w-3 mr-2" /> Deep Analysis
                     </TabsTrigger>
-                    <TabsTrigger value="critique" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
-                        <MessageSquareDashed className="h-3 w-3 mr-2" /> Reflexivity
-                    </TabsTrigger>
-                    <TabsTrigger value="audit" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
-                        <BadgeCheck className="h-3 w-3 mr-2" /> Audit
-                    </TabsTrigger>
+                    {isAdvanced && (
+                        <>
+                            <TabsTrigger value="critique" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
+                                <MessageSquareDashed className="h-3 w-3 mr-2" /> Reflexivity
+                            </TabsTrigger>
+                            <TabsTrigger value="audit" className="text-xs uppercase font-bold text-slate-500 data-[state=active]:text-slate-800 data-[state=active]:shadow-sm">
+                                <BadgeCheck className="h-3 w-3 mr-2" /> Audit
+                            </TabsTrigger>
+                        </>
+                    )}
                 </TabsList>
 
                 {/* 1. DIAGNOSTIC TAB */}
