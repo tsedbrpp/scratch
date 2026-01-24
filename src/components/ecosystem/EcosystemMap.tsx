@@ -19,6 +19,8 @@ const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.
 import { AnalysisMode, ModeSelector } from '@/components/ui/mode-selector';
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
+import { getGlossaryDefinition } from "@/lib/glossary-definitions";
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
