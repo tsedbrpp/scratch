@@ -30,6 +30,9 @@ import { UserButton, useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useDemoMode } from "@/hooks/useDemoMode";
 
+import { useViewMode } from "@/hooks/useViewMode"; // [PD]
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle"; // [PD]
+
 interface NavGroup {
     title: string;
     items: {
@@ -37,6 +40,7 @@ interface NavGroup {
         href: string;
         icon: LucideIcon;
         description: string;
+        advancedOnly?: boolean; // [PD]
     }[];
 }
 
@@ -77,7 +81,8 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Trace Provenance",
                 href: "/empirical",
                 icon: Users,
-                description: "Ingest and trace web sources."
+                description: "Ingest and trace web sources.",
+                advancedOnly: true // [PD]
             }
         ]
     },
@@ -100,13 +105,15 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Institutional Logics",
                 href: "/governance",
                 icon: Scale,
-                description: "Analyze resource orchestration and logics."
+                description: "Analyze resource orchestration and logics.",
+                advancedOnly: true // [PD]
             },
             {
                 name: "Temporal Dynamics",
                 href: "/timeline",
                 icon: Clock,
-                description: "Track evolution of discourse over time."
+                description: "Track evolution of discourse over time.",
+                advancedOnly: true // [PD]
             },
             {
                 name: "Cross-Case Synthesis",
@@ -117,8 +124,9 @@ const NAV_GROUPS: NavGroup[] = [
             {
                 name: "Micro-Resistance",
                 href: "/resistance",
-                icon: Users, // Using Users as proxy for "Resistance" group
-                description: "Analyze counter-conduct and resistance."
+                icon: Users,
+                description: "Analyze counter-conduct and resistance.",
+                advancedOnly: true // [PD]
             }
         ]
     },
@@ -129,7 +137,8 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Concept Network",
                 href: "/ontology",
                 icon: BookOpen,
-                description: "Map key concepts and relationships."
+                description: "Map key concepts and relationships.",
+                advancedOnly: true // [PD]
             },
             {
                 name: "Glossary & Theory",
@@ -141,7 +150,8 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Reflexivity",
                 href: "/reflexivity",
                 icon: Scan,
-                description: "Examine positionality and analytical lens."
+                description: "Examine positionality and analytical lens.",
+                advancedOnly: true // [PD]
             }
         ]
     },
@@ -158,7 +168,8 @@ const NAV_GROUPS: NavGroup[] = [
                 name: "Lens Configuration",
                 href: "/settings/prompts",
                 icon: Scan,
-                description: "Customize analysis prompts."
+                description: "Customize analysis prompts.",
+                advancedOnly: true // [PD]
             },
             {
                 name: "Earn Credits",
@@ -175,8 +186,13 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
     const { isSignedIn } = useAuth();
 
     return (
+    const { isGuided } = useViewMode(); // [PD]
+
+    return (
         <div className="flex flex-col h-full bg-slate-950 text-slate-100 border-r border-slate-900 shadow-2xl">
+            {/* Header ... */}
             <div className={cn("flex items-center border-b border-slate-900 transition-all duration-300", isCollapsed ? "p-4 justify-center" : "p-6")}>
+                {/* ... (Existing Logo Logic) ... */}
                 <Link href="/" className="flex items-center gap-2 overflow-hidden group">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/20 group-hover:scale-105 transition-transform duration-300">
                         <LayoutDashboard className="text-white w-5 h-5" />
@@ -196,52 +212,66 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                 </Link>
             </div>
 
+            {/* [PD] View Toggle */}
+            {!isCollapsed && (
+                <div className="px-3 pt-3">
+                    <ViewModeToggle className="bg-slate-900 border-slate-800" />
+                </div>
+            )}
+
             <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-3 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-                {NAV_GROUPS.map((group, groupIndex) => (
-                    <div key={groupIndex}>
-                        {!isCollapsed && (
-                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-3 animate-in fade-in duration-300 whitespace-nowrap">
-                                {group.title}
-                            </h3>
-                        )}
-                        <div className="space-y-1">
-                            {group.items.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <TooltipProvider key={item.href} delayDuration={0}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Link
-                                                    href={item.href}
-                                                    className={cn(
-                                                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group overflow-hidden",
-                                                        isActive
-                                                            ? "bg-gradient-to-r from-blue-600/10 to-emerald-600/10 text-white shadow-lg shadow-blue-900/5 ring-1 ring-white/10"
-                                                            : "text-slate-400 hover:text-white hover:bg-slate-900/50",
-                                                        isCollapsed && "justify-center px-2"
-                                                    )}
-                                                >
-                                                    {isActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-blue-400 to-emerald-400 rounded-r-full" />
-                                                    )}
-                                                    <item.icon size={20} className={cn("shrink-0 transition-colors", isActive ? "text-blue-400" : "group-hover:text-slate-300")} />
-                                                    {!isCollapsed && <span className="whitespace-nowrap animate-in fade-in duration-200">{item.name}</span>}
-                                                </Link>
-                                            </TooltipTrigger>
-                                            {/* Show tooltip if collapsed OR if explicitly wanted (though description is long) */}
-                                            {isCollapsed && (
-                                                <TooltipContent side="right" className="bg-slate-900 text-white border-slate-800 ml-2">
-                                                    <p className="font-semibold">{item.name}</p>
-                                                    <p className="text-xs text-slate-300 max-w-[200px]">{item.description}</p>
-                                                </TooltipContent>
-                                            )}
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                );
-                            })}
+                {NAV_GROUPS.map((group, groupIndex) => {
+                    // [PD] Filter Items based on View Mode
+                    const visibleItems = group.items.filter(item => !isGuided || !item.advancedOnly);
+
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                        <div key={groupIndex}>
+                            {!isCollapsed && (
+                                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-3 animate-in fade-in duration-300 whitespace-nowrap">
+                                    {group.title}
+                                </h3>
+                            )}
+                            <div className="space-y-1">
+                                {visibleItems.map((item) => {
+                                    const isActive = pathname === item.href;
+                                    return (
+                                        <TooltipProvider key={item.href} delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Link
+                                                        href={item.href}
+                                                        className={cn(
+                                                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group overflow-hidden",
+                                                            isActive
+                                                                ? "bg-gradient-to-r from-blue-600/10 to-emerald-600/10 text-white shadow-lg shadow-blue-900/5 ring-1 ring-white/10"
+                                                                : "text-slate-400 hover:text-white hover:bg-slate-900/50",
+                                                            isCollapsed && "justify-center px-2"
+                                                        )}
+                                                    >
+                                                        {isActive && (
+                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-blue-400 to-emerald-400 rounded-r-full" />
+                                                        )}
+                                                        <item.icon size={20} className={cn("shrink-0 transition-colors", isActive ? "text-blue-400" : "group-hover:text-slate-300")} />
+                                                        {!isCollapsed && <span className="whitespace-nowrap animate-in fade-in duration-200">{item.name}</span>}
+                                                    </Link>
+                                                </TooltipTrigger>
+                                                {/* Tooltip Content */}
+                                                {isCollapsed && (
+                                                    <TooltipContent side="right" className="bg-slate-900 text-white border-slate-800 ml-2">
+                                                        <p className="font-semibold">{item.name}</p>
+                                                        <p className="text-xs text-slate-300 max-w-[200px]">{item.description}</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <div className={cn("border-t border-slate-900 bg-slate-950 flex flex-col gap-2 transition-all duration-300", isCollapsed ? "p-2 items-center" : "p-4")}>
