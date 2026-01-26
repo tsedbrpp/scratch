@@ -34,6 +34,7 @@ export interface ProvenanceStep {
     step_id: string; // Unique ID for this step
     description: string; // Human-readable description
     agent: string; // Who performed this step (system, user, openai)
+    type?: string; // Optional type for UI categorizing (e.g. source_extraction, ai_response)
     timestamp: string;
     inputs: Record<string, any>; // Flexible inputs
     outputs: Record<string, any>; // Flexible outputs

@@ -49,43 +49,45 @@ Provide your analysis in structured JSON format with the following fields:
         created_at: new Date().toISOString(),
         steps: [
             {
+                step_id: "step-1",
                 type: "source_extraction",
+                description: "Source extraction from policy document",
+                agent: "System",
                 timestamp: new Date(Date.now() - 10000).toISOString(),
-                data: {
-                    input: "Full policy document text...",
-                    output: "Extracted key sections: Governance (Section 3), Enforcement (Section 4), Rights (Section 5)",
-                }
+                inputs: { text: "Full policy document text..." },
+                outputs: { sections: ["Governance", "Enforcement", "Rights"] }
             },
             {
+                step_id: "step-2",
                 type: "prompt_generation",
+                description: "AI prompt generation with ANT lens",
+                agent: "System",
                 timestamp: new Date(Date.now() - 8000).toISOString(),
-                data: {
-                    input: "Analysis request: Governance analysis with ANT lens",
-                    output: mockMetadata.prompt_used,
-                }
+                inputs: { context: "Governance analysis" },
+                outputs: { prompt: mockMetadata.prompt_used }
             },
             {
+                step_id: "step-3",
                 type: "ai_response",
+                description: "LLM analysis of policy associations",
+                agent: "OpenAI gpt-4-turbo",
                 timestamp: new Date(Date.now() - 5000).toISOString(),
-                data: {
-                    input: mockMetadata.prompt_used,
-                    output: "Formatted analysis result",
+                inputs: { prompt: mockMetadata.prompt_used },
+                outputs: {
                     raw_json: {
-                        governance_power_accountability: "Centralized decision-making with limited stakeholder input...",
-                        plurality_inclusion_embodiment: "Narrow definition of affected parties...",
-                        confidence_score: 85,
-                        evidence_quotes: ["Section 3.2: 'The board shall have final authority...'"]
+                        governance_power_accountability: "Centralized decision-making...",
+                        confidence_score: 85
                     }
                 }
             },
             {
+                step_id: "step-4",
                 type: "formatting",
+                description: "Type validation and formatting",
+                agent: "System",
                 timestamp: new Date(Date.now() - 2000).toISOString(),
-                data: {
-                    input: "Raw JSON response",
-                    output: "Structured AnalysisResult object",
-                    transformation_logic: "Applied type validation, formatted quotes, calculated risk scores"
-                }
+                inputs: { raw: "LLM Result" },
+                outputs: { structured: "AnalysisResult Object" }
             }
         ]
     };

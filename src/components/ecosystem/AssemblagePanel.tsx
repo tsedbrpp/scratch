@@ -11,6 +11,7 @@ import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { AssemblageAnalysisView } from './AssemblageAnalysisView';
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
+import { calculateAssemblageMetrics } from "@/lib/ecosystem-utils";
 
 interface AssemblagePanelProps {
     actors: EcosystemActor[];
@@ -35,6 +36,12 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
     const [forceRefresh, setForceRefresh] = useState(false);
+
+    // [FIX] Dynamic Metric Calculation (Moved to top level to comply with React Hook Rules)
+    const dynamicMetrics = React.useMemo(() => {
+        if (!selectedConfig) return { stability: 0, coding_intensity: 0, internal: 0, external: 0, porosity: 0 };
+        return calculateAssemblageMetrics(actors, selectedConfig);
+    }, [actors, selectedConfig]);
 
     const handleRatify = () => {
         const currentData = savedAnalysis || selectedConfig?.analysisData;
@@ -382,51 +389,68 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                             <h3 className="font-bold text-indigo-900 text-lg mb-1">{selectedConfig.name}</h3>
                             <p className="text-sm text-indigo-700 mb-3">{selectedConfig.description}</p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
-                                                <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Territorialization</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-base font-bold text-slate-900">
-                                                        {(Number(selectedConfig.properties.territorialization_score) || 0) > 7 ? "High Intensity" : (Number(selectedConfig.properties.territorialization_score) || 0) > 4 ? "Medium Intensity" : "Low Intensity"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
-                                            <p className="font-bold border-b border-slate-700 pb-1 mb-1">Computed from Traces:</p>
-                                            <ul className="text-xs list-disc list-inside space-y-1">
-                                                {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.territorialization_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.length > 0
-                                                    ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
-                                                    : <li className="text-slate-400">No traces found</li>}
-                                            </ul>
-                                        </TooltipContent>
-                                    </Tooltip>
+                            {/* [FIX] Dynamic Metric Calculation (Moved out of IIFE to follow Hook Rules) */}
+                            {(() => {
+                                // Now using the top-level dynamicMetrics
+                                const territorialization = dynamicMetrics.stability || Number(selectedConfig.properties?.territorialization_score) || 0;
+                                const codingIntensity = dynamicMetrics.coding_intensity || Number(selectedConfig.properties?.coding_intensity_score) || 0;
 
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
-                                                <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-base font-bold text-slate-900">
-                                                        {(Number(selectedConfig.properties.coding_intensity_score) || 0) > 7 ? "Over-Coded" : (Number(selectedConfig.properties.coding_intensity_score) || 0) > 4 ? "Mixed Coding" : "Decoded"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
-                                            <p className="font-bold border-b border-slate-700 pb-1 mb-1">Computed from Traces:</p>
-                                            <ul className="text-xs list-disc list-inside space-y-1">
-                                                {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.coding_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.length > 0
-                                                    ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
-                                                    : <li className="text-slate-400">No traces found</li>}
-                                            </ul>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
+                                return (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Territorialization</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-base font-bold text-slate-900">
+                                                                {territorialization > 0.7 ? "High Intensity" : territorialization > 0.4 ? "Medium Intensity" : "Low Intensity"}
+                                                            </span>
+                                                            <span className="text-xs text-slate-400">({(territorialization * 10).toFixed(1)})</span>
+                                                        </div>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
+                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
+                                                    <p className="text-xs mb-2">Based on {dynamicMetrics.internal} internal / {dynamicMetrics.external} external associations.</p>
+
+                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
+                                                    <ul className="text-xs list-disc list-inside space-y-1">
+                                                        {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.territorialization_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.length > 0
+                                                            ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
+                                                            : <li className="text-slate-400">No traces found</li>}
+                                                    </ul>
+                                                </TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-base font-bold text-slate-900">
+                                                                {codingIntensity > 0.7 ? "Over-Coded" : codingIntensity > 0.4 ? "Mixed Coding" : "Decoded"}
+                                                            </span>
+                                                            <span className="text-xs text-slate-400">({(codingIntensity * 10).toFixed(1)})</span>
+                                                        </div>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
+                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
+                                                    <p className="text-xs mb-2">Inverse of Porosity ({(dynamicMetrics.porosity).toFixed(2)}).</p>
+
+                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
+                                                    <ul className="text-xs list-disc list-inside space-y-1">
+                                                        {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.coding_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.length > 0
+                                                            ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
+                                                            : <li className="text-slate-400">No traces found</li>}
+                                                    </ul>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {selectedConfig.analysisData ? (
@@ -465,8 +489,9 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                         <Layers className="h-8 w-8 mb-2 opacity-50" />
                         <p className="text-sm">Run analysis to map the assemblage.</p>
                     </div>
-                )}
-            </CardContent>
+                )
+                }
+            </CardContent >
             <div className="p-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-400 text-center italic">
                 Methodological constrained artifact. Outputs are provisional inscriptions.
             </div>

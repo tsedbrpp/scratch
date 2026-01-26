@@ -44,6 +44,7 @@ interface EcosystemMapProps {
     setAnalysisMode?: (mode: AnalysisMode) => void;
     configLayout?: Record<string, { x: number; y: number }>;
     onConfigSelect?: (configId: string) => void;
+    onClearConfig?: () => void; // [NEW] Support clearing selection
     extraToolbarContent?: React.ReactNode;
     isReadOnly?: boolean; // [NEW]
 }
@@ -76,6 +77,7 @@ export function EcosystemMap({
     setAnalysisMode,
     configLayout = {},
     onConfigSelect,
+    onClearConfig,
     extraToolbarContent,
     isReadOnly = false
 }: EcosystemMapProps) {
@@ -88,8 +90,15 @@ export function EcosystemMap({
     const containerRef = useRef<HTMLDivElement>(null);
     const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null); // Ref for zoom behavior
     const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
+    const [layoutMode, setLayoutMode] = useState<'compass' | 'nested'>('nested'); // [FIX] Default to Nested Mode
+
+    // Derived states for backward compatibility with hook props
+    const isNestedMode = layoutMode === 'nested';
+    const isMetricMode = layoutMode === 'compass';
+    const isStratumModeState = false; // Simplified for now, or keep separate if orthogonal
+
     const [isLegendOpen, setIsLegendOpen] = useState(false);
-    const [isNestedMode, setIsNestedMode] = useState(false);
+    // const [isNestedMode, setIsNestedMode] = useState(false); // REPLACED
     const [isStratumMode, setIsStratumMode] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [is3DMode, setIs3DMode] = useState(false);
@@ -102,6 +111,8 @@ export function EcosystemMap({
 
     // Zoom/Pan State
     const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
+    const [activeTypeFilter, setActiveTypeFilter] = useState<string | null>(null);
+    const [activeBoundaryFilter, setActiveBoundaryFilter] = useState<'solid' | 'porous' | null>(null); // [NEW] Boundary Filter
 
     // Merged Actors with Ghosts
     const mergedActors = useMemo(() => {
@@ -128,6 +139,9 @@ export function EcosystemMap({
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
 
+    // [NEW] Local confirmation state for deletion to avoid window.confirm issues
+    const [configToDelete, setConfigToDelete] = useState<string | null>(null);
+
     const links = useMemo(() => {
         const generated = generateEdges(filteredActors);
         return generated.map(e => ({
@@ -137,10 +151,74 @@ export function EcosystemMap({
         }));
     }, [filteredActors]);
 
+    // Standard Config Passthrough with Logic (Moved Up)
+    const hydratedConfigs = useMemo(() => {
+        return configurations.map(config => {
+            const memberSet = new Set(config.memberIds);
+            let internal = 0;
+            let external = 0;
+
+            links.forEach(l => {
+                const s = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                const t = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                const sIn = memberSet.has(s);
+                const tIn = memberSet.has(t);
+
+                if (sIn && tIn) internal++;
+                else if (sIn || tIn) external++;
+            });
+
+            const total = internal + external;
+            const porosity = total > 0 ? external / total : 0;
+            const stability = total > 0 ? internal / total : 0;
+
+            if (Math.random() < 0.1) console.log('Config Porosity Debug', { id: config.id, internal, external, total, porosity });
+
+            return {
+                ...config,
+                properties: {
+                    ...config.properties,
+                    porosity_index: porosity,
+                    calculated_stability: stability,
+                    internal_links: internal,
+                    external_links: external,
+                    total_links: total
+                }
+            };
+        });
+    }, [configurations, links]);
+
     // Simplified Actor Hydration (No Simulation)
     const hydratedActors = useMemo(() => {
-        return filteredActors;
-    }, [filteredActors]);
+        let result = filteredActors;
+
+        // 1. Type Filter
+        if (activeTypeFilter) {
+            const uniqueKey = activeTypeFilter.toLowerCase().replace(/\s/g, '');
+            result = result.filter(a => {
+                const actorType = a.type.toLowerCase().replace(/\s/g, '');
+                return actorType.includes(uniqueKey);
+            });
+        }
+
+        // 2. Boundary Strength Filter
+        if (activeBoundaryFilter) {
+            result = result.filter(a => {
+                const config = hydratedConfigs.find(c => c.memberIds.includes(a.id));
+                if (!config) return false; // Filter out ungrouped
+
+                const porosity = config.properties.porosity_index || 0;
+
+
+
+                // > 0.5 is porous
+                return activeBoundaryFilter === 'porous' ? porosity > 0.5 : porosity <= 0.5;
+            });
+        }
+
+        return result;
+    }, [filteredActors, activeTypeFilter, activeBoundaryFilter, hydratedConfigs]);
+
 
     const handleExplainMap = React.useCallback(async () => {
         if (!analysisMode) return;
@@ -215,14 +293,18 @@ export function EcosystemMap({
     };
 
     // Force Physics
-    const [isMetricMode, setIsMetricMode] = useState(true); // Default to True for "Assemblage Compass" feel
+    // isMetricMode is derived from layoutMode above
+
+    const memoizedConfigurations = useMemo(() => {
+        return configurations.map(c => ({ id: c.id, memberIds: c.memberIds }));
+    }, [configurations]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nodes, simulation, drag } = useForceGraph(
         hydratedActors, // Use hydrated actors with dynamic power
         dimensions.width,
         dimensions.height,
-        configurations.map(c => ({ id: c.id, memberIds: c.memberIds })),
+        memoizedConfigurations, // [FIX] Use memoized array to prevent infinite loop
         links,
         isNestedMode,
         is3DMode,
@@ -239,8 +321,9 @@ export function EcosystemMap({
             .scaleExtent([0.1, 4])
             .filter((event) => {
                 // Prevent zoom/pan if clicking on a draggable config or if button is not left click
-                if (event.target instanceof Element && event.target.closest('.draggable-config')) {
-                    return false;
+                if (event.target instanceof Element) {
+                    if (event.target.closest('.draggable-config')) return false;
+                    if (event.target.closest('.legend-container')) return false; // [FIX] Exclude Legend
                 }
                 return !event.button;
             })
@@ -313,6 +396,7 @@ export function EcosystemMap({
     };
 
     const handleNodeClick = (e: React.MouseEvent, actor: EcosystemActor) => {
+        console.log('[EcosystemMap] Node Clicked:', actor.id, actor.name);
         e.stopPropagation();
         if (interactionMode === "select") {
             onToggleSelection(actor.id);
@@ -400,10 +484,7 @@ export function EcosystemMap({
         return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
     };
 
-    // Standard Config Passthrough
-    const hydratedConfigs = useMemo(() => {
-        return configurations;
-    }, [configurations]);
+
 
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -452,6 +533,7 @@ export function EcosystemMap({
                                 title="Assemblage Compass"
                                 description={getGlossaryDefinition('assemblage-compass')}
                                 glossaryTerm="assemblage-compass"
+                                videoUrl="/videos/assemblage-demo.mp4"
                             />
                         </div>
                         <CardDescription className="text-xs text-slate-500 font-normal">
@@ -481,18 +563,10 @@ export function EcosystemMap({
                                 <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
-                                    onClick={() => setIsNestedMode(!isNestedMode)}
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isNestedMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
-                                >
-                                    <Layers className="h-3 w-3 mr-1" /> {isNestedMode ? "Nested Map" : "Force Layout"}
-                                </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
                                     className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isMetricMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
-                                    onClick={() => setIsMetricMode(!isMetricMode)}
+                                    onClick={() => setLayoutMode(isMetricMode ? 'nested' : 'compass')}
                                 >
-                                    <Layers className="h-3 w-3 mr-1" /> {isMetricMode ? "Metrics Aligned" : "Free Layout"}
+                                    <Layers className="h-3 w-3 mr-1" /> {isMetricMode ? "Switch to Nested" : "Assemblage Compass"}
                                 </Button>
                                 <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
@@ -590,7 +664,7 @@ export function EcosystemMap({
                             <svg
                                 ref={svgRef}
                                 width="100%" height="100%"
-                                className="cursor-move"
+                                className={interactionMode === 'drag' ? 'cursor-move' : 'cursor-default'}
                                 onMouseMove={handleSvgMouseMove}
                                 onMouseUp={handleMouseUp}
                                 onMouseLeave={handleMouseUp}
@@ -621,12 +695,14 @@ export function EcosystemMap({
                                         centroid.x /= memberPoints.length;
                                         centroid.y /= memberPoints.length;
                                         const porosity = config.properties.porosity_index || 0;
-                                        const strokeDash = porosity > 0.6 ? "6 4" : (porosity > 0.3 ? "10 2" : "none");
+                                        // BINARY VISUALIZATION: Match Filter Threshold (0.5)
+                                        const strokeDash = porosity > 0.5 ? "6 4" : "none";
                                         const stability = config.properties.calculated_stability || 0.1;
                                         const isConfigSelected = selectedConfigId === config.id;
                                         const fillOpacity = isConfigSelected ? 0.3 : Math.max(0.05, Math.min(0.3, stability * 0.4));
                                         return (
                                             <g key={config.id} className={`draggable-config transition-all duration-500 ease-out ${interactionMode === 'drag' ? 'cursor-move' : 'cursor-pointer'}`} opacity={highlightedStage ? 0.1 : 1} onMouseDown={(e) => handleConfigMouseDown(e, config.id)}>
+                                                <title>{`${config.name}\nPorosity: ${porosity.toFixed(2)} (Ext: ${config.properties.external_links}/Tot: ${config.properties.total_links})\nStability: ${stability.toFixed(2)}`}</title>
                                                 <path
                                                     d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
                                                     fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
@@ -664,26 +740,48 @@ export function EcosystemMap({
                                         if (link.type === "Excludes") strokeWidth = 1.5;
                                         if (isFocused || isHovered) strokeWidth += 1.5;
 
+                                        // HEB Logic: Calculate Path
+                                        let d = "";
+                                        if (isNestedMode) {
+                                            // Curved, bundled path through center
+                                            const lineGen = d3.line<{ x: number, y: number }>()
+                                                .curve(d3.curveBundle.beta(0.85))
+                                                .x(p => p.x)
+                                                .y(p => p.y);
+
+                                            d = lineGen([
+                                                { x: s.x, y: s.y },
+                                                { x: dimensions.width / 2, y: dimensions.height / 2 }, // Control point at center
+                                                { x: t.x, y: t.y }
+                                            ]) || "";
+                                        } else {
+                                            // Straight line
+                                            d = `M ${s.x} ${s.y} L ${t.x} ${t.y}`;
+                                        }
+
                                         return (
                                             <g key={i}
                                                 onMouseEnter={(e) => handleLinkHover(e, link)}
                                                 onMouseLeave={() => setHoveredLink(null)}
                                             >
                                                 {/* Hit Area (Invisible but thicker) */}
-                                                <line
-                                                    x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                                                <path
+                                                    d={d}
                                                     stroke="transparent"
                                                     strokeWidth={10}
+                                                    fill="none"
                                                     className="cursor-pointer"
                                                 />
                                                 {/* Visible Line */}
-                                                <line
-                                                    x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                                                <path
+                                                    d={d}
                                                     stroke={isFocused || isHovered ? "#475569" : "#CBD5E1"}
                                                     strokeWidth={strokeWidth}
                                                     strokeOpacity={highlightedStage ? 0.1 : (isFocused || isHovered ? 1 : 0.5)}
                                                     strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"}
-                                                    markerEnd={!highlightedStage ? "url(#arrow)" : ""}
+                                                    // Arrows only on straight lines (hard to unify on curves nicely without specific markers)
+                                                    markerEnd={!isNestedMode && !highlightedStage ? "url(#arrow)" : ""}
+                                                    fill="none"
                                                     className="transition-all duration-300 pointer-events-none"
                                                 />
                                             </g>
@@ -759,43 +857,92 @@ export function EcosystemMap({
                                 </div>
                             )}
 
-                            {/* SELECTION CONTEXT MENU (New) */}
-                            {selectedForGrouping.length > 0 && (
-                                <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-xl border border-indigo-200 rounded-lg p-2 z-40 animate-in slide-in-from-top-2 flex items-center gap-3">
-                                    <div className="flex items-center gap-2 pl-2 border-r border-slate-200 pr-3">
-                                        <div className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                                            {selectedForGrouping.length}
+
+                            {/* [NEW] Selected Configuration Context Menu (Reliable Delete) */}
+                            {selectedConfigId && (() => {
+                                const config = configurations.find(c => c.id === selectedConfigId);
+                                if (!config) return null;
+                                return (
+                                    <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-xl border-2 border-indigo-500/30 rounded-lg p-2 z-40 animate-in slide-in-from-top-2 flex items-center gap-3">
+                                        <div className="flex items-center gap-2 pl-2 border-r border-slate-200 pr-3">
+                                            <div
+                                                className="w-3 h-3 rounded-sm shadow-sm opacity-80"
+                                                style={{ backgroundColor: config.color }}
+                                            />
+                                            <span className="text-xs font-bold text-slate-700 max-w-[150px] truncate">{config.name}</span>
                                         </div>
-                                        <span className="text-xs font-medium text-slate-600">Selected</span>
+
+                                        {/* Action Buttons */}
+                                        {onDeleteConfiguration && (
+                                            configToDelete === config.id ? (
+                                                <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        className="h-7 text-[10px] px-2 bg-red-600 hover:bg-red-700 text-white shadow-sm font-bold"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            if (onDeleteConfiguration) {
+                                                                onDeleteConfiguration(config.id);
+                                                            }
+                                                            setConfigToDelete(null);
+                                                        }}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                    >
+                                                        SURE?
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setConfigToDelete(null);
+                                                        }}
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setConfigToDelete(config.id);
+                                                    }}
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    className="h-7 text-xs bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white shadow-sm flex items-center gap-1.5"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Delete
+                                                </Button>
+                                            )
+                                        )}
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onClearConfig) onClearConfig();
+                                                else if (onConfigClick) onConfigClick(config.id); // Fallback toggle
+                                            }}
+                                            className="h-7 w-7 text-slate-400 hover:text-slate-700"
+                                            title="Close Controls"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onCreateConfiguration();
-                                        }}
-                                        className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                                    >
-                                        <Layers className="h-3 w-3 mr-1.5" />
-                                        Create Configuration
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                            selectedForGrouping.forEach(id => onToggleSelection(id));
-                                        }}
-                                        className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                                        title="Clear Selection"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
+                                );
+                            })()}
 
                             {/* Floating Legend Card (Existing) */}
                             {isLegendOpen && (
-                                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-10 max-h-[600px] overflow-y-auto">
+                                <div className="legend-container absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-[100] max-h-[600px] overflow-y-auto">
                                     <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
                                         <span className="font-semibold text-slate-800">Actant Types</span>
                                         <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
@@ -803,12 +950,27 @@ export function EcosystemMap({
                                         </Button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-1.5">
-                                        {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => (
-                                            <div key={key} className="flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
-                                                <span className="capitalize text-slate-600">{key.replace("civilsociety", "Civil Society")}</span>
-                                            </div>
-                                        ))}
+                                        {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => {
+                                            const isActive = activeTypeFilter === key;
+                                            const isDimmed = activeTypeFilter && !isActive;
+
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    className={`
+                                                        flex items-center gap-2 cursor-pointer p-1 rounded transition-all duration-200
+                                                        ${isActive ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'}
+                                                        ${isDimmed ? 'opacity-40 grayscale' : 'opacity-100'}
+                                                    `}
+                                                    onClick={() => setActiveTypeFilter(isActive ? null : key)}
+                                                >
+                                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
+                                                    <span className={`capitalize ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-600'}`}>
+                                                        {key.replace("civilsociety", "Civil Society")}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
 
@@ -816,38 +978,121 @@ export function EcosystemMap({
 
                                     {/* Macro Assemblages Legend */}
                                     {configurations.length > 0 && (
-                                        <div className="mt-3 pt-2 border-t border-slate-100">
-                                            <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
-                                            <div className="space-y-1.5">
-                                                {configurations.map(config => (
-                                                    <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50 cursor-pointer" onClick={(e) => { e.stopPropagation(); onConfigSelect ? onConfigSelect(config.id) : onConfigClick?.(config.id); }}>
-                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                        <>
+                                            <div className="mt-3 pt-2 border-t border-slate-100">
+                                                <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
+                                                <div className="space-y-1.5">
+                                                    {configurations.map(config => (
+                                                        <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50">
+                                                            {/* Label Area - Handles Selection */}
                                                             <div
-                                                                className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
-                                                                style={{ backgroundColor: config.color }}
-                                                            />
-                                                            <span className="text-slate-600 truncate text-[10px] group-hover:text-slate-900 transition-colors">{config.name}</span>
-                                                        </div>
-                                                        {onDeleteConfiguration && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-4 w-4 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-1"
+                                                                className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (confirm(`Delete configuration "${config.name}"?`)) {
-                                                                        onDeleteConfiguration(config.id);
-                                                                    }
+                                                                    onConfigSelect ? onConfigSelect(config.id) : onConfigClick?.(config.id);
                                                                 }}
-                                                                title="Delete Configuration"
                                                             >
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                                                <div
+                                                                    className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
+                                                                    style={{ backgroundColor: config.color }}
+                                                                />
+                                                                <span className="text-slate-600 truncate text-[10px] group-hover:text-slate-900 transition-colors">{config.name}</span>
+                                                            </div>
+
+                                                            {/* Delete Button - Independent Click Handler */}
+                                                            {onDeleteConfiguration && (
+                                                                configToDelete === config.id ? (
+                                                                    <div className="flex items-center gap-0.5 animate-in slide-in-from-right-2 duration-200">
+                                                                        <Button
+                                                                            variant="destructive"
+                                                                            size="sm"
+                                                                            className="h-6 px-1.5 text-[9px] bg-red-600 hover:bg-red-700 text-white font-bold"
+                                                                            onClick={(e) => {
+                                                                                console.log('[EcosystemMap] SURE? Clicked (Legend) for ID:', config.id);
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                if (onDeleteConfiguration) {
+                                                                                    onDeleteConfiguration(config.id);
+                                                                                } else {
+                                                                                    console.warn('[EcosystemMap] onDeleteConfiguration prop is missing in legend!');
+                                                                                }
+                                                                                setConfigToDelete(null);
+                                                                            }}
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            SURE?
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 text-slate-400 hover:bg-slate-100"
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setConfigToDelete(null);
+                                                                            }}
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <X className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-1 shrink-0 z-10"
+                                                                        onClick={(e) => {
+                                                                            console.log('[EcosystemMap] Delete Icon Clicked (Legend) for ID:', config.id);
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setConfigToDelete(config.id);
+                                                                        }}
+                                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                                        title="Delete Configuration"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
+
+                                            {/* Boundary Strength Legend */}
+                                            <div className="mt-3 pt-2 border-t border-slate-100">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <p className="font-semibold text-slate-800">Boundary Strength</p>
+                                                    {activeBoundaryFilter && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-4 w-4 text-slate-400 hover:text-red-500"
+                                                            onClick={() => setActiveBoundaryFilter(null)}
+                                                            title="Clear Filter"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <div className="space-y-2 text-[10px] text-slate-500">
+                                                    <div
+                                                        className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-all ${activeBoundaryFilter === 'solid' ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'} ${activeBoundaryFilter && activeBoundaryFilter !== 'solid' ? 'opacity-40' : ''}`}
+                                                        onClick={() => setActiveBoundaryFilter(activeBoundaryFilter === 'solid' ? null : 'solid')}
+                                                    >
+                                                        <div className="w-6 h-3 border-2 border-slate-400 bg-slate-200/50 rounded-sm"></div>
+                                                        <span className={activeBoundaryFilter === 'solid' ? 'font-medium text-indigo-700' : ''}>Solid: Stable (Internal Focus)</span>
+                                                    </div>
+                                                    <div
+                                                        className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-all ${activeBoundaryFilter === 'porous' ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'} ${activeBoundaryFilter && activeBoundaryFilter !== 'porous' ? 'opacity-40' : ''}`}
+                                                        onClick={() => setActiveBoundaryFilter(activeBoundaryFilter === 'porous' ? null : 'porous')}
+                                                    >
+                                                        <div className="w-6 h-3 border-2 border-slate-400 border-dashed bg-slate-100/20 rounded-sm"></div>
+                                                        <span className={activeBoundaryFilter === 'porous' ? 'font-medium text-indigo-700' : ''}>Dashed: Porous (Open)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
                                     )}
 
                                     <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
@@ -981,6 +1226,33 @@ export function EcosystemMap({
                                                 {(hoveredNode as GhostActor).isGhost ? `MISSING: ${hoveredNode.description}` : hoveredNode.description}
                                             </div>
                                         )}
+                                        {/* Inject Assemblage Info */}
+                                        {(() => {
+                                            const config = hydratedConfigs.find(c => c.memberIds.includes(hoveredNode.id));
+                                            if (config) {
+                                                const porosity = config.properties.porosity_index || 0;
+                                                const stability = config.properties.calculated_stability || 0;
+                                                return (
+                                                    <div className="mt-2 pt-2 border-t border-indigo-500/30">
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: config.color }}></div>
+                                                            <span className="text-indigo-300 font-medium">{config.name}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                                                            <div>
+                                                                <span className="block text-slate-500">Porosity</span>
+                                                                <span className={porosity > 0.5 ? "text-indigo-300" : "text-slate-300"}>{porosity.toFixed(2)}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-slate-500">Stability</span>
+                                                                <span className="text-slate-300">{stability.toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
                                 </div>
                             )}

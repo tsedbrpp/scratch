@@ -92,11 +92,13 @@ export function calculateLiberatoryCapacity(analysis: AnalysisResult): Liberator
 
     // 5. Recognition of Repair & Care Work
     // Keyword check in Temporal or Cultural analysis
-    const temporalEvidence = analysis.temporal_orientation?.evidence || "";
+    const temporal = analysis.temporal_orientation;
+    const isTemporalObj = temporal && typeof temporal === 'object';
+    const temporalEvidence = isTemporalObj ? (temporal as any).evidence : (typeof temporal === 'string' ? temporal : "");
     const framingText = analysis.technology_role || "";
     const hasCareKeywords = /repair|care|maintenance|stewardship|healing/i.test(temporalEvidence + framingText);
 
-    if (hasCareKeywords || analysis.temporal_orientation?.framing === "Care") {
+    if (hasCareKeywords || (isTemporalObj && (temporal as any).framing === "Care")) {
         signals.repair_recognition = true;
         explanations.repair = "Explicit recognition of maintenance, care, or stewardship.";
     } else {
@@ -104,7 +106,7 @@ export function calculateLiberatoryCapacity(analysis: AnalysisResult): Liberator
     }
 
     // 6. Temporal Openness
-    if (analysis.temporal_orientation && analysis.temporal_orientation.score > 60) {
+    if (isTemporalObj && (temporal as any).score > 60) {
         signals.temporal_openness = true;
         explanations.temporal = "Future framed as open/iterative, not determined/urgent.";
     } else {
@@ -127,7 +129,7 @@ export function calculateLiberatoryCapacity(analysis: AnalysisResult): Liberator
     // Safety not used as "state of exception"
     // Heuristic: If legitimacy is NOT purely "Technocratic" AND Temporal is NOT "Urgency"
     const legitimacySource = analysis.legitimacy_claims?.source || "";
-    const isUrgency = analysis.temporal_orientation?.framing === "Urgency";
+    const isUrgency = isTemporalObj && (temporal as any).framing === "Urgency";
 
     if (!legitimacySource.includes("Technocratic") && !isUrgency) {
         signals.contestable_safety = true;

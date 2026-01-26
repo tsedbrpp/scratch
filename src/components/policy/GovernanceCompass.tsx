@@ -31,6 +31,7 @@ export function GovernanceCompass({ rhetoricScore, realityScore, driftExplanatio
                         title="Drift Analysis"
                         description={getGlossaryDefinition('drift-analysis')}
                         glossaryTerm="drift-analysis"
+                        videoUrl="/videos/drift-analysis-demo.mp4"
                     />
                 </div>
                 <p className="text-xs text-slate-500">Mapping Discursive Claims (Rhetoric) vs. Material Operations (Reality)</p>

@@ -36,13 +36,14 @@ export function ProvenanceViewer({ provenance }: ProvenanceViewerProps) {
         setExpandedSteps(newExpanded);
     };
 
-    const getStepIcon = (type: string) => {
+    const getStepIcon = (type?: string) => {
+        if (!type) return <Sparkles className="h-4 w-4" />;
         switch (type) {
             case 'source_extraction': return <FileText className="h-4 w-4" />;
             case 'prompt_generation': return <Code className="h-4 w-4" />;
             case 'ai_response': return <Sparkles className="h-4 w-4" />;
             case 'formatting': return <CheckCircle className="h-4 w-4" />;
-            default: return null;
+            default: return <Sparkles className="h-4 w-4" />;
         }
     };
 
@@ -92,7 +93,7 @@ export function ProvenanceViewer({ provenance }: ProvenanceViewerProps) {
                                             </Badge>
                                             {getStepIcon(step.type)}
                                             <span className="text-sm font-medium text-slate-700">
-                                                {getStepLabel(step.type)}
+                                                {step.description}
                                             </span>
                                         </div>
                                         {isExpanded ? (
@@ -105,77 +106,68 @@ export function ProvenanceViewer({ provenance }: ProvenanceViewerProps) {
                                     {/* Expanded Content */}
                                     {isExpanded && (
                                         <div className="p-3 pt-0 space-y-3 border-t border-slate-100">
-                                            {/* Input */}
-                                            <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <p className="text-xs font-medium text-slate-600">Input:</p>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => copyToClipboard(step.data.input)}
-                                                        className="h-6 text-xs"
-                                                    >
-                                                        <Copy className="h-3 w-3 mr-1" />
-                                                        Copy
-                                                    </Button>
-                                                </div>
-                                                <pre className="text-xs bg-slate-50 p-2 rounded border border-slate-200 overflow-x-auto max-h-40 overflow-y-auto">
-                                                    <code>{step.data.input}</code>
-                                                </pre>
+                                            {/* Agent and Info */}
+                                            <div className="flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-wider">
+                                                <span>Agent: {step.agent}</span>
+                                                <span>ID: {step.step_id}</span>
                                             </div>
 
-                                            {/* Raw JSON (if available) */}
-                                            {step.data.raw_json && (
+                                            {/* Inputs */}
+                                            {Object.keys(step.inputs).length > 0 && (
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <p className="text-xs font-medium text-slate-600">Raw JSON Response:</p>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => copyToClipboard(JSON.stringify(step.data.raw_json, null, 2))}
-                                                            className="h-6 text-xs"
-                                                        >
-                                                            <Copy className="h-3 w-3 mr-1" />
-                                                            Copy
-                                                        </Button>
+                                                    <p className="text-xs font-medium text-slate-600 mb-1">Inputs:</p>
+                                                    <div className="space-y-2">
+                                                        {Object.entries(step.inputs).map(([key, val]) => (
+                                                            <div key={key}>
+                                                                <div className="flex items-center justify-between mb-0.5">
+                                                                    <span className="text-[10px] text-slate-400">{key}:</span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => copyToClipboard(typeof val === 'string' ? val : JSON.stringify(val, null, 2))}
+                                                                        className="h-5 text-[10px]"
+                                                                    >
+                                                                        Copy
+                                                                    </Button>
+                                                                </div>
+                                                                <pre className="text-[10px] bg-slate-50 p-2 rounded border border-slate-200 overflow-x-auto max-h-32">
+                                                                    <code>{typeof val === 'string' ? val : JSON.stringify(val, null, 2)}</code>
+                                                                </pre>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                    <pre className="text-xs bg-amber-50 p-2 rounded border border-amber-200 overflow-x-auto max-h-40 overflow-y-auto">
-                                                        <code>{JSON.stringify(step.data.raw_json, null, 2)}</code>
-                                                    </pre>
                                                 </div>
                                             )}
 
-                                            {/* Output */}
-                                            <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <p className="text-xs font-medium text-slate-600">Output:</p>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => copyToClipboard(step.data.output)}
-                                                        className="h-6 text-xs"
-                                                    >
-                                                        <Copy className="h-3 w-3 mr-1" />
-                                                        Copy
-                                                    </Button>
-                                                </div>
-                                                <pre className="text-xs bg-green-50 p-2 rounded border border-green-200 overflow-x-auto max-h-40 overflow-y-auto">
-                                                    <code>{step.data.output}</code>
-                                                </pre>
-                                            </div>
-
-                                            {/* Transformation Logic (if available) */}
-                                            {step.data.transformation_logic && (
+                                            {/* Outputs */}
+                                            {Object.keys(step.outputs).length > 0 && (
                                                 <div>
-                                                    <p className="text-xs font-medium text-slate-600 mb-1">Transformation Logic:</p>
-                                                    <pre className="text-xs bg-blue-50 p-2 rounded border border-blue-200 overflow-x-auto">
-                                                        <code>{step.data.transformation_logic}</code>
-                                                    </pre>
+                                                    <p className="text-xs font-medium text-slate-600 mb-1">Outputs:</p>
+                                                    <div className="space-y-2">
+                                                        {Object.entries(step.outputs).map(([key, val]) => (
+                                                            <div key={key}>
+                                                                <div className="flex items-center justify-between mb-0.5">
+                                                                    <span className="text-[10px] text-slate-400">{key}:</span>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => copyToClipboard(typeof val === 'string' ? val : JSON.stringify(val, null, 2))}
+                                                                        className="h-5 text-[10px]"
+                                                                    >
+                                                                        Copy
+                                                                    </Button>
+                                                                </div>
+                                                                <pre className="text-[10px] bg-green-50/50 p-2 rounded border border-green-100 overflow-x-auto max-h-32">
+                                                                    <code>{typeof val === 'string' ? val : JSON.stringify(val, null, 2)}</code>
+                                                                </pre>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Timestamp */}
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-[10px] text-slate-400 text-right">
                                                 Executed: {new Date(step.timestamp).toLocaleString()}
                                             </p>
                                         </div>

@@ -99,6 +99,8 @@ function EcosystemContent() {
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
     const [mounted, setMounted] = useState(false);
 
+    const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({ resistance: false });
+
     // Link Enrichment State
     const [isEnriching, setIsEnriching] = useState(false);
     const [enrichProgress, setEnrichProgress] = useState(0);
@@ -326,7 +328,11 @@ function EcosystemContent() {
     };
 
     const handleDeleteConfiguration = (configId: string) => {
-        setConfigurations(prev => prev.filter(c => c.id !== configId));
+        setConfigurations(prev => {
+            const newList = prev.filter(c => c.id !== configId);
+            return newList;
+        });
+
         if (selectedConfigId === configId) {
             setSelectedConfigId(null);
             setActiveTab("actors");
@@ -337,7 +343,7 @@ function EcosystemContent() {
         setActiveLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
     };
 
-    const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({ resistance: false });
+
 
     if (!mounted) return null;
 
@@ -411,9 +417,9 @@ function EcosystemContent() {
                     </div>
                 </div>
             ) : (
-                <>
+                <div className="flex-1 flex flex-row min-h-0 relative">
                     {/* Full Screen Map Container */}
-                    <div className="absolute inset-0 z-0 bg-slate-50 overflow-hidden">
+                    <div className="flex-1 relative bg-slate-50 overflow-hidden">
                         {/* Map is always rendered if policy is selected */}
                         <EcosystemMap
                             isReadOnly={isReadOnly}
@@ -433,6 +439,7 @@ function EcosystemContent() {
                             toggleLayer={toggleLayer}
                             colorMode={colorMode}
                             onConfigClick={handleConfigClick}
+                            onClearConfig={() => setSelectedConfigId(null)}
                             absenceAnalysis={absenceAnalysis}
                             analysisMode={analysisMode}
                             setAnalysisMode={setAnalysisMode}
@@ -481,8 +488,6 @@ function EcosystemContent() {
                         />
                     </div>
 
-                    {/* Floating Windows (Draggable) */}
-
                     {/* Consolidated Right Sidebar */}
                     <div className={`transition-all duration-300 border-l border-slate-200 bg-white flex flex-col shadow-xl z-20 shrink-0 h-full ${!isSidebarOpen
                         ? "w-0 border-0 overflow-hidden opacity-0"
@@ -521,6 +526,10 @@ function EcosystemContent() {
                                                 onEnrichLinks={handleEnrichLinks}
                                                 isEnriching={isEnriching}
                                                 enrichProgress={enrichProgress}
+                                                // Selection [NEW]
+                                                selectedForGrouping={selectedForGrouping}
+                                                onToggleSelection={toggleSelection}
+                                                onCreateConfiguration={handleCreateConfiguration}
                                             />
                                         </div>
                                     </TabsContent>
@@ -649,7 +658,7 @@ function EcosystemContent() {
                             </Button>
                         </div>
                     )}
-                </>
+                </div>
             )}
         </div>
     );

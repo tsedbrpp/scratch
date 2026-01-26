@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import { EcosystemActor } from '@/types/ecosystem';
 
@@ -10,6 +10,11 @@ export interface SimulationNode extends d3.SimulationNodeDatum {
     y?: number;
     vx?: number;
     vy?: number;
+    metrics?: any;
+    // Radial Layout Props
+    assemblageId?: string;
+    startAngle?: number;
+    endAngle?: number;
 }
 
 interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
@@ -18,226 +23,271 @@ interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
     type: string;
 }
 
+// Helper to determine Ring Radius based on Actor Type
+const getRadialRadius = (type: string, minDim: number) => {
+    const t = type.toLowerCase();
+    if (['legalobject', 'regulation', 'law'].some(k => t.includes(k))) return 0; // Center
+    if (['policymaker', 'government'].some(k => t.includes(k))) return minDim * 0.15;
+    if (['civilsociety', 'academic', 'ngo'].some(k => t.includes(k))) return minDim * 0.25;
+    if (['market', 'private', 'startup'].some(k => t.includes(k))) return minDim * 0.35;
+    return minDim * 0.45; // Outer
+};
+
 export function useForceGraph(
     actors: EcosystemActor[],
     width: number,
     height: number,
     configurations: { id: string; memberIds: string[] }[] = [],
     links: { source: string; target: string; type: string }[] = [],
-    enableClustering: boolean = false,
+    enableClustering: boolean = false, // Nested Mode (Static Radial)
     isPaused: boolean = false,
     configOffsets: Record<string, { x: number; y: number }> = {},
-    enableMetricAlignment: boolean = false // [NEW] Align to Territory/Deterritory axes
+    enableMetricAlignment: boolean = false // Compass Mode (Physics)
 ) {
     const [nodes, setNodes] = useState<SimulationNode[]>([]);
     const simulationRef = useRef<d3.Simulation<SimulationNode, SimulationLink> | null>(null);
-    const configOffsetsRef = useRef(configOffsets);
+    const nodesRef = useRef<SimulationNode[]>([]);
 
-    // Keep Ref in Sync & Wake up simulation on drag
+    // 1. Initialize Nodes (Preserve State)
     useEffect(() => {
-        configOffsetsRef.current = configOffsets;
-        if (simulationRef.current) {
-            simulationRef.current.alphaTarget(0.3).restart();
-        }
-    }, [configOffsets]);
+        const currentNodes = nodesRef.current;
 
-    // Initialize Nodes
-    useEffect(() => {
-        setNodes(prevNodes => {
-            // Create a map of current actor IDs for quick lookup
-            const currentActorIds = new Set(actors.map(a => a.id));
+        // Identify which config each actor belongs to (first match wins)
+        const getAssemblageId = (actorId: string) => {
+            const config = configurations.find(c => c.memberIds.includes(actorId));
+            return config ? config.id : 'ungrouped';
+        };
 
-            // Only preserve previous nodes that still exist in the new actors array
-            const validPrevNodes = prevNodes.filter(n => currentActorIds.has(n.id));
+        const newNodes = actors.map(actor => {
+            const existing = currentNodes.find(n => n.id === actor.id);
+            const assemblageId = getAssemblageId(actor.id);
 
-            const newNodes: SimulationNode[] = actors.map(actor => {
-                const existing = validPrevNodes.find(n => n.id === actor.id);
-                return {
-                    id: actor.id,
-                    type: actor.type,
-                    radius: actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20,
-                    x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 50,
-                    y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 50,
-                    vx: existing ? existing.vx : 0,
-                    vy: existing ? existing.vy : 0,
-                    // Store metrics for force alignment
-                    metrics: actor.metrics
-                };
-            });
-            return newNodes;
+            if (existing) {
+                existing.radius = actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20;
+                existing.metrics = actor.metrics;
+                existing.assemblageId = assemblageId;
+                return existing;
+            }
+            return {
+                id: actor.id,
+                type: actor.type,
+                radius: actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20,
+                x: width / 2 + (Math.random() - 0.5) * 50,
+                y: height / 2 + (Math.random() - 0.5) * 50,
+                metrics: actor.metrics,
+                assemblageId: assemblageId
+            } as SimulationNode;
         });
-    }, [actors, width, height]);
 
-    // Run Simulation
-    useEffect(() => {
-        if (!nodes.length || isPaused) {
-            simulationRef.current?.stop();
-            return;
+        nodesRef.current = newNodes;
+        setNodes(newNodes);
+
+        if (simulationRef.current) {
+            simulationRef.current.nodes(newNodes);
+            simulationRef.current.alpha(0.3).restart();
         }
+    }, [actors, width, height, configurations]); // Re-run when configs change
 
+
+    // 2. Main Layout Engine
+    useEffect(() => {
+        if (!nodes.length || isPaused) return;
+
+        // Cleanup
         if (simulationRef.current) simulationRef.current.stop();
 
-        // 1. Initialize Simulation (Base Forces)
         const simulation = d3.forceSimulation(nodes)
-            .force("collide", d3.forceCollide().radius((d: d3.SimulationNodeDatum) => (d as SimulationNode).radius + 15).iterations(2)); // Increased padding
+            .alphaDecay(0.04)
+            .velocityDecay(0.4);
 
-        // 2. Configure Layout Specific Forces
-        if (enableMetricAlignment) {
-            // [NEW] Metric Alignment Force (The "Compass" Logic)
-            const getMetricValue = (val: string | number | undefined) => {
-                if (typeof val === 'number') return val;
-                if (val === 'Weak' || val === 'Low') return 2;
-                if (val === 'Moderate' || val === 'Medium') return 5;
-                if (val === 'Strong' || val === 'High') return 8;
-                return 5;
-            };
+        const isRadialMode = enableClustering && !enableMetricAlignment;
 
-            // Map 0-10 metric scale to Screen Coordinates (with padding)
-            // X-Axis: Territorialization (0 -> 10) maps to (Left -> Right)
-            // Y-Axis: Deterritorialization (0 -> 10) maps to (Bottom -> Top) - NOTE: SVG Y is inverted (0 is top), so we flip it.
-            // Wait, usually Deterritorialization implies "flight" or "up". Let's map 10 to TOP (low Y) and 0 to BOTTOM (high Y).
-            const padding = 100;
-            const safeWidth = width - (padding * 2);
-            const safeHeight = height - (padding * 2);
+        if (isRadialMode) {
+            // === STATIC RADIAL LAYOUT (Hybrid Pinning) ===
+            const minDim = Math.min(width, height);
 
-            simulation
-                .force("x", d3.forceX((d: SimulationNode & { metrics?: any }) => {
-                    const val = getMetricValue(d.metrics?.territorialization || d.metrics?.territoriality);
-                    return padding + (val / 10) * safeWidth;
-                }).strength(0.4)) // Strong pull
-                .force("y", d3.forceY((d: SimulationNode & { metrics?: any }) => {
-                    const val = getMetricValue(d.metrics?.deterritorialization || d.metrics?.counter_conduct);
-                    // Invert Y: High value (10) -> Low Y (Top)
-                    return (height - padding) - (val / 10) * safeHeight;
-                }).strength(0.4))
-                .force("charge", d3.forceManyBody().strength(-100)); // Gentle repulsion to prevent overlapping
-        } else if (enableClustering) {
-            // Nested Assemblage Layout (Radial Rings)
-            const getRadialRadius = (type: string) => {
-                const t = type.toLowerCase();
-                const minDim = Math.min(width, height);
-                // Center (0) reserved for Policy Object if it exists
-                if (t === 'legalobject' || t === 'regulation' || t === 'law') return 0; // Ring 0 (Center)
-                if (t === 'policymaker' || t === 'government' || t === 'regulator') return minDim * 0.15; // Ring 1
-                if (t === 'civilsociety' || t === 'academic' || t === 'ngo') return minDim * 0.25; // Ring 2
-                if (t === 'startup' || t === 'private' || t === 'market' || t === 'corporation') return minDim * 0.35; // Ring 3
-                return minDim * 0.45; // Ring 4 (Outer: Infra, Algo, etc)
-            };
+            // Group nodes by Assemblage to handle intra-wedge distribution
+            const nodesByAssemblage: Record<string, SimulationNode[]> = {};
+            // Initialize keys
+            configurations.forEach(c => { nodesByAssemblage[c.id] = []; });
+            nodesByAssemblage['ungrouped'] = [];
 
-            simulation
-                .force("radial", d3.forceRadial((d: d3.SimulationNodeDatum) => getRadialRadius((d as SimulationNode).type), width / 2, height / 2).strength(0.8))
-                .force("charge", d3.forceManyBody().strength(-300)) // Weaker repulsion for rings
+            nodes.forEach(n => {
+                const key = n.assemblageId && nodesByAssemblage[n.assemblageId] ? n.assemblageId : 'ungrouped';
+                nodesByAssemblage[key].push(n);
+            });
+
+            const totalConfigs = configurations.length;
+
+            // If no configs, we treat everything as a single "ungrouped" spiral
+            const safeTotalConfigs = totalConfigs || 1;
+            const angleStep = (2 * Math.PI) / safeTotalConfigs;
+
+            // 1. Process Configured Assemblages
+            configurations.forEach((c, i) => {
+                const members = nodesByAssemblage[c.id] || [];
+                if (members.length === 0) return;
+
+                // Sort members by Type (Radius) then Name
+                members.sort((a, b) => {
+                    const rA = getRadialRadius(a.type, minDim);
+                    const rB = getRadialRadius(b.type, minDim);
+                    return (rA - rB) || a.id.localeCompare(b.id);
+                });
+
+                const startAngle = i * angleStep - (Math.PI / 2); // Wedge start (Top aligned)
+                const wedgeWidth = angleStep; // Full width
+
+                members.forEach((node) => {
+                    const r = getRadialRadius(node.type, minDim);
+
+                    // Find count of nodes at this radius within this assemblage
+                    const peers = members.filter(m => getRadialRadius(m.type, minDim) === r);
+                    const peerIndex = peers.indexOf(node);
+                    const peerCount = peers.length;
+
+                    // Distribute angularly within wedge
+                    // Avoid edges slightly for aesthetics
+                    const effectiveWidth = wedgeWidth * 0.8;
+                    const padding = wedgeWidth * 0.1;
+
+                    let localAngle = startAngle + (wedgeWidth / 2); // Default center
+                    if (peerCount > 1) {
+                        const step = effectiveWidth / (peerCount - 1);
+                        localAngle = startAngle + padding + (step * peerIndex);
+                    }
+
+                    const targetX = (width / 2) + Math.cos(localAngle) * r;
+                    const targetY = (height / 2) + Math.sin(localAngle) * r;
+
+                    if (!isNaN(targetX) && !isNaN(targetY)) {
+                        node.fx = targetX;
+                        node.fy = targetY;
+                        node.x = targetX;
+                        node.y = targetY;
+                    }
+                });
+            });
+
+            // 2. Process Ungrouped (if any)
+            const ungrouped = nodesByAssemblage['ungrouped'];
+            if (ungrouped.length > 0) {
+                // If configs exist, ungrouped start after them. If 0 configs, start at top (-PI/2)
+                const angleStart = configurations.length > 0
+                    ? -Math.PI / 2 + (configurations.length * angleStep)
+                    : -Math.PI / 2;
+
+                ungrouped.forEach((node, idx) => {
+                    const r = getRadialRadius(node.type, minDim);
+                    // Spiral them
+                    const angle = angleStart + (idx * 0.2);
+                    const tx = (width / 2) + Math.cos(angle) * r;
+                    const ty = (height / 2) + Math.sin(angle) * r;
+
+                    if (!isNaN(tx) && !isNaN(ty)) {
+                        node.fx = tx;
+                        node.fy = ty;
+                        node.x = tx;
+                        node.y = ty;
+                    }
+                });
+            }
+
+            // Disable forces
+            simulation.force("charge", null)
                 .force("center", null)
-                .force("x", null)
-                .force("y", null);
+                .force("collision", null);
+
         } else {
-            // Standard Force Layout
-            simulation
-                .force("radial", null)
-                .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05))
-                .force("x", d3.forceX(width / 2).strength(0.05))
-                .force("y", d3.forceY(height / 2).strength(0.05))
-                .force("charge", d3.forceManyBody().strength(-800)); // Strong repulsion for spread
+            // === COMPASS / PHYSICS MODE ===
+
+            // Unpin everyone
+            nodes.forEach(n => {
+                n.fx = null;
+                n.fy = null;
+            });
+
+            // 1. Collision
+            simulation.force("collide", d3.forceCollide().radius((d: any) => d.radius + 15).iterations(2));
+
+            // 2. Metric Forces (Compass)
+            if (enableMetricAlignment) {
+                const padding = 80;
+                const safeW = width - (padding * 2);
+                const safeH = height - (padding * 2);
+                const getVal = (val: any) => {
+                    if (typeof val === 'number') return val;
+                    if (val === 'High' || val === 'Strong') return 8;
+                    if (val === 'Medium' || val === 'Moderate') return 5;
+                    return 2;
+                };
+
+                simulation.force("x", d3.forceX((d: SimulationNode) => {
+                    const val = getVal(d.metrics?.territorialization || d.metrics?.territoriality);
+                    return padding + (val / 10) * safeW;
+                }).strength(0.3));
+
+                simulation.force("y", d3.forceY((d: SimulationNode) => {
+                    const val = getVal(d.metrics?.deterritorialization || d.metrics?.counter_conduct);
+                    return (height - padding) - (val / 10) * safeH;
+                }).strength(0.3));
+
+                simulation.force("charge", d3.forceManyBody().strength(-100));
+            } else {
+                // Fallback
+                simulation.force("charge", d3.forceManyBody().strength(-300));
+                simulation.force("center", d3.forceCenter(width / 2, height / 2));
+            }
         }
 
-        // 3. Configure Links
+        // Links
         if (links.length > 0) {
             const nodeIds = new Set(nodes.map(n => n.id));
-            const validLinks = links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target))
-                .map(l => ({ ...l }));
+            const validLinks = links.filter(l => {
+                const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                return nodeIds.has(sourceId) && nodeIds.has(targetId);
+            }).map(l => ({ ...l }));
 
             if (validLinks.length > 0) {
-                // Tighter links in radial mode to keep rings coherent
-                // Looser links in Metric mode to allow metrics to dictate position mostly
-                const distance = enableMetricAlignment ? 0 : (enableClustering ? 100 : 150);
-                const strength = enableMetricAlignment ? 0 : 1; // Disable link pull in metric mode so X/Y dominates? Or weak pull?
-                // Actually, let's keep weak links in metric mode to show connections without distorting position too much
                 simulation.force("link", d3.forceLink(validLinks)
-                    .id((d: d3.SimulationNodeDatum) => (d as SimulationNode).id)
-                    .distance(enableClustering ? 100 : 150)
-                    .strength(enableMetricAlignment ? 0.05 : 0.7) // Very weak links in metric mode
+                    .id((d: any) => d.id)
+                    .strength(isRadialMode ? 0 : 0.05)
+                    .distance(100)
                 );
             }
         }
 
-        // 4. Custom Grouping (Configuration) Force - Radially Separates Macro Groups
-        const groupForce = (alpha: number) => {
-            if (enableMetricAlignment) return; // Disable artificial group separation in metric mode
-
-            configurations.forEach((config, i) => {
-                const members = nodes.filter(n => config.memberIds.includes(n.id));
-                if (members.length < 1) return;
-
-                // Calculate a target "home" for this configuration based on index
-                const totalConfigs = configurations.length;
-
-                let targetX = width / 2;
-                let targetY = height / 2;
-
-                // Calculate Default Home
-                if (totalConfigs > 1) {
-                    const radius = Math.min(width, height) * 0.35; // Use 35% of view dimension
-                    const angle = (i / totalConfigs) * 2 * Math.PI - (Math.PI / 2); // Start at top
-                    targetX = (width / 2) + Math.cos(angle) * radius;
-                    targetY = (height / 2) + Math.sin(angle) * radius;
-                }
-
-                // Apply Manual Offsets via Ref (Hot update)
-                const currentOffsets = configOffsetsRef.current;
-                if (currentOffsets[config.id]) {
-                    targetX += currentOffsets[config.id].x;
-                    targetY += currentOffsets[config.id].y;
-                }
-
-                members.forEach(d => {
-                    d.vx! += (targetX - d.x!) * alpha * 0.15;
-                    d.vy! += (targetY - d.y!) * alpha * 0.15;
-                });
-            });
-        };
-
-        simulation.alphaDecay(0.02);
-
-        simulation.on("tick", () => {
-            groupForce(simulation.alpha());
-            setNodes([...nodes]);
-        });
-
+        simulation.on("tick", () => setNodes([...nodes]));
         simulationRef.current = simulation;
 
         return () => {
             simulation.stop();
         };
-    }, [nodes, links, width, height, configurations, enableClustering, isPaused, enableMetricAlignment]);
 
-    // Custom interface to compatible with both D3 internal events and manual React triggers
-    interface GraphDragEvent {
-        active?: boolean | number;
-        x: number;
-        y: number;
-        subject?: unknown;
-    }
+    }, [nodes.length, width, height, enableClustering, enableMetricAlignment, isPaused, configurations]);
 
+
+    // Drag Interaction
     const drag = (node: SimulationNode) => {
-        const dragStarted = (event: GraphDragEvent) => {
-            if (!event.active) simulationRef.current?.alphaTarget(0.3).restart();
+        const dragStarted = (e: any) => {
+            if (!e.active) simulationRef.current?.alphaTarget(0.3).restart();
             node.fx = node.x;
             node.fy = node.y;
         };
-
-        const dragged = (event: GraphDragEvent) => {
-            node.fx = event.x;
-            node.fy = event.y;
+        const dragged = (e: any) => {
+            node.fx = e.x;
+            node.fy = e.y;
         };
-
-        const dragEnded = (event: GraphDragEvent) => {
-            if (!event.active) simulationRef.current?.alphaTarget(0);
-            node.fx = null;
-            node.fy = null;
+        const dragEnded = (e: any) => {
+            if (!e.active) simulationRef.current?.alphaTarget(0);
+            if (!enableClustering) {
+                node.fx = null;
+                node.fy = null;
+            }
         };
-
         return { dragStarted, dragged, dragEnded };
-    };
+    }
 
     return { nodes, simulation: simulationRef.current, drag };
 }

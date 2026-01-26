@@ -88,13 +88,14 @@ export function calculateMicroFascismRisk(analysis: AnalysisResult): MicroFascis
 
     // 5. Temporal Closure
     // Teleology
-    if (analysis.temporal_orientation) {
-        if (analysis.temporal_orientation.score < 35) {
+    if (analysis.temporal_orientation && typeof analysis.temporal_orientation === 'object') {
+        const temporal = analysis.temporal_orientation as any; // Fallback to any to avoid property access errors on complex unions
+        if (temporal.score < 35) {
             flags.temporal_closure = true;
-            explanations.temporal = `Temporal Openness score (${analysis.temporal_orientation.score}) indicates 'Desinty' or 'Urgency' framing.`;
-        } else if (analysis.temporal_orientation.framing === "Urgency" || analysis.temporal_orientation.framing === "Destiny") {
+            explanations.temporal = `Temporal Openness score (${temporal.score}) indicates 'Desinty' or 'Urgency' framing.`;
+        } else if (temporal.framing === "Urgency" || temporal.framing === "Destiny") {
             flags.temporal_closure = true;
-            explanations.temporal = `Future framed as '${analysis.temporal_orientation.framing}', closing off alternatives.`;
+            explanations.temporal = `Future framed as '${temporal.framing}', closing off alternatives.`;
         }
     }
 

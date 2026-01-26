@@ -1,6 +1,8 @@
 import React from "react";
 import { Eye } from "lucide-react";
 import { AnalysisResult } from "@/types";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
+import { getGlossaryDefinition } from "@/lib/glossary-definitions";
 
 interface SystemCritiqueSectionProps {
     critique: NonNullable<AnalysisResult['system_critique']>;
@@ -12,6 +14,12 @@ export function SystemCritiqueSection({ critique }: SystemCritiqueSectionProps) 
             <div className="bg-purple-100/50 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
                 <Eye className="h-4 w-4 text-purple-700" />
                 <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider">System Reflexivity (Devil&apos;s Advocate)</h4>
+                <HelpTooltip
+                    title="System Reflexivity"
+                    description={getGlossaryDefinition('reflexivity')}
+                    glossaryTerm="reflexivity"
+                    videoUrl="/videos/reflexivity-demo.mp4"
+                />
             </div>
             <div className="p-4 space-y-4">
                 {critique.blind_spots && critique.blind_spots.length > 0 && (

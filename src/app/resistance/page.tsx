@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResistanceVisualization } from "@/components/resistance/ResistanceVisualization";
 
-import { Zap, EyeOff, Activity, Wrench, Users, Loader2, Search, Trash } from "lucide-react";
+import { Zap, EyeOff, Activity, Wrench, Users, Loader2, Search, Trash, FileText, ExternalLink, Play, Quote } from "lucide-react";
 
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";

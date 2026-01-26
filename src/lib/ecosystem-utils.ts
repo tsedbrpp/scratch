@@ -100,3 +100,43 @@ export const inferActorType = (name: string): EcosystemActor['type'] => {
     if (n.includes("dataset") || n.includes("training data") || n.includes("registry") || n.includes("benchmark")) return "Dataset";
     return "Civil Society"; // Default
 };
+
+// [NEW] Shared Metric Calculation
+// Avoids circular dependency by accepting edges or generating them if we move generateEdges here? 
+// Actually, circular dependency risk: graph-utils imports types, ecosystem-utils imports types. Safe.
+// But we need to import generateEdges from graph-utils.
+import { generateEdges } from '@/lib/graph-utils';
+import { EcosystemConfiguration } from "@/types/ecosystem";
+
+export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: EcosystemConfiguration | null) => {
+    if (!config || !actors.length) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0 };
+
+    const memberSet = new Set(config.memberIds);
+    // Use generateEdges to get all potential links based on types
+    // Note: This relies on the deterministic type-based logic. 
+    const edges = generateEdges(actors);
+
+    let internal = 0;
+    let external = 0;
+
+    edges.forEach(edge => {
+        const sIn = memberSet.has(edge.source.id);
+        const tIn = memberSet.has(edge.target.id);
+
+        if (sIn && tIn) internal++;
+        else if (sIn || tIn) external++;
+    });
+
+    const total = internal + external;
+    const porosity = total > 0 ? external / total : 0; // High external links = High Porosity
+    const stability = total > 0 ? internal / total : 0; // High internal links = High Stability (Territorialization)
+
+    return {
+        porosity,
+        stability,
+        internal,
+        external,
+        coding_intensity: 1 - porosity // High Porosity = Low Coding Intensity (Decoded)
+    };
+};
+

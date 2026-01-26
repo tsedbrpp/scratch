@@ -482,6 +482,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                             content={analysis.reflexivity_situated_praxis || 'No analysis available.'}
                             color="amber"
                             glossaryTerm="reflexivity"
+                            videoUrl="/videos/reflexivity-demo.mp4"
                         />
                         {analysis.coloniality_of_power && (
                             <DimensionCard
