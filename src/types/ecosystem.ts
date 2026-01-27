@@ -69,6 +69,12 @@ export interface EcosystemConfiguration {
 
 
 
+export interface AssemblageImpact {
+    type: string;
+    description: string;
+    [key: string]: string | number | undefined;
+}
+
 export interface AssemblageAnalysis {
     narrative: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,10 +104,14 @@ export interface AssemblageAnalysis {
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     assemblage?: any; // Full assemblage object from API
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    impacts?: any[]; // Impact analysis from API
+    impacts?: AssemblageImpact[]; // Impact analysis from API
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     traces?: any[]; // To store ANT trace objects if included
+    trajectory_analysis?: {
+        forecast: "Stabilizing" | "Collapsing" | "Mutating" | "Unknown";
+        lines_of_flight: { description: string; risk_level: "High" | "Medium" | "Low" }[];
+        reterritorialization_forces: string[];
+    };
 }
 
 export interface AiAbsenceAnalysis {

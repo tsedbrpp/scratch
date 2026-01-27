@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Loader2, Layers, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, Layers, Maximize2, Minimize2, X, ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
 import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { AssemblageAnalysisView } from './AssemblageAnalysisView';
+import { AssemblageMethodologyGraph, PipelineStepStatus } from './AssemblageMethodologyGraph';
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { calculateAssemblageMetrics } from "@/lib/ecosystem-utils";
@@ -22,13 +24,33 @@ interface AssemblagePanelProps {
     isExpanded?: boolean;
     onToggleExpand?: () => void;
     // Unification Props
-    selectedConfig?: EcosystemConfiguration | null;
+    selectedConfigs?: EcosystemConfiguration[];
     onUpdateConfig?: (config: EcosystemConfiguration) => void;
     onClose?: () => void;
     onUpdateActors?: (actors: EcosystemActor[]) => void;
+    // [NEW] Management Props
+    allConfigurations?: EcosystemConfiguration[];
+    onReorderConfigs?: (configs: EcosystemConfiguration[]) => void;
+    onSelectConfig?: (id: string, multi: boolean) => void;
+    onDeleteConfig?: (id: string) => void;
 }
 
-export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSaveAnalysis, isExpanded = false, onToggleExpand, selectedConfig, onUpdateConfig, onClose, onUpdateActors }: AssemblagePanelProps) {
+export function AssemblagePanel({
+    actors,
+    analyzedText = "",
+    savedAnalysis,
+    onSaveAnalysis,
+    isExpanded = false,
+    onToggleExpand,
+    selectedConfigs = [],
+    onUpdateConfig,
+    onClose,
+    onUpdateActors,
+    allConfigurations = [],
+    onReorderConfigs,
+    onSelectConfig,
+    onDeleteConfig
+}: AssemblagePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisType, setAnalysisType] = useState('comprehensive_scan');
 
@@ -36,14 +58,40 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
     const [forceRefresh, setForceRefresh] = useState(false);
+    const [showGraph, setShowGraph] = useState(false);
+
+    // [NEW] View Mode: 'analysis' | 'manage'
+    const [viewMode, setViewMode] = useState<'analysis' | 'manage'>('analysis');
+
+    // Auto-switch to analysis when analyzing starts
+    useEffect(() => {
+        if (isAnalyzing) setViewMode('analysis');
+    }, [isAnalyzing]);
+    const [pipelineStatus, setPipelineStatus] = useState<{
+        actants: PipelineStepStatus;
+        relations: PipelineStepStatus;
+        mechanisms: PipelineStepStatus;
+        trajectory: PipelineStepStatus;
+        critique: PipelineStepStatus;
+        stress_test: PipelineStepStatus;
+    }>({
+        actants: 'pending',
+        relations: 'pending',
+        mechanisms: 'pending',
+        trajectory: 'pending',
+        critique: 'pending',
+        stress_test: 'pending'
+    });
+    const [pipelineMessage, setPipelineMessage] = useState<string>('');
 
     // [FIX] Dynamic Metric Calculation (Moved to top level to comply with React Hook Rules)
     const dynamicMetrics = React.useMemo(() => {
-        if (!selectedConfig) return { stability: 0, coding_intensity: 0, internal: 0, external: 0, porosity: 0 };
-        return calculateAssemblageMetrics(actors, selectedConfig);
-    }, [actors, selectedConfig]);
+        if (selectedConfigs.length !== 1) return { stability: 0, coding_intensity: 0, internal: 0, external: 0, porosity: 0 };
+        return calculateAssemblageMetrics(actors, selectedConfigs[0]);
+    }, [actors, selectedConfigs]);
 
     const handleRatify = () => {
+        const selectedConfig = selectedConfigs.length === 1 ? selectedConfigs[0] : null;
         const currentData = savedAnalysis || selectedConfig?.analysisData;
         if (!currentData?.provisional_status) return;
 
@@ -82,6 +130,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
     };
 
     const handleContest = (interpretation: string, basis: string) => {
+        const selectedConfig = selectedConfigs.length === 1 ? selectedConfigs[0] : null;
         const currentData = savedAnalysis || selectedConfig?.analysisData;
         if (!currentData?.provisional_status) return;
 
@@ -116,6 +165,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
     };
 
     const handleAddLog = (entry: import('@/types/ecosystem').ReflexiveLogEntry) => {
+        const selectedConfig = selectedConfigs.length === 1 ? selectedConfigs[0] : null;
         if (!selectedConfig || !onUpdateConfig) return;
 
         const updatedConfig = {
@@ -126,6 +176,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
     };
 
     const handleDeleteLog = (entryId: string) => {
+        const selectedConfig = selectedConfigs.length === 1 ? selectedConfigs[0] : null;
         if (!selectedConfig || !onUpdateConfig) return;
 
         const updatedConfig = {
@@ -148,6 +199,18 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
         }
 
         setIsAnalyzing(true);
+        setShowGraph(true); // Auto-open graph on start
+        // Reset pipeline
+        setPipelineStatus({
+            actants: 'analyzing',
+            relations: 'analyzing',
+            mechanisms: 'pending',
+            trajectory: 'pending',
+            critique: 'pending',
+            stress_test: 'pending'
+        });
+        setPipelineMessage("Tracing actants and relations...");
+
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
             // Always try to send demo ID if available (handles client/server env mismatch)
@@ -155,19 +218,25 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
+            // [FIX] Filter actors if a specific assemblage is selected
+            const targetActors = selectedConfigs.length > 0
+                ? actors.filter(a => selectedConfigs.some(c => c.memberIds.includes(a.id)))
+                : actors;
+
             // [FIX] Changed from /api/ecosystem/absence to /api/analyze to use the full Deleuzian prompt
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
-                    text: analyzedText || actors.map(a => `${a.name}: ${a.description}`).join("\n"),
+                    text: analyzedText || targetActors.map(a => `${a.name}: ${a.description}`).join("\n"),
                     analysisMode: analysisType, // Use selected mode
                     sourceType: 'Trace',
                     force: forceRefresh, // Use toggle state for cache control
+                    assemblageId: selectedConfigs.map(c => c.id).join(','), // [NEW] Pass IDs for precise caching
                     // [FIX] Pass existing analysis for Critique and Realist modes
-                    existingAnalysis: savedAnalysis || selectedConfig?.analysisData,
+                    existingAnalysis: savedAnalysis || (selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : null),
                     // [FIX] Pass structured data for Realist/Explanation modes
-                    traced_actors: actors,
+                    traced_actors: targetActors,
                     detected_mechanisms: (savedAnalysis as any)?.stabilization_mechanisms || (savedAnalysis as any)?.assemblage?.stabilization_mechanisms || [],
                     identified_capacities: (savedAnalysis as any)?.capacities || []
                 })
@@ -183,7 +252,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
 
             // 1. Update Analysis Data
             if (data.analysis && onSaveAnalysis) {
-                const effectiveAnalysis = selectedConfig?.analysisData || savedAnalysis || {};
+                const effectiveAnalysis = (selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : null) || savedAnalysis || {};
                 const mergedAnalysis = {
                     ...effectiveAnalysis,
                     ...data.analysis,
@@ -206,6 +275,17 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                     }
                 };
                 onSaveAnalysis(mergedAnalysis);
+
+                // [FIX] Update Structural Data (memberIds) if analysis redefined the assemblage
+                if (selectedConfigs.length === 1 && data.analysis.assemblage?.memberIds && onUpdateConfig) {
+                    const updatedConfig = {
+                        ...selectedConfigs[0],
+                        memberIds: data.analysis.assemblage.memberIds,
+                        analysisData: mergedAnalysis
+                    };
+                    onUpdateConfig(updatedConfig);
+                }
+
                 refetchCredits();
             }
 
@@ -239,8 +319,25 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
         } catch (error) {
             console.error("Assemblage Analysis failed", error);
             alert("Failed to analyze assemblage. Please check your connection.");
+            setPipelineStatus(prev => ({ ...prev, actants: 'error', relations: 'error' }));
         } finally {
             setIsAnalyzing(false);
+            // Simulate completion sequence for visual feedback (since API is monolithic)
+            // Realistically this should be driven by server events, but for now we simulate the flow
+            // assuming the server did its job if no error was thrown.
+
+            // Step 1: Trace Complete
+            setPipelineStatus(prev => ({ ...prev, actants: 'done', relations: 'done', mechanisms: 'analyzing', trajectory: 'analyzing', critique: 'analyzing' }));
+            setPipelineMessage("Running parallel tracks: Interpretation & Critique...");
+
+            setTimeout(() => {
+                // Step 2 & 3: Parallel Tracks Complete
+                setPipelineStatus(prev => ({ ...prev, mechanisms: 'done', trajectory: 'done', critique: 'done', stress_test: 'done' }));
+                setPipelineMessage("Analysis Complete. Stress Test Ready.");
+
+                // Clear message after delay
+                setTimeout(() => setPipelineMessage(''), 3000);
+            }, 2500); // Slightly longer single delay to represent the parallel block
         }
     };
 
@@ -313,6 +410,35 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
         }
     };
 
+    // [NEW] Drag and Drop Logic
+    const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+    const onDragStart = (e: React.DragEvent, index: number) => {
+        setDraggingIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+        // Ghost image usually automatic
+    };
+
+    const onDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault(); // Necesssary to allow dropping
+        // Optional: Implement instant swap animation here if desired, 
+        // but for safety/simplicity we'll do it on drop or use a library-like swap.
+        // For standard HTML5, waiting for drop is safer to avoid jitter without libraries.
+    };
+
+    const onDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        if (draggingIndex === null || draggingIndex === dropIndex) return;
+
+        if (onReorderConfigs && allConfigurations) {
+            const newConfigs = [...allConfigurations];
+            const [movedItem] = newConfigs.splice(draggingIndex, 1);
+            newConfigs.splice(dropIndex, 0, movedItem);
+            onReorderConfigs(newConfigs);
+        }
+        setDraggingIndex(null);
+    };
+
     return (
         <Card className="h-full border-l-4 border-l-slate-400 bg-slate-50/50 flex flex-col">
             <CardHeader className="pb-2">
@@ -337,17 +463,57 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 <CardDescription>
                     Tracing components, mobilities, and silences in the policy assemblage.
                     {/* Provisional Badge in Header if available */}
-                    {(savedAnalysis?.provisional_status || (selectedConfig?.analysisData as AssemblageAnalysis)?.provisional_status) && (
+                    {(savedAnalysis?.provisional_status || (selectedConfigs.length === 1 ? (selectedConfigs[0].analysisData as AssemblageAnalysis)?.provisional_status : undefined)) && (
                         <div className="mt-2">
                             <ProvisionalBadge
-                                fragility={(savedAnalysis?.provisional_status || (selectedConfig?.analysisData as AssemblageAnalysis)?.provisional_status)?.fragility_score}
+                                fragility={(savedAnalysis?.provisional_status || (selectedConfigs.length === 1 ? (selectedConfigs[0].analysisData as AssemblageAnalysis)?.provisional_status : undefined))?.fragility_score}
                             />
                         </div>
                     )}
                 </CardDescription>
 
+
+                {/* Methodology Graph Toggle */}
+                <div className="mt-2 flex items-center justify-between px-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-slate-500 h-6 gap-1 hover:text-indigo-600"
+                        onClick={() => setShowGraph(!showGraph)}
+                    >
+                        {showGraph ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        {showGraph ? "Hide Methodology Pipeline" : "Show Methodology Pipeline"}
+                    </Button>
+                </div>
+
+                {/* Methodology Graph */}
+                {showGraph && (
+                    <div className="mt-2 px-2 border-b border-slate-100 pb-4">
+                        <AssemblageMethodologyGraph
+                            status={pipelineStatus}
+                            currentStepMessage={pipelineMessage}
+                        />
+                    </div>
+                )}
+
                 <div className="pt-2">
                     <div className="flex flex-col gap-2">
+                        {/* View Switcher */}
+                        <div className="bg-slate-100 p-0.5 rounded-lg flex mb-2">
+                            <button
+                                onClick={() => setViewMode('analysis')}
+                                className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${viewMode === 'analysis' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Analysis & Report
+                            </button>
+                            <button
+                                onClick={() => setViewMode('manage')}
+                                className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${viewMode === 'manage' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Manage Assemblages
+                            </button>
+                        </div>
+
                         <div className="flex items-center justify-between px-1">
                             <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
                                 <span className="text-[10px] text-slate-400 font-medium">Force Fresh</span>
@@ -369,12 +535,12 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                                 {isAnalyzing ? (
                                     <>
                                         <Loader2 className="h-3 w-3 animate-spin" />
-                                        Running Multi-Stage Scan...
+                                        Analyzing...
                                     </>
                                 ) : (
                                     <>
                                         <Layers className="h-3 w-3" />
-                                        Run Comprehensive Analysis
+                                        Run Analysis
                                     </>
                                 )}
                             </Button>
@@ -383,81 +549,146 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                 </div>
             </CardHeader>
             <CardContent className="space-y-6 overflow-y-auto flex-1 p-4">
-                {selectedConfig ? (
-                    <div className="space-y-6">
-                        <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg">
-                            <h3 className="font-bold text-indigo-900 text-lg mb-1">{selectedConfig.name}</h3>
-                            <p className="text-sm text-indigo-700 mb-3">{selectedConfig.description}</p>
-
-                            {/* [FIX] Dynamic Metric Calculation (Moved out of IIFE to follow Hook Rules) */}
-                            {(() => {
-                                // Now using the top-level dynamicMetrics
-                                const territorialization = dynamicMetrics.stability || Number(selectedConfig.properties?.territorialization_score) || 0;
-                                const codingIntensity = dynamicMetrics.coding_intensity || Number(selectedConfig.properties?.coding_intensity_score) || 0;
-
-                                return (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
-                                                        <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Territorialization</span>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-base font-bold text-slate-900">
-                                                                {territorialization > 0.7 ? "High Intensity" : territorialization > 0.4 ? "Medium Intensity" : "Low Intensity"}
-                                                            </span>
-                                                            <span className="text-xs text-slate-400">({(territorialization * 10).toFixed(1)})</span>
-                                                        </div>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
-                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
-                                                    <p className="text-xs mb-2">Based on {dynamicMetrics.internal} internal / {dynamicMetrics.external} external associations.</p>
-
-                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
-                                                    <ul className="text-xs list-disc list-inside space-y-1">
-                                                        {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.territorialization_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.length > 0
-                                                            ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
-                                                            : <li className="text-slate-400">No traces found</li>}
-                                                    </ul>
-                                                </TooltipContent>
-                                            </Tooltip>
-
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
-                                                        <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity</span>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-base font-bold text-slate-900">
-                                                                {codingIntensity > 0.7 ? "Over-Coded" : codingIntensity > 0.4 ? "Mixed Coding" : "Decoded"}
-                                                            </span>
-                                                            <span className="text-xs text-slate-400">({(codingIntensity * 10).toFixed(1)})</span>
-                                                        </div>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
-                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
-                                                    <p className="text-xs mb-2">Inverse of Porosity ({(dynamicMetrics.porosity).toFixed(2)}).</p>
-
-                                                    <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
-                                                    <ul className="text-xs list-disc list-inside space-y-1">
-                                                        {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.coding_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.length > 0
-                                                            ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
-                                                            : <li className="text-slate-400">No traces found</li>}
-                                                    </ul>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                );
-                            })()}
+                {viewMode === 'manage' || (allConfigurations && allConfigurations.length > 0 && !selectedConfigs.length && !savedAnalysis) ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-slate-700">All Macro Assemblages ({allConfigurations?.length || 0})</h3>
                         </div>
+                        <div className="space-y-2">
+                            {allConfigurations?.map((config, index) => (
+                                <div
+                                    key={config.id}
+                                    draggable
+                                    onDragStart={(e) => onDragStart(e, index)}
+                                    onDragOver={(e) => onDragOver(e, index)}
+                                    onDrop={(e) => onDrop(e, index)}
+                                    onClick={() => onSelectConfig?.(config.id, false)}
+                                    className={`
+                                        bg-white border rounded-lg p-3 flex items-center gap-3 cursor-pointer group transition-all
+                                        ${draggingIndex === index ? 'opacity-50 border-dashed border-indigo-400' : 'hover:border-indigo-300 hover:shadow-sm'}
+                                    `}
+                                    style={{ borderLeftColor: config.color, borderLeftWidth: '4px' }}
+                                >
+                                    <div className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
+                                        <GripVertical className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-medium text-slate-900 text-sm truncate">{config.name}</h4>
+                                            {onDeleteConfig && (
+                                                <button
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm("Delete this assemblage?")) onDeleteConfig(config.id);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Badge variant="outline" className="text-[10px] h-4 px-1">{config.memberIds.length} members</Badge>
+                                            <span className="text-[10px] text-slate-400">
+                                                Stab: {typeof config.properties.calculated_stability === 'number' ? config.properties.calculated_stability.toFixed(2) : config.properties.stability}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-slate-400 text-center italic">Drag to reorder priority. Click to analyze.</p>
+                    </div>
+                ) : selectedConfigs.length > 0 ? (
+                    <div className="space-y-6">
+                        {selectedConfigs.length === 1 ? (
+                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg">
+                                <h3 className="font-bold text-indigo-900 text-lg mb-1">{selectedConfigs[0].name}</h3>
+                                <p className="text-sm text-indigo-700 mb-3">{selectedConfigs[0].description}</p>
+                                {(() => {
+                                    /* ... existing single config metric display ... */
+                                    // Now using the top-level dynamicMetrics
+                                    const territorialization = dynamicMetrics.stability || Number(selectedConfigs[0].properties?.territorialization_score) || 0;
+                                    const codingIntensity = dynamicMetrics.coding_intensity || Number(selectedConfigs[0].properties?.coding_intensity_score) || 0;
+                                    const selectedConfig = selectedConfigs[0];
 
-                        {selectedConfig.analysisData ? (
+                                    return (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* ... Tooltips relying on selectedConfig loop ... */}
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Territorialization</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-base font-bold text-slate-900">
+                                                                    {territorialization > 0.7 ? "High Intensity" : territorialization > 0.4 ? "Medium Intensity" : "Low Intensity"}
+                                                                </span>
+                                                                <span className="text-xs text-slate-400">({(territorialization * 10).toFixed(1)})</span>
+                                                            </div>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
+                                                        <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
+                                                        <p className="text-xs mb-2">Based on {dynamicMetrics.internal} internal / {dynamicMetrics.external} external associations.</p>
+
+                                                        <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
+                                                        <ul className="text-xs list-disc list-inside space-y-1">
+                                                            {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.territorialization_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.length > 0
+                                                                ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.territorialization_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
+                                                                : <li className="text-slate-400">No traces found</li>}
+                                                        </ul>
+                                                    </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="bg-white p-2 rounded border border-indigo-100 cursor-help hover:bg-slate-50 transition-colors">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-base font-bold text-slate-900">
+                                                                    {codingIntensity > 0.7 ? "Over-Coded" : codingIntensity > 0.4 ? "Mixed Coding" : "Decoded"}
+                                                                </span>
+                                                                <span className="text-xs text-slate-400">({(codingIntensity * 10).toFixed(1)})</span>
+                                                            </div>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs bg-slate-900 text-white border-slate-800">
+                                                        <p className="font-bold border-b border-slate-700 pb-1 mb-1">Dynamic Metric:</p>
+                                                        <p className="text-xs mb-2">Inverse of Porosity ({(dynamicMetrics.porosity).toFixed(2)}).</p>
+
+                                                        <p className="font-bold border-b border-slate-700 pb-1 mb-1">Audit Trail:</p>
+                                                        <ul className="text-xs list-disc list-inside space-y-1">
+                                                            {(selectedConfig.analysisData as AssemblageAnalysis)?.computed_metrics?.coding_audit && (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.length > 0
+                                                                ? (selectedConfig.analysisData as AssemblageAnalysis).computed_metrics!.coding_audit!.map((t: string, i: number) => <li key={i}>{t}</li>)
+                                                                : <li className="text-slate-400">No traces found</li>}
+                                                        </ul>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg">
+                                <h3 className="font-bold text-indigo-900 text-lg mb-1">Combined Analysis</h3>
+                                <p className="text-sm text-indigo-700 mb-3">{selectedConfigs.length} Assemblages Selected: {selectedConfigs.map(c => c.name).join(', ')}</p>
+                                <div className="p-2 bg-white/50 rounded text-xs text-indigo-800 italic">
+                                    Metrics and specific audits are disabled for multi-assemblage analysis. The analysis below reflects the combined socio-technical territory.
+                                </div>
+                            </div>
+                        )}
+
+                        {(selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : savedAnalysis) ? (
                             <AssemblageAnalysisView
-                                analysis={selectedConfig.analysisData as AssemblageAnalysis}
+                                analysis={{
+                                    ...((selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : savedAnalysis) as AssemblageAnalysis),
+                                    // [FIX] Explicitly inject the config so Stress Test has access to memberIds
+                                    assemblage: selectedConfigs.length === 1 ? selectedConfigs[0] : (savedAnalysis as any)?.assemblage
+                                }}
                                 actors={actors}
-                                reflexiveLogs={selectedConfig.reflexive_log}
+                                reflexiveLogs={selectedConfigs.length === 1 ? selectedConfigs[0].reflexive_log : undefined}
                                 onAddLog={handleAddLog}
                                 onDeleteLog={handleDeleteLog}
                                 onRatify={handleRatify}
@@ -468,7 +699,7 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                             />
                         ) : (
                             <div className="p-4 border border-dashed border-slate-300 rounded-lg text-center text-slate-500">
-                                <p className="text-sm">No deep analysis data available for this configuration.</p>
+                                <p className="text-sm">No analysis data available. Click "Run Comprehensive Analysis".</p>
                             </div>
                         )}
                     </div>
@@ -485,12 +716,12 @@ export function AssemblagePanel({ actors, analyzedText = "", savedAnalysis, onSa
                     // Currently ReflexiveLog is only connected to `selectedConfig` in logic above.
                     />
                 ) : (
+                    // Default Fallback
                     <div className="flex flex-col items-center justify-center h-48 text-center text-slate-400">
                         <Layers className="h-8 w-8 mb-2 opacity-50" />
                         <p className="text-sm">Run analysis to map the assemblage.</p>
                     </div>
-                )
-                }
+                )}
             </CardContent >
             <div className="p-2 border-t border-slate-200 bg-slate-50 text-[10px] text-slate-400 text-center italic">
                 Methodological constrained artifact. Outputs are provisional inscriptions.

@@ -13,17 +13,18 @@ Produce a descriptive "Trace" of the network.
 1.  **Follow the Actors**: Describe the specific chains of association visible in the data.
 2.  **No Jumping**: Do not assume connections that are not explicitly linked.
 3.  **Identify Mediators**: Point out actors that seem to transform the network (mediators) vs. those that just transport force (intermediaries).
-4.  **Flat Ontology**: Do not use "levels" (micro/macro). Everything is a network effect.
+4.  **Non-Human Emphasis**: You MUST explicitly trace the agency of documents, standards, code, and infrastructure. Do not render them as passive background.
+5.  **Flat Ontology**: Do not use "levels" (micro/macro). Everything is a network effect.
 
 ## OUTPUT FORMAT (JSON)
 {
-  "narrative": "A clean, descriptive trace of the network... (approx 3-4 sentences)"
+  "narrative": "A clean, descriptive trace that explicitly includes non-human actors and mediations... (approx 3-4 sentences)"
 }
 `;
 
 export const ASSEMBLAGE_REALIST_PROMPT = `
 You are an Assemblage Theorist (DeLanda, Deleuze & Guattari).
-Your goal is to identify the **mechanisms** that stabilize or destabilize this territory.
+Your goal is to identify the **mechanisms** that stabilize or destabilize this territory, with a focus on **power dynamics** and **material constraints**.
 
 ## INPUT DATA
 - **Traced Actors**: The components of the assemblage.
@@ -31,15 +32,22 @@ Your goal is to identify the **mechanisms** that stabilize or destabilize this t
 - **Capacities**: What these actors *can do* (Regulation, Funding, Resistance, etc.).
 
 ## TASK
-Interpret the assemblage's current state.
-1.  **Territorialization**: How is the boundary being maintained? (e.g., laws, definitions, exclusions).
-2.  **Coding**: What rules or "codes" are determining legitimacy?
-3.  **Lines of Flight**: Where is the assemblage leaking or breaking down?
-4.  **Provisionality**: Acknowledge that this arrangement is contingent and historical, not eternal.
+Interpret the assemblage's current state and predict its trajectory.
+1.  **Territorialization & Friction**: How is the boundary being maintained? explicitely discuss conflicts or overlaps between different governance bodies (e.g., EU vs Member States).
+2.  **Coding & Legitimacy**: What rules or "codes" are determining legitimacy? Who is excluded?
+3.  **Non-Human Agency**: You MUST discuss the role of technical standards, infrastructure, or code. Do not treat these as neutral tools.
+4.  **Enforcement Gap**: Critically assess the gap between formal rights (paper) and actual enforcement capacity (reality).
+5.  **Lines of Flight**: Where is the assemblage leaking or breaking down?
+6.  **Trajectory**: Forecast the future stability based on the ratio of Lines of Flight to Reterritorialization.
 
 ## OUTPUT FORMAT (JSON)
 {
-  "narrative": "A rich analysis of the assemblage's mechanisms... (approx 3-4 sentences)"
+  "narrative": "A rich analysis of the assemblage's mechanisms, explicitly addressing institutional friction, non-human actors, and enforcement realities... (approx 3-5 sentences)",
+  "trajectory_analysis": {
+      "forecast": "Stabilizing" | "Collapsing" | "Mutating",
+      "lines_of_flight": [{ "description": "Specific vector of escape", "risk_level": "High/Medium/Low" }],
+      "reterritorialization_forces": ["List of actors/mechanisms restoring order"]
+  }
 }
 `;
 

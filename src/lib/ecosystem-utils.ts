@@ -108,13 +108,19 @@ export const inferActorType = (name: string): EcosystemActor['type'] => {
 import { generateEdges } from '@/lib/graph-utils';
 import { EcosystemConfiguration } from "@/types/ecosystem";
 
-export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: EcosystemConfiguration | null) => {
-    if (!config || !actors.length) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0 };
+export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: EcosystemConfiguration | null, excludedActorIds: string[] = []) => {
+    if (!config || !actors.length) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
 
-    const memberSet = new Set(config.memberIds);
+    // Filter actors first
+    const activeActors = actors.filter(a => !excludedActorIds.includes(a.id));
+    const memberIds = config.memberIds || []; // Safe fallback
+    const memberSet = new Set(memberIds.filter(id => !excludedActorIds.includes(id)));
+
+    // If we removed all members, return 0
+    if (memberSet.size === 0) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
+
     // Use generateEdges to get all potential links based on types
-    // Note: This relies on the deterministic type-based logic. 
-    const edges = generateEdges(actors);
+    const edges = generateEdges(activeActors);
 
     let internal = 0;
     let external = 0;
@@ -131,12 +137,34 @@ export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: Eco
     const porosity = total > 0 ? external / total : 0; // High external links = High Porosity
     const stability = total > 0 ? internal / total : 0; // High internal links = High Stability (Territorialization)
 
+    // [NEW] Coding Intensity: Based on Type Homogeneity (Shannon Entropy)
+    // High Coding = Low Entropy (Uniform types, strict sorting)
+    // Low Coding = High Entropy (Heterogeneous mixing)
+    const members = activeActors.filter(a => memberSet.has(a.id));
+    const typeCounts: Record<string, number> = {};
+    members.forEach(m => {
+        typeCounts[m.type] = (typeCounts[m.type] || 0) + 1;
+    });
+
+    const frequencies = Object.values(typeCounts).map(count => count / members.length);
+    const entropy = frequencies.reduce((sum, p) => sum - p * Math.log(p), 0);
+    // Normalize entropy (Max entropy = log(numTypes)) - defaulting to 1 if mainly 1 type is possible? 
+    // Max entropy for N items is log(N), or log(num_categories). We have ~9 categories.
+    const maxEntropy = Math.log(9);
+    const normalizedEntropy = maxEntropy > 0 ? entropy / maxEntropy : 0;
+
+    // Coding Intensity = 1 - Entropy (High Homogeneity = High Coding)
+    const coding_intensity = 1 - normalizedEntropy;
+
+    const health = stability * coding_intensity * activeActors.length;
+
     return {
         porosity,
         stability,
         internal,
         external,
-        coding_intensity: 1 - porosity // High Porosity = Low Coding Intensity (Decoded)
+        coding_intensity,
+        health
     };
 };
 

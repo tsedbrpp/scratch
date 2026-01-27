@@ -22,7 +22,7 @@ export async function runCritiqueLoop(openai: OpenAI, userId: string, verificati
             dominant_logic: analysis.dominant_logic,
             overall_assessment: analysis.overall_assessment,
             // Include summary if short, otherwise truncate
-            summary: (analysis.start_market_society || analysis.summary || "").substring(0, 500)
+            summary: (analysis.narrative || analysis.start_market_society || analysis.summary || "").substring(0, 500)
         };
 
         const critiqueUserContent = "ORIGINAL SOURCE TEXT(Excerpts): \n" + (verificationText || '').substring(0, 800) + "...\n\nGENERATED ANALYSIS(Summary): \n" + JSON.stringify(critiquePayload, null, 2) + " \n\nCritique this analysis.";

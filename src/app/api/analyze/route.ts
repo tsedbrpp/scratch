@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const requestData = await request.json();
-    const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode, checkCacheOnly } = requestData;
-    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
+    const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode, checkCacheOnly, assemblageId } = requestData;
+    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, AssemblageID: ${assemblageId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
 
     // [NEW] BLOCK READ-ONLY DEMO USERS (unless they're only checking cache)
     if (!checkCacheOnly && await isReadOnlyAccess()) {
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
         });
       } catch (err) {
         console.error("Extraction failed", err);
-         
+
         return NextResponse.json({ error: "Extraction failed", details: (err as Error).message }, { status: 500 });
       }
     }
@@ -336,6 +336,11 @@ export async function POST(request: NextRequest) {
     // Append documentId to ensure uniqueness even if text is identical
     if (documentId) {
       textForCache += `| doc:${documentId} `;
+    }
+
+    // Append assemblageId to ensure specific assemblage analysis is cached uniquely
+    if (assemblageId) {
+      textForCache += `| assemblage:${assemblageId} `;
     }
 
     // Append positionality to cache key to ensure different perspectives get different analyses

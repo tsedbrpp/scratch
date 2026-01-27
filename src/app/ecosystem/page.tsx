@@ -6,7 +6,6 @@ import { useSources } from "@/hooks/useSources";
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis } from "@/types/ecosystem";
 import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { STORAGE_KEYS } from "@/lib/storage-keys";
-import { inferActorType } from "@/lib/ecosystem-utils";
 import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep Linking
 
 import { useDemoMode } from "@/hooks/useDemoMode";
@@ -20,7 +19,7 @@ import { ConfigurationDialog } from "@/components/ecosystem/ConfigurationDialog"
 import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Network, Loader2, LayoutGrid, ArrowLeft, PanelRightOpen } from "lucide-react";
+import { Network, Loader2, ArrowLeft, PanelRightOpen } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnalysisMode } from "@/components/ui/mode-selector";
@@ -28,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ActorCard } from '@/components/ecosystem/ActorCard';
 
 
 
@@ -36,8 +37,6 @@ function EcosystemContent() {
     const searchParams = useSearchParams();
     const { isReadOnly } = useDemoMode();
     const returnToSynthesis = searchParams.get("returnTo") === "synthesis";
-    const mode = searchParams.get("mode");
-
     // Sources for policy selection
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
@@ -73,7 +72,7 @@ function EcosystemContent() {
     const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
     const [newConfigName, setNewConfigName] = useState("");
     const [newConfigDesc, setNewConfigDesc] = useState("");
-    const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null); // Unification State
+    const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([]); // Unification State (Multi-Select)
 
     // Extraction State
     const [isExtractionDialogOpen, setIsExtractionDialogOpen] = useState(false);
@@ -246,7 +245,7 @@ function EcosystemContent() {
             });
 
             setConfigurations(prev => [...prev, result.newConfig!]);
-            setSelectedConfigId(result.newConfig.id);
+            setSelectedConfigIds([result.newConfig.id]);
             setActiveTab("analysis");
             setIsSidebarOpen(true);
 
@@ -287,7 +286,7 @@ function EcosystemContent() {
         };
 
         setConfigurations(prev => [...prev, newConfig]);
-        setSelectedConfigId(newConfig.id); // [FIX] Auto-select for export
+        setSelectedConfigIds([newConfig.id]); // [FIX] Auto-select for export
         setIsConfigDialogOpen(false);
         setNewConfigName("");
         setNewConfigDesc("");
@@ -298,10 +297,18 @@ function EcosystemContent() {
     };
 
     const toggleSelection = (actorId: string) => {
-        setSelectedForGrouping(prev => {
-            const isSelected = prev.includes(actorId);
-            return isSelected ? prev.filter(id => id !== actorId) : [...prev, actorId];
-        });
+        if (interactionMode === "select") {
+            setSelectedForGrouping(prev =>
+                prev.includes(actorId) ? prev.filter(id => id !== actorId) : [...prev, actorId]
+            );
+        } else {
+            // [CHANGED] Do NOT open sidebar. Just select for modal.
+            setSelectedActorId(prev => prev === actorId ? null : actorId);
+            // if (selectedActorId !== actorId) {
+            //    setActiveTab("actors");
+            //    setIsSidebarOpen(true);
+            // }
+        }
     };
 
     const handleActorDrag = (actorId: string, x: number, y: number) => {
@@ -321,8 +328,13 @@ function EcosystemContent() {
         });
     };
 
-    const handleConfigClick = (configId: string) => {
-        setSelectedConfigId(configId);
+    const handleConfigClick = (configId: string, multi: boolean = false) => {
+        setSelectedConfigIds(prev => {
+            if (multi) {
+                return prev.includes(configId) ? prev.filter(id => id !== configId) : [...prev, configId];
+            }
+            return [configId];
+        });
         setActiveTab("analysis");
         setIsSidebarOpen(true);
     };
@@ -333,9 +345,9 @@ function EcosystemContent() {
             return newList;
         });
 
-        if (selectedConfigId === configId) {
-            setSelectedConfigId(null);
-            setActiveTab("actors");
+        if (selectedConfigIds.includes(configId)) {
+            setSelectedConfigIds(prev => prev.filter(id => id !== configId));
+            if (selectedConfigIds.length <= 1) setActiveTab("actors");
         }
     };
 
@@ -344,6 +356,10 @@ function EcosystemContent() {
     };
 
 
+
+    const handleListSelectionToggle = (actorId: string) => {
+        setSelectedForGrouping(prev => prev.includes(actorId) ? prev.filter(x => x !== actorId) : [...prev, actorId]);
+    };
 
     if (!mounted) return null;
 
@@ -360,6 +376,28 @@ function EcosystemContent() {
 
     return (
         <div className="flex flex-col h-full gap-4 relative isolate">
+            {/* [NEW] Centered Actor Detail Modal */}
+            <Dialog open={!!selectedActorId} onOpenChange={(open) => !open && setSelectedActorId(null)}>
+                <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Actor Details</DialogTitle>
+                        <DialogDescription>
+                            Examining actor properties and assemblage memberships.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedActorId && actors.find(a => a.id === selectedActorId) && (
+                        <ActorCard
+                            actor={actors.find(a => a.id === selectedActorId)!}
+                            isSelected={true}
+                            isGroupSelected={selectedForGrouping.includes(selectedActorId)}
+                            onSelect={() => { }} // No-op in modal
+                            onToggleGroupSelection={() => handleListSelectionToggle(selectedActorId)}
+                            configurations={configurations}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <CreditTopUpDialog
                 open={isTopUpOpen}
                 onOpenChange={setIsTopUpOpen}
@@ -434,17 +472,23 @@ function EcosystemContent() {
                             onActorDrag={handleActorDrag}
                             onConfigDrag={handleConfigDrag}
                             onDeleteConfiguration={handleDeleteConfiguration}
-                            selectedConfigId={selectedConfigId}
+                            selectedConfigIds={selectedConfigIds}
                             activeLayers={activeLayers}
                             toggleLayer={toggleLayer}
                             colorMode={colorMode}
                             onConfigClick={handleConfigClick}
-                            onClearConfig={() => setSelectedConfigId(null)}
+                            onClearConfig={() => setSelectedConfigIds([])}
                             absenceAnalysis={absenceAnalysis}
                             analysisMode={analysisMode}
                             setAnalysisMode={setAnalysisMode}
                             configLayout={configLayout}
-                            onConfigSelect={setSelectedConfigId}
+                            onConfigSelect={(id) => handleConfigClick(id, true)} // Map selection acts as toggle/multi often, or define behavior
+                            onAddConfiguration={(config) => {
+                                setConfigurations(prev => [...prev, config]);
+                                setSelectedConfigIds([config.id]);
+                                setActiveTab("analysis");
+                                setIsSidebarOpen(true);
+                            }}
                             extraToolbarContent={
                                 <div className="flex items-center gap-2">
                                     <div className="w-[180px]">
@@ -507,7 +551,7 @@ function EcosystemContent() {
                                             <ActorList
                                                 actors={actors}
                                                 selectedActorId={selectedActorId}
-                                                onSelectActor={setSelectedActorId}
+                                                onSelectActor={handleListSelectionToggle}
                                                 onClearAll={handleClearAll}
                                                 isExpanded={isSidebarExpanded}
                                                 onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -528,8 +572,9 @@ function EcosystemContent() {
                                                 enrichProgress={enrichProgress}
                                                 // Selection [NEW]
                                                 selectedForGrouping={selectedForGrouping}
-                                                onToggleSelection={toggleSelection}
+                                                onToggleSelection={handleListSelectionToggle}
                                                 onCreateConfiguration={handleCreateConfiguration}
+                                                configurations={configurations}
                                             />
                                         </div>
                                     </TabsContent>
@@ -538,22 +583,29 @@ function EcosystemContent() {
                                             <AssemblagePanel
                                                 actors={actors}
                                                 analyzedText={extractionText}
-                                                savedAnalysis={selectedConfigId ? configurations.find(c => c.id === selectedConfigId)?.analysisData : absenceAnalysis}
+                                                savedAnalysis={selectedConfigIds.length === 1 ? configurations.find(c => c.id === selectedConfigIds[0])?.analysisData : absenceAnalysis}
                                                 onSaveAnalysis={(analysis) => {
-                                                    if (selectedConfigId) {
-                                                        setConfigurations(prev => prev.map(c => c.id === selectedConfigId ? { ...c, analysisData: analysis } : c));
+                                                    if (selectedConfigIds.length === 1) {
+                                                        const targetId = selectedConfigIds[0];
+                                                        setConfigurations(prev => prev.map(c => c.id === targetId ? { ...c, analysisData: analysis } : c));
                                                     } else {
                                                         setAbsenceAnalysis(analysis);
                                                     }
                                                 }}
                                                 onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
                                                 isExpanded={isSidebarExpanded}
-                                                selectedConfig={configurations.find(c => c.id === selectedConfigId)}
+                                                // [FIX] Pass Array
+                                                selectedConfigs={configurations.filter(c => selectedConfigIds.includes(c.id))}
                                                 onClose={() => setIsSidebarOpen(false)}
                                                 onUpdateConfig={(updatedConfig) => {
                                                     setConfigurations(prev => prev.map(c => c.id === updatedConfig.id ? updatedConfig : c));
                                                 }}
                                                 onUpdateActors={setActors}
+                                                // [NEW] Management & Reordering
+                                                allConfigurations={configurations}
+                                                onReorderConfigs={(newConfigs) => setConfigurations(newConfigs)}
+                                                onSelectConfig={(id, multi) => handleConfigClick(id, multi)}
+                                                onDeleteConfig={handleDeleteConfiguration}
                                             />
                                         </div>
                                     </TabsContent>
@@ -594,9 +646,9 @@ function EcosystemContent() {
 
                                     let exportData: AssemblageExport | null = null;
 
-                                    if (selectedConfigId) {
-                                        // Case A: Export Selected Configuration
-                                        const config = configurations.find(c => c.id === selectedConfigId);
+                                    if (selectedConfigIds.length > 0) {
+                                        // Case A: Export Selected Configuration (First one if multiple)
+                                        const config = configurations.find(c => c.id === selectedConfigIds[0]);
                                         if (config) {
                                             exportData = {
                                                 id: config.id,
@@ -608,8 +660,8 @@ function EcosystemContent() {
                                                 nodes: actors.filter(a => config.memberIds.includes(a.id)),
                                                 impactNarrative: {
                                                     summary: config.description,
-                                                    constraints: config.analysisData?.impacts?.filter((i: any) => i.type?.toLowerCase() === 'constraint').map((i: any) => i.description) || [],
-                                                    affordances: config.analysisData?.impacts?.filter((i: any) => i.type?.toLowerCase() === 'affordance').map((i: any) => i.description) || [],
+                                                    constraints: (config.analysisData as AssemblageAnalysis)?.impacts?.filter((i) => i.type?.toLowerCase() === 'constraint').map((i) => i.description) || [],
+                                                    affordances: (config.analysisData as AssemblageAnalysis)?.impacts?.filter((i) => i.type?.toLowerCase() === 'affordance').map((i) => i.description) || [],
                                                     provenance: 'ecosystem_generated'
                                                 },
                                                 topology: {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Network, MousePointer2, Layers, EyeOff, ChevronDown, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
 import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
-import { generateEdges } from '@/lib/graph-utils';
+import { generateEdges, getHullPath } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
@@ -21,6 +21,7 @@ import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { getGlossaryDefinition } from "@/lib/glossary-definitions";
+import { AssemblageSuggester } from './AssemblageSuggester';
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -36,14 +37,15 @@ interface EcosystemMapProps {
     activeLayers?: Record<string, boolean>;
     toggleLayer?: (layer: string) => void;
     colorMode?: "type" | "epistemic";
-    onConfigClick?: (configId: string) => void;
-    selectedConfigId?: string | null;
+    onConfigClick?: (configId: string, multi?: boolean) => void;
+    selectedConfigIds?: string[];
     onDeleteConfiguration?: (configId: string) => void;
+    onAddConfiguration?: (config: EcosystemConfiguration) => void; // [NEW] Support adding configs from child components
     absenceAnalysis?: AssemblageAnalysis | AiAbsenceAnalysis | null;
     analysisMode?: AnalysisMode;
     setAnalysisMode?: (mode: AnalysisMode) => void;
     configLayout?: Record<string, { x: number; y: number }>;
-    onConfigSelect?: (configId: string) => void;
+    onConfigSelect?: (configId: string, multi?: boolean) => void;
     onClearConfig?: () => void; // [NEW] Support clearing selection
     extraToolbarContent?: React.ReactNode;
     isReadOnly?: boolean; // [NEW]
@@ -70,16 +72,17 @@ export function EcosystemMap({
     onCreateConfiguration,
     onConfigClick,
     onConfigDrag,
-    selectedConfigId,
+    selectedConfigIds, // [FIX] Array
     onDeleteConfiguration,
     absenceAnalysis,
     analysisMode = "hybrid_reflexive",
     setAnalysisMode,
     configLayout = {},
     onConfigSelect,
-    onClearConfig,
+    // onClearConfig, // Unused but kept for interface compatibility if needed
     extraToolbarContent,
-    isReadOnly = false
+    isReadOnly = false,
+    onAddConfiguration // [NEW] Destructure new prop
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     // ... existing state ...
@@ -95,7 +98,7 @@ export function EcosystemMap({
     // Derived states for backward compatibility with hook props
     const isNestedMode = layoutMode === 'nested';
     const isMetricMode = layoutMode === 'compass';
-    const isStratumModeState = false; // Simplified for now, or keep separate if orthogonal
+
 
     const [isLegendOpen, setIsLegendOpen] = useState(false);
     // const [isNestedMode, setIsNestedMode] = useState(false); // REPLACED
@@ -142,6 +145,7 @@ export function EcosystemMap({
     // [NEW] Local confirmation state for deletion to avoid window.confirm issues
     const [configToDelete, setConfigToDelete] = useState<string | null>(null);
 
+
     const links = useMemo(() => {
         const generated = generateEdges(filteredActors);
         return generated.map(e => ({
@@ -159,8 +163,8 @@ export function EcosystemMap({
             let external = 0;
 
             links.forEach(l => {
-                const s = typeof l.source === 'object' ? (l.source as any).id : l.source;
-                const t = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                const s = typeof l.source === 'object' && 'id' in l.source ? (l.source as EcosystemActor).id : String(l.source);
+                const t = typeof l.target === 'object' && 'id' in l.target ? (l.target as EcosystemActor).id : String(l.target);
                 const sIn = memberSet.has(s);
                 const tIn = memberSet.has(t);
 
@@ -172,7 +176,7 @@ export function EcosystemMap({
             const porosity = total > 0 ? external / total : 0;
             const stability = total > 0 ? internal / total : 0;
 
-            if (Math.random() < 0.1) console.log('Config Porosity Debug', { id: config.id, internal, external, total, porosity });
+            // Removed debug log
 
             return {
                 ...config,
@@ -218,6 +222,33 @@ export function EcosystemMap({
 
         return result;
     }, [filteredActors, activeTypeFilter, activeBoundaryFilter, hydratedConfigs]);
+
+
+    // [NEW] Assemblage Creation Handler from Suggester
+    const handleCreateAssemblage = (name: string, memberIds: string[]) => {
+        const newConfig: EcosystemConfiguration = {
+            id: crypto.randomUUID(),
+            name,
+            description: "Algorithmic Suggestion",
+            memberIds,
+            properties: {
+                stability: "Medium",
+                generativity: "Medium",
+                territorialization_score: 5,
+                coding_intensity_score: 5
+            },
+            color: `hsl(${Math.random() * 360}, 70%, 80%)`
+        };
+
+        if (onAddConfiguration) {
+            onAddConfiguration(newConfig);
+        } else {
+            // Fallback or just log if parent doesn't support direct add
+            console.warn("onAddConfiguration not provided. Config created but not persisted:", newConfig);
+            // innovative: maybe call onCreateConfiguration() to open the dialog?
+            onCreateConfiguration();
+        }
+    };
 
 
     const handleExplainMap = React.useCallback(async () => {
@@ -268,7 +299,7 @@ export function EcosystemMap({
         } finally {
             setIsExplaining(false);
         }
-    }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode]);
+    }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode, isReadOnly, creditsLoading, hasCredits, refetchCredits]);
 
 
 
@@ -315,7 +346,6 @@ export function EcosystemMap({
     // Zoom Behavior Setup
     useEffect(() => {
         if (!svgRef.current) return;
-        const svg = d3.select(svgRef.current);
 
         const zoom = d3.zoom<SVGSVGElement, unknown>()
             .scaleExtent([0.1, 4])
@@ -391,7 +421,8 @@ export function EcosystemMap({
             setDraggingConfigId(configId);
             // We don't use d3 drag behavior for configs, we just track delta in mouseMove
         } else if (onConfigClick) {
-            onConfigClick(configId);
+            const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+            onConfigClick(configId, isMulti);
         }
     };
 
@@ -465,24 +496,7 @@ export function EcosystemMap({
         setIsFullScreen(!isFullScreen);
     };
 
-    const getHullPath = (points: { x: number, y: number }[]) => {
-        if (points.length < 3) return "";
-        points.sort((a, b) => a.x - b.x || a.y - b.y);
-        const cross = (o: { x: number, y: number }, a: { x: number, y: number }, b: { x: number, y: number }) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-        const lower = [];
-        for (let i = 0; i < points.length; i++) {
-            while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) lower.pop();
-            lower.push(points[i]);
-        }
-        const upper = [];
-        for (let i = points.length - 1; i >= 0; i--) {
-            while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) upper.pop();
-            upper.push(points[i]);
-        }
-        upper.pop(); lower.pop();
-        const hull = lower.concat(upper);
-        return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
-    };
+
 
 
 
@@ -493,28 +507,29 @@ export function EcosystemMap({
 
     // Node Event Handlers
     const handleNodeHover = (e: React.MouseEvent, actor: EcosystemActor) => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (rect) {
-            setTooltipPos({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            });
-        }
+        // [CHANGED] Use absolute client coordinates for fixed tooltip positioning
+        setTooltipPos({
+            x: e.clientX,
+            y: e.clientY
+        });
         setHoveredNode(actor);
         setHoveredLink(null);
     };
 
     const handleLinkHover = (e: React.MouseEvent, link: { source: string; target: string; type: string }) => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (rect) {
-            setTooltipPos({
-                x: e.clientX - rect.left + 5,
-                y: e.clientY - rect.top + 5
-            });
-        }
+        setTooltipPos({
+            x: e.clientX,
+            y: e.clientY
+        });
         setHoveredLink(link);
         setHoveredNode(null);
     };
+
+    const visibleConfigs = useMemo(() => {
+        return hydratedConfigs.filter((config: EcosystemConfiguration) =>
+            !selectedConfigIds || selectedConfigIds.length === 0 || selectedConfigIds.includes(config.id)
+        );
+    }, [hydratedConfigs, selectedConfigIds]);
 
     return (
         <div className="relative w-full h-full">
@@ -576,6 +591,15 @@ export function EcosystemMap({
                                 >
                                     <MousePointer2 className="h-3 w-3 mr-1" /> Move Actor
                                 </Button>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+
+                                {!isReadOnly && (
+                                    <AssemblageSuggester
+                                        actors={actors}
+                                        edges={links}
+                                        onCreateAssemblage={handleCreateAssemblage}
+                                    />
+                                )}
                                 <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
                                 <Button
                                     variant="ghost" size="sm"
@@ -688,31 +712,33 @@ export function EcosystemMap({
                                         </g>
                                     )}
 
-                                    {hydratedConfigs.map((config: EcosystemConfiguration) => {
-                                        const memberPoints = config.memberIds.map((id: string) => getNodePos(id)).filter((p: { x: number; y: number }) => p.x !== 0 && p.y !== 0);
-                                        if (memberPoints.length < 2) return null;
-                                        const centroid = memberPoints.reduce((acc: { x: number; y: number }, p: { x: number; y: number }) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-                                        centroid.x /= memberPoints.length;
-                                        centroid.y /= memberPoints.length;
-                                        const porosity = config.properties.porosity_index || 0;
-                                        // BINARY VISUALIZATION: Match Filter Threshold (0.5)
-                                        const strokeDash = porosity > 0.5 ? "6 4" : "none";
-                                        const stability = config.properties.calculated_stability || 0.1;
-                                        const isConfigSelected = selectedConfigId === config.id;
-                                        const fillOpacity = isConfigSelected ? 0.3 : Math.max(0.05, Math.min(0.3, stability * 0.4));
-                                        return (
-                                            <g key={config.id} className={`draggable-config transition-all duration-500 ease-out ${interactionMode === 'drag' ? 'cursor-move' : 'cursor-pointer'}`} opacity={highlightedStage ? 0.1 : 1} onMouseDown={(e) => handleConfigMouseDown(e, config.id)}>
-                                                <title>{`${config.name}\nPorosity: ${porosity.toFixed(2)} (Ext: ${config.properties.external_links}/Tot: ${config.properties.total_links})\nStability: ${stability.toFixed(2)}`}</title>
-                                                <path
-                                                    d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
-                                                    fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
-                                                    className={isConfigSelected ? "drop-shadow-md" : ""}
-                                                />
-                                                <rect x={centroid.x - (config.name.length * 3 + 8)} y={centroid.y - 32} width={config.name.length * 6 + 16} height={18} rx={9} fill={config.color} fillOpacity={0.9} stroke="white" strokeWidth={1.5} className="drop-shadow-sm" />
-                                                <text x={centroid.x} y={centroid.y - 20} textAnchor="middle" dominantBaseline="middle" className="text-[10px] font-bold fill-white uppercase tracking-wider" style={{ pointerEvents: 'none' }}>{config.name}</text>
-                                            </g>
-                                        );
-                                    })}
+                                    {visibleConfigs
+                                        .map((config: EcosystemConfiguration) => {
+                                            const memberPoints = config.memberIds.map((id: string) => getNodePos(id)).filter((p: { x: number; y: number }) => p.x !== 0 && p.y !== 0);
+                                            if (memberPoints.length < 2) return null;
+                                            const centroid = memberPoints.reduce((acc: { x: number; y: number }, p: { x: number; y: number }) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                                            centroid.x /= memberPoints.length;
+                                            centroid.y /= memberPoints.length;
+                                            const porosity = config.properties.porosity_index || 0;
+                                            // BINARY VISUALIZATION: Match Filter Threshold (0.5)
+                                            const strokeDash = porosity > 0.5 ? "6 4" : "none";
+                                            const stability = config.properties.calculated_stability || 0.1;
+                                            const isConfigSelected = selectedConfigIds?.includes(config.id);
+                                            // [CHANGE] Opacity logic: If filtered, keep full opacity to stand out. If not filtered, use stability-based.
+                                            const fillOpacity = isConfigSelected ? 0.3 : Math.max(0.05, Math.min(0.3, stability * 0.4));
+                                            return (
+                                                <g key={config.id} className={`draggable-config transition-all duration-500 ease-out ${interactionMode === 'drag' ? 'cursor-move' : 'cursor-pointer'}`} opacity={highlightedStage ? 0.1 : 1} onMouseDown={(e) => handleConfigMouseDown(e, config.id)}>
+                                                    <title>{`${config.name}\nPorosity: ${porosity.toFixed(2)} (Ext: ${config.properties.external_links}/Tot: ${config.properties.total_links})\nStability: ${stability.toFixed(2)}`}</title>
+                                                    <path
+                                                        d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
+                                                        fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
+                                                        className={isConfigSelected ? "drop-shadow-md" : ""}
+                                                    />
+                                                    <rect x={centroid.x - (config.name.length * 3 + 8)} y={centroid.y - 32} width={config.name.length * 6 + 16} height={18} rx={9} fill={config.color} fillOpacity={0.9} stroke="white" strokeWidth={1.5} className="drop-shadow-sm" />
+                                                    <text x={centroid.x} y={centroid.y - 20} textAnchor="middle" dominantBaseline="middle" className="text-[10px] font-bold fill-white uppercase tracking-wider" style={{ pointerEvents: 'none' }}>{config.name}</text>
+                                                </g>
+                                            );
+                                        })}
 
                                     {links.map((link, i) => {
                                         const s = getNodePos(link.source as string);
@@ -795,25 +821,48 @@ export function EcosystemMap({
                                         // Check if this is a ghost node
                                         const isGhost = !!(actor && 'isGhost' in actor && (actor as GhostActor).isGhost);
 
+                                        // [NEW] Multi-Assemblage Membership Calculation
+                                        const memberOfConfigs = configurations.filter(c => c.memberIds.includes(actor.id));
+                                        const isMultiAssemblage = memberOfConfigs.length > 1;
+
                                         const color = getActorColor(actor.type);
                                         const isSelected = selectedForGrouping.includes(actor.id);
                                         const isFocused = focusedNodeId === actor.id;
                                         const isRelevant = isActorRelevant(actor, highlightedStage);
+
+                                        // [CHANGE] Filtering Logic: If Assemblage Selected, dim others
+                                        // Ensure selectedConfigIds is treated as an array (default to empty)
+                                        const safeSelectedConfigIds = selectedConfigIds || [];
+                                        const isInSelectedAssemblage = safeSelectedConfigIds.length === 0 || memberOfConfigs.some(c => safeSelectedConfigIds.includes(c.id));
+
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
-                                        // [FIX] Improved Ghost Visibility: Increased from 0.6 to 0.85
+                                        if (!isInSelectedAssemblage) opacity = 0.1; // [NEW] Dim non-members
+
                                         if (isGhost) opacity *= 0.85;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
                                         const power = actor.metrics?.dynamic_power || 0;
                                         const baseR = 5 + (power * 1.5);
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
-                                        const strokeDash = isGhost ? "4 2" : "none"; // Slightly clearer dash
+                                        const strokeDash = isGhost ? "4 2" : "none";
+
                                         return (
                                             <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => handleNodeClick(e, actor)} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
+                                                {/* Multi-Assemblage Halo */}
+                                                {isMultiAssemblage && (
+                                                    <circle r={r + 8} fill="none" stroke="#F59E0B" strokeWidth={1} strokeDasharray="2 2" opacity={0.6} className="animate-spin-slow origin-center">
+                                                        <title>Bridge Actor: {memberOfConfigs.map(c => c.name).join(', ')}</title>
+                                                    </circle>
+                                                )}
+
                                                 {isSelected && (getActorShape(actor.type) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />)}
                                                 {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />}
                                                 <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
                                                     <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
-                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>{actor.name} {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}</span>
+                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>
+                                                            {actor.name}
+                                                            {isMultiAssemblage && <span className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200" title={`Bridge: ${memberOfConfigs.length} Assemblages`}>×{memberOfConfigs.length}</span>}
+                                                            {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}
+                                                        </span>
                                                     </div>
                                                 </foreignObject>
                                             </g>
@@ -858,87 +907,7 @@ export function EcosystemMap({
                             )}
 
 
-                            {/* [NEW] Selected Configuration Context Menu (Reliable Delete) */}
-                            {selectedConfigId && (() => {
-                                const config = configurations.find(c => c.id === selectedConfigId);
-                                if (!config) return null;
-                                return (
-                                    <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-xl border-2 border-indigo-500/30 rounded-lg p-2 z-40 animate-in slide-in-from-top-2 flex items-center gap-3">
-                                        <div className="flex items-center gap-2 pl-2 border-r border-slate-200 pr-3">
-                                            <div
-                                                className="w-3 h-3 rounded-sm shadow-sm opacity-80"
-                                                style={{ backgroundColor: config.color }}
-                                            />
-                                            <span className="text-xs font-bold text-slate-700 max-w-[150px] truncate">{config.name}</span>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        {onDeleteConfiguration && (
-                                            configToDelete === config.id ? (
-                                                <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        className="h-7 text-[10px] px-2 bg-red-600 hover:bg-red-700 text-white shadow-sm font-bold"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            if (onDeleteConfiguration) {
-                                                                onDeleteConfiguration(config.id);
-                                                            }
-                                                            setConfigToDelete(null);
-                                                        }}
-                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                    >
-                                                        SURE?
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setConfigToDelete(null);
-                                                        }}
-                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setConfigToDelete(config.id);
-                                                    }}
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    className="h-7 text-xs bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white shadow-sm flex items-center gap-1.5"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                    Delete
-                                                </Button>
-                                            )
-                                        )}
-
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (onClearConfig) onClearConfig();
-                                                else if (onConfigClick) onConfigClick(config.id); // Fallback toggle
-                                            }}
-                                            className="h-7 w-7 text-slate-400 hover:text-slate-700"
-                                            title="Close Controls"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                );
-                            })()}
+                            {/* [REMOVED] Selected Configuration Context Menu (Reliable Delete) */}
 
                             {/* Floating Legend Card (Existing) */}
                             {isLegendOpen && (
@@ -986,11 +955,12 @@ export function EcosystemMap({
                                                         <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50">
                                                             {/* Label Area - Handles Selection */}
                                                             <div
-                                                                className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer"
                                                                 onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    onConfigSelect ? onConfigSelect(config.id) : onConfigClick?.(config.id);
+                                                                    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+                                                                    if (onConfigClick) onConfigClick(config.id, isMulti);
+                                                                    else if (onConfigSelect) onConfigSelect(config.id, isMulti);
                                                                 }}
+                                                                className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer"
                                                             >
                                                                 <div
                                                                     className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
@@ -1207,13 +1177,17 @@ export function EcosystemMap({
                             )}
                             {hoveredNode && (
                                 <div
-                                    className="absolute z-50 pointer-events-none"
+                                    className="fixed z-50 pointer-events-none"
                                     style={{
-                                        left: tooltipPos.x + 10,
-                                        top: tooltipPos.y + 10,
+                                        // Viewport-aware positioning
+                                        left: tooltipPos.x > (window.innerWidth - 280) ? 'auto' : tooltipPos.x + 10,
+                                        right: tooltipPos.x > (window.innerWidth - 280) ? (window.innerWidth - tooltipPos.x + 10) : 'auto',
+
+                                        top: tooltipPos.y > (window.innerHeight - 300) ? 'auto' : tooltipPos.y + 10,
+                                        bottom: tooltipPos.y > (window.innerHeight - 300) ? (window.innerHeight - tooltipPos.y + 10) : 'auto',
                                     }}
                                 >
-                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 max-w-[250px] animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="bg-slate-900/90 backdrop-blur-md text-slate-50 text-xs px-3 py-2 rounded-md shadow-lg border border-slate-700 max-w-[250px] animate-in fade-in zoom-in-95 duration-200 block">
                                         <div className="font-semibold mb-0.5 flex items-center gap-2">
                                             {(hoveredNode as GhostActor).isGhost && (
                                                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
@@ -1226,28 +1200,33 @@ export function EcosystemMap({
                                                 {(hoveredNode as GhostActor).isGhost ? `MISSING: ${hoveredNode.description}` : hoveredNode.description}
                                             </div>
                                         )}
-                                        {/* Inject Assemblage Info */}
                                         {(() => {
-                                            const config = hydratedConfigs.find(c => c.memberIds.includes(hoveredNode.id));
-                                            if (config) {
-                                                const porosity = config.properties.porosity_index || 0;
-                                                const stability = config.properties.calculated_stability || 0;
+                                            const memberConfigs = hydratedConfigs.filter(c => c.memberIds.includes(hoveredNode.id));
+                                            if (memberConfigs.length > 0) {
                                                 return (
-                                                    <div className="mt-2 pt-2 border-t border-indigo-500/30">
-                                                        <div className="flex items-center gap-1.5 mb-1">
-                                                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: config.color }}></div>
-                                                            <span className="text-indigo-300 font-medium">{config.name}</span>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-                                                            <div>
-                                                                <span className="block text-slate-500">Porosity</span>
-                                                                <span className={porosity > 0.5 ? "text-indigo-300" : "text-slate-300"}>{porosity.toFixed(2)}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="block text-slate-500">Stability</span>
-                                                                <span className="text-slate-300">{stability.toFixed(2)}</span>
-                                                            </div>
-                                                        </div>
+                                                    <div className="mt-2 pt-2 border-t border-indigo-500/30 space-y-2">
+                                                        {memberConfigs.map(config => {
+                                                            const porosity = config.properties.porosity_index || 0;
+                                                            const stability = config.properties.calculated_stability || 0;
+                                                            return (
+                                                                <div key={config.id} className="pb-1 border-b border-indigo-500/10 last:border-0 last:pb-0">
+                                                                    <div className="flex items-center gap-1.5 mb-1">
+                                                                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: config.color }}></div>
+                                                                        <span className="text-indigo-300 font-medium leading-tight">{config.name}</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                                                                        <div>
+                                                                            <span className="text-slate-500 mr-1">Porosity:</span>
+                                                                            <span className={porosity > 0.5 ? "text-indigo-300" : "text-slate-300"}>{porosity.toFixed(2)}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-slate-500 mr-1">Stability:</span>
+                                                                            <span className="text-slate-300">{stability.toFixed(2)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 );
                                             }

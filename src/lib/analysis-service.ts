@@ -197,11 +197,14 @@ export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, r
         throw new Error("Standard Trace failed, cannot proceed with Comprehensive Scan.");
     }
 
-    // 2. Run Realist Scan (Second Order)
-    let realistAnalysis: any = {};
-    if (baseAnalysis.actors || (baseAnalysis.assemblage && baseAnalysis.assemblage.actors)) {
-        logger.analysis(`[COMPREHENSIVE] Step 2: Realist Scan`);
-        // Extract actors for the prompt
+    // 2. Run Realist Scan and Critique in Parallel
+    // These steps are independent of each other but depend on Step 1
+    logger.analysis(`[COMPREHENSIVE] Starting Parallel Tracks: Realist Scan + Critical Voids`);
+
+    const runRealist = async () => {
+        if (!baseAnalysis.actors && (!baseAnalysis.assemblage || !baseAnalysis.assemblage.actors)) return {};
+        logger.analysis(`[COMPREHENSIVE] Track A: Realist Scan`);
+
         const actors = baseAnalysis.actors || baseAnalysis.assemblage?.actors || [];
         const mechanisms = baseAnalysis.stabilization_mechanisms || baseAnalysis.assemblage?.stabilization_mechanisms || [];
 
@@ -214,22 +217,28 @@ export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, r
         };
 
         try {
-            const realistResult = await performAnalysis(openai, userId, realistPayload);
-            realistAnalysis = realistResult.analysis;
+            const result = await performAnalysis(openai, userId, realistPayload);
+            return result.analysis;
         } catch (err) {
             logger.analysis(`[COMPREHENSIVE] Realist Scan failed (non-fatal): ${(err as Error).message}`);
+            return {};
         }
-    }
+    };
 
-    // 3. Run Critique (Critical Voids)
-    let critiqueAnalysis: any = {};
-    try {
-        logger.analysis(`[COMPREHENSIVE] Step 3: Critical Voids`);
-        const critiqueResult = await runCritiqueLoop(openai, userId, requestData.text, baseAnalysis);
-        critiqueAnalysis = { system_critique: critiqueResult };
-    } catch (err) {
-        logger.analysis(`[COMPREHENSIVE] Critique failed (non-fatal): ${(err as Error).message}`);
-    }
+    const runCritique = async () => {
+        logger.analysis(`[COMPREHENSIVE] Track B: Critical Voids`);
+        try {
+            const critiqueResult = await runCritiqueLoop(openai, userId, requestData.text, baseAnalysis);
+            return { system_critique: critiqueResult };
+        } catch (err) {
+            logger.analysis(`[COMPREHENSIVE] Critique failed (non-fatal): ${(err as Error).message}`);
+            return {};
+        }
+    };
+
+    // [OPTIMIZATION] Wait for both
+    const [realistAnalysis, critiqueAnalysis] = await Promise.all([runRealist(), runCritique()]);
+    logger.analysis(`[COMPREHENSIVE] Parallel Tracks Complete`);
 
     // 4. Merge Results
     logger.analysis(`[COMPREHENSIVE] Merging results...`);
@@ -245,6 +254,7 @@ export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, r
             ...baseAnalysis,
             // Merge specialized fields
             realist_narrative: realistAnalysis.narrative,
+            trajectory_analysis: realistAnalysis.trajectory_analysis, // [FIX] Merge Trajectory data
             system_critique: critiqueAnalysis.system_critique,
 
             // Ensure fields required for tabs are populated

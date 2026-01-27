@@ -132,7 +132,7 @@ OUTPUT FORMAT (STRICT)
       "generativity": "High/Medium/Low"
     },
     // CRITICAL ANALYSIS FIELDS
-    "narrative": "A concise critical summary.",
+    "narrative": "A concise critical summary that explicitly addresses institutional friction, the agency of non-human actors (infrastructure/standards), and gaps between policy text and enforcement reality.",
     "traces": [
         {
             "id": "trace-1",

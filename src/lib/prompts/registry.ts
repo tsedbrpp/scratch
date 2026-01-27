@@ -283,7 +283,7 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         defaultValue: ASSEMBLAGE_REALIST_PROMPT,
         outputSchema: {
             format: 'json',
-            requiredKeys: ['narrative']
+            requiredKeys: ['narrative', 'trajectory_analysis']
         }
     },
     'hybrid_reflexive_explanation': {

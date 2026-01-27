@@ -65,3 +65,29 @@ export function generateEdges(actors: EcosystemActor[]) {
 
     return edges;
 }
+
+// [NEW] Hull Calculation Logic
+export function getHullPath(points: { x: number, y: number }[]) {
+    if (points.length < 3) return "";
+    points.sort((a, b) => a.x - b.x || a.y - b.y);
+
+    // Cross product of vectors OA and OB
+    const cross = (o: { x: number, y: number }, a: { x: number, y: number }, b: { x: number, y: number }) =>
+        (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+    const lower = [];
+    for (let i = 0; i < points.length; i++) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], points[i]) <= 0) lower.pop();
+        lower.push(points[i]);
+    }
+
+    const upper = [];
+    for (let i = points.length - 1; i >= 0; i--) {
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], points[i]) <= 0) upper.pop();
+        upper.push(points[i]);
+    }
+
+    upper.pop(); lower.pop();
+    const hull = lower.concat(upper);
+    return `M ${hull.map(p => `${p.x},${p.y}`).join(" L ")} Z`;
+}
