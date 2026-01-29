@@ -77,8 +77,6 @@ function EcosystemContent() {
     // Extraction State
     const [isExtractionDialogOpen, setIsExtractionDialogOpen] = useState(false);
     const [extractionText, setExtractionText] = useState("");
-    const [discoveryQuery, setDiscoveryQuery] = useState("");
-    const [extractionMode, setExtractionMode] = useState<"text" | "discovery">("text");
     // const [isExtracting, setIsExtracting] = useState(false); // Managed by hook
 
     // Theoretical Analysis Mode
@@ -207,14 +205,10 @@ function EcosystemContent() {
         }
 
         const modeParam = searchParams.get("mode");
-        if (modeParam === 'discovery') {
-            setExtractionMode('discovery');
-            setIsExtractionDialogOpen(true);
-        } else if (modeParam === 'text' || modeParam === 'extraction') {
-            setExtractionMode('text');
+        if (modeParam === 'text' || modeParam === 'extraction') {
             setIsExtractionDialogOpen(true);
         }
-    }, [searchParams, selectedPolicyId, setSelectedPolicyId, setExtractionMode, setIsExtractionDialogOpen]);
+    }, [searchParams, selectedPolicyId, setSelectedPolicyId, setIsExtractionDialogOpen]);
 
     // Handlers
 
@@ -229,10 +223,10 @@ function EcosystemContent() {
     });
 
     const handleExtractAssemblage = async () => {
-        const input = extractionMode === 'text' ? extractionText : discoveryQuery;
-        const result = await extractAssemblage(extractionMode, input);
+        const result = await extractAssemblage('text', extractionText);
 
-        if (result.success && result.newActors && result.memberIds && result.newConfig) {
+        if (result.success && result.newActors) {
+            // Only add actors to the graph, don't create an assemblage automatically
             setActors(prev => [...prev, ...result.newActors!]);
 
             // Assign Positions
@@ -244,14 +238,11 @@ function EcosystemContent() {
                 return nextPos;
             });
 
-            setConfigurations(prev => [...prev, result.newConfig!]);
-            setSelectedConfigIds([result.newConfig.id]);
-            setActiveTab("analysis");
-            setIsSidebarOpen(true);
+            // Don't create assemblage automatically - user can use "Suggest Assemblage" feature
+            // or manually select actors to create configurations
 
             setIsExtractionDialogOpen(false);
             setExtractionText("");
-            setDiscoveryQuery("");
         }
     };
 
@@ -404,6 +395,17 @@ function EcosystemContent() {
                 onSuccess={() => refetchCredits()}
             />
 
+            {/* Configuration Dialog for Manual Assemblage Creation */}
+            <ConfigurationDialog
+                isOpen={isConfigDialogOpen}
+                onClose={() => setIsConfigDialogOpen(false)}
+                name={newConfigName}
+                setName={setNewConfigName}
+                description={newConfigDesc}
+                setDescription={setNewConfigDesc}
+                onConfirm={confirmCreateConfiguration}
+            />
+
             {/* NEW: Map Background Layer */}
             {!selectedPolicyId ? (
                 <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 p-12">
@@ -478,11 +480,36 @@ function EcosystemContent() {
                             colorMode={colorMode}
                             onConfigClick={handleConfigClick}
                             onClearConfig={() => setSelectedConfigIds([])}
-                            absenceAnalysis={absenceAnalysis}
                             analysisMode={analysisMode}
                             setAnalysisMode={setAnalysisMode}
                             configLayout={configLayout}
-                            onConfigSelect={(id) => handleConfigClick(id, true)} // Map selection acts as toggle/multi often, or define behavior
+                            onConfigSelect={(id) => handleConfigClick(id, true)}
+                            // [FIX] Merge missing_voices from selected assemblage AND global absence analysis
+                            absenceAnalysis={(() => {
+                                const selectedAnalysis = selectedConfigIds.length === 1
+                                    ? configurations.find(c => c.id === selectedConfigIds[0])?.analysisData
+                                    : null;
+
+                                // Merge missing_voices from both sources
+                                const mergedVoices = [
+                                    ...(selectedAnalysis?.missing_voices || []),
+                                    ...(absenceAnalysis?.missing_voices || [])
+                                ];
+
+                                // Deduplicate by name
+                                const uniqueVoices = Array.from(
+                                    new Map(mergedVoices.map(v => [v.name, v])).values()
+                                );
+
+                                // Return the most complete analysis object with merged voices
+                                const baseAnalysis = selectedAnalysis || absenceAnalysis;
+                                if (!baseAnalysis) return null;
+
+                                return {
+                                    ...baseAnalysis,
+                                    missing_voices: uniqueVoices
+                                };
+                            })()}
                             onAddConfiguration={(config) => {
                                 setConfigurations(prev => [...prev, config]);
                                 setSelectedConfigIds([config.id]);
@@ -562,10 +589,6 @@ function EcosystemContent() {
                                                 isExtractionDialogOpen={isExtractionDialogOpen}
                                                 setIsExtractionDialogOpen={setIsExtractionDialogOpen}
                                                 onClose={() => setIsSidebarOpen(false)}
-                                                discoveryQuery={discoveryQuery}
-                                                setDiscoveryQuery={setDiscoveryQuery}
-                                                extractionMode={extractionMode}
-                                                setExtractionMode={setExtractionMode}
                                                 // Link Enrichment
                                                 onEnrichLinks={handleEnrichLinks}
                                                 isEnriching={isEnriching}

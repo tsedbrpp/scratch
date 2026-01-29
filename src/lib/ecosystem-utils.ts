@@ -85,6 +85,22 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
                 isGhost: true // Flag for rendering
             });
         });
+    } else if (absenceAnalysis.narrative || absenceAnalysis.structural_voids) {
+        // [FALLBACK] If analysis exists but missing_voices is empty, create a generic ghost node
+        // This ensures users get visual feedback that absence analysis was performed
+        baseActors.push({
+            id: 'ghost-structural-absence',
+            name: 'Structural Absences Detected',
+            type: 'Civil Society' as any,
+            description: absenceAnalysis.narrative || 'Analysis identified systemic gaps in representation',
+            metrics: {
+                territorialization: "Weak",
+                deterritorialization: "Strong",
+                coding: "Weak"
+            },
+            influence: "Low",
+            isGhost: true
+        });
     }
     return baseActors as GhostActor[];
 };
@@ -109,18 +125,32 @@ import { generateEdges } from '@/lib/graph-utils';
 import { EcosystemConfiguration } from "@/types/ecosystem";
 
 export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: EcosystemConfiguration | null, excludedActorIds: string[] = []) => {
-    if (!config || !actors.length) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
+    if (!config || !actors.length) {
+        console.log('[StressTestDebug] Metrics: No config or actors', { config, actorCount: actors.length });
+        return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
+    }
 
     // Filter actors first
     const activeActors = actors.filter(a => !excludedActorIds.includes(a.id));
     const memberIds = config.memberIds || []; // Safe fallback
+
+    // Debug: Log ID overlap
     const memberSet = new Set(memberIds.filter(id => !excludedActorIds.includes(id)));
 
-    // If we removed all members, return 0
-    if (memberSet.size === 0) return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
+    if (memberSet.size === 0) {
+        console.log('[StressTestDebug] Metrics: No active members found', {
+            totalMemberIds: memberIds.length,
+            excluded: excludedActorIds.length,
+            memberIdsSample: memberIds.slice(0, 3)
+        });
+        return { porosity: 0, stability: 0, internal: 0, external: 0, coding_intensity: 0, health: 0 };
+    }
 
     // Use generateEdges to get all potential links based on types
     const edges = generateEdges(activeActors);
+
+    // Debug: Log Edges
+    // console.log('[StressTestDebug] Metrics: Edges generated', edges.length);
 
     let internal = 0;
     let external = 0;
@@ -158,6 +188,8 @@ export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: Eco
 
     const health = stability * coding_intensity * activeActors.length;
 
+    // console.log('[StressTestDebug] Metrics Calculated:', { stability, coding_intensity, members: members.length });
+
     return {
         porosity,
         stability,
@@ -168,3 +200,43 @@ export const calculateAssemblageMetrics = (actors: EcosystemActor[], config: Eco
     };
 };
 
+
+export const calculateConfigMetrics = (
+    config: EcosystemConfiguration,
+    links: { source: string | object; target: string | object }[]
+): EcosystemConfiguration => {
+    const memberSet = new Set(config.memberIds.map(id => String(id).trim()));
+    let internal = 0;
+    let external = 0;
+
+    links.forEach(l => {
+        // Handle both D3 object and ID string cases
+        const sourceRaw = typeof l.source === 'object' && 'id' in l.source ? (l.source as EcosystemActor).id : String(l.source);
+        const targetRaw = typeof l.target === 'object' && 'id' in l.target ? (l.target as EcosystemActor).id : String(l.target);
+
+        const s = String(sourceRaw).trim();
+        const t = String(targetRaw).trim();
+
+        const sIn = memberSet.has(s);
+        const tIn = memberSet.has(t);
+
+        if (sIn && tIn) internal++;
+        else if (sIn || tIn) external++;
+    });
+
+    const total = internal + external;
+    const porosity = total > 0 ? external / total : 0;
+    const stability = total > 0 ? internal / total : 0;
+
+    return {
+        ...config,
+        properties: {
+            ...config.properties,
+            porosity_index: porosity,
+            calculated_stability: stability,
+            internal_links: internal,
+            external_links: external,
+            total_links: total
+        }
+    };
+};

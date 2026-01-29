@@ -7,13 +7,14 @@ import {
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Network, RefreshCw, Layers } from 'lucide-react';
-import { EcosystemActor, EcosystemEdge } from '@/types/ecosystem';
+import { EcosystemActor, EcosystemEdge, EcosystemConfiguration } from '@/types/ecosystem';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 interface AssemblageSuggesterProps {
     actors: EcosystemActor[];
     edges: EcosystemEdge[];
+    configurations: EcosystemConfiguration[];
     onCreateAssemblage: (name: string, actorIds: string[]) => void;
 }
 
@@ -29,7 +30,7 @@ interface Suggestion {
     name: string;
 }
 
-export function AssemblageSuggester({ actors, edges, onCreateAssemblage }: AssemblageSuggesterProps) {
+export function AssemblageSuggester({ actors, edges, configurations, onCreateAssemblage }: AssemblageSuggesterProps) {
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isCalculating, setIsCalculating] = useState(false);
@@ -63,8 +64,24 @@ export function AssemblageSuggester({ actors, edges, onCreateAssemblage }: Assem
             const data = await response.json();
 
             if (data.suggestions) {
-                // API now returns pre-formatted suggestions with metrics
-                setSuggestions(data.suggestions);
+                // Filter out suggestions that match existing configurations
+                const filteredSuggestions = data.suggestions.filter((suggestion: Suggestion) => {
+                    // Check if an assemblage with this name already exists
+                    const nameExists = configurations.some(config =>
+                        config.name.toLowerCase() === suggestion.name.toLowerCase()
+                    );
+                    if (nameExists) return false;
+
+                    // Check if this exact set of nodes already exists in a configuration
+                    const suggestionNodeSet = new Set(suggestion.nodes);
+                    return !configurations.some(config => {
+                        const configNodeSet = new Set(config.memberIds);
+                        // Check if sets are equal (same size and all elements match)
+                        if (suggestionNodeSet.size !== configNodeSet.size) return false;
+                        return Array.from(suggestionNodeSet).every(node => configNodeSet.has(node));
+                    });
+                });
+                setSuggestions(filteredSuggestions);
             }
 
         } catch (error) {
@@ -134,6 +151,25 @@ export function AssemblageSuggester({ actors, edges, onCreateAssemblage }: Assem
                                             <span>Socio-Technical Heterogeneity</span>
                                         </div>
                                         <Progress value={s.diversityScore * 100} className="h-1" />
+                                    </div>
+
+                                    {/* Display actor names in this assemblage */}
+                                    <div className="mb-3 p-2 bg-slate-50 rounded border border-slate-100">
+                                        <div className="text-[10px] font-medium text-slate-600 mb-1">Actors:</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {s.nodes.map((nodeId) => {
+                                                const actor = actors.find(a => a.id === nodeId);
+                                                return actor ? (
+                                                    <Badge
+                                                        key={nodeId}
+                                                        variant="outline"
+                                                        className="text-[9px] px-1.5 py-0 h-4 bg-white"
+                                                    >
+                                                        {actor.name}
+                                                    </Badge>
+                                                ) : null;
+                                            })}
+                                        </div>
                                     </div>
 
                                     <Button

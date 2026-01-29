@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { useDemoMode } from "@/hooks/useDemoMode"; // [NEW]
@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Network, ArrowRightLeft, Sparkles, Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { OntologyData, OntologyNode, ComparisonResult } from "@/types/ontology";
 import { getColorForCategory } from "@/lib/ontology-utils";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog"; // [NEW]
@@ -116,6 +116,16 @@ export default function OntologyPage() {
 
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.extractedText);
+
+    // Group sources by type for the dropdown
+    const groupedSources = useMemo(() => {
+        return analyzedSources.reduce((acc, source) => {
+            const type = source.type || 'Other';
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(source);
+            return acc;
+        }, {} as Record<string, typeof analyzedSources>);
+    }, [analyzedSources]);
 
     // Get the currently active map based on selectedSourceId
     const currentOntologyData = (selectedSourceId && ontologyMaps && ontologyMaps[selectedSourceId])
@@ -260,7 +270,7 @@ export default function OntologyPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
-            const payload: any = {
+            const payload: Record<string, unknown> = {
                 analysisMode: 'ontology_comparison',
                 sourceA: { title: sourceA.title, data: mapA },
                 sourceB: { title: sourceB.title, data: mapB },
@@ -382,10 +392,28 @@ export default function OntologyPage() {
                                     <SelectValue placeholder="Select a source to analyze" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {analyzedSources.map((source) => (
-                                        <SelectItem key={source.id} value={source.id}>
-                                            {source.title}
-                                        </SelectItem>
+                                    {Object.entries(groupedSources).map(([type, groupSources]) => (
+                                        <SelectGroup key={type}>
+                                            <SelectLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50 pl-2 py-1">
+                                                {type} Sources
+                                            </SelectLabel>
+                                            {groupSources.map((source) => {
+                                                const dotColor =
+                                                    source.type === 'PDF' ? 'bg-red-500' :
+                                                        source.type === 'Web' ? 'bg-sky-500' :
+                                                            source.type === 'Word' ? 'bg-blue-600' :
+                                                                source.type === 'Trace' ? 'bg-amber-500' :
+                                                                    'bg-slate-400';
+                                                return (
+                                                    <SelectItem key={source.id} value={source.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`h-2 w-2 rounded-full ${dotColor}`} />
+                                                            <span className="truncate max-w-[200px]" title={source.title}>{source.title}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectGroup>
                                     ))}
                                 </SelectContent>
                             </Select>

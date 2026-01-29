@@ -118,7 +118,7 @@ export function PolicyComparisonView({ sources }: PolicyComparisonViewProps) {
                                                 <PopoverTrigger asChild>
                                                     <Info className="h-4 w-4 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer" />
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-80 p-4 shadow-xl border-indigo-100" side="right" align="start">
+                                                <PopoverContent className="w-80 p-4 shadow-xl border-indigo-100 bg-white z-[60]" side="right" align="start">
                                                     <div className="space-y-3">
                                                         <div className="border-b border-indigo-100 pb-2 mb-2">
                                                             <h4 className="font-bold text-indigo-900 flex items-center gap-2">

@@ -90,7 +90,7 @@ export class AssemblageExtractionService {
         `;
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: process.env.OPENAI_API_MODEL || "gpt-4o",
             messages: [
                 { role: "system", content: "You are an expert socio-technical analyst using Actor-Network Theory." },
                 { role: "user", content: prompt }

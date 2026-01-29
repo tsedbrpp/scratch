@@ -1,4 +1,5 @@
 import React from 'react';
+import { TheoreticalTensionsDialog } from './TheoreticalTensionsDialog';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
 import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Search, Globe, Layers } from 'lucide-react';
+import { Loader2, Trash2, ExternalLink, Maximize2, Minimize2, X, FileText, Search, Globe, Layers, Info } from 'lucide-react';
 import { useDemoMode } from '@/hooks/useDemoMode';
 import { AssemblageExtractionDialog } from './AssemblageExtractionDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ActorCard } from './ActorCard';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ActorListProps {
     actors: EcosystemActor[];
@@ -33,10 +35,7 @@ interface ActorListProps {
 
     onClose?: () => void;
     // New Props for Discovery
-    discoveryQuery?: string;
-    setDiscoveryQuery?: (query: string) => void;
-    extractionMode?: "text" | "discovery";
-    setExtractionMode?: (mode: "text" | "discovery") => void;
+
 
     // Link Enrichment
     onEnrichLinks?: () => void;
@@ -64,10 +63,6 @@ export function ActorList({
     isExtractionDialogOpen,
     setIsExtractionDialogOpen,
     onClose,
-    discoveryQuery = "",
-    setDiscoveryQuery,
-    extractionMode = "text",
-    setExtractionMode,
     onEnrichLinks,
     isEnriching = false,
     enrichProgress = 0,
@@ -127,11 +122,7 @@ export function ActorList({
                             isExtracting={isExtracting}
                             extractionText={extractionText}
                             setExtractionText={setExtractionText}
-                            discoveryQuery={discoveryQuery}
                             onExtract={onExtract}
-                            extractionMode={extractionMode || "text"}
-                            setExtractionMode={setExtractionMode || (() => { })}
-                            setDiscoveryQuery={setDiscoveryQuery || (() => { })}
                         />
 
                         {/* Link Enrichment Button */}
@@ -201,7 +192,8 @@ export function ActorList({
                     </div>
                 )}
             </CardHeader >
-            <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0">
+            <CardContent className="flex-1 overflow-y-auto space-y-2 pt-0 flex flex-col">
+                {/* Empty State with Extraction Button - Always visible for adding more actors */}
                 {actors.length === 0 && (
                     <div className="text-center p-6 text-slate-500 text-sm border-2 border-dashed border-slate-200 rounded-lg m-2 bg-slate-50/50">
                         <div className="flex justify-center mb-3">
@@ -212,34 +204,67 @@ export function ActorList({
                                 </div>
                             </div>
                         </div>
-                        <h3 className="font-semibold text-slate-700 mb-1">Strategic Subtraction Active</h3>
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                            <h3 className="font-semibold text-slate-700">Strategic Subtraction Active</h3>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-xs p-3 space-y-2 bg-slate-900 border border-slate-700 shadow-xl z-50 text-slate-100">
+                                        <p className="font-semibold text-indigo-300">Why are features disabled?</p>
+                                        <p>
+                                            <span className="font-medium text-slate-200">Anti-Hallucination:</span> Automated web crawling is disabled to prevent the inclusion of irrelevant or "invented" data.
+                                        </p>
+                                        <p>
+                                            <span className="font-medium text-slate-200">Empirical Traceability:</span> In qualitative research (ANT), you must "trace" connections in the text. By only analyzing documents you upload, we guarantee every insight has a provenance.
+                                        </p>
+                                        <p>
+                                            <span className="font-medium text-slate-200">You are the Filter:</span> The AI refuses to "fill in the blanks" from the internet, ensuring all claims are grounded in your specific corpus.
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
                         <p className="text-xs text-slate-500 max-w-[280px] mx-auto mb-4 leading-relaxed">
                             Automated web scraping and predictive modeling are excluded to preserve empirical traceability.
                             You must adhere researcher-curated text to trace mediations.
                         </p>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsExtractionDialogOpen(true)}
-                            className="bg-white hover:bg-slate-50 text-xs gap-2"
-                        >
-                            <FileText className="h-3 w-3 text-emerald-600" />
-                            Adhere Empirical Source
-                        </Button>
                     </div>
                 )}
 
-                {filteredActors.map(actor => (
-                    <ActorCard
-                        key={actor.id}
-                        actor={actor}
-                        isSelected={selectedActorId === actor.id}
-                        isGroupSelected={selectedForGrouping.includes(actor.id)}
-                        onSelect={() => onSelectActor(actor.id)}
-                        onToggleGroupSelection={() => onToggleSelection(actor.id)}
-                        configurations={configurations}
-                    />
-                ))}
+                {/* Extraction Button - Always visible */}
+                <div className="px-2 pb-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsExtractionDialogOpen(true)}
+                        className="w-full bg-white hover:bg-slate-50 text-xs gap-2"
+                    >
+                        <FileText className="h-3 w-3 text-emerald-600" />
+                        {actors.length === 0 ? 'Adhere Empirical Source' : 'Add More Actors'}
+                    </Button>
+                </div>
+
+                <div className="flex-1 space-y-2">
+                    {filteredActors.map(actor => (
+                        <ActorCard
+                            key={actor.id}
+                            actor={actor}
+                            isSelected={selectedActorId === actor.id}
+                            isGroupSelected={selectedForGrouping.includes(actor.id)}
+                            onSelect={() => onSelectActor(actor.id)}
+                            onToggleGroupSelection={() => onToggleSelection(actor.id)}
+                            configurations={configurations}
+                        />
+                    ))}
+                </div>
+
+                <div className="p-2 pt-4 border-t mt-auto">
+                    <div className="flex justify-center">
+                        <TheoreticalTensionsDialog />
+                    </div>
+                </div>
             </CardContent>
         </Card >
     );

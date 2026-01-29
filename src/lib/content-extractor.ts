@@ -27,10 +27,9 @@ export class ContentExtractor {
             type = 'pdf';
             const buffer = await response.arrayBuffer();
 
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const pdfParse = require('pdf-parse');
+            // pdf-parse-fork is a maintained fork that works in Node.js
+            const pdfParse = (await import('pdf-parse-fork')).default;
             const data = await pdfParse(Buffer.from(buffer));
-
             text = data.text;
             title = url.split('/').pop() || 'PDF Document'; // Fallback title
         } else {

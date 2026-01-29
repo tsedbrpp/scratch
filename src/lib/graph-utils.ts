@@ -31,33 +31,54 @@ export function generateEdges(actors: EcosystemActor[]) {
 
     actors.forEach((source, i) => {
         actors.slice(i + 1).forEach((target) => {
+            const sType = source.type;
+            const tType = target.type;
+
+            // Helper to check connection bidirectionally
+            const isTypePair = (t1: string, t2: string) =>
+                (sType === t1 && tType === t2) || (sType === t2 && tType === t1);
+
             const shouldConnect = (
-                (source.type === "Policymaker" && target.type === "Civil Society") ||
-                (source.type === "Startup" && target.type === "Academic") ||
-                (source.type === "Policymaker" && target.type === "Startup") ||
-                (source.type === "Civil Society" && target.type === "Academic") ||
-                (source.type === "Infrastructure" && target.type === "Startup") ||
-                (source.type === "Infrastructure" && target.type === "Policymaker") ||
-                (source.type === "Infrastructure" && target.type === "Academic") ||
+                isTypePair("Policymaker", "Civil Society") ||
+                isTypePair("Startup", "Academic") ||
+                isTypePair("Policymaker", "Startup") ||
+                isTypePair("Civil Society", "Academic") ||
+                isTypePair("Infrastructure", "Startup") ||
+                isTypePair("Infrastructure", "Policymaker") ||
+                isTypePair("Infrastructure", "Academic") ||
+
                 // Algorithm connections
-                (source.type === "Startup" && target.type === "Algorithm") ||
-                (source.type === "Academic" && target.type === "Algorithm") ||
-                (source.type === "Algorithm" && target.type === "Dataset") ||
-                (source.type === "Policymaker" && target.type === "Algorithm") ||
-                (source.type === "Infrastructure" && target.type === "Algorithm") ||
-                (source.type === "Infrastructure" && target.type === "Dataset") ||
-                // Support for new types
-                (source.type === "AlgorithmicAgent" && (target.type === "Dataset" || target.type === "Infrastructure")) ||
-                ((source.type === "Dataset" || source.type === "Infrastructure") && target.type === "AlgorithmicAgent") ||
-                (source.type === "LegalObject" && (target.type === "Policymaker" || target.type === "Civil Society")) ||
-                ((source.type === "Policymaker" || source.type === "Civil Society") && target.type === "LegalObject") ||
+                isTypePair("Startup", "Algorithm") ||
+                isTypePair("Academic", "Algorithm") ||
+                isTypePair("Algorithm", "Dataset") ||
+                isTypePair("Policymaker", "Algorithm") ||
+                isTypePair("Infrastructure", "Algorithm") ||
+                isTypePair("Infrastructure", "Dataset") ||
+
+                // Algorithmic Agent (Broader Scope)
+                isTypePair("AlgorithmicAgent", "Dataset") ||
+                isTypePair("AlgorithmicAgent", "Infrastructure") ||
+                isTypePair("AlgorithmicAgent", "Policymaker") || // Regulation
+                isTypePair("AlgorithmicAgent", "Civil Society") || // Impact/Audit
+                isTypePair("AlgorithmicAgent", "Startup") || // Deployment
+                isTypePair("AlgorithmicAgent", "Academic") || // Study
+
+                isTypePair("LegalObject", "Policymaker") ||
+                isTypePair("LegalObject", "Civil Society") ||
+
                 // Broaden Policymaker connections
-                (source.type === "Policymaker" && target.type === "Policymaker") || // Inter-agency
-                (source.type === "Civil Society" && target.type === "Civil Society") // Coalitions
+                (sType === "Policymaker" && tType === "Policymaker") || // Inter-agency
+                (sType === "Civil Society" && tType === "Civil Society") || // Coalitions
+
+                // Fallback for typed Ghost Nodes if they match above, or explicit broad connectivity?
+                // Ghosts usually have valid types now, so they fall into above buckets.
+
+                // Universal Catch-All for "Related" nodes if manually forced? No, stick to type logic for coherence.
+                false
             );
 
             if (shouldConnect) {
-                const { label, description } = getLinkDetails(source.type, target.type);
+                const { label, description } = getLinkDetails(sType, tType);
                 edges.push({ source, target, label, description });
             }
         });

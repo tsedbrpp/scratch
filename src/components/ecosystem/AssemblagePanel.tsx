@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Loader2, Layers, Maximize2, Minimize2, X, ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
+import { Loader2, Layers, Maximize2, Minimize2, X, ChevronDown, ChevronUp, GripVertical, Trash2, Lock, Wind, Scale } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
@@ -84,11 +84,72 @@ export function AssemblagePanel({
     });
     const [pipelineMessage, setPipelineMessage] = useState<string>('');
 
-    // [FIX] Dynamic Metric Calculation (Moved to top level to comply with React Hook Rules)
+    // [NEW] Robust Assemblage Prep for Stress Test
+    // Ensures we never pass an empty/stale configuration to the simulator
+    const dashboardAssemblage = React.useMemo(() => {
+        const currentActorIds = actors.map(a => a.id);
+
+        // 1. Helper: Check if IDs are valid (must match at least one current actor)
+        const hasValidMembers = (ids: string[]) => ids && ids.length > 0 && ids.some(id => currentActorIds.includes(id));
+
+        // 2. Prefer selected config (has explicit members)
+        if (selectedConfigs.length === 1) {
+            const config = selectedConfigs[0];
+            // [CRITICAL FIX] If selected config has no members (or invalid), 
+            // we MUST polyfill it, otherwise Stress Test shows 0.
+            if (hasValidMembers(config.memberIds)) {
+                console.log('[StressTestDebug] Using Selected Config', { id: config.id, members: config.memberIds.length });
+                return config;
+            }
+            console.log('[StressTestDebug] Selected Config has empty/stale members. Polyfilling with all actors.');
+            return {
+                ...config,
+                memberIds: currentActorIds
+            };
+        }
+
+        // 3. Fallback to analysis assemblage
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const analysisAssemblage = (savedAnalysis as any)?.assemblage;
+
+        // 4. Smart Polyfill
+        if (analysisAssemblage) {
+            const existingIds = analysisAssemblage.memberIds || [];
+
+            // Usage: If existing members are valid, keep them. If not (stale/empty), use ALL.
+            // This fixes "0.0" metrics from stale/mismatched IDs.
+            if (hasValidMembers(existingIds)) {
+                console.log('[StressTestDebug] Using Existing Analysis Assemblage', { count: existingIds.length });
+                return {
+                    ...analysisAssemblage,
+                    memberIds: existingIds
+                };
+            }
+
+            console.log('[StressTestDebug] Polyfilling Analysis Assemblage (stale/empty)', { existing: existingIds.length, current: currentActorIds.length });
+            // Otherwise overwrite with all actors (Comprehensive Scan assumption)
+            return {
+                ...analysisAssemblage,
+                memberIds: currentActorIds
+            };
+        }
+
+        console.log('[StressTestDebug] Synthesizing Full Assemblage (no analysis)', { current: currentActorIds.length });
+        // 5. Last resort: Synthesize a wrapper for the stress test
+        return {
+            id: "synthesized-root",
+            name: "Analyzed Context",
+            memberIds: currentActorIds,
+            properties: {}
+        };
+    }, [selectedConfigs, savedAnalysis, actors]);
+
+    // [FIX] Dynamic Metric Calculation 
+    // Uses dashboardAssemblage (which is robust) to ensure metrics are never 0 unless truly empty
     const dynamicMetrics = React.useMemo(() => {
-        if (selectedConfigs.length !== 1) return { stability: 0, coding_intensity: 0, internal: 0, external: 0, porosity: 0 };
-        return calculateAssemblageMetrics(actors, selectedConfigs[0]);
-    }, [actors, selectedConfigs]);
+        // We act on the dashboardAssemblage, which is guaranteed to be a valid config-like object
+        return calculateAssemblageMetrics(actors, dashboardAssemblage as EcosystemConfiguration);
+    }, [actors, dashboardAssemblage]);
 
     const handleRatify = () => {
         const selectedConfig = selectedConfigs.length === 1 ? selectedConfigs[0] : null;
@@ -253,11 +314,37 @@ export function AssemblagePanel({
             // 1. Update Analysis Data
             if (data.analysis && onSaveAnalysis) {
                 const effectiveAnalysis = (selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : null) || savedAnalysis || {};
+
+                // [CRITICAL] Derive member IDs from returned actors if missing in assemblage object
+                // The AI returns `analysis.actors` but might return an assemblage object without `memberIds`.
+                let derivedMemberIds: string[] | undefined = data.analysis.assemblage?.memberIds;
+
+                if ((!derivedMemberIds || derivedMemberIds.length === 0) && data.analysis.actors) {
+                    // Match returned actors to current actors by name to find IDs
+                    derivedMemberIds = actors
+                        .filter(current => data.analysis.actors.some((analyzed: any) => analyzed.name.toLowerCase() === current.name.toLowerCase()))
+                        .map(a => a.id);
+                }
+
+                // [CRITICAL] Extract/Sync Properties
+                // Sync properties from analysis to config level
+                const analysisProps = data.analysis.assemblage?.properties || {};
+                const computedMetrics = data.analysis.computed_metrics || {};
+
+                // Normalize keys (handle variations like territorialization_score vs territoriality)
+                const stabilityScore = analysisProps.stability || 'Medium';
+                const territorializationScore = computedMetrics.territorialization_score ?? analysisProps.territorialization_score ?? 5;
+                const codingIntensityScore = computedMetrics.coding_intensity_score ?? analysisProps.coding_intensity_score ?? 5;
+
+
                 const mergedAnalysis = {
                     ...effectiveAnalysis,
                     ...data.analysis,
                     // Preserve the core assemblage identity if not provided by new analysis
-                    assemblage: effectiveAnalysis.assemblage || data.analysis.assemblage,
+                    assemblage: {
+                        ...(effectiveAnalysis.assemblage || data.analysis.assemblage),
+                        memberIds: derivedMemberIds || effectiveAnalysis.assemblage?.memberIds
+                    },
                     // [FIX] Force Reset Provisional Status on new analysis
                     provisional_status: {
                         source: "ai_generated",
@@ -276,11 +363,18 @@ export function AssemblagePanel({
                 };
                 onSaveAnalysis(mergedAnalysis);
 
-                // [FIX] Update Structural Data (memberIds) if analysis redefined the assemblage
-                if (selectedConfigs.length === 1 && data.analysis.assemblage?.memberIds && onUpdateConfig) {
+                // [FIX] Update Structural Data (memberIds & properties) on Config
+                if (selectedConfigs.length === 1 && onUpdateConfig) {
                     const updatedConfig = {
                         ...selectedConfigs[0],
-                        memberIds: data.analysis.assemblage.memberIds,
+                        memberIds: derivedMemberIds && derivedMemberIds.length > 0 ? derivedMemberIds : selectedConfigs[0].memberIds, // Keep old if derivation failed
+                        properties: {
+                            ...selectedConfigs[0].properties,
+                            sensitivity: stabilityScore, // Map specific props ? or keep general properties
+                            stability: stabilityScore,
+                            territorialization_score: territorializationScore,
+                            coding_intensity_score: codingIntensityScore
+                        },
                         analysisData: mergedAnalysis
                     };
                     onUpdateConfig(updatedConfig);
@@ -607,9 +701,23 @@ export function AssemblagePanel({
                                 <p className="text-sm text-indigo-700 mb-3">{selectedConfigs[0].description}</p>
                                 {(() => {
                                     /* ... existing single config metric display ... */
-                                    // Now using the top-level dynamicMetrics
-                                    const territorialization = dynamicMetrics.stability || Number(selectedConfigs[0].properties?.territorialization_score) || 0;
-                                    const codingIntensity = dynamicMetrics.coding_intensity || Number(selectedConfigs[0].properties?.coding_intensity_score) || 0;
+                                    // [FIX] Hybrid Logic: Prefer AI Score if Graph is "Closed" (1.0), and normalize units.
+                                    const rawStability = dynamicMetrics.stability;
+                                    const aiScoreT = Number(selectedConfigs[0].properties?.territorialization_score) || 0;
+                                    const aiScoreTNorm = aiScoreT > 1 ? aiScoreT / 10 : aiScoreT; // Normalize 0-10 to 0-1
+
+                                    const territorialization = (rawStability > 0.95 && aiScoreTNorm < 0.9 && aiScoreTNorm > 0)
+                                        ? aiScoreTNorm
+                                        : rawStability;
+
+                                    const rawCoding = dynamicMetrics.coding_intensity;
+                                    const aiScoreC = Number(selectedConfigs[0].properties?.coding_intensity_score) || 0;
+                                    const aiScoreCNorm = aiScoreC > 1 ? aiScoreC / 10 : aiScoreC;
+
+                                    const codingIntensity = (rawCoding > 0.95 && aiScoreCNorm < 0.9 && aiScoreCNorm > 0)
+                                        ? aiScoreCNorm
+                                        : rawCoding;
+
                                     const selectedConfig = selectedConfigs[0];
 
                                     return (
@@ -647,7 +755,13 @@ export function AssemblagePanel({
                                                             <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity</span>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-base font-bold text-slate-900">
-                                                                    {codingIntensity > 0.7 ? "Over-Coded" : codingIntensity > 0.4 ? "Mixed Coding" : "Decoded"}
+                                                                    {codingIntensity > 0.7 ? (
+                                                                        <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-slate-500" /> Over-Coded</span>
+                                                                    ) : codingIntensity > 0.4 ? (
+                                                                        <span className="flex items-center gap-1.5"><Scale className="w-4 h-4 text-slate-500" /> Mixed Coding</span>
+                                                                    ) : (
+                                                                        <span className="flex items-center gap-1.5"><Wind className="w-4 h-4 text-slate-500" /> Decoded</span>
+                                                                    )}
                                                                 </span>
                                                                 <span className="text-xs text-slate-400">({(codingIntensity * 10).toFixed(1)})</span>
                                                             </div>
@@ -684,8 +798,7 @@ export function AssemblagePanel({
                             <AssemblageAnalysisView
                                 analysis={{
                                     ...((selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : savedAnalysis) as AssemblageAnalysis),
-                                    // [FIX] Explicitly inject the config so Stress Test has access to memberIds
-                                    assemblage: selectedConfigs.length === 1 ? selectedConfigs[0] : (savedAnalysis as any)?.assemblage
+                                    assemblage: dashboardAssemblage
                                 }}
                                 actors={actors}
                                 reflexiveLogs={selectedConfigs.length === 1 ? selectedConfigs[0].reflexive_log : undefined}

@@ -2,6 +2,7 @@ import React, { useRef, useState, useMemo, useEffect } from 'react';
 import * as d3 from 'd3';
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Network, MousePointer2, Layers, EyeOff, ChevronDown, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
 import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
@@ -9,7 +10,7 @@ import { generateEdges, getHullPath } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
-import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor } from '@/lib/ecosystem-utils';
+import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor, calculateConfigMetrics } from '@/lib/ecosystem-utils';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
@@ -85,6 +86,7 @@ export function EcosystemMap({
     onAddConfiguration // [NEW] Destructure new prop
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    const [selectedLink, setSelectedLink] = useState<{ source: string | object, target: string | object, type: string } | null>(null);
     // ... existing state ...
 
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -158,37 +160,7 @@ export function EcosystemMap({
     // Standard Config Passthrough with Logic (Moved Up)
     const hydratedConfigs = useMemo(() => {
         return configurations.map(config => {
-            const memberSet = new Set(config.memberIds);
-            let internal = 0;
-            let external = 0;
-
-            links.forEach(l => {
-                const s = typeof l.source === 'object' && 'id' in l.source ? (l.source as EcosystemActor).id : String(l.source);
-                const t = typeof l.target === 'object' && 'id' in l.target ? (l.target as EcosystemActor).id : String(l.target);
-                const sIn = memberSet.has(s);
-                const tIn = memberSet.has(t);
-
-                if (sIn && tIn) internal++;
-                else if (sIn || tIn) external++;
-            });
-
-            const total = internal + external;
-            const porosity = total > 0 ? external / total : 0;
-            const stability = total > 0 ? internal / total : 0;
-
-            // Removed debug log
-
-            return {
-                ...config,
-                properties: {
-                    ...config.properties,
-                    porosity_index: porosity,
-                    calculated_stability: stability,
-                    internal_links: internal,
-                    external_links: external,
-                    total_links: total
-                }
-            };
+            return calculateConfigMetrics(config, links);
         });
     }, [configurations, links]);
 
@@ -427,7 +399,7 @@ export function EcosystemMap({
     };
 
     const handleNodeClick = (e: React.MouseEvent, actor: EcosystemActor) => {
-        console.log('[EcosystemMap] Node Clicked:', actor.id, actor.name);
+        // console.log('[EcosystemMap] Node Clicked:', actor.id, actor.name);
         e.stopPropagation();
         if (interactionMode === "select") {
             onToggleSelection(actor.id);
@@ -517,10 +489,31 @@ export function EcosystemMap({
     };
 
     const handleLinkHover = (e: React.MouseEvent, link: { source: string; target: string; type: string }) => {
-        setTooltipPos({
-            x: e.clientX,
-            y: e.clientY
-        });
+        // Calculate Link Midpoint for Centered Tooltip
+        const s = getNodePos(typeof link.source === 'object' ? (link.source as any).id : link.source);
+        const t = getNodePos(typeof link.target === 'object' ? (link.target as any).id : link.target);
+
+        if (containerRef.current && s.x !== 0 && t.x !== 0) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const midX = (s.x + t.x) / 2;
+            const midY = (s.y + t.y) / 2;
+
+            // Transform world coordinates to screen coordinates
+            const screenX = rect.left + transform.x + (midX * transform.k);
+            const screenY = rect.top + transform.y + (midY * transform.k);
+
+            setTooltipPos({
+                x: screenX,
+                y: screenY
+            });
+        } else {
+            // Fallback to mouse if calculation fails
+            setTooltipPos({
+                x: e.clientX,
+                y: e.clientY
+            });
+        }
+
         setHoveredLink(link);
         setHoveredNode(null);
     };
@@ -597,6 +590,7 @@ export function EcosystemMap({
                                     <AssemblageSuggester
                                         actors={actors}
                                         edges={links}
+                                        configurations={configurations}
                                         onCreateAssemblage={handleCreateAssemblage}
                                     />
                                 )}
@@ -789,6 +783,12 @@ export function EcosystemMap({
                                             <g key={i}
                                                 onMouseEnter={(e) => handleLinkHover(e, link)}
                                                 onMouseLeave={() => setHoveredLink(null)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    console.log('[EcosystemMap] Link Clicked:', link);
+                                                    setSelectedLink(link);
+                                                }}
+                                                className="cursor-pointer" // Ensure cursor is pointer
                                             >
                                                 {/* Hit Area (Invisible but thicker) */}
                                                 <path
@@ -836,7 +836,8 @@ export function EcosystemMap({
                                         const isInSelectedAssemblage = safeSelectedConfigIds.length === 0 || memberOfConfigs.some(c => safeSelectedConfigIds.includes(c.id));
 
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
-                                        if (!isInSelectedAssemblage) opacity = 0.1; // [NEW] Dim non-members
+                                        // removed dimming of non-members
+                                        // if (!isInSelectedAssemblage) opacity = 0.1;
 
                                         if (isGhost) opacity *= 0.85;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
@@ -1120,6 +1121,54 @@ export function EcosystemMap({
                                 </div>
                             )}
 
+                            {/* CENTERED LINK DETAIL DIALOG */}
+                            <Dialog open={!!selectedLink} onOpenChange={(open) => !open && setSelectedLink(null)}>
+                                <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <span className="text-indigo-600">Association Details</span>
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Mapping the mediation between distinct actors.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    {selectedLink && (
+                                        <div className="space-y-4 py-2 text-sm">
+                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border border-slate-100">
+                                                <div className="font-medium text-slate-700">
+                                                    {(() => {
+                                                        const s = selectedLink.source;
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        const sName = typeof s === 'object' ? (s as any).name : mergedActors.find(a => a.id === s)?.name || s;
+                                                        return sName;
+                                                    })()}
+                                                </div>
+                                                <div className="px-2 text-slate-400">→</div>
+                                                <div className="font-medium text-slate-700">
+                                                    {(() => {
+                                                        const t = selectedLink.target;
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                        const tName = typeof t === 'object' ? (t as any).name : mergedActors.find(a => a.id === t)?.name || t;
+                                                        return tName;
+                                                    })()}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Relationship Type</div>
+                                                <div className="p-2 border border-indigo-100 bg-indigo-50/50 rounded-md text-indigo-700 font-medium">
+                                                    {selectedLink.type}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-xs text-slate-400 italic pt-2 border-t">
+                                                In ANT, every association is a performance. This link represents a translation of force/influence between the two actants.
+                                            </div>
+                                        </div>
+                                    )}
+                                </DialogContent>
+                            </Dialog>
+
                             {/* ... (Close Legend Button) ... */}
                             {!isLegendOpen && (
                                 <Button
@@ -1128,7 +1177,7 @@ export function EcosystemMap({
                                     className="absolute top-4 right-4 h-8 bg-white shadow-sm text-xs"
                                     onClick={() => setIsLegendOpen(true)}
                                 >
-                                    Show Legend
+                                    Show Filter
                                 </Button>
                             )}
 

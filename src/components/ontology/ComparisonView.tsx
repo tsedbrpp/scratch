@@ -4,7 +4,6 @@ import { Source } from '@/types'; // Import Source type
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 import { ConceptCard } from './ConceptCard';
 import { AssemblageGauges } from './AssemblageGauges';
@@ -15,7 +14,20 @@ interface ComparisonViewProps {
 }
 
 export function ComparisonView({ result, sources }: ComparisonViewProps) {
-    // Legacy visualization state removed in favor of AssemblageGauges
+    // Resolve Source Names
+    const sourceA = sources.find(s => s.id === result.sourceAId);
+    const sourceB = sources.find(s => s.id === result.sourceBId);
+    const sourceC = result.sourceCId ? sources.find(s => s.id === result.sourceCId) : undefined;
+
+    // Remap metrics to use actual names
+    const mappedMetrics = result.assemblage_metrics?.map(m => {
+        let label = m.jurisdiction;
+        // Check for standard placeholder labels or ID matches
+        if ((m.jurisdiction === 'Ontology A' || m.jurisdiction === 'Source A') && sourceA) label = sourceA.title;
+        else if ((m.jurisdiction === 'Ontology B' || m.jurisdiction === 'Source B') && sourceB) label = sourceB.title;
+        else if ((m.jurisdiction === 'Ontology C' || m.jurisdiction === 'Source C') && sourceC) label = sourceC.title;
+        return { ...m, jurisdiction: label };
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -27,7 +39,7 @@ export function ComparisonView({ result, sources }: ComparisonViewProps) {
                 <p className="text-slate-500 text-sm">
                     AI-derived scores for Territorialization (Rigidity) and Coding (Rule Density).
                 </p>
-                <AssemblageGauges metrics={result.assemblage_metrics} />
+                <AssemblageGauges metrics={mappedMetrics} />
             </div>
 
             {/* Comparison Summary */}

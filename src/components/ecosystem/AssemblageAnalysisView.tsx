@@ -451,6 +451,12 @@ import { Activity, EyeOff, Eye, AlertTriangle, ArrowDown, ArrowRight } from 'luc
 import { EcosystemConfiguration } from "@/types/ecosystem";
 
 function StressTestSimulator({ actors, config }: { actors: EcosystemActor[], config: EcosystemConfiguration }) {
+    console.log('[StressTestDebug] Simulator received:', { actorCount: actors.length, config });
+
+    if (!config) {
+        return <div className="text-red-500 text-xs p-4">Error: Missing Assemblage Configuration</div>;
+    }
+
     const [excludedIds, setExcludedIds] = React.useState<string[]>([]);
 
     // Memoize Baseline
@@ -471,6 +477,38 @@ function StressTestSimulator({ actors, config }: { actors: EcosystemActor[], con
     const memberIds = config.memberIds || [];
     const members = actors.filter(a => memberIds.includes(a.id));
 
+    // Hybrid Baseline Logic: Reconcile AI Qualitative Score vs Graph Quantitative Score
+    // If Graph says 10 (Closed System) but AI says X (e.g. 6), we calibrate the baseline to X
+    // while preserving the relative impact of the simulation.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aiScoreT = Number((config.properties as any)?.territorialization_score) || Number((config.properties as any)?.territoriality) || 5;
+    const baselineRawT = baseline.stability * 10;
+
+    // Trigger hybrid mode if graph is "too perfect" (>9.5) but AI disagrees (<9)
+    const useHybridT = baselineRawT > 9.5 && aiScoreT < 9;
+
+    const effectiveBaselineT = useHybridT ? aiScoreT : baselineRawT;
+
+    // Apply the simulation's relative degradation to the effective baseline
+    // If Sim is 90% of Base, Diff is 0.9 * AI_Score
+    const relativePerformance = baseline.stability > 0 ? simulation.stability / baseline.stability : 0;
+    // Cap performance at 1.0 (cannot be more stable than the baseline in this context) if using hybrid
+    const cappedRelPerfT = useHybridT ? Math.min(relativePerformance, 1.0) : relativePerformance;
+    const displayedT = useHybridT ? cappedRelPerfT * effectiveBaselineT : simulation.stability * 10;
+
+
+    // [FIX] Hybrid Logic for CODING INTENSITY
+    const aiScoreC = Number((config.properties as any)?.coding_intensity_score) || Number((config.properties as any)?.coding) || 5;
+    const baselineRawC = baseline.coding_intensity * 10;
+    const useHybridC = baselineRawC > 9.5 && aiScoreC < 9;
+    const effectiveBaselineC = useHybridC ? aiScoreC : baselineRawC;
+
+    // Relative degradation for Coding
+    const relPerfC = baseline.coding_intensity > 0 ? simulation.coding_intensity / baseline.coding_intensity : 0;
+    const cappedRelPerfC = useHybridC ? Math.min(relPerfC, 1.0) : relPerfC;
+    const displayedC = useHybridC ? cappedRelPerfC * effectiveBaselineC : simulation.coding_intensity * 10;
+
+
     return (
         <div className="space-y-4">
             {/* Metric Dashboard */}
@@ -479,9 +517,10 @@ function StressTestSimulator({ actors, config }: { actors: EcosystemActor[], con
                     <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Territorialization (T)</span>
                     <div className="flex items-end gap-2">
                         <span className={`text-2xl font-bold ${isCollapse ? 'text-red-600' : 'text-slate-800'}`}>
-                            {(simulation.stability * 10).toFixed(1)}
+                            {displayedT.toFixed(1)}
                         </span>
                         <div className="flex items-center text-xs mb-1.5 font-medium">
+                            {useHybridT && <span className="text-[10px] text-slate-400 mr-2 border border-slate-200 rounded px-1" title="Calibrated to AI Analysis Baseline">AI</span>}
                             {tDelta < -0.1 ? (
                                 <span className="text-red-500 flex items-center">
                                     <ArrowDown className="h-3 w-3 mr-0.5" />
@@ -503,11 +542,12 @@ function StressTestSimulator({ actors, config }: { actors: EcosystemActor[], con
                     <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Coding Intensity (C)</span>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-bold text-slate-800">
-                            {(simulation.coding_intensity * 10).toFixed(1)}
+                            {displayedC.toFixed(1)}
                         </span>
                         <span className="text-xs text-slate-400 mb-1.5 font-medium">
                             / 10
                         </span>
+                        {useHybridC && <span className="text-[10px] text-slate-400 mb-1.5 ml-2 border border-slate-200 rounded px-1" title="Calibrated to AI Analysis Baseline">AI</span>}
                     </div>
                 </div>
             </div>

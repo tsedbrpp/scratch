@@ -248,8 +248,8 @@ Given:
 You MUST:
 
 1. Identify conceptual overlap and divergence.
-   - "Shared concepts" MUST match node names exactly (string equality).
-   - "Unique concepts" MUST be concepts present in only one ontology (A, B, or C).
+   - "Shared concepts": identify concepts that are semantically equivalent, synonymous, or refer to the same entity (e.g., "Stadium Plan" vs "New Stadium Proposal"). Treat these as shared. Use the most descriptive name as the label.
+   - "Unique concepts": MUST be concepts that are conceptually distinct and not present (even as a synonym) in the other ontology.
 
 2. Identify structural differences.
    - Consider centralization vs. distribution of links.

@@ -2,6 +2,12 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Info } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Metric {
     jurisdiction: string;
@@ -21,38 +27,49 @@ const Dial = ({ value, label, color, description, comparisonValues = [] }: { val
 
     return (
         <div className="flex flex-col items-center">
-            <div className="relative w-36 h-20 overflow-hidden mb-2 group cursor-help transition-all hover:scale-105">
-                {/* Gauge Background */}
-                <div className="absolute bottom-0 w-36 h-36 rounded-full border-[14px] border-slate-100 border-t-transparent border-l-transparent border-r-transparent transform rotate-45" />
+            <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="relative w-36 h-20 overflow-hidden mb-2 group cursor-help transition-all hover:scale-105">
+                            {/* Gauge Background */}
+                            <div className="absolute bottom-0 w-36 h-36 rounded-full border-[14px] border-slate-100 border-t-transparent border-l-transparent border-r-transparent transform rotate-45" />
 
-                {/* Ghost Needles (Comparison) */}
-                {comparisonValues.map((val, idx) => (
-                    <div
-                        key={`ghost-${idx}`}
-                        className="absolute bottom-0 left-1/2 w-0.5 h-28 bg-slate-300 origin-bottom rounded-full z-0 opacity-60"
-                        style={{ transform: `translateX(-50%) rotate(${angle(val)}deg)` }}
-                    />
-                ))}
+                            {/* Ghost Needles (Comparison) */}
+                            {comparisonValues.map((val, idx) => (
+                                <div
+                                    key={`ghost-${idx}`}
+                                    className="absolute bottom-0 left-1/2 w-0.5 h-28 bg-slate-300 origin-bottom rounded-full z-0 opacity-60"
+                                    style={{ transform: `translateX(-50%) rotate(${angle(val)}deg)` }}
+                                />
+                            ))}
 
-                {/* Limit markers (optional visual flair for 0 and 100) */}
-                <div className="absolute bottom-1 left-2 w-1 h-3 bg-slate-200 rotate-[-90deg]"></div>
-                <div className="absolute bottom-1 right-2 w-1 h-3 bg-slate-200 rotate-[90deg]"></div>
+                            {/* Limit markers (optional visual flair for 0 and 100) */}
+                            <div className="absolute bottom-1 left-2 w-1 h-3 bg-slate-200 rotate-[-90deg]"></div>
+                            <div className="absolute bottom-1 right-2 w-1 h-3 bg-slate-200 rotate-[90deg]"></div>
 
-                {/* Primary Needle */}
-                <div
-                    className={`absolute bottom-0 left-1/2 w-1.5 h-28 ${color.replace('text-', 'bg-')} origin-bottom rounded-full transition-transform duration-1000 ease-out z-10 shadow-sm`}
-                    style={{ transform: `translateX(-50%) rotate(${angle(value)}deg)` }}
-                />
+                            {/* Primary Needle */}
+                            <div
+                                className={`absolute bottom-0 left-1/2 w-1.5 h-28 ${color.replace('text-', 'bg-')} origin-bottom rounded-full transition-transform duration-1000 ease-out z-10 shadow-sm`}
+                                style={{ transform: `translateX(-50%) rotate(${angle(value)}deg)` }}
+                            />
 
-                {/* Pivot */}
-                <div className="absolute bottom-0 left-1/2 w-5 h-5 bg-slate-800 rounded-full transform -translate-x-1/2 translate-y-1/2 z-20 border-2 border-white shadow-md" />
-
-                {/* Tooltip */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 left-0 right-0 bg-slate-900 text-white text-[10px] p-2 rounded shadow-lg text-center z-50 pointer-events-none mt-4 mx-2">
-                    {description}
-                    {comparisonValues.length > 0 && <div className="mt-1 text-slate-400 border-t border-slate-700 pt-1 font-mono text-[9px]">Others: {comparisonValues.join(', ')}</div>}
-                </div>
-            </div>
+                            {/* Pivot */}
+                            <div className="absolute bottom-0 left-1/2 w-5 h-5 bg-slate-800 rounded-full transform -translate-x-1/2 translate-y-1/2 z-20 border-2 border-white shadow-md" />
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[200px] text-center p-3 bg-slate-900 text-white border-slate-800">
+                        <div className="font-medium text-xs mb-1">{label}</div>
+                        <div className="text-[11px] leading-tight text-slate-300">
+                            {description}
+                        </div>
+                        {comparisonValues.length > 0 && (
+                            <div className="mt-2 text-slate-400 border-t border-slate-700 pt-1 font-mono text-[9px]">
+                                Others: {comparisonValues.join(', ')}
+                            </div>
+                        )}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
 
             <div className="text-center mt-2">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">{label}</div>

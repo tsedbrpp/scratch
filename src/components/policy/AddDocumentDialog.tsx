@@ -37,11 +37,7 @@ export function AddDocumentDialog({ open, onOpenChange, onAdd }: AddDocumentDial
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                <Button className="bg-slate-900 text-white hover:bg-slate-800">
-                    <Plus className="mr-2 h-4 w-4" /> Add Document
-                </Button>
-            </DialogTrigger>
+
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Add New Policy Document</DialogTitle>
