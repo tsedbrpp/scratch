@@ -57,7 +57,7 @@ const AxisRow = ({
                                     <Info className="w-3 h-3 mr-1" /> Decision Rule
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent className="max-w-md p-4">
+                            <TooltipContent className="max-w-md p-4 bg-white dark:bg-slate-950 z-50 shadow-xl border border-slate-200 dark:border-slate-800">
                                 <p className="font-semibold mb-2 text-xs uppercase">AI Decision Rule:</p>
                                 <p className="text-sm italic">"{data.decision_rule || "No explanation provided."}"</p>
                                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
@@ -102,7 +102,7 @@ const AxisRow = ({
                                     <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-background shadow-sm ring-2 ring-blue-500/20" />
                                 </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
+                            <TooltipContent side="top" className="max-w-xs bg-white dark:bg-slate-950 z-50 shadow-xl border border-slate-200 dark:border-slate-800">
                                 <div className="font-bold text-blue-500 mb-1">{sourceAName}</div>
                                 <div className="text-xs mb-2">Score: {safeA.toFixed(1)} / 10</div>
                                 <div className="text-xs text-muted-foreground border-l-2 border-blue-500 pl-2 italic">
@@ -133,7 +133,7 @@ const AxisRow = ({
                                     <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-background shadow-sm ring-2 ring-orange-500/20" />
                                 </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
+                            <TooltipContent side="top" className="max-w-xs bg-white dark:bg-slate-950 z-50 shadow-xl border border-slate-200 dark:border-slate-800">
                                 <div className="font-bold text-orange-500 mb-1">{sourceBName}</div>
                                 <div className="text-xs mb-2">Score: {safeB.toFixed(1)} / 10</div>
                                 <div className="text-xs text-muted-foreground border-l-2 border-orange-500 pl-2 italic">

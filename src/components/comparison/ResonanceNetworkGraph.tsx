@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Network, Maximize2, Minimize2, Sparkles, Loader2, Info, ZoomIn, ZoomOut, RotateCcw, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { SynthesisComparisonResult } from '@/types/synthesis';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { useServerStorage } from '@/hooks/useServerStorage';
+import { DraggableCard } from "@/components/ui/draggable-card";
 
 interface ResonanceNetworkGraphProps {
     data: NonNullable<SynthesisComparisonResult['resonances']>['resonance_graph'];
@@ -16,6 +18,7 @@ interface ResonanceNetworkGraphProps {
     height?: number;
     sourceAName?: string;
     sourceBName?: string;
+    comparisonId?: string;
 }
 
 // D3 Node Type
@@ -24,15 +27,21 @@ interface ResonanceNode extends d3.SimulationNodeDatum {
     label: string;
     type: 'shared' | 'eu_specific' | 'brazil_specific' | 'asymmetry';
     flight_intensity?: number;
+    x?: number;
+    y?: number;
+    fx?: number | null;
+    fy?: number | null;
 }
 
 // D3 Link Type
 interface ResonanceLink extends d3.SimulationLinkDatum<ResonanceNode> {
+    source: string | ResonanceNode;
+    target: string | ResonanceNode;
     type: 'resonance' | 'divergence' | 'colonial_influence' | 'flight';
     weight?: number;
 }
 
-export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceAName = "Source A", sourceBName = "Source B" }: ResonanceNetworkGraphProps) {
+export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceAName = "Source A", sourceBName = "Source B", comparisonId }: ResonanceNetworkGraphProps) {
     const svgRef = useRef<SVGSVGElement>(null);
     const gRef = useRef<SVGGElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -42,9 +51,12 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
     const [activeFilter, setActiveFilter] = useState<string | null>(null); // Filter by type
     const { isReadOnly } = useDemoMode();
 
-    // AI Interpretation State
+    // AI Interpretation State - Persisted
     const [isInterpreting, setIsInterpreting] = useState(false);
-    const [interpretationResult, setInterpretationResult] = useState<{ title: string, analysis: string } | null>(null);
+    const [interpretationResult, setInterpretationResult] = useServerStorage<{ title: string, analysis: string } | null>(
+        `resonance-interpretation-${comparisonId}`,
+        null
+    );
     const [showInterpretationDialog, setShowInterpretationDialog] = useState(false);
 
     // Zoom State used for manual controls
@@ -313,7 +325,7 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
                         Force-directed view of transversal strategies and colonial lines of flight.
                     </CardDescription>
                 </div>
-                <div className="flex items-center gap-1 pointer-events-auto bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-lg p-1 border shadow-sm">
+                <div className="flex items-center gap-1 pointer-events-auto bg-white dark:bg-slate-900 backdrop-blur rounded-lg p-1 border shadow-sm">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-indigo-600" onClick={() => handleZoom(1.2)} title="Zoom In">
                         <ZoomIn className="w-4 h-4" />
                     </Button>
@@ -408,23 +420,27 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
                 </DialogContent>
             </Dialog>
 
-            {/* Interpretation Dialog */}
-            <Dialog open={showInterpretationDialog} onOpenChange={setShowInterpretationDialog}>
-                <DialogContent className="max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-indigo-700">
-                            <Sparkles className="w-5 h-5" />
-                            {interpretationResult?.title || "Rhizomatic Analysis"}
-                        </DialogTitle>
-                        <DialogDescription>AI-generated interpretation.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 text-slate-700 text-sm leading-relaxed space-y-4 max-h-[60vh] overflow-y-auto">
-                        {interpretationResult?.analysis.split('\n').map((paragraph, i) => (
-                            <p key={i}>{paragraph}</p>
+            {/* Interpretation Window (Draggable) */}
+            {showInterpretationDialog && interpretationResult && (
+                <DraggableCard
+                    title={
+                        <div className="flex items-center gap-2 text-indigo-700">
+                            <Sparkles className="w-4 h-4" />
+                            {interpretationResult.title || "Rhizomatic Analysis"}
+                        </div>
+                    }
+                    onClose={() => setShowInterpretationDialog(false)}
+                    initialX={100}
+                    initialY={100}
+                    className="max-w-md"
+                >
+                    <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
+                        {interpretationResult.analysis.split('\n').map((paragraph, i) => (
+                            <p key={i} className="whitespace-pre-line">{paragraph}</p>
                         ))}
                     </div>
-                </DialogContent>
-            </Dialog>
+                </DraggableCard>
+            )}
         </Card>
     );
 }

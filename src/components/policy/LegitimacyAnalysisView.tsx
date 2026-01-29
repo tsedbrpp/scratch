@@ -16,7 +16,27 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const renderSafe = (content: any): React.ReactNode => {
         if (typeof content === 'string' || typeof content === 'number') return content;
-        if (Array.isArray(content)) return content.map(c => renderSafe(c)).join(", ");
+
+        if (Array.isArray(content)) {
+            // Check if items are primitive strings/numbers to decide layout
+            const isPrimitive = content.every(c => typeof c === 'string' || typeof c === 'number');
+
+            if (isPrimitive) {
+                return content.join(", ");
+            }
+
+            // For objects (like value-mechanism pairs), render as a vertical stack
+            return (
+                <div className="flex flex-col gap-2 mt-1">
+                    {content.map((c, i) => (
+                        <div key={i} className="pl-2 border-l-2 border-slate-200">
+                            {renderSafe(c)}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
         if (typeof content === 'object' && content !== null) {
             // Check if it's a known conflict spot structure
             if (content.location && content.description) {
@@ -29,8 +49,9 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
             }
             // Fallback for unknown objects
             return Object.entries(content).map(([k, v]) => (
-                <div key={k} className="text-xs">
-                    <span className="font-semibold capitalize">{k.replace(/_/g, ' ')}:</span> {renderSafe(v)}
+                <div key={k} className="text-xs mb-1">
+                    <span className="font-semibold capitalize text-slate-600">{k.replace(/_/g, ' ')}:</span><br />
+                    <div className="ml-1">{renderSafe(v)}</div>
                 </div>
             ));
         }

@@ -92,26 +92,7 @@ END SYSTEM PROMPT
 `;
 
 // Resistance Generation System Prompt
-export const RESISTANCE_GENERATION_PROMPT = `
-You are a creative writer specializing in "algorithmic realism."
-Your task is to generate realistic, synthetic traces of user resistance to algorithmic control.
-These traces should mimic forum posts, chat logs, or social media comments found in gig economy platforms.
 
-RULES:
-1. Use realistic slang, typos, and platform-specific jargon (e.g., "deactivation," "algo," "shadowban").
-2. Reflect specific resistance strategies (e.g., turning off location, multi-apping, collective coordinated log-offs).
-3. Do not be overly dramatic; ground it in mundane frustration logic.
-4. Output MUST be a JSON array of objects.
-
-OUTPUT FORMAT:
-[
-  {
-    "text": "The generated trace text...",
-    "platform_context": "Source context (e.g., Driver Subreddit)",
-    "strategy_hint": "Brief label of strategy used"
-  }
-]
-`;
 
 // Resistance Synthesis System Prompt
 export const RESISTANCE_SYNTHESIS_PROMPT = `

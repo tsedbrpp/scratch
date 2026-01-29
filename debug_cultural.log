@@ -16,3 +16,39 @@
 [SUCCESS] Completed in 17299 ms
 [START] Analyzing 3 sources with lens: actor_network_theory
 [SUCCESS] Completed in 13001 ms
+[DEBUG] Request received. Env Key First 5 chars: sk-pr
+[DEBUG] Request received. Env Key First 5 chars: sk-pr
+[ERROR] Analysis failed: Expected property name or '}' in JSON at position 1 
+Stack: SyntaxError: Expected property name or '}' in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (node:internal/deps/undici/undici:4306:19)
+    at successSteps (node:internal/deps/undici/undici:4288:27)
+    at fullyReadBody (node:internal/deps/undici/undici:2724:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async consumeBody (node:internal/deps/undici/undici:4297:7)
+    at async POST (C:\Users\mount\.gemini\antigravity\scratch\.next\dev\server\chunks\[root-of-the-server]__f464c229._.js:4960:51)
+    at async AppRouteRouteModule.do (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\compiled\next-server\app-route-turbo.runtime.dev.js:5:37789)
+    at async AppRouteRouteModule.handle (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\compiled\next-server\app-route-turbo.runtime.dev.js:5:45045)
+    at async responseGenerator (C:\Users\mount\.gemini\antigravity\scratch\.next\dev\server\chunks\2d4d1_next_361166fa._.js:14958:38)
+    at async AppRouteRouteModule.handleResponse (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\compiled\next-server\app-route-turbo.runtime.dev.js:1:187851)
+    at async handleResponse (C:\Users\mount\.gemini\antigravity\scratch\.next\dev\server\chunks\2d4d1_next_361166fa._.js:15020:32)
+    at async handler (C:\Users\mount\.gemini\antigravity\scratch\.next\dev\server\chunks\2d4d1_next_361166fa._.js:15073:13)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\base-server.js:1413:9)
+    at async DevServer.renderPageComponent (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\base-server.js:1465:24)
+    at async DevServer.renderToResponseImpl (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\base-server.js:1515:32)
+    at async DevServer.pipeImpl (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\base-server.js:1021:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\next-server.js:394:17)
+    at async DevServer.handleRequestImpl (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\base-server.js:912:17)
+    at async C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\dev\next-dev-server.js:382:20
+    at async Span.traceAsyncFn (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\dev\next-dev-server.js:378:24)
+    at async invokeRender (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\lib\router-server.js:240:21)
+    at async handleRequest (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\lib\router-server.js:436:24)
+    at async requestHandlerImpl (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\lib\router-server.js:484:13)
+    at async Server.requestListener (C:\Users\mount\.gemini\antigravity\scratch\node_modules\next\dist\server\lib\start-server.js:226:13)
+[DEBUG] Request received. Env Key First 5 chars: sk-pr
+[START] Analyzing 2 sources with lens: default
+[SUCCESS] Completed in 10886 ms
+[DEBUG] Request received. Env Key First 5 chars: sk-pr
+[START] Analyzing 2 sources with lens: default
+[SUCCESS] Completed in 13246 ms

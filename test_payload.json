@@ -1,0 +1,15 @@
+{
+    "sources": [
+        {
+            "id": "1",
+            "title": "Test Policy",
+            "text": "The implementation of AI systems in urban environments requires strict adherence to safety protocols. Surveillance must be balanced with privacy rights."
+        },
+        {
+            "id": "2",
+            "title": "Criticism",
+            "text": "However, these systems often reinforce existing biases. We must resist the automated enforcement of social norms."
+        }
+    ],
+    "lensId": "default"
+}

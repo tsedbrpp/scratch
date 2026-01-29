@@ -2,6 +2,18 @@ import { Source } from '@/types';
 import { StorageService } from '@/lib/storage-service';
 import { BASELINE_SOURCES } from '@/lib/data/baselines';
 
+// Helper to managing explicitly deleted baselines
+const getDeletedBaselines = async (userId: string): Promise<string[]> => {
+    return (await StorageService.get<string[]>(userId, 'deleted_baselines')) || [];
+};
+
+const markBaselineAsDeleted = async (userId: string, id: string) => {
+    const deleted = await getDeletedBaselines(userId);
+    if (!deleted.includes(id)) {
+        await StorageService.set(userId, 'deleted_baselines', [...deleted, id]);
+    }
+};
+
 // Read sources from Redis (Atomic Hash Implementation)
 export const getSources = async (userId: string): Promise<Source[]> => {
     // 1. Try to get from new Hash structure
@@ -11,6 +23,14 @@ export const getSources = async (userId: string): Promise<Source[]> => {
 
     if (sourceHash) {
         sources = Object.values(sourceHash);
+
+        // [FIX] Ensure zombie baselines (stuck in storage but marked deleted) are filtered out
+        if (sources.length > 0) {
+            const deletedBaselines = await getDeletedBaselines(userId);
+            if (deletedBaselines.length > 0) {
+                sources = sources.filter(s => !deletedBaselines.includes(s.id));
+            }
+        }
     } else {
         // 2. Migration Path: Check for legacy array
         const legacySources = await StorageService.get<Source[]>(userId, 'sources');
@@ -23,8 +43,8 @@ export const getSources = async (userId: string): Promise<Source[]> => {
                 await StorageService.setHashField(userId, 'sources_v2', source.id, source);
             }
 
-            // Cleanup legacy key (optional, maybe keep as backup for now? decided to clean to avoid confusion)
-            // await StorageService.delete(userId, 'sources'); 
+            // Cleanup legacy key to prevent zombie data if v2 becomes empty
+            await StorageService.delete(userId, 'sources');
         } else {
             // New user or empty
             sources = [];
@@ -38,8 +58,14 @@ export const getSources = async (userId: string): Promise<Source[]> => {
     }
 
     // Seeding: Ensure all BASELINE_SOURCES exist in the user's list
-    // This allows us to push new examples (like the Technical Spec) dynamically
+    // UNLESS they were explicitly deleted
+    const deletedBaselines = await getDeletedBaselines(userId);
+
     for (const baseline of BASELINE_SOURCES) {
+        if (deletedBaselines.includes(baseline.id)) {
+            continue; // Skip if explicitly deleted
+        }
+
         const exists = sources.some(s => s.id === baseline.id);
         if (!exists) {
             console.log(`[Seeding] Adding new baseline source: ${baseline.id}`);
@@ -152,7 +178,22 @@ export const updateSource = async (userId: string, id: string, updates: Partial<
 // Delete a source (Atomic)
 export const deleteSource = async (userId: string, id: string): Promise<boolean> => {
     // Ensure migration happened so we don't delete from empty hash while data sits in legacy
-    await getSources(userId);
+    const allSources = await getSources(userId);
+
+    // [FIX] Check if it's a baseline source and mark as deleted
+    const isBaseline = BASELINE_SOURCES.some(b => b.id === id);
+    if (isBaseline) {
+        await markBaselineAsDeleted(userId, id);
+    }
+
+    // [FIX] Cascade Delete: Remove any traces linked to this policy
+    const childSources = allSources.filter(s => s.policyId === id);
+    if (childSources.length > 0) {
+        console.log(`[Cascade Delete] Removing ${childSources.length} traces associated with policy ${id}`);
+        for (const child of childSources) {
+            await StorageService.deleteHashField(userId, 'sources_v2', child.id);
+        }
+    }
 
     const count = await StorageService.deleteHashField(userId, 'sources_v2', id);
     return count > 0;

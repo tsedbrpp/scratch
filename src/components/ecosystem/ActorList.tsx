@@ -157,7 +157,7 @@ export function ActorList({
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Clear All Actors?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will remove all actors (including mock data). You&apos;ll start with an empty ecosystem. This action cannot be undone.
+                                        This will remove all actors. You&apos;ll start with an empty ecosystem. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

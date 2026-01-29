@@ -14,9 +14,15 @@ export async function POST(request: NextRequest) {
     console.log(`[CULTURAL ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
 
     // BLOCK READ-ONLY DEMO USERS
+    // BLOCK READ-ONLY DEMO USERS
     if (await isReadOnlyAccess()) {
         return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
     }
+
+    try {
+        const secretFs = require('fs');
+        secretFs.appendFileSync('debug_cultural.log', `[DEBUG] Request received. Env Key First 5 chars: ${(process.env.OPENAI_API_KEY || '').substring(0, 5)}\n`);
+    } catch (e) { console.error('Log write failed', e); }
 
     const userId = await getAuthenticatedUserId(request);
 
@@ -68,6 +74,11 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: unknown) {
+        try {
+            const secretFs = require('fs');
+            secretFs.appendFileSync('debug_cultural.log', `[ERROR] Analysis failed: ${error instanceof Error ? error.message : String(error)} \nStack: ${error instanceof Error ? error.stack : ''}\n`);
+        } catch (e) { console.error('Log write failed', e); }
+
         console.error(`[CULTURAL ANALYSIS ERROR] Failed: `, error);
         return NextResponse.json(
             {

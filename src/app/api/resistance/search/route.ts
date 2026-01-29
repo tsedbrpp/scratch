@@ -11,34 +11,9 @@ interface SearchResult {
 }
 
 // Fallback verified data
-const MOCK_RESULTS: SearchResult[] = [
-    {
-        title: "EFF: EU AI Act Passed: Now the Hard Work Begins",
-        url: "https://www.eff.org/deeplinks/2024/03/eu-ai-act-passed-now-hard-work-begins",
-        snippet: "The European Parliament has voted to adopt the AI Act. Here is the EFF's analysis of the final text and what comes next for fundamental rights.",
-        source: "Electronic Frontier Foundation",
-        date: "2024-03-13",
-        type: "manifesto"
-    },
-    {
-        title: "EFF: EU AI Act Deal Reached: Human Rights Still at Risk",
-        url: "https://www.eff.org/deeplinks/2023/12/eu-ai-act-deal-reached-human-rights-still-risk",
-        snippet: "Civil society reacts to the final political deal on the AI Act, highlighting significant loopholes for law enforcement and national security.",
-        source: "Electronic Frontier Foundation",
-        date: "2023-12-09",
-        type: "policy_draft"
-    },
-    {
-        title: "TechCrunch: EU ties up deal on AI Act",
-        url: "https://techcrunch.com/2023/12/08/eu-ai-act-deal/",
-        snippet: "Analysis of the marathon negotiations that led to the world's first comprehensive AI law.",
-        source: "TechCrunch",
-        date: "2023-12-08",
-        type: "social_media"
-    }
-];
+const MOCK_RESULTS: SearchResult[] = [];
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
     if (await isReadOnlyAccess()) {
         return NextResponse.json({ error: "Demo Search is Disabled" }, { status: 403 });
     }

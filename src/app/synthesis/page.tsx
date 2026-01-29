@@ -350,7 +350,7 @@ export default function SynthesisPage() {
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-slate-700 leading-relaxed">
                     <p>
-                        This synthesis compares AI governance frameworks to identify patterns of convergence, divergence, and coloniality. By applying the Decolonial Situatedness Framework, we analyze how different jurisdictions approach risk, governance, rights, and territorial scope.
+                        This synthesis compares governance frameworks to identify patterns of convergence, divergence, and coloniality. By applying the Decolonial Situatedness Framework, we analyze how different jurisdictions approach risk, governance, rights, and territorial scope.
                     </p>
                     <p>
                         <strong>Convergence:</strong> Identification of shared regulatory mechanisms, definitions, and risk classifications across frameworks.
@@ -499,6 +499,7 @@ export default function SynthesisPage() {
                                         <div className="col-span-1 lg:col-span-1 h-full min-h-[400px]">
                                             <ComparisonNetworkGraph
                                                 networkData={comparisonResult.assemblage_network}
+                                                comparisonId={`${sourceA?.id}-${sourceB?.id}`}
                                             />
                                         </div>
                                     ) : (
@@ -641,6 +642,7 @@ export default function SynthesisPage() {
                                         height={400}
                                         sourceAName={sourceA?.title || "Source A"}
                                         sourceBName={sourceB?.title || "Source B"}
+                                        comparisonId={`${sourceA?.id}-${sourceB?.id}`}
                                     />
                                 </div>
                             )}

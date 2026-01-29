@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Network, RefreshCcw, MousePointerClick, Settings2, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, Move, Sparkles, Loader2, Download } from 'lucide-react';
@@ -18,11 +18,15 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import { useServerStorage } from '@/hooks/useServerStorage';
+import { DraggableCard } from "@/components/ui/draggable-card";
+import { cn } from "@/lib/utils";
 
 interface ComparisonNetworkGraphProps {
     networkData: SynthesisComparisonResult['assemblage_network'];
     width?: number;
     height?: number;
+    comparisonId?: string;
 }
 
 // Types for D3
@@ -31,17 +35,22 @@ interface Node extends d3.SimulationNodeDatum {
     label: string;
     type: 'policy' | 'concept' | 'mechanism' | 'right' | 'risk' | 'analyst';
     inferred_centrality?: string;
-    // Interaction State
-    isTerritorialized?: boolean; // If true, aligns with center
+    // D3 Props (Explicitly typed to avoid TS errors)
+    x?: number;
+    y?: number;
+    fx?: number | null;
+    fy?: number | null;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
+    source: string | Node;
+    target: string | Node;
     type: 'reinforcing' | 'tension' | 'extraction' | 'resistance' | 'translation';
     description?: string;
     weight?: number;
 }
 
-export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 }: ComparisonNetworkGraphProps) {
+export function ComparisonNetworkGraph({ networkData, width = 800, height = 500, comparisonId }: ComparisonNetworkGraphProps) {
     console.log("DEBUG: ComparisonNetworkGraph received data:", {
         nodeCount: networkData?.nodes?.length,
         edgeCount: networkData?.edges?.length,
@@ -71,8 +80,11 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: Node | Link } | null>(null);
 
-    // AI Interpretation State
-    const [interpretation, setInterpretation] = useState<{ title: string; analysis: string } | null>(null);
+    // AI Interpretation State - Persisted
+    const [interpretation, setInterpretation] = useServerStorage<{ title: string; analysis: string } | null>(
+        `assemblage-interpretation-${comparisonId}`,
+        null
+    );
     const [isInterpreting, setIsInterpreting] = useState(false);
     const [showInterpretationDialog, setShowInterpretationDialog] = useState(false);
 
@@ -489,7 +501,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
 
     return (
         <Card className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen rounded-none bg-white dark:bg-slate-950' : 'h-full bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm relative overflow-hidden'}`}>
-            <CardHeader className="pb-2 border-b bg-white/50 dark:bg-slate-950/50">
+            <CardHeader className="pb-2 border-b bg-white dark:bg-slate-950">
                 <div className="flex justify-between items-center gap-4">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                         <CardTitle className="text-lg flex items-center gap-2 text-slate-800 dark:text-slate-100 truncate shrink-0">
@@ -504,7 +516,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                     </div>
                     <div className="flex gap-2 shrink-0">
                         {/* Zoom Controls */}
-                        <div className="flex items-center bg-white/50 dark:bg-slate-800/50 rounded-md border mr-2">
+                        <div className="flex items-center bg-white dark:bg-slate-800 rounded-md border mr-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={handleZoomOut} title="Zoom Out">
                                 <ZoomOut className="w-3 h-3" />
                             </Button>
@@ -554,7 +566,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                                     <Settings2 className="w-4 h-4" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent>
+                            <SheetContent className="bg-white dark:bg-slate-950 z-[100] border-l border-slate-200 dark:border-slate-800 shadow-2xl">
                                 <SheetHeader>
                                     <SheetTitle>Simulation Assumptions</SheetTitle>
                                     <SheetDescription>
@@ -708,6 +720,29 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                 </div>
             </div>
 
+            {/* Interpretation Window (Draggable) */}
+            {showInterpretationDialog && interpretation && (
+                <DraggableCard
+                    title={
+                        <div className="flex items-center gap-2 text-indigo-700">
+                            <Sparkles className="w-4 h-4" />
+                            {interpretation.title || "Graph Analysis"}
+                        </div>
+                    }
+                    onClose={() => setShowInterpretationDialog(false)}
+                    initialX={100}
+                    initialY={100}
+                    className="max-w-md"
+                >
+                    <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
+                        <p className="whitespace-pre-line">{interpretation.analysis}</p>
+                        <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded text-xs text-slate-500 border dark:border-slate-800 italic">
+                            Note: This analysis is based on the node types (colors) and connection density observed in the current graph.
+                        </div>
+                    </div>
+                </DraggableCard>
+            )}
+
             {/* Detail Dialog */}
             <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
                 <DialogContent>
@@ -795,32 +830,6 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500 
                             </DialogFooter>
                         </>
                     )}
-                </DialogContent>
-            </Dialog>
-
-            {/* Interpretation Dialog */}
-            <Dialog open={showInterpretationDialog} onOpenChange={setShowInterpretationDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-indigo-700">
-                            <Sparkles className="w-5 h-5" />
-                            {interpretation?.title || "Graph Analysis"}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Automated structural analysis of the assemblage network.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {interpretation && (
-                        <div className="py-2 text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
-                            <p>{interpretation.analysis}</p>
-                            <div className="bg-slate-50 p-3 rounded text-xs text-slate-500 border italic">
-                                Note: This analysis is based on the node types (colors) and connection density observed in the current graph.
-                            </div>
-                        </div>
-                    )}
-                    <DialogFooter>
-                        <Button onClick={() => setShowInterpretationDialog(false)}>Close</Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </Card >

@@ -519,8 +519,8 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
                             </Button>
                         </div>
 
-                        {/* Panel Content */}
-                        <ScrollArea className="flex-1 p-5">
+                        {/* Panel Content (Native Scroll) */}
+                        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar relative">
                             <div className="space-y-6">
                                 {/* Context Card */}
                                 <div className="space-y-2">
@@ -566,7 +566,7 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
                                     </div>
                                 </div>
                             </div>
-                        </ScrollArea>
+                        </div>
 
                         {/* Panel Footer */}
                         <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto">
