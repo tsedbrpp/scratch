@@ -112,7 +112,7 @@ export function TranslationChain({ actors = [], onHoverStage }: TranslationChain
     return (
         <TooltipProvider>
             <Card
-                className="absolute bottom-4 right-4 w-[320px] bg-white/95 backdrop-blur-sm shadow-xl border-slate-200 z-20 overflow-hidden"
+                className="absolute bottom-4 left-4 w-[320px] bg-white/95 backdrop-blur-sm shadow-xl border-slate-200 z-20 overflow-hidden"
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px)`,
                     transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',

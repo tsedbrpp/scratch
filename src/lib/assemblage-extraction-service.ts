@@ -71,6 +71,7 @@ export class AssemblageExtractionService {
                     "name": "Entity Name",
                     "type": "See list above",
                     "description": "What they do in this specific context",
+                    "evidence_quotes": ["Direct quote from text supporting this finding"],
                     "metrics": { "territorialization": 5, "deterritorialization": 5, "coding": 5 }
                 }
             ],
@@ -120,20 +121,37 @@ export class AssemblageExtractionService {
                 territoriality: a.metrics?.territorialization || 5, // Backward compat
                 counter_conduct: a.metrics?.deterritorialization || 5 // Backward compat
             },
+            quotes: a.evidence_quotes || [],
             trace_metadata: {
                 source: "ai_inference",
-                evidence: sourceLabel,
+                evidence: (a.evidence_quotes && a.evidence_quotes[0]) || sourceLabel,
                 provisional: true,
                 confidence: 0.8
-            }
+            },
+            reflexive_log: [
+                {
+                    id: uuidv4(),
+                    timestamp: Date.now(),
+                    action_type: "Manual_Inscription",
+                    rationale: `Actor extracted from source text (${sourceLabel})`,
+                    user_id: "system"
+                }
+            ]
         }));
 
         const edges: EcosystemEdge[] = (result.relationships || []).map((r: any) => {
-            // Find IDs for names
+            // Find IDs for names with Fuzzy Matching
+            const normalize = (s: string) => s.toLowerCase().trim();
+            const findActor = (name: string) => {
+                const n = normalize(name);
+                return actors.find(a => normalize(a.name) === n) ||
+                    actors.find(a => normalize(a.name).includes(n) || n.includes(normalize(a.name)));
+            };
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const sourceActor = actors.find((a: any) => a.name.toLowerCase() === r.source.toLowerCase());
+            const sourceActor = findActor(r.source);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const targetActor = actors.find((a: any) => a.name.toLowerCase() === r.target.toLowerCase());
+            const targetActor = findActor(r.target);
 
             if (sourceActor && targetActor) {
                 return {

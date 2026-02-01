@@ -80,7 +80,7 @@ export function useAssemblageExtraction({
             const newActors: EcosystemActor[] = [];
 
             // [NEW] Check if actors are already hydrated (Internal Service)
-             
+
             const firstActor = (analysis.actors && analysis.actors.length > 0) ? analysis.actors[0] : null;
 
             if (firstActor && firstActor.id && firstActor.metrics && typeof firstActor.metrics.territorialization !== 'undefined') {
@@ -114,7 +114,14 @@ export function useAssemblageExtraction({
                         },
                         quotes: a.evidence_quotes || [],
                         region: a.region || "Unknown",
-                        role_type: a.role_type
+                        role_type: a.role_type,
+                        trace_metadata: a.trace_metadata || {
+                            source: "ai_inference",
+                            evidence: (a.evidence_quotes && a.evidence_quotes[0]) || "Inferred from analysis",
+                            provisional: true,
+                            confidence: 0.85
+                        },
+                        reflexive_log: a.reflexive_log || []
                     });
                     memberIds.push(id);
                 });

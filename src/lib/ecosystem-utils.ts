@@ -19,14 +19,23 @@ export const getActorColor = (type: string) => {
     return SWISS_COLORS[key] || SWISS_COLORS.default;
 };
 
-export type ActorShape = "circle" | "rect" | "triangle" | "square" | "hexagon";
+export type ActorShape = "circle" | "rect" | "triangle" | "square" | "hexagon" | "diamond";
 
-export const getActorShape = (type: string): ActorShape => {
-    const t = type.toLowerCase();
+export const getActorShape = (actor: EcosystemActor): ActorShape => {
+    const t = actor.type.toLowerCase();
+    const r = actor.role_type;
+
+    // Direct Role Mapping
+    if (r === 'Material') return 'hexagon';
+    if (r === 'Expressive') return 'diamond';
+
+    // Type-based Fallbacks
     if (t.includes('infrastructure') || t.includes('dataset')) return 'hexagon';
     if (t.includes('algorithm') || t.includes('model') || t.includes('algorithmic')) return 'triangle';
     if (t.includes('startup') || t.includes('company')) return 'square';
     if (t.includes('legal') || t.includes('law')) return 'rect';
+    if (t.includes('bias') || t.includes('inequity') || t.includes('risk')) return 'diamond';
+
     return 'circle'; // Policymaker, Academic, Civil Society
 };
 
@@ -52,8 +61,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
     const absences = absenceAnalysis.missing_voices || [];
 
     if (absences.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        absences.forEach((absent: any) => {
+        absences.forEach((absent) => {
             // Ensure we have a valid name before adding
             if (!absent.name) return;
 
@@ -73,8 +81,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
             baseActors.push({
                 id: `ghost-${absent.name.replace(/\s+/g, '-')}`,
                 name: absent.name,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: normalizedType as any,
+                type: normalizedType as EcosystemActor['type'],
                 description: absent.reason || "Structurally absent actor",
                 metrics: {
                     territorialization: "Weak",
@@ -91,7 +98,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
         baseActors.push({
             id: 'ghost-structural-absence',
             name: 'Structural Absences Detected',
-            type: 'Civil Society' as any,
+            type: 'Civil Society',
             description: absenceAnalysis.narrative || 'Analysis identified systemic gaps in representation',
             metrics: {
                 territorialization: "Weak",
@@ -115,6 +122,36 @@ export const inferActorType = (name: string): EcosystemActor['type'] => {
     if (n.includes("algorithm") || n.includes("model") || n.includes("ai ") || n.includes("risk score") || n.includes("classifier")) return "Algorithm";
     if (n.includes("dataset") || n.includes("training data") || n.includes("registry") || n.includes("benchmark")) return "Dataset";
     return "Civil Society"; // Default
+};
+
+// [NEW] Shared Bias Intensity Logic
+export const getBiasIntensity = (actor: EcosystemActor): number => {
+    if (actor.metrics?.bias_intensity !== undefined) return actor.metrics.bias_intensity;
+
+    // HEURISTIC: High Resistance + Low Legitimacy = High Risk
+    // Use inclusive parsing for string values (case-insensitive, legacy support)
+    const deterrStr = String(actor.metrics?.deterritorialization || '').toLowerCase();
+    let deterr = 0;
+
+    if (typeof actor.metrics?.deterritorialization === 'number') {
+        deterr = actor.metrics.deterritorialization;
+    } else {
+        if (deterrStr.includes('strong') || deterrStr.includes('high')) deterr = 8;
+        else if (deterrStr.includes('moderate') || deterrStr.includes('medium')) deterr = 5;
+        else if (deterrStr.includes('weak') || deterrStr.includes('low')) deterr = 2;
+        else deterr = 4; // Default/Unknown fallback
+    }
+
+    const isAlgorithm = actor.type === 'Algorithm' || actor.type === 'AlgorithmicAgent' || actor.type === 'Dataset';
+    const isCapitalist = actor.type === 'Startup' || actor.id.toLowerCase().includes('profit');
+    const isInfra = actor.type === 'Infrastructure';
+
+    // Relaxed thresholds to ensure visibility on real data
+    if (isAlgorithm && deterr >= 4) return 0.9; // Triggers on Moderate or unknown
+    if (isCapitalist && deterr >= 5) return 0.8; // Triggers on Moderate
+    if (isInfra && deterr >= 6) return 0.7; // Triggers on Strong/High
+
+    return 0;
 };
 
 // [NEW] Shared Metric Calculation

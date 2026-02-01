@@ -224,20 +224,40 @@ Please interpret these "Stability"(Density) and "Porosity"(External Connectivity
     ant_trace: async (userId, { actors, links }) => {
         // Create lookup map for ID -> Name
         const nameMap = new Map(actors.map((a: any) => [a.id, a.name || "Unknown Actor"]));
+
+        // Helper to infer shape/morphology based on type
+        // Note: Logic duplicated from ecosystem-utils to avoid heavy imports, or we can just map simple types
+        const getMorphology = (type: string) => {
+            if (['Infrastructure', 'Cloud', 'Dataset'].includes(type) || type === 'Material') return "Hexagon (Material/Infrastructure - Stable Base)";
+            if (['Algorithm', 'AlgorithmicAgent', 'Model'].includes(type)) return "Triangle (Algorithmic - Active Agency)";
+            if (['Startup', 'Corporation', 'Market'].includes(type)) return "Square (Market/Capital - Established Structure)";
+            if (type === 'Policy' || type === 'Policymaker') return "Circle (Social/Institutional)";
+            if (type === 'Risk' || type === 'Expressive') return "Diamond (Expressive - Disruptive/Risk)";
+            return "Circle (Default)";
+        };
+
         return {
             systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'ant_trace_explanation'),
-            userContent: `TRACED ACTORS:
-${JSON.stringify(actors.map((a: any) => ({ name: a.name || "Unknown Actor", type: a.type })), null, 2)}
+            userContent: `TRACED ACTORS (With Morphological Semiotics):
+${JSON.stringify(actors.map((a: any) => ({
+                name: a.name || "Unknown Actor",
+                type: a.type,
+                morphology: getMorphology(a.type),
+                bias: (a.metrics?.bias_intensity || 0) > 0.5 ? "HOT SPOT (Pulsing Red - High Structural Friction)" : "Stable"
+            })), null, 2)}
 
-        ASSOCIATIONS:
+        ASSOCIATIONS (With Flow Semiotics):
 ${JSON.stringify(links.map((l: any) => ({
                 source: nameMap.get(l.source) || l.source,
                 target: nameMap.get(l.target) || l.target,
-                type: l.type
+                relation: l.type,
+                flow_type: (l.flow_type === 'power' ? "POWER FLOW (Red Solid Lines) - Hard constraints/Capital/Regulation"
+                    : l.flow_type === 'logic' ? "LOGIC FLOW (Amber Dashed Lines) - Epistemic/Knowledge/Influence"
+                        : "Unknown Flow")
             })), null, 2)
                 }
 
-Please provide a methodological trace of this network.`
+Please provide a methodological trace of this network, explicitly interpreting the Visual Semiotics provided above (Morphology, Hot Spots, Flow Types).`
         };
     },
 
@@ -255,10 +275,42 @@ ${JSON.stringify(identified_capacities, null, 2)}
 Please interpret the ontological status of this assemblage.`
     }),
 
-    hybrid_reflexive: async (userId, { ant_trace, assemblage_analysis, tensions, interactionState }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'hybrid_reflexive_explanation'),
-        userContent: `ANT TRACE DATA:
+    hybrid_reflexive: async (userId, { ant_trace, assemblage_analysis, tensions, interactionState, actors, links }) => {
+        // [duplicated] Helper to infer shape/morphology based on type
+        const getMorphology = (type: string) => {
+            if (['Infrastructure', 'Cloud', 'Dataset'].includes(type) || type === 'Material') return "Hexagon (Material/Infrastructure - Stable Base)";
+            if (['Algorithm', 'AlgorithmicAgent', 'Model'].includes(type)) return "Triangle (Algorithmic - Active Agency)";
+            if (['Startup', 'Corporation', 'Market'].includes(type)) return "Square (Market/Capital - Established Structure)";
+            if (type === 'Policy' || type === 'Policymaker') return "Circle (Social/Institutional)";
+            if (type === 'Risk' || type === 'Expressive') return "Diamond (Expressive - Disruptive/Risk)";
+            return "Circle (Default)";
+        };
+
+        // Prepare Name Map for Links if links exist
+        const nameMap = links ? new Map((actors || []).map((a: any) => [a.id, a.name || "Unknown Actor"])) : null;
+
+        return {
+            systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'hybrid_reflexive_explanation'),
+            userContent: `ANT TRACE DATA:
 Actor Count: ${ant_trace.actor_count}
+
+${actors ? `TRACED ACTORS (With Morphological Semiotics):
+${JSON.stringify(actors.map((a: any) => ({
+                name: a.name || "Unknown Actor",
+                type: a.type,
+                morphology: getMorphology(a.type),
+                bias: (a.metrics?.bias_intensity || 0) > 0.5 ? "HOT SPOT (Pulsing Red)" : "Stable"
+            })), null, 2)}` : ''}
+
+${links ? `ASSOCIATIONS (With Flow Semiotics):
+${JSON.stringify(links.map((l: any) => ({
+                source: (nameMap ? nameMap.get(l.source) : l.source) || l.source,
+                target: (nameMap ? nameMap.get(l.target) : l.target) || l.target,
+                relation: l.type,
+                flow_type: (l.flow_type === 'power' ? "POWER FLOW (Red Solid) - Constraint"
+                    : l.flow_type === 'logic' ? "LOGIC FLOW (Amber Dashed) - Influence"
+                        : "Unknown Flow")
+            })), null, 2)}` : ''}
 
 ASSEMBLAGE MECHANISMS:
 ${JSON.stringify(assemblage_analysis, null, 2)}
@@ -270,8 +322,11 @@ VIEW CONTEXT:
 ${interactionState?.isNested ? "Users are viewing this as a Nested Assemblage (Actor -> Collective -> Regime) to emphasize structural containment." : "Users are viewing this as a Flat Network to emphasize unrestricted flow."}
 ${interactionState?.is3D ? "Users are exploring this in 3D space, focusing on topology and depth." : ""}
 
-Please synthesize these findings and discuss the reflexivity of the analysis.Explicitly reference the "Assemblage Hybrid" nature of the network.`
-    }),
+Please synthesize these findings and discuss the reflexivity of the analysis.
+Explicitly reference the "Assemblage Hybrid" nature of the network.
+**Crucially, use the Visual Semiotics (Shapes, Flows, Hot Spots) to ground your analysis in the specific visual evidence provided above.**`
+        };
+    },
 
     default: async (userId, { title, sourceType, text }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens'),

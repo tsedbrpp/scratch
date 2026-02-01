@@ -33,6 +33,9 @@ interface AssemblagePanelProps {
     onReorderConfigs?: (configs: EcosystemConfiguration[]) => void;
     onSelectConfig?: (id: string, multi: boolean) => void;
     onDeleteConfig?: (id: string) => void;
+    // [NEW] ANT Workbench Props
+    collapsedIds?: Set<string>;
+    onToggleCollapse?: (id: string) => void;
 }
 
 export function AssemblagePanel({
@@ -49,7 +52,9 @@ export function AssemblagePanel({
     allConfigurations = [],
     onReorderConfigs,
     onSelectConfig,
-    onDeleteConfig
+    onDeleteConfig,
+    collapsedIds,
+    onToggleCollapse
 }: AssemblagePanelProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisType, setAnalysisType] = useState('comprehensive_scan');
@@ -680,6 +685,22 @@ export function AssemblagePanel({
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </button>
                                             )}
+                                            {onToggleCollapse && (
+                                                <button
+                                                    className={`p-1 rounded hover:bg-indigo-50 ${collapsedIds?.has(config.id) ? "text-indigo-600 bg-indigo-50 ring-1 ring-indigo-200" : "text-slate-400 hover:text-indigo-500"}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onToggleCollapse(config.id);
+                                                    }}
+                                                    title={collapsedIds?.has(config.id) ? "Expand Assemblage" : "Black Box (Collapse)"}
+                                                >
+                                                    {collapsedIds?.has(config.id) ? (
+                                                        <Minimize2 className="h-3.5 w-3.5 fill-current" />
+                                                    ) : (
+                                                        <Minimize2 className="h-3.5 w-3.5" />
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 mt-1">
                                             <Badge variant="outline" className="text-[10px] h-4 px-1">{config.memberIds.length} members</Badge>
@@ -697,7 +718,25 @@ export function AssemblagePanel({
                     <div className="space-y-6">
                         {selectedConfigs.length === 1 ? (
                             <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg">
-                                <h3 className="font-bold text-indigo-900 text-lg mb-1">{selectedConfigs[0].name}</h3>
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-indigo-900 text-lg mb-1">{selectedConfigs[0].name}</h3>
+                                    {onToggleCollapse && (
+                                        <button
+                                            className={`p-1.5 rounded-md transition-colors ${collapsedIds?.has(selectedConfigs[0].id) ? "text-indigo-600 bg-indigo-100 ring-1 ring-indigo-300" : "text-indigo-400 hover:text-indigo-700 hover:bg-indigo-100"}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onToggleCollapse(selectedConfigs[0].id);
+                                            }}
+                                            title={collapsedIds?.has(selectedConfigs[0].id) ? "Expand Assemblage" : "Black Box (Collapse)"}
+                                        >
+                                            {collapsedIds?.has(selectedConfigs[0].id) ? (
+                                                <Minimize2 className="h-4 w-4 fill-current" />
+                                            ) : (
+                                                <Minimize2 className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
                                 <p className="text-sm text-indigo-700 mb-3">{selectedConfigs[0].description}</p>
                                 {(() => {
                                     /* ... existing single config metric display ... */

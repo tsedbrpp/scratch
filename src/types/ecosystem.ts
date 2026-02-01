@@ -29,6 +29,7 @@ export interface EcosystemActor {
         centrality?: QualitativeMetric | number;    // Network reach
         counter_conduct?: QualitativeMetric | number;    // Active subversion (maps to deterritorialization)
         discursive_opposition?: QualitativeMetric | number; // Critical speech (maps to deterritorialization)
+        bias_intensity?: number;                          // [NEW] Friction/Ethical risk (0-1)
     };
     source?: "default" | "absence_fill";
     quotes?: string[];
@@ -47,6 +48,13 @@ export interface EcosystemActor {
         provisional: boolean;
         confidence: number;
     };
+    reflexive_log?: ReflexiveLogEntry[];
+
+    // [NEW] Black Box Metadata
+    isBlackBox?: boolean;
+    memberCount?: number;
+    stabilityScore?: number;
+    isHidden?: boolean;
 }
 
 export interface EcosystemConfiguration {
@@ -80,7 +88,7 @@ export interface AssemblageAnalysis {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     system_critique?: any;
     realist_narrative?: string;
-    missing_voices: { name: string; reason: string; category: string }[];
+    missing_voices: { name: string; reason: string; category: string; role?: string }[];
     structural_voids: string[];
     blindspot_intensity: "Low" | "Medium" | "High";
     socio_technical_components: {
@@ -116,7 +124,7 @@ export interface AssemblageAnalysis {
 
 export interface AiAbsenceAnalysis {
     narrative: string;
-    missing_voices: { name: string; reason: string; category: string }[];
+    missing_voices: { name: string; reason: string; category: string; role?: string }[];
     structural_voids: string[];
     blindspot_intensity: "Low" | "Medium" | "High";
     recommendations?: string[];
@@ -152,5 +160,7 @@ export interface EcosystemEdge {
     type: string;
     label?: string; // Optional label for visualization
     weight?: number; // Strength of connection
+    flow_type?: 'power' | 'logic'; // [NEW] Differentiate types of association
+    confidence?: number; // [NEW] ANT Trace Confidence (0-1)
     description?: string; // Helper text
 }

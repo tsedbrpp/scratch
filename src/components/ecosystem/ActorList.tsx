@@ -47,6 +47,9 @@ interface ActorListProps {
     onToggleSelection: (id: string) => void;
     onCreateConfiguration: () => void;
     configurations?: EcosystemConfiguration[]; // [NEW] For membership display
+    // [NEW] ANT Workbench Props
+    tracedActorId?: string | null;
+    onTraceActor?: (id: string | null) => void;
 }
 
 export function ActorList({
@@ -69,7 +72,9 @@ export function ActorList({
     selectedForGrouping,
     onToggleSelection,
     onCreateConfiguration,
-    configurations = []
+    configurations = [],
+    tracedActorId,
+    onTraceActor
 }: ActorListProps) {
     const { isReadOnly } = useDemoMode();
 
@@ -214,13 +219,13 @@ export function ActorList({
                                     <TooltipContent className="max-w-xs text-xs p-3 space-y-2 bg-slate-900 border border-slate-700 shadow-xl z-50 text-slate-100">
                                         <p className="font-semibold text-indigo-300">Why are features disabled?</p>
                                         <p>
-                                            <span className="font-medium text-slate-200">Anti-Hallucination:</span> Automated web crawling is disabled to prevent the inclusion of irrelevant or "invented" data.
+                                            <span className="font-medium text-slate-200">Anti-Hallucination:</span> Automated web crawling is disabled to prevent the inclusion of irrelevant or &quot;invented&quot; data.
                                         </p>
                                         <p>
-                                            <span className="font-medium text-slate-200">Empirical Traceability:</span> In qualitative research (ANT), you must "trace" connections in the text. By only analyzing documents you upload, we guarantee every insight has a provenance.
+                                            <span className="font-medium text-slate-200">Empirical Traceability:</span> In qualitative research (ANT), you must &quot;trace&quot; connections in the text. By only analyzing documents you upload, we guarantee every insight has a provenance.
                                         </p>
                                         <p>
-                                            <span className="font-medium text-slate-200">You are the Filter:</span> The AI refuses to "fill in the blanks" from the internet, ensuring all claims are grounded in your specific corpus.
+                                            <span className="font-medium text-slate-200">You are the Filter:</span> The AI refuses to &quot;fill in the blanks&quot; from the internet, ensuring all claims are grounded in your specific corpus.
                                         </p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -256,6 +261,9 @@ export function ActorList({
                             onSelect={() => onSelectActor(actor.id)}
                             onToggleGroupSelection={() => onToggleSelection(actor.id)}
                             configurations={configurations}
+                            // [NEW]
+                            isTraced={tracedActorId === actor.id}
+                            onTrace={() => onTraceActor && onTraceActor(tracedActorId === actor.id ? null : actor.id)}
                         />
                     ))}
                 </div>

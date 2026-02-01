@@ -9,8 +9,9 @@ import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
 import { generateEdges, getHullPath } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
-import { StratumLegend, ViewTypeLegend } from './EcosystemLegends';
-import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor, calculateConfigMetrics } from '@/lib/ecosystem-utils';
+import { ViewTypeLegend } from './EcosystemLegends';
+import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor, calculateConfigMetrics, getBiasIntensity } from '@/lib/ecosystem-utils';
+import { VisualGuideDialog } from './VisualGuideDialog';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
@@ -50,6 +51,12 @@ interface EcosystemMapProps {
     onClearConfig?: () => void; // [NEW] Support clearing selection
     extraToolbarContent?: React.ReactNode;
     isReadOnly?: boolean; // [NEW]
+    // [NEW] ANT Workbench Props
+    collapsedIds?: Set<string>;
+    tracedId?: string | null;
+    onToggleCollapse?: (id: string) => void;
+    onTraceActor?: (id: string | null) => void;
+    selectedActorId?: string | null;
 }
 
 // --- Swiss Design System Constants ---
@@ -83,10 +90,19 @@ export function EcosystemMap({
     // onClearConfig, // Unused but kept for interface compatibility if needed
     extraToolbarContent,
     isReadOnly = false,
-    onAddConfiguration // [NEW] Destructure new prop
+    onAddConfiguration, // [NEW] Destructure new prop
+    selectedActorId,
+    // [NEW] Destructure ANT props (we use internal state if not provided, or sync)
+    ...props
 }: EcosystemMapProps) {
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-    const [selectedLink, setSelectedLink] = useState<{ source: string | object, target: string | object, type: string } | null>(null);
+    const [selectedLink, setSelectedLink] = useState<{
+        source: string | SimulationNode;
+        target: string | SimulationNode;
+        type: string;
+        description?: string;
+        flow_type?: 'power' | 'logic';
+    } | null>(null);
     // ... existing state ...
 
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -107,6 +123,8 @@ export function EcosystemMap({
     const [isStratumMode, setIsStratumMode] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [is3DMode, setIs3DMode] = useState(false);
+    const [isPresentationMode, setIsPresentationMode] = useState(false); // [NEW] Presentation Mode State
+    const [reduceMotion, setReduceMotion] = useState(false); // [NEW] Reduce Motion State
 
     const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
 
@@ -117,7 +135,6 @@ export function EcosystemMap({
     // Zoom/Pan State
     const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
     const [activeTypeFilter, setActiveTypeFilter] = useState<string | null>(null);
-    const [activeBoundaryFilter, setActiveBoundaryFilter] = useState<'solid' | 'porous' | null>(null); // [NEW] Boundary Filter
 
     // Merged Actors with Ghosts
     const mergedActors = useMemo(() => {
@@ -131,7 +148,7 @@ export function EcosystemMap({
         }
         // Filter out ghost nodes when toggle is off
         return mergedActors.filter(actor => {
-            const isGhost = 'isGhost' in actor && (actor as GhostActor).isGhost;
+            const isGhost = 'isGhost' in actor && (actor as unknown as GhostActor).isGhost;
             return !isGhost;
         });
     }, [mergedActors, showGhostEdges]);
@@ -144,11 +161,98 @@ export function EcosystemMap({
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
 
-    // [NEW] Local confirmation state for deletion to avoid window.confirm issues
     const [configToDelete, setConfigToDelete] = useState<string | null>(null);
 
+    const [collapsedAssemblages, setCollapsedAssemblages] = useState<Set<string>>(new Set());
+    const [tracedActorId, setTracedActorId] = useState<string | null>(null);
 
-    const links = useMemo(() => {
+    // [NEW] Draggable Legend Logic (Consolidated)
+    const [legendPos, setLegendPos] = useState({ x: 24, y: 96 });
+    const draggingRef = useRef<{ isDragging: boolean; startX: number; startY: number; initialX: number; initialY: number }>({
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        initialX: 0,
+        initialY: 0
+    });
+
+    const handleLegendMouseDown = (e: React.MouseEvent) => {
+        // Only drag if clicking the header or background area (avoiding buttons/inputs)
+        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+
+        draggingRef.current = {
+            isDragging: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            initialX: legendPos.x,
+            initialY: legendPos.y
+        };
+        e.preventDefault();
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!draggingRef.current.isDragging) return;
+            const dx = e.clientX - draggingRef.current.startX;
+            const dy = e.clientY - draggingRef.current.startY;
+            setLegendPos({
+                x: draggingRef.current.initialX + dx,
+                y: draggingRef.current.initialY + dy
+            });
+        };
+
+        const handleMouseUp = () => {
+            draggingRef.current.isDragging = false;
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
+
+    // [NEW] Robust Power Calculation Utility
+    const calculateActorPower = (actor: EcosystemActor): number => {
+        // 1. Explicit dynamic power (if set by AI or simulation)
+        if (actor.metrics?.dynamic_power) return actor.metrics.dynamic_power;
+
+        // 2. Map legacy/qualitative Influence string
+        const influenceMap = { 'High': 10, 'Medium': 5, 'Low': 2 };
+        const baseInfluence = influenceMap[actor.influence as keyof typeof influenceMap] || 5;
+
+        // 3. Amplify by territorialization (power to stabilize) if available
+        let stabilityPower = 1;
+        const t = actor.metrics?.territorialization;
+        if (typeof t === 'number') {
+            stabilityPower = 0.5 + (t / 10); // 0.5 to 1.5 multiplier
+        } else if (typeof t === 'string') {
+            const qMap = { 'Strong': 1.5, 'Moderate': 1.0, 'Weak': 0.7, 'Latent': 0.5 };
+            stabilityPower = qMap[t as keyof typeof qMap] || 1.0;
+        }
+
+        // [NEW] 4. Bias Friction (High Resistance / Low Legitimacy)
+        // If an actor is high power but also high bias, it creates a 'Hot Spot' friction point.
+        // We'll return power here, and use bias_intensity for visuals.
+
+        return baseInfluence * stabilityPower;
+    };
+
+    // [REMOVED] Local Bias Intensity Logic - Moved to ecosystem-utils.ts
+
+    // Expose handlers to parent or context if needed
+    useEffect(() => {
+        if (props.collapsedIds) setCollapsedAssemblages(props.collapsedIds);
+        if (props.tracedId !== undefined) setTracedActorId(props.tracedId);
+    }, [props.collapsedIds, props.tracedId]);
+
+
+
+
+
+    // [NEW] Raw Links for Metric Calculation (Before Black Boxing)
+    const rawMetricLinks = useMemo(() => {
         const generated = generateEdges(filteredActors);
         return generated.map(e => ({
             source: e.source.id,
@@ -158,42 +262,144 @@ export function EcosystemMap({
     }, [filteredActors]);
 
     // Standard Config Passthrough with Logic (Moved Up)
+    // Uses raw links to calculate porosity correctly even if visuals change
     const hydratedConfigs = useMemo(() => {
         return configurations.map(config => {
-            return calculateConfigMetrics(config, links);
+            return calculateConfigMetrics(config, rawMetricLinks);
         });
-    }, [configurations, links]);
+    }, [configurations, rawMetricLinks]);
 
-    // Simplified Actor Hydration (No Simulation)
-    const hydratedActors = useMemo(() => {
-        let result = filteredActors;
+    // [NEW] Dynamic Actor Hydration (Handles Black-Boxing & Tracing)
+    const hydratedActors = useMemo<EcosystemActor[]>(() => {
+        let result: EcosystemActor[] = filteredActors as EcosystemActor[];
 
-        // 1. Type Filter
+        // 1. Black Boxing Logic (Collapse Assemblages)
+        // If an assemblage is collapsed, remove its members and add a "Black Box" node
+        const blackBoxNodes: EcosystemActor[] = [];
+        const hiddenActorIds = new Set<string>();
+
+        if (collapsedAssemblages.size > 0) {
+            configurations.forEach(config => {
+                if (collapsedAssemblages.has(config.id)) {
+                    // Mark members for hiding
+                    config.memberIds.forEach(id => hiddenActorIds.add(id));
+
+                    // Calculate Aggregated Metrics for Dynamic Sizing
+                    const members = (filteredActors as EcosystemActor[]).filter(a => config.memberIds.includes(a.id));
+                    const totalPower = members.reduce((sum, a) => sum + calculateActorPower(a), 0);
+                    // Use stability from config if available (0-1), otherwise default
+                    const stability = Number(config.properties?.calculated_stability) || 0.5;
+
+                    // Create Black Box Node
+                    blackBoxNodes.push({
+                        id: `blackbox-${config.id}`,
+                        name: config.name,
+                        type: 'Infrastructure', // Treat as heavy infrastructure
+                        description: config.description,
+                        influence: totalPower > 30 ? 'High' : totalPower > 15 ? 'Medium' : 'Low',
+                        role_type: 'Material',
+                        metrics: {
+                            territorialization: stability * 10,
+                            coding: 10,
+                            deterritorialization: (1 - stability) * 5,
+                            dynamic_power: totalPower // Essential for dynamic sizing loop
+                        },
+                        // Custom props for Tooltip
+                        isBlackBox: true,
+                        memberCount: config.memberIds.length,
+                        stabilityScore: stability
+                    } as any);
+                }
+            });
+            // Filter out hidden members
+            result = result.filter(a => !hiddenActorIds.has(a.id));
+            // Add Black Box nodes
+            result = [...result, ...blackBoxNodes] as EcosystemActor[];
+        }
+
+        // 2. Trace Mode Logic (Oligopticon)
+        // If tracing an actor, show ONLY that actor and its 1st degree neighbors
+        if (tracedActorId) {
+            const rawLinks = generateEdges(filteredActors); // Use raw links to find neighbors
+            const neighborIds = new Set<string>();
+            rawLinks.forEach(l => {
+                if (l.source.id === tracedActorId) neighborIds.add(l.target.id);
+                if (l.target.id === tracedActorId) neighborIds.add(l.source.id);
+            });
+            neighborIds.add(tracedActorId);
+
+            // In trace mode, we SOFT filter (mark as hidden) to allow for animation
+            // result = result.filter(a => neighborIds.has(a.id) || a.id.startsWith('blackbox-'));
+            result = result.map(a => {
+                const isRelevant = neighborIds.has(a.id) || a.id.startsWith('blackbox-');
+                if (!isRelevant) {
+                    return { ...a, isHidden: true };
+                }
+                return { ...a, isHidden: false };
+            });
+        }
+
+        // 3. Visualization Filters (Type, Boundary) - Applied AFTER structural changes
         if (activeTypeFilter) {
             const uniqueKey = activeTypeFilter.toLowerCase().replace(/\s/g, '');
             result = result.filter(a => {
-                const actorType = a.type.toLowerCase().replace(/\s/g, '');
+                // Allow blackboxes to pass through or filter them? Let's treat them as Infrastructure
+                const actorType = (a.id.startsWith('blackbox-') ? 'Infrastructure' : a.type).toLowerCase().replace(/\s/g, '');
+                // Preserve hidden status if already set by trace
+                if ((a as any).isHidden) return true;
                 return actorType.includes(uniqueKey);
             });
         }
 
-        // 2. Boundary Strength Filter
-        if (activeBoundaryFilter) {
-            result = result.filter(a => {
-                const config = hydratedConfigs.find(c => c.memberIds.includes(a.id));
-                if (!config) return false; // Filter out ungrouped
-
-                const porosity = config.properties.porosity_index || 0;
-
-
-
-                // > 0.5 is porous
-                return activeBoundaryFilter === 'porous' ? porosity > 0.5 : porosity <= 0.5;
-            });
-        }
 
         return result;
-    }, [filteredActors, activeTypeFilter, activeBoundaryFilter, hydratedConfigs]);
+    }, [filteredActors, collapsedAssemblages, tracedActorId, activeTypeFilter, configurations]); // Re-run when these change
+
+    const links = useMemo(() => {
+        // We must regenerate links based on the *potentially modified* actor list
+        // BUT, generating edges relies on the *original* semantic connections.
+        // So we first get raw edges from the FULL set, then reroute/filter.
+        const rawEdges = generateEdges(filteredActors);
+
+        // Map member -> BlackBox ID for rerouting
+        const memberToBlackBoxMap = new Map<string, string>();
+        configurations.forEach(config => {
+            if (collapsedAssemblages.has(config.id)) {
+                config.memberIds.forEach(mId => memberToBlackBoxMap.set(mId, `blackbox-${config.id}`));
+            }
+        });
+
+        let processedLinks = rawEdges.map(e => {
+            let sourceId = e.source.id;
+            let targetId = e.target.id;
+
+            // Reroute to Black Box if applicable
+            if (memberToBlackBoxMap.has(sourceId)) sourceId = memberToBlackBoxMap.get(sourceId)!;
+            if (memberToBlackBoxMap.has(targetId)) targetId = memberToBlackBoxMap.get(targetId)!;
+
+            return {
+                source: sourceId,
+                target: targetId,
+                type: e.label,
+                description: e.description,
+                flow_type: e.flow_type,
+                originalSource: e.source.id,
+                originalTarget: e.target.id
+            };
+        });
+
+        // Dedup links (if multiple members link to same target, we get multiple links from BlackBox -> Target)
+        // We'll keep them effectively but d3 might overlap them. For clarity, maybe dedup?
+        // Let's keep distinct types.
+        // Filter: Keep link ONLY if both source and target exist in hydratedActors
+        const validActorIds = new Set(hydratedActors.map(a => a.id));
+        processedLinks = processedLinks.filter(l => validActorIds.has(l.source) && validActorIds.has(l.target));
+
+        // Remove self-loops (BlackBox -> BlackBox) created by internal connections
+        processedLinks = processedLinks.filter(l => l.source !== l.target);
+
+        return processedLinks;
+    }, [filteredActors, hydratedActors, collapsedAssemblages, configurations]); // Depend on hydratedActors result
 
 
     // [NEW] Assemblage Creation Handler from Suggester
@@ -488,10 +694,10 @@ export function EcosystemMap({
         setHoveredLink(null);
     };
 
-    const handleLinkHover = (e: React.MouseEvent, link: { source: string; target: string; type: string }) => {
+    const handleLinkHover = (e: React.MouseEvent, link: { source: string | SimulationNode; target: string | SimulationNode; type: string }) => {
         // Calculate Link Midpoint for Centered Tooltip
-        const s = getNodePos(typeof link.source === 'object' ? (link.source as any).id : link.source);
-        const t = getNodePos(typeof link.target === 'object' ? (link.target as any).id : link.target);
+        const s = getNodePos(typeof link.source === 'object' ? (link.source as SimulationNode).id : link.source);
+        const t = getNodePos(typeof link.target === 'object' ? (link.target as SimulationNode).id : link.target);
 
         if (containerRef.current && s.x !== 0 && t.x !== 0) {
             const rect = containerRef.current.getBoundingClientRect();
@@ -563,8 +769,23 @@ export function EcosystemMap({
                             }}
                             className={`h-7 px-2.5 text-xs font-medium shrink-0 ${is3DMode ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                         >
-                            <Network className="h-3 w-3 mr-1" /> {is3DMode ? "3D View" : "2D View"}
+                            <Network className="h-3 w-3 mr-1" /> {is3DMode ? "Toggle 2D View" : "Toggle 3D View"}
                         </Button>
+
+                        {/* [NEW] Accessibility / Perf Toggle (Reduce Motion) */}
+                        {is3DMode && (
+                            <>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                                <Button
+                                    variant="ghost" size="sm"
+                                    onClick={() => setReduceMotion(!reduceMotion)}
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${reduceMotion ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                                    title="Disable intense animations (Jitter, Particles)"
+                                >
+                                    {reduceMotion ? "Motion Reduced" : "Reduce Motion"}
+                                </Button>
+                            </>
+                        )}
 
                         {!is3DMode && (
                             <>
@@ -575,14 +796,6 @@ export function EcosystemMap({
                                     onClick={() => setLayoutMode(isMetricMode ? 'nested' : 'compass')}
                                 >
                                     <Layers className="h-3 w-3 mr-1" /> {isMetricMode ? "Switch to Nested" : "Assemblage Compass"}
-                                </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${interactionMode === "drag" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                                    onClick={() => setInteractionMode("drag")}
-                                >
-                                    <MousePointer2 className="h-3 w-3 mr-1" /> Move Actor
                                 </Button>
                                 <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
 
@@ -603,6 +816,20 @@ export function EcosystemMap({
                                     <ZoomIn className="h-3 w-3 mr-1" /> Reset View
                                 </Button>
                             </>
+
+                        )}
+
+                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+
+                        {/* ANT Workbench Controls */}
+                        {tracedActorId && (
+                            <Button
+                                variant="destructive" size="sm"
+                                className="h-7 px-2.5 text-xs font-medium shrink-0 animate-in fade-in"
+                                onClick={() => setTracedActorId(null)}
+                            >
+                                <EyeOff className="h-3 w-3 mr-1" /> Exit Trace
+                            </Button>
                         )}
 
                         {is3DMode && (
@@ -616,24 +843,21 @@ export function EcosystemMap({
                                 >
                                     <Layers className="h-3 w-3 mr-1" /> {isStratumMode ? "Stratum Active" : "Legal Stratum"}
                                 </Button>
+                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                                <Button
+                                    variant="ghost" size="sm"
+                                    onClick={() => setIsPresentationMode(!isPresentationMode)}
+                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isPresentationMode ? "bg-purple-50 text-purple-700 border border-purple-200 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+                                    title="Toggle Presentation Mode: Bloom, Fog, Curved Links"
+                                >
+                                    {isPresentationMode ? "✨ Presentation Mode" : "🔬 Research Mode"}
+                                </Button>
                             </>
                         )}
 
                         <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
 
-                        {/* Integrated Mode Selector */}
-                        {analysisMode && setAnalysisMode && (
-                            <>
-                                <div className="flex items-center scale-90 origin-center -mx-1 shrink-0">
-                                    <ModeSelector
-                                        value={analysisMode}
-                                        onChange={setAnalysisMode}
-                                        className="h-7 border-none shadow-none text-xs"
-                                    />
-                                </div>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                            </>
-                        )}
+                        {/* [REMOVED] Mode Selector - Enforced Hybrid Reflexive Mode */}
 
                         <Button
                             variant="ghost"
@@ -660,22 +884,43 @@ export function EcosystemMap({
                                 <><Maximize className="h-3 w-3 mr-1" /> Full Screen</>
                             )}
                         </Button>
+                        <VisualGuideDialog />
                     </div>
                 </CardHeader>
 
                 <CardContent className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]">
                     {/* ... (Existing Map Content) ... */}
                     {is3DMode ? (
-                        <EcosystemMap3D
-                            actors={filteredActors}
-                            configurations={configurations}
-                            selectedForGrouping={selectedForGrouping}
-                            onToggleSelection={onToggleSelection}
-                            focusedNodeId={focusedNodeId}
-                            width={dimensions.width}
-                            height={dimensions.height}
-                            isStratumMode={isStratumMode}
-                        />
+                        <div className="relative w-full h-full">
+                            <EcosystemMap3D
+                                actors={hydratedActors}
+                                configurations={configurations}
+                                selectedForGrouping={selectedForGrouping}
+                                onToggleSelection={onToggleSelection}
+                                focusedNodeId={focusedNodeId}
+                                width={dimensions.width}
+                                height={dimensions.height}
+                                isStratumMode={isStratumMode}
+                                reduceMotion={reduceMotion} // [NEW] Pass toggle
+                                onToggleCollapse={props.onToggleCollapse}
+                                tracedId={tracedActorId}
+                                isPresentationMode={isPresentationMode}
+                                selectedActorId={selectedActorId}
+                            />
+                            {/* HUD Overlays (Draggable Left) */}
+                            <div
+                                className="absolute z-[50] pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+                                style={{
+                                    left: `${legendPos.x}px`,
+                                    top: `${legendPos.y}px`
+                                }}
+                                onMouseDown={handleLegendMouseDown}
+                            >
+                                <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                                    <ViewTypeLegend />
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <>
                             {/* ... (SVG Content) ... */}
@@ -688,12 +933,28 @@ export function EcosystemMap({
                                 onMouseLeave={handleMouseUp}
                                 style={{ fontFamily: 'Inter, sans-serif' }}
                             >
-                                {/* ... (Defs, G, Hulls, Links, Nodes) ... */}
                                 <defs>
                                     <marker id="arrow" viewBox="0 0 10 10" refX="20" refY="5"
                                         markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                                         <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8" />
                                     </marker>
+                                    <marker id="arrow-power" viewBox="0 0 10 10" refX="20" refY="5"
+                                        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#EF4444" />
+                                    </marker>
+                                    <filter id="hotspot-glow" x="-50%" y="-50%" width="200%" height="200%">
+                                        <feGaussianBlur stdDeviation="6" result="blur" />
+                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
+                                    <style>{`
+                                        @keyframes box-pulse {
+                                            0%, 100% { opacity: 0.2; }
+                                            50% { opacity: 0.7; }
+                                        }
+                                        .box-pulse {
+                                            animation: box-pulse 2s ease-in-out infinite;
+                                        }
+                                    `}</style>
                                 </defs>
 
                                 <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
@@ -713,19 +974,45 @@ export function EcosystemMap({
                                             const centroid = memberPoints.reduce((acc: { x: number; y: number }, p: { x: number; y: number }) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
                                             centroid.x /= memberPoints.length;
                                             centroid.y /= memberPoints.length;
+                                            // REFACTORED: Internal Focus vs Open/External Focus
+                                            // Porosity Index (0-1): 0 = Closed/Internal, 1 = Open/External
                                             const porosity = config.properties.porosity_index || 0;
-                                            // BINARY VISUALIZATION: Match Filter Threshold (0.5)
-                                            const strokeDash = porosity > 0.5 ? "6 4" : "none";
-                                            const stability = config.properties.calculated_stability || 0.1;
+
+                                            // Internal Focus = 1 - Porosity
+                                            // High Internal Focus -> Higher Opacity (Solid)
+                                            // High External Focus (Porous) -> Lower Opacity (Translucent)
+                                            const internalFocus = 1 - Math.min(1, porosity);
+
+                                            // Base Opacity Formula: Min 0.05 (Ghostly) + up to 0.35 based on Internal Focus
+                                            const baseOpacity = 0.05 + (internalFocus * 0.35);
+
+                                            const anyConfigSelected = selectedConfigIds && selectedConfigIds.length > 0;
                                             const isConfigSelected = selectedConfigIds?.includes(config.id);
-                                            // [CHANGE] Opacity logic: If filtered, keep full opacity to stand out. If not filtered, use stability-based.
-                                            const fillOpacity = isConfigSelected ? 0.3 : Math.max(0.05, Math.min(0.3, stability * 0.4));
+
+                                            let fillOpacity = 0;
+                                            let strokeOpacity = 1;
+
+                                            if (anyConfigSelected) {
+                                                if (isConfigSelected) {
+                                                    // FOCUSED: Boost opacity slightly to ensure visibility but maintain relative density
+                                                    fillOpacity = Math.min(0.8, baseOpacity + 0.2);
+                                                    strokeOpacity = 1;
+                                                } else {
+                                                    // DIMMED (Background)
+                                                    fillOpacity = 0.02; // Almost invisible fill
+                                                    strokeOpacity = 0.1; // Very faint stroke
+                                                }
+                                            } else {
+                                                // OVERVIEW (Default)
+                                                fillOpacity = baseOpacity;
+                                                strokeOpacity = 0.4 + (internalFocus * 0.4); // Stroke also reflects stability
+                                            }
                                             return (
                                                 <g key={config.id} className={`draggable-config transition-all duration-500 ease-out ${interactionMode === 'drag' ? 'cursor-move' : 'cursor-pointer'}`} opacity={highlightedStage ? 0.1 : 1} onMouseDown={(e) => handleConfigMouseDown(e, config.id)}>
-                                                    <title>{`${config.name}\nPorosity: ${porosity.toFixed(2)} (Ext: ${config.properties.external_links}/Tot: ${config.properties.total_links})\nStability: ${stability.toFixed(2)}`}</title>
+                                                    <title>{`${config.name}\nInternal Focus: ${(internalFocus * 100).toFixed(0)}% (Porosity: ${porosity.toFixed(2)})`}</title>
                                                     <path
                                                         d={memberPoints.length === 2 ? `M ${memberPoints[0].x} ${memberPoints[0].y} L ${memberPoints[1].x} ${memberPoints[1].y}` : getHullPath(memberPoints)}
-                                                        fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeDasharray={strokeDash} strokeLinejoin="round" strokeLinecap="round"
+                                                        fill={config.color} fillOpacity={fillOpacity} stroke={config.color} strokeOpacity={strokeOpacity} strokeWidth={isConfigSelected ? 3 : HULL_STYLES.strokeWidth} strokeLinejoin="round" strokeLinecap="round"
                                                         className={isConfigSelected ? "drop-shadow-md" : ""}
                                                     />
                                                     <rect x={centroid.x - (config.name.length * 3 + 8)} y={centroid.y - 32} width={config.name.length * 6 + 16} height={18} rx={9} fill={config.color} fillOpacity={0.9} stroke="white" strokeWidth={1.5} className="drop-shadow-sm" />
@@ -739,76 +1026,76 @@ export function EcosystemMap({
                                         const t = getNodePos(link.target as string);
                                         if (s.x === 0 || t.x === 0) return null;
 
-                                        // Check if source or target is a ghost node
                                         const sourceActor = hydratedActors.find((a: EcosystemActor) => a.id === link.source);
                                         const targetActor = hydratedActors.find((a: EcosystemActor) => a.id === link.target);
 
-                                        // A link is a ghost link if either endpoint is a ghost node
                                         const sourceIsGhost = sourceActor && 'isGhost' in sourceActor && (sourceActor as GhostActor).isGhost;
                                         const targetIsGhost = targetActor && 'isGhost' in targetActor && (targetActor as GhostActor).isGhost;
                                         const isGhostLink = sourceIsGhost || targetIsGhost;
 
-                                        // Filter based on edge type toggles
+                                        const sourceIsHidden = sourceActor && (sourceActor as any).isHidden;
+                                        const targetIsHidden = targetActor && (targetActor as any).isHidden;
+                                        const isHiddenLink = sourceIsHidden || targetIsHidden;
+
                                         if (isGhostLink && !showGhostEdges) return null;
                                         if (!isGhostLink && !showSolidEdges) return null;
 
                                         const isFocused = focusedNodeId && (link.source === focusedNodeId || link.target === focusedNodeId);
                                         const isHovered = hoveredLink && hoveredLink.source === link.source && hoveredLink.target === link.target;
 
-                                        let strokeWidth = 1;
-                                        if (link.type === "Regulates" || link.type === "Governs") strokeWidth = 2.5;
-                                        if (link.type === "Excludes") strokeWidth = 1.5;
+                                        // [NEW] Flow Type Logic (Power vs Logic vs Ghost)
+                                        const flowType = (link as any).flow_type || 'logic';
+
+                                        let strokeColor = flowType === 'power' ? "#EF4444" : "#F59E0B";
+                                        let strokeDash = flowType === 'logic' ? "5 3" : "none";
+                                        let markerEnd = flowType === 'power' ? "url(#arrow-power)" : "none";
+
+                                        // [OVERRIDE] Ghost Links
+                                        if (isGhostLink) {
+                                            strokeColor = "#818CF8"; // Indigo 400 - "Spectral" Purple
+                                            strokeDash = "3 4"; // Looser dot
+                                            markerEnd = "none";
+                                        }
+
+                                        let strokeWidth = flowType === 'power' ? 1.5 : 1;
                                         if (isFocused || isHovered) strokeWidth += 1.5;
 
-                                        // HEB Logic: Calculate Path
-                                        let d = "";
+                                        let d = `M ${s.x} ${s.y} L ${t.x} ${t.y}`;
                                         if (isNestedMode) {
-                                            // Curved, bundled path through center
                                             const lineGen = d3.line<{ x: number, y: number }>()
                                                 .curve(d3.curveBundle.beta(0.85))
                                                 .x(p => p.x)
                                                 .y(p => p.y);
-
                                             d = lineGen([
                                                 { x: s.x, y: s.y },
-                                                { x: dimensions.width / 2, y: dimensions.height / 2 }, // Control point at center
+                                                { x: dimensions.width / 2, y: dimensions.height / 2 },
                                                 { x: t.x, y: t.y }
                                             ]) || "";
-                                        } else {
-                                            // Straight line
-                                            d = `M ${s.x} ${s.y} L ${t.x} ${t.y}`;
                                         }
 
                                         return (
-                                            <g key={i}
+                                            <g key={`link-${i}`}
                                                 onMouseEnter={(e) => handleLinkHover(e, link)}
                                                 onMouseLeave={() => setHoveredLink(null)}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    console.log('[EcosystemMap] Link Clicked:', link);
-                                                    setSelectedLink(link);
-                                                }}
-                                                className="cursor-pointer" // Ensure cursor is pointer
+                                                onClick={() => setSelectedLink(link)}
+                                                className="cursor-pointer"
+                                                style={{ opacity: isHiddenLink ? 0 : 1 }}
                                             >
-                                                {/* Hit Area (Invisible but thicker) */}
                                                 <path
                                                     d={d}
                                                     stroke="transparent"
                                                     strokeWidth={10}
                                                     fill="none"
-                                                    className="cursor-pointer"
                                                 />
-                                                {/* Visible Line */}
                                                 <path
                                                     d={d}
-                                                    stroke={isFocused || isHovered ? "#475569" : "#CBD5E1"}
+                                                    stroke={isFocused || isHovered ? (flowType === 'power' ? "#B91C1C" : "#D97706") : strokeColor}
                                                     strokeWidth={strokeWidth}
-                                                    strokeOpacity={highlightedStage ? 0.1 : (isFocused || isHovered ? 1 : 0.5)}
-                                                    strokeDasharray={link.type === "Excludes" || link.type === "Extracts" ? "4 4" : "none"}
-                                                    // Arrows only on straight lines (hard to unify on curves nicely without specific markers)
-                                                    markerEnd={!isNestedMode && !highlightedStage ? "url(#arrow)" : ""}
+                                                    strokeOpacity={highlightedStage ? 0.1 : (isFocused || isHovered ? 1 : 0.6)}
+                                                    strokeDasharray={strokeDash}
+                                                    markerEnd={!isNestedMode ? markerEnd : ""}
                                                     fill="none"
-                                                    className="transition-all duration-300 pointer-events-none"
+                                                    className="transition-all duration-300"
                                                 />
                                             </g>
                                         );
@@ -841,359 +1128,84 @@ export function EcosystemMap({
 
                                         if (isGhost) opacity *= 0.85;
                                         const scale = highlightedStage && isRelevant ? 1.2 : 1;
-                                        const power = actor.metrics?.dynamic_power || 0;
+                                        const power = calculateActorPower(actor);
                                         const baseR = 5 + (power * 1.5);
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
                                         const strokeDash = isGhost ? "4 2" : "none";
+                                        const isHidden = actor.isHidden;
+                                        const finalOpacity = isHidden ? 0 : opacity;
 
                                         return (
-                                            <g key={node.id} transform={`translate(${node.x},${node.y}) scale(${scale})`} onMouseDown={(e) => handleMouseDown(e, node)} onMouseEnter={(e) => handleNodeHover(e, actor)} onMouseLeave={() => setHoveredNode(null)} onClick={(e) => handleNodeClick(e, actor)} className="group cursor-pointer" style={{ transition: 'transform 0.2s ease-out, opacity 0.2s ease-out', opacity }}>
-                                                {/* Multi-Assemblage Halo */}
-                                                {isMultiAssemblage && (
-                                                    <circle r={r + 8} fill="none" stroke="#F59E0B" strokeWidth={1} strokeDasharray="2 2" opacity={0.6} className="animate-spin-slow origin-center">
-                                                        <title>Bridge Actor: {memberOfConfigs.map(c => c.name).join(', ')}</title>
-                                                    </circle>
+                                            <g key={node.id}
+                                                transform={`translate(${node.x},${node.y}) scale(${scale})`}
+                                                onMouseDown={(e) => handleMouseDown(e, node)}
+                                                onMouseEnter={(e) => handleNodeHover(e, actor)}
+                                                onMouseLeave={() => setHoveredNode(null)}
+                                                onClick={(e) => handleNodeClick(e, actor)}
+                                                className="group cursor-pointer"
+                                                style={{
+                                                    transition: 'transform 0.2s ease-out, opacity 1s ease-out',
+                                                    opacity: finalOpacity,
+                                                    pointerEvents: isHidden ? 'none' : 'auto'
+                                                }}
+                                            >
+                                                {/* [NEW] Bias Hot Spot Glow */}
+                                                {!isHidden && getBiasIntensity(actor) > 0.5 && (
+                                                    <circle r={r + 12} fill="#EF4444" filter="url(#hotspot-glow)" className="box-pulse" />
                                                 )}
 
-                                                {isSelected && (getActorShape(actor.type) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> : <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />)}
-                                                {getActorShape(actor.type) === 'square' ? <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'triangle' ? <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : getActorShape(actor.type) === 'rect' ? <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} /> : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />}
+                                                {isSelected && (
+                                                    getActorShape(actor) === 'diamond' ? <polygon points={`0,${-r - 6} ${r + 6},0 0,${r + 6} ${-r - 6},0`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> :
+                                                        getActorShape(actor) === 'hexagon' ? <polygon points={`${r + 4},0 ${(r + 4) / 2},${(r + 4) * 0.866} ${-(r + 4) / 2},${(r + 4) * 0.866} ${-(r + 4)},0 ${-(r + 4) / 2},${-(r + 4) * 0.866} ${(r + 4) / 2},${-(r + 4) * 0.866}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> :
+                                                            getActorShape(actor) === 'square' ? <rect x={-r - 4} y={-r - 4} width={(r + 4) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> :
+                                                                getActorShape(actor) === 'triangle' ? <polygon points={`0,${-r - 6} ${r + 6},${r + 4} ${-r - 6},${r + 4}`} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> :
+                                                                    getActorShape(actor) === 'rect' ? <rect x={-(r + 6)} y={-(r + 4)} width={(r + 6) * 2} height={(r + 4) * 2} fill="none" stroke={color} strokeWidth={2} opacity={0.5} /> :
+                                                                        <circle r={r + 4} fill="none" stroke={color} strokeWidth={2} opacity={0.5} />
+                                                )}
+
+                                                {getActorShape(actor) === 'diamond' ?
+                                                    <polygon points={`0,${-r - 4} ${r + 4},0 0,${r + 4} ${-r - 4},0`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                    : getActorShape(actor) === 'hexagon' ?
+                                                        <polygon points={`${r + 2},0 ${(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2)},0 ${-(r + 2) / 2},${-(r + 2) * 0.866} ${(r + 2) / 2},${-(r + 2) * 0.866}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                        : getActorShape(actor) === 'square' ?
+                                                            <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                            : getActorShape(actor) === 'triangle' ?
+                                                                <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                                : getActorShape(actor) === 'rect' ?
+                                                                    <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                                    : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                }
+
                                                 <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
                                                     <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
                                                         <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>
-                                                            {actor.name}
+                                                            {actor.id.startsWith('blackbox-') ? `■ ${actor.name}` : actor.name}
                                                             {isMultiAssemblage && <span className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200" title={`Bridge: ${memberOfConfigs.length} Assemblages`}>×{memberOfConfigs.length}</span>}
                                                             {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}
                                                         </span>
                                                     </div>
                                                 </foreignObject>
+
+                                                <title>
+                                                    {actor.id.startsWith('blackbox-') ? (
+                                                        `BLACK BOX: ${actor.name}\n` +
+                                                        `--------------------------\n` +
+                                                        `Contains: ${actor.memberCount || 0} members\n` +
+                                                        `Stability: ${((actor.stabilityScore || 0) * 100).toFixed(0)}%\n` +
+                                                        `Total Latent Power: ${(actor.metrics?.dynamic_power || 0).toFixed(1)}\n` +
+                                                        `Description: ${actor.description}`
+                                                    ) : (
+                                                        (getBiasIntensity(actor) > 0.5 ? `[!] HOT SPOT: High Structural Friction\n\n` : '') +
+                                                        actor.description
+                                                    )}
+                                                </title>
                                             </g>
                                         );
                                     })}
                                 </g>
                             </svg>
 
-                            {/* EXPLANATION OVERLAY */}
-                            {explanation && (
-                                <div className="absolute top-16 right-4 left-4 sm:left-auto sm:w-96 bg-white/95 backdrop-blur-md shadow-xl border border-slate-200 rounded-lg overflow-hidden animate-in slide-in-from-top-5 duration-300 z-50">
-                                    <div className="bg-slate-50 border-b border-slate-100 p-3 flex justify-between items-center">
-                                        <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                            <MessageSquare className="h-4 w-4 text-indigo-500" />
-                                            {analysisMode === 'ant_trace' ? 'ANT Trace Analysis' :
-                                                analysisMode === 'hybrid_reflexive' ? 'Hybrid Reflexive Analysis' :
-                                                    'Assemblage Analysis'}
-                                        </h3>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={() => setExplanation(null)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div className="p-4 max-h-[60vh] overflow-y-auto">
-                                        <p className="text-sm text-slate-600 leading-relaxed mb-4">{explanation.narrative}</p>
-
-                                        <div className="space-y-3">
-                                            {(explanation.hulls || []).map((hull, i: number) => (
-                                                <div key={i} className="bg-slate-50 rounded-md p-3 border border-slate-100">
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <span className="font-medium text-xs text-slate-900">{hull.id.replace('config-', '')}</span>
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${hull.classification === 'Fortress' ? 'bg-red-100 text-red-700' :
-                                                            hull.classification === 'Sieve' ? 'bg-orange-100 text-orange-700' :
-                                                                'bg-blue-100 text-blue-700'
-                                                            }`}>{hull.classification}</span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-500">{hull.interpretation}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-
-                            {/* [REMOVED] Selected Configuration Context Menu (Reliable Delete) */}
-
-                            {/* Floating Legend Card (Existing) */}
-                            {isLegendOpen && (
-                                <div className="legend-container absolute top-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-[100] max-h-[600px] overflow-y-auto">
-                                    <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
-                                        <span className="font-semibold text-slate-800">Actant Types</span>
-                                        <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
-                                            <ChevronDown className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-1.5">
-                                        {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => {
-                                            const isActive = activeTypeFilter === key;
-                                            const isDimmed = activeTypeFilter && !isActive;
-
-                                            return (
-                                                <div
-                                                    key={key}
-                                                    className={`
-                                                        flex items-center gap-2 cursor-pointer p-1 rounded transition-all duration-200
-                                                        ${isActive ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'}
-                                                        ${isDimmed ? 'opacity-40 grayscale' : 'opacity-100'}
-                                                    `}
-                                                    onClick={() => setActiveTypeFilter(isActive ? null : key)}
-                                                >
-                                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
-                                                    <span className={`capitalize ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-600'}`}>
-                                                        {key.replace("civilsociety", "Civil Society")}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-
-                                    {/* Macro Assemblages Legend */}
-
-                                    {/* Macro Assemblages Legend */}
-                                    {configurations.length > 0 && (
-                                        <>
-                                            <div className="mt-3 pt-2 border-t border-slate-100">
-                                                <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
-                                                <div className="space-y-1.5">
-                                                    {configurations.map(config => (
-                                                        <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50">
-                                                            {/* Label Area - Handles Selection */}
-                                                            <div
-                                                                onClick={(e) => {
-                                                                    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
-                                                                    if (onConfigClick) onConfigClick(config.id, isMulti);
-                                                                    else if (onConfigSelect) onConfigSelect(config.id, isMulti);
-                                                                }}
-                                                                className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer"
-                                                            >
-                                                                <div
-                                                                    className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
-                                                                    style={{ backgroundColor: config.color }}
-                                                                />
-                                                                <span className="text-slate-600 truncate text-[10px] group-hover:text-slate-900 transition-colors">{config.name}</span>
-                                                            </div>
-
-                                                            {/* Delete Button - Independent Click Handler */}
-                                                            {onDeleteConfiguration && (
-                                                                configToDelete === config.id ? (
-                                                                    <div className="flex items-center gap-0.5 animate-in slide-in-from-right-2 duration-200">
-                                                                        <Button
-                                                                            variant="destructive"
-                                                                            size="sm"
-                                                                            className="h-6 px-1.5 text-[9px] bg-red-600 hover:bg-red-700 text-white font-bold"
-                                                                            onClick={(e) => {
-                                                                                console.log('[EcosystemMap] SURE? Clicked (Legend) for ID:', config.id);
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                if (onDeleteConfiguration) {
-                                                                                    onDeleteConfiguration(config.id);
-                                                                                } else {
-                                                                                    console.warn('[EcosystemMap] onDeleteConfiguration prop is missing in legend!');
-                                                                                }
-                                                                                setConfigToDelete(null);
-                                                                            }}
-                                                                            onMouseDown={(e) => e.stopPropagation()}
-                                                                        >
-                                                                            SURE?
-                                                                        </Button>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-6 w-6 text-slate-400 hover:bg-slate-100"
-                                                                            onClick={(e) => {
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                setConfigToDelete(null);
-                                                                            }}
-                                                                            onMouseDown={(e) => e.stopPropagation()}
-                                                                        >
-                                                                            <X className="h-3 w-3" />
-                                                                        </Button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-1 shrink-0 z-10"
-                                                                        onClick={(e) => {
-                                                                            console.log('[EcosystemMap] Delete Icon Clicked (Legend) for ID:', config.id);
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            setConfigToDelete(config.id);
-                                                                        }}
-                                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                                        title="Delete Configuration"
-                                                                    >
-                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Boundary Strength Legend */}
-                                            <div className="mt-3 pt-2 border-t border-slate-100">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <p className="font-semibold text-slate-800">Boundary Strength</p>
-                                                    {activeBoundaryFilter && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-4 w-4 text-slate-400 hover:text-red-500"
-                                                            onClick={() => setActiveBoundaryFilter(null)}
-                                                            title="Clear Filter"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2 text-[10px] text-slate-500">
-                                                    <div
-                                                        className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-all ${activeBoundaryFilter === 'solid' ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'} ${activeBoundaryFilter && activeBoundaryFilter !== 'solid' ? 'opacity-40' : ''}`}
-                                                        onClick={() => setActiveBoundaryFilter(activeBoundaryFilter === 'solid' ? null : 'solid')}
-                                                    >
-                                                        <div className="w-6 h-3 border-2 border-slate-400 bg-slate-200/50 rounded-sm"></div>
-                                                        <span className={activeBoundaryFilter === 'solid' ? 'font-medium text-indigo-700' : ''}>Solid: Stable (Internal Focus)</span>
-                                                    </div>
-                                                    <div
-                                                        className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-all ${activeBoundaryFilter === 'porous' ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'} ${activeBoundaryFilter && activeBoundaryFilter !== 'porous' ? 'opacity-40' : ''}`}
-                                                        onClick={() => setActiveBoundaryFilter(activeBoundaryFilter === 'porous' ? null : 'porous')}
-                                                    >
-                                                        <div className="w-6 h-3 border-2 border-slate-400 border-dashed bg-slate-100/20 rounded-sm"></div>
-                                                        <span className={activeBoundaryFilter === 'porous' ? 'font-medium text-indigo-700' : ''}>Dashed: Porous (Open)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
-                                        <p className="font-semibold text-slate-800 mb-2">Edge Filters</p>
-                                        <div className="space-y-1.5">
-                                            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={showSolidEdges}
-                                                    onChange={(e) => setShowSolidEdges(e.target.checked)}
-                                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
-                                                />
-                                                <span className="text-slate-700 flex items-center gap-1">
-                                                    <span className="font-bold">─</span> Connectivity (Solid)
-                                                </span>
-                                            </label>
-                                            <label
-                                                className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors"
-                                                title="Ghost nodes represent structurally absent actors identified by analysis. Run Comprehensive Analysis to detect missing voices."
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={showGhostEdges}
-                                                    onChange={(e) => setShowGhostEdges(e.target.checked)}
-                                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
-                                                />
-                                                <span className="text-slate-700 flex items-center gap-1">
-                                                    <span className="font-bold">- -</span> Absent/Virtual (Ghost)
-                                                </span>
-                                            </label>
-                                        </div>
-                                        <div className="mt-2 pt-2 border-t border-slate-100 text-slate-500">
-                                            <p><span className="font-bold">●</span> Node Size: Translation Strength</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Hull Style Legend */}
-                                    <div className="mt-3 pt-2 border-t border-slate-100">
-                                        <p className="font-semibold text-slate-800 mb-2">Boundary Strength</p>
-                                        <div className="space-y-2 text-[10px] text-slate-500">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-3 border-2 border-slate-300 bg-slate-100/50 rounded-sm"></div>
-                                                <span>Solid: Stable/Closed</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-3 border-2 border-slate-300 border-dashed bg-slate-100/20 rounded-sm"></div>
-                                                <span>Dashed: Porous/Open</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-3 h-3 bg-slate-400 rounded-sm"></div>
-                                                <span>Darker: High Density</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* CENTERED LINK DETAIL DIALOG */}
-                            <Dialog open={!!selectedLink} onOpenChange={(open) => !open && setSelectedLink(null)}>
-                                <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl">
-                                    <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2">
-                                            <span className="text-indigo-600">Association Details</span>
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Mapping the mediation between distinct actors.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    {selectedLink && (
-                                        <div className="space-y-4 py-2 text-sm">
-                                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border border-slate-100">
-                                                <div className="font-medium text-slate-700">
-                                                    {(() => {
-                                                        const s = selectedLink.source;
-                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                        const sName = typeof s === 'object' ? (s as any).name : mergedActors.find(a => a.id === s)?.name || s;
-                                                        return sName;
-                                                    })()}
-                                                </div>
-                                                <div className="px-2 text-slate-400">→</div>
-                                                <div className="font-medium text-slate-700">
-                                                    {(() => {
-                                                        const t = selectedLink.target;
-                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                        const tName = typeof t === 'object' ? (t as any).name : mergedActors.find(a => a.id === t)?.name || t;
-                                                        return tName;
-                                                    })()}
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Relationship Type</div>
-                                                <div className="p-2 border border-indigo-100 bg-indigo-50/50 rounded-md text-indigo-700 font-medium">
-                                                    {selectedLink.type}
-                                                </div>
-                                            </div>
-
-                                            <div className="text-xs text-slate-400 italic pt-2 border-t">
-                                                In ANT, every association is a performance. This link represents a translation of force/influence between the two actants.
-                                            </div>
-                                        </div>
-                                    )}
-                                </DialogContent>
-                            </Dialog>
-
-                            {/* ... (Close Legend Button) ... */}
-                            {!isLegendOpen && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="absolute top-4 right-4 h-8 bg-white shadow-sm text-xs"
-                                    onClick={() => setIsLegendOpen(true)}
-                                >
-                                    Show Filter
-                                </Button>
-                            )}
-
-                            {focusedNodeId && (
-                                <div className="absolute bottom-4 left-4">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        className="text-xs shadow-sm bg-white hover:bg-slate-50 border border-slate-200"
-                                        onClick={() => setFocusedNodeId(null)}
-                                    >
-                                        <EyeOff className="h-3 w-3 mr-1.5 text-slate-500" /> Reset Focus
-                                    </Button>
-                                </div>
-                            )}
-
+                            {/* Floating Tooltips (Must remain inside or be fixed) */}
                             {hoveredLink && (
                                 <div
                                     className="absolute z-50 pointer-events-none"
@@ -1207,12 +1219,10 @@ export function EcosystemMap({
                                         <div className="text-slate-400 text-[10px] mt-0.5">
                                             {(() => {
                                                 const s = hoveredLink.source;
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const sName = typeof s === 'object' ? (s as any).name : mergedActors.find(a => a.id === s)?.name || s;
+                                                const sName = typeof s === 'object' ? (s as SimulationNode).name : mergedActors.find(a => a.id === s)?.name || s;
 
                                                 const t = hoveredLink.target;
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const tName = typeof t === 'object' ? (t as any).name : mergedActors.find(a => a.id === t)?.name || t;
+                                                const tName = typeof t === 'object' ? (t as SimulationNode).name : mergedActors.find(a => a.id === t)?.name || t;
 
                                                 return (
                                                     <>
@@ -1293,14 +1303,238 @@ export function EcosystemMap({
                                     />
                                 </div>
                             )}
-
                         </>
                     )}
-
-                    {is3DMode && isStratumMode && <StratumLegend />}
-                    {is3DMode && !isStratumMode && <ViewTypeLegend />}
                 </CardContent>
-            </Card >
+            </Card>
+
+            {/* SHARED UI OVERLAYS (Outside Card to avoid overflow-hidden clipping) */}
+
+            {explanation && (
+                <div className="absolute top-16 left-4 right-4 sm:right-auto sm:left-4 sm:w-96 bg-white/95 backdrop-blur-md shadow-xl border border-slate-200 rounded-lg overflow-hidden animate-in slide-in-from-top-5 duration-300 z-50">
+                    <div className="bg-slate-50 border-b border-slate-100 p-3 flex justify-between items-center">
+                        <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-indigo-500" />
+                            {analysisMode === 'ant_trace' ? 'ANT Trace Analysis' :
+                                analysisMode === 'hybrid_reflexive' ? 'Hybrid Reflexive Analysis' :
+                                    'Assemblage Analysis'}
+                        </h3>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={() => setExplanation(null)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="p-4 max-h-[60vh] overflow-y-auto">
+                        <p className="text-sm text-slate-600 leading-relaxed mb-4">{explanation.narrative}</p>
+
+                        <div className="space-y-3">
+                            {(explanation.hulls || []).map((hull, i: number) => (
+                                <div key={i} className="bg-slate-50 rounded-md p-3 border border-slate-100">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="font-medium text-xs text-slate-900">{hull.id.replace('config-', '')}</span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${hull.classification === 'Fortress' ? 'bg-red-100 text-red-700' :
+                                            hull.classification === 'Sieve' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>{hull.classification}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">{hull.interpretation}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isLegendOpen && (
+                <div
+                    className="legend-container absolute top-64 right-6 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-[100] max-h-[600px] overflow-y-auto cursor-grab active:cursor-grabbing select-none"
+                    style={{ transform: `translate(${legendPos.x}px, ${legendPos.y}px)` }}
+                    onMouseDown={handleLegendMouseDown}
+                >
+                    <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-100 handle pointer-events-none">
+                        <span className="font-semibold text-slate-800">Actant Types</span>
+                        <div className="pointer-events-auto">
+                            <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsLegendOpen(false)}>
+                                <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                        {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => {
+                            const isActive = activeTypeFilter === key;
+                            const isDimmed = activeTypeFilter && !isActive;
+
+                            return (
+                                <div
+                                    key={key}
+                                    className={`
+                                        flex items-center gap-2 cursor-pointer p-1 rounded transition-all duration-200
+                                        ${isActive ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-slate-50'}
+                                        ${isDimmed ? 'opacity-40 grayscale' : 'opacity-100'}
+                                    `}
+                                    onClick={() => setActiveTypeFilter(isActive ? null : key)}
+                                >
+                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
+                                    <span className={`capitalize ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-600'}`}>
+                                        {key.replace("civilsociety", "Civil Society")}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {configurations.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-slate-100">
+                            <p className="font-semibold text-slate-800 mb-2">Macro Assemblages</p>
+                            <div className="space-y-1.5">
+                                {configurations.map(config => (
+                                    <div key={config.id} className="flex items-center gap-2 group justify-between p-1 rounded hover:bg-slate-50">
+                                        <div className="flex items-center gap-1 flex-1 overflow-hidden">
+                                            {props.onToggleCollapse && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-5 w-5 mr-1 shrink-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                                                    title={props.collapsedIds?.has(config.id) ? "Expand Assemblage" : "Collapse into Black Box"}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        props.onToggleCollapse?.(config.id);
+                                                    }}
+                                                >
+                                                    {props.collapsedIds?.has(config.id) ?
+                                                        <Maximize className="h-3 w-3" /> :
+                                                        <Minimize className="h-3 w-3" />
+                                                    }
+                                                </Button>
+                                            )}
+                                            <div
+                                                onClick={(e) => {
+                                                    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+                                                    if (onConfigClick) onConfigClick(config.id, isMulti);
+                                                    else if (onConfigSelect) onConfigSelect(config.id, isMulti);
+                                                }}
+                                                className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer"
+                                            >
+                                                <div
+                                                    className="w-3 h-3 rounded-sm shadow-sm ring-1 ring-black/5 opacity-80 shrink-0"
+                                                    style={{ backgroundColor: config.color }}
+                                                />
+                                                <span className="text-slate-600 truncate text-[10px] group-hover:text-slate-900 transition-colors">{config.name}</span>
+                                            </div>
+                                        </div>
+
+                                        {onDeleteConfiguration && (
+                                            configToDelete === config.id ? (
+                                                <div className="flex items-center gap-0.5 animate-in slide-in-from-right-2 duration-200">
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        className="h-6 px-1.5 text-[9px] bg-red-600 hover:bg-red-700 text-white font-bold"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            onDeleteConfiguration(config.id);
+                                                            setConfigToDelete(null);
+                                                        }}
+                                                    >
+                                                        SURE?
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400" onClick={() => setConfigToDelete(null)}>
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setConfigToDelete(config.id);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            )
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
+                        <p className="font-semibold text-slate-800 mb-2">Edge Filters</p>
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={showSolidEdges}
+                                    onChange={(e) => setShowSolidEdges(e.target.checked)}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                />
+                                <span className="text-slate-700">Connectivity (Solid)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={showGhostEdges}
+                                    onChange={(e) => setShowGhostEdges(e.target.checked)}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                />
+                                <span className="text-slate-700">Absent/Virtual (Ghost)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CENTRALLY POSITIONED DIALOGS */}
+            <Dialog open={!!selectedLink} onOpenChange={(open) => !open && setSelectedLink(null)}>
+                <DialogContent className="sm:max-w-md bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-indigo-600">Association Details</DialogTitle>
+                        <DialogDescription>Mapping the mediation between actants.</DialogDescription>
+                    </DialogHeader>
+                    {selectedLink && (
+                        <div className="space-y-4 py-2 text-sm">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border border-slate-100 text-slate-700 font-medium">
+                                <span>{typeof selectedLink.source === 'object' ? (selectedLink.source as SimulationNode).name : selectedLink.source}</span>
+                                <span className="px-2">→</span>
+                                <span>{typeof selectedLink.target === 'object' ? (selectedLink.target as SimulationNode).name : selectedLink.target}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Type</p>
+                                <p className="p-2 border border-indigo-100 bg-indigo-50/50 rounded-md text-indigo-700">{selectedLink.type}</p>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {!isLegendOpen && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute bottom-6 right-6 h-10 px-4 bg-white shadow-xl text-sm font-medium z-[9999] border-slate-200 hover:bg-slate-50 text-indigo-700 pointer-events-auto ring-1 ring-slate-900/5 transition-all"
+                    onClick={() => setIsLegendOpen(true)}
+                >
+                    <Layers className="h-4 w-4 mr-2" />
+                    Legend
+                </Button>
+            )}
+
+            {focusedNodeId && (
+                <div className="absolute bottom-4 left-4">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs shadow-sm bg-white hover:bg-slate-50 border border-slate-200"
+                        onClick={() => setFocusedNodeId(null)}
+                    >
+                        <EyeOff className="h-3 w-3 mr-1.5 text-slate-500" /> Reset Focus
+                    </Button>
+                </div>
+            )}
         </div >
     );
 }

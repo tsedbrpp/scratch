@@ -220,6 +220,8 @@ export async function POST(request: NextRequest) {
           // Generate Narrative via LLM
           const { analysis } = await performAnalysis(openai, userId, {
             analysisMode: 'hybrid_reflexive',
+            actors: tracedActors, // [NEW] Pass full actor objects for visual usage
+            links: associations,  // [NEW] Pass full links for visual usage
             ant_trace: { actor_count: tracedActors.length },
             assemblage_analysis: { mechanism_count: mechanisms.length, mechanisms },
             tensions: tensions

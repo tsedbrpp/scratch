@@ -1,9 +1,10 @@
 import React from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
+import { getBiasIntensity } from '@/lib/ecosystem-utils';
 import { ProvisionalBadge } from '@/components/ui/provisional-badge';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink, Layers, FileText } from 'lucide-react';
+import { ExternalLink, Layers, FileText, AlertTriangle } from 'lucide-react';
 
 interface ActorCardProps {
     actor: EcosystemActor;
@@ -11,7 +12,12 @@ interface ActorCardProps {
     isGroupSelected: boolean;
     onSelect: () => void;
     onToggleGroupSelection: () => void;
+
+
     configurations?: EcosystemConfiguration[];
+    // [NEW] ANT Workbench Props
+    isTraced?: boolean;
+    onTrace?: () => void;
 }
 
 export function ActorCard({
@@ -20,7 +26,9 @@ export function ActorCard({
     isGroupSelected,
     onSelect,
     onToggleGroupSelection,
-    configurations = []
+    configurations = [],
+    isTraced,
+    onTrace
 }: ActorCardProps) {
     return (
         <div
@@ -29,15 +37,17 @@ export function ActorCard({
                     actor.source === 'absence_fill' ? 'bg-amber-50/50 border-amber-200 hover:bg-amber-50' : 'bg-white hover:bg-slate-50'}`}
             onClick={onSelect}
         >
-            <div className="flex flex-col items-center pt-0.5" onClick={(e) => e.stopPropagation()}>
+            {/* Checkbox Column */}
+            <div className="flex flex-col items-center pt-1" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                     checked={isGroupSelected}
                     onCheckedChange={onToggleGroupSelection}
-                    className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                    className="border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 h-4 w-4"
                 />
             </div>
 
-            <div className="flex-1 min-w-0">
+            {/* Main Content Column */}
+            <div className="flex-1 min-w-0 flex flex-col gap-2">
                 {actor.source === 'absence_fill' && (
                     <div className="absolute -top-1.5 -right-1.5">
                         <span className="flex h-3 w-3 relative">
@@ -46,9 +56,11 @@ export function ActorCard({
                         </span>
                     </div>
                 )}
-                <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`font-medium text-sm ${actor.source === 'absence_fill' ? 'text-amber-900 group-hover:text-amber-700' : ''}`}>
+
+                {/* Header: Name + Badges */}
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`font-semibold text-sm ${actor.source === 'absence_fill' ? 'text-amber-900 group-hover:text-amber-700' : 'text-slate-900'}`}>
                             {actor.name}
                         </span>
                         {(!actor.source || actor.source === 'default') && (
@@ -58,54 +70,60 @@ export function ActorCard({
                             />
                         )}
                     </div>
-                    <div className="flex gap-1 shrink-0">
+
+                    {/* Top Right Badges */}
+                    <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                         {actor.source === 'absence_fill' && (
                             <Badge variant="outline" className="text-[9px] px-1 py-0 h-5 border-amber-300 text-amber-600 bg-amber-100">
                                 Recovered
                             </Badge>
                         )}
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-5">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 font-normal">
                             {actor.type}
                         </Badge>
                         {actor.role_type && (
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5 bg-slate-100 text-slate-600 border border-slate-200">
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-5 bg-slate-100 text-slate-600 border border-slate-200 font-normal">
                                 {actor.role_type}
                             </Badge>
                         )}
                     </div>
                 </div>
 
-                {/* Assemblage Membership Badge */}
-                {/* Assemblage Membership List */}
+                {/* Description */}
+                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {actor.description}
+                </p>
+
+                {/* Assemblage Memberships (Middle Section) */}
                 {configurations.some(c => c.memberIds.includes(actor.id)) && (
-                    <div className="mb-3 bg-amber-50/50 rounded-md p-2 border border-amber-100">
-                        <p className="text-[10px] font-semibold text-amber-800 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
+                    <div className="mt-1 bg-amber-50 rounded-md p-2 border border-amber-100">
+                        <p className="text-[10px] font-semibold text-amber-800 mb-1 flex items-center gap-1 uppercase tracking-wider">
                             <Layers className="h-3 w-3" /> Assemblage Memberships
                         </p>
                         <ul className="space-y-1">
                             {configurations.filter(c => c.memberIds.includes(actor.id)).map(c => (
                                 <li key={c.id} className="text-xs flex items-center justify-between group/item">
-                                    <span className="font-medium text-slate-700">{c.name}</span>
-                                    <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 bg-white border-slate-200 text-slate-400">
-                                        {c.properties.stability}
-                                    </Badge>
+                                    <span className="font-medium text-slate-700 truncate mr-2">{c.name}</span>
+                                    {c.properties?.stability && (
+                                        <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 bg-white border-slate-200 text-slate-400 shrink-0">
+                                            {c.properties.stability}
+                                        </Badge>
+                                    )}
                                 </li>
                             ))}
                         </ul>
                     </div>
                 )}
 
-                <p className="text-xs text-slate-500 line-clamp-2 mb-2">{actor.description}</p>
-
-                {/* Trace Evidence Display */}
+                {/* Trace Evidence */}
                 {actor.quotes && actor.quotes.length > 0 && (
-                    <div className="mt-2 mb-2 bg-slate-50 p-2 rounded border border-slate-100">
+                    <div className="mt-1 bg-slate-50 p-2 rounded border border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 mb-1 flex items-center gap-1 uppercase tracking-wider">
                             <FileText className="h-3 w-3" /> Empirical Traces
                         </p>
                         <ul className="space-y-1">
                             {actor.quotes.map((quote, idx) => (
-                                <li key={idx} className="text-[10px] text-slate-600 italic border-l-2 border-indigo-200 pl-2">
+                                <li key={idx} className="text-[10px] text-slate-600 italic border-l-2 border-indigo-200 pl-2 line-clamp-2">
                                     &quot;{quote}&quot;
                                 </li>
                             ))}
@@ -113,18 +131,53 @@ export function ActorCard({
                     </div>
                 )}
 
-                {actor.url && (
-                    <a
-                        href={actor.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <ExternalLink className="h-3 w-3" />
-                        Visit Website
-                    </a>
+                {/* [NEW] Bias Hot Spot Warning */}
+                {getBiasIntensity(actor) > 0.5 && (
+                    <div className="mt-1 bg-red-50 p-2 rounded border border-red-100">
+                        <p className="text-[10px] font-semibold text-red-700 mb-1 flex items-center gap-1 uppercase tracking-wider">
+                            <AlertTriangle className="h-3 w-3" /> Structural Friction (Hot Spot)
+                        </p>
+                        <p className="text-[10px] text-red-600 leading-snug">
+                            High structural resistance detected. This actor may be a site of algorithmic bias, extraction, or ethical friction.
+                        </p>
+                    </div>
                 )}
+
+                {/* Footer: Actions */}
+                <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-100/50">
+                    {/* Trace Action */}
+                    <div>
+                        {onTrace && (
+                            <button
+                                className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-colors border ${isTraced
+                                    ? "bg-rose-50 text-rose-600 border-rose-200"
+                                    : "bg-white text-slate-500 border-slate-200 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50/50"
+                                    }`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onTrace();
+                                }}
+                            >
+                                <Layers className="h-3 w-3" />
+                                {isTraced ? "Stop Tracing" : "Trace Actor"}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Links */}
+                    {actor.url && (
+                        <a
+                            href={actor.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline ml-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            Visit Website
+                            <ExternalLink className="h-3 w-3" />
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );

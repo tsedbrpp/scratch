@@ -1,33 +1,31 @@
 import { EcosystemActor } from "@/types/ecosystem";
 
-export function getLinkDetails(sourceType: string, targetType: string) {
-    if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries and compliance costs." };
-    if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Often marginalizes from decision-making loops." };
-    if (sourceType === "Information" && targetType === "Policymaker") return { label: "Informs", description: "Provides epistemic basis for policy." };
+export function getLinkDetails(sourceType: string, targetType: string): { label: string, description: string, flow_type: 'power' | 'logic' } {
+    if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries.", flow_type: 'power' };
+    if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Social marginalization.", flow_type: 'power' };
+    if (sourceType === "Information" && targetType === "Policymaker") return { label: "Informs", description: "Epistemic basis.", flow_type: 'logic' };
 
-    if (sourceType === "Startup" && targetType === "Academic") return { label: "Enables", description: "Provides tools or data for research." };
-    if (sourceType === "Infrastructure" && targetType === "Startup") return { label: "Enables", description: "Provides computational substrate for operations." };
-    if (sourceType === "Startup" && targetType === "Algorithm") return { label: "Delegates", description: "Offloads decision-making authority to code." };
+    if (sourceType === "Startup" && targetType === "Academic") return { label: "Enables", description: "Tools for research.", flow_type: 'logic' };
+    if (sourceType === "Infrastructure" && targetType === "Startup") return { label: "Enables", description: "Computational substrate.", flow_type: 'power' };
+    if (sourceType === "Startup" && targetType === "Algorithm") return { label: "Delegates", description: "Authority to code.", flow_type: 'power' };
 
-    if (sourceType === "Algorithm" && targetType === "Dataset") return { label: "Extracts", description: "Mines patterns from raw data, often without consent." };
-    if (sourceType === "Infrastructure" && targetType === "Dataset") return { label: "Extracts", description: "Accumulates data capital from interactions." };
+    if (sourceType === "Algorithm" && targetType === "Dataset") return { label: "Extracts", description: "Mines patterns.", flow_type: 'power' };
+    if (sourceType === "Infrastructure" && targetType === "Dataset") return { label: "Extracts", description: "Accumulates data capital.", flow_type: 'power' };
 
-    if (sourceType === "Academic" && targetType === "Algorithm") return { label: "Audits", description: "Critically examines algorithmic outputs." };
+    if (sourceType === "Academic" && targetType === "Algorithm") return { label: "Audits", description: "Critical examination.", flow_type: 'logic' };
 
-    // Additional connections for robustness
-    if (sourceType === "Civil Society" && targetType === "Academic") return { label: "Studies", description: "Provides qualitative data and community context." };
-    if (sourceType === "Policymaker" && targetType === "Algorithm") return { label: "Governs", description: "Attempts to regulate code behavior." };
+    if (sourceType === "Civil Society" && targetType === "Academic") return { label: "Studies", description: "Community context.", flow_type: 'logic' };
+    if (sourceType === "Policymaker" && targetType === "Algorithm") return { label: "Governs", description: "Regulates behavior.", flow_type: 'power' };
 
-    // New Type Handlers
-    if (sourceType.includes("AlgorithmicAgent") || targetType.includes("AlgorithmicAgent")) return { label: "Operates", description: "Autonomous agentic action." };
-    if (sourceType === "LegalObject" || targetType === "LegalObject") return { label: "Codifies", description: "Materializes law into an object." };
-    if (sourceType === targetType) return { label: "Coordinates", description: "Internal coordination." };
+    if (sourceType.includes("AlgorithmicAgent") || targetType.includes("AlgorithmicAgent")) return { label: "Operates", description: "Autonomous action.", flow_type: 'power' };
+    if (sourceType === "LegalObject" || targetType === "LegalObject") return { label: "Codifies", description: "Materializes law.", flow_type: 'logic' };
+    if (sourceType === targetType) return { label: "Coordinates", description: "Internal loops.", flow_type: 'logic' };
 
-    return { label: "Relates To", description: "Generic connection." };
+    return { label: "Relates To", description: "Generic connection.", flow_type: 'logic' };
 }
 
 export function generateEdges(actors: EcosystemActor[]) {
-    const edges: { source: EcosystemActor; target: EcosystemActor; label: string; description: string }[] = [];
+    const edges: { source: EcosystemActor; target: EcosystemActor; label: string; description: string; flow_type: 'power' | 'logic' }[] = [];
 
     actors.forEach((source, i) => {
         actors.slice(i + 1).forEach((target) => {
@@ -78,8 +76,14 @@ export function generateEdges(actors: EcosystemActor[]) {
             );
 
             if (shouldConnect) {
-                const { label, description } = getLinkDetails(sType, tType);
-                edges.push({ source, target, label, description });
+                const details = getLinkDetails(sType, tType);
+                edges.push({
+                    source,
+                    target,
+                    label: details.label,
+                    description: details.description,
+                    flow_type: details.flow_type
+                });
             }
         });
     });

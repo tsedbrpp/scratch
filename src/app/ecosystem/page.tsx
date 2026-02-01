@@ -102,6 +102,19 @@ function EcosystemContent() {
     const [isEnriching, setIsEnriching] = useState(false);
     const [enrichProgress, setEnrichProgress] = useState(0);
 
+    // [NEW] ANT Workbench State
+    const [collapsedAssemblages, setCollapsedAssemblages] = useState<Set<string>>(new Set());
+    const [tracedActorId, setTracedActorId] = useState<string | null>(null);
+
+    const handleToggleCollapse = (id: string) => {
+        setCollapsedAssemblages(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     const handleEnrichLinks = async () => {
         if (!actors || actors.length === 0) return;
 
@@ -324,10 +337,14 @@ function EcosystemContent() {
             if (multi) {
                 return prev.includes(configId) ? prev.filter(id => id !== configId) : [...prev, configId];
             }
-            return [configId];
+            // [CHANGED] Toggle logic for single selection: If clicking active one, deselect it.
+            return prev.includes(configId) && prev.length === 1 ? [] : [configId];
         });
-        setActiveTab("analysis");
-        setIsSidebarOpen(true);
+        // Only open sidebar if we are selecting something
+        if (!selectedConfigIds.includes(configId)) {
+            setActiveTab("analysis");
+            setIsSidebarOpen(true);
+        }
     };
 
     const handleDeleteConfiguration = (configId: string) => {
@@ -484,6 +501,11 @@ function EcosystemContent() {
                             setAnalysisMode={setAnalysisMode}
                             configLayout={configLayout}
                             onConfigSelect={(id) => handleConfigClick(id, true)}
+                            // [NEW] ANT Props
+                            collapsedIds={collapsedAssemblages}
+                            tracedId={tracedActorId}
+                            onToggleCollapse={handleToggleCollapse}
+                            selectedActorId={selectedActorId}
                             // [FIX] Merge missing_voices from selected assemblage AND global absence analysis
                             absenceAnalysis={(() => {
                                 const selectedAnalysis = selectedConfigIds.length === 1
@@ -578,7 +600,7 @@ function EcosystemContent() {
                                             <ActorList
                                                 actors={actors}
                                                 selectedActorId={selectedActorId}
-                                                onSelectActor={handleListSelectionToggle}
+                                                onSelectActor={setSelectedActorId}
                                                 onClearAll={handleClearAll}
                                                 isExpanded={isSidebarExpanded}
                                                 onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -598,6 +620,9 @@ function EcosystemContent() {
                                                 onToggleSelection={handleListSelectionToggle}
                                                 onCreateConfiguration={handleCreateConfiguration}
                                                 configurations={configurations}
+                                                // [NEW] ANT Props
+                                                tracedActorId={tracedActorId}
+                                                onTraceActor={setTracedActorId}
                                             />
                                         </div>
                                     </TabsContent>
@@ -629,6 +654,9 @@ function EcosystemContent() {
                                                 onReorderConfigs={(newConfigs) => setConfigurations(newConfigs)}
                                                 onSelectConfig={(id, multi) => handleConfigClick(id, multi)}
                                                 onDeleteConfig={handleDeleteConfiguration}
+                                                // [NEW] ANT Props
+                                                collapsedIds={collapsedAssemblages}
+                                                onToggleCollapse={handleToggleCollapse}
                                             />
                                         </div>
                                     </TabsContent>

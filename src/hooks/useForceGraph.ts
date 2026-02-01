@@ -4,6 +4,7 @@ import { EcosystemActor } from '@/types/ecosystem';
 
 export interface SimulationNode extends d3.SimulationNodeDatum {
     id: string;
+    name: string;
     type: string;
     radius: number;
     x?: number;
@@ -15,6 +16,8 @@ export interface SimulationNode extends d3.SimulationNodeDatum {
     assemblageId?: string;
     startAngle?: number;
     endAngle?: number;
+    // [NEW] Trace Mode Animation Support
+    isHidden?: boolean;
 }
 
 interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
@@ -63,6 +66,7 @@ export function useForceGraph(
             const assemblageId = getAssemblageId(actor.id);
 
             if (existing) {
+                existing.name = actor.name;
                 existing.radius = actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20;
                 existing.metrics = actor.metrics;
                 existing.assemblageId = assemblageId;
@@ -70,13 +74,23 @@ export function useForceGraph(
             }
             return {
                 id: actor.id,
+                name: actor.name,
                 type: actor.type,
                 radius: actor.influence === 'High' ? 45 : actor.influence === 'Medium' ? 30 : 20,
                 x: width / 2 + (Math.random() - 0.5) * 50,
                 y: height / 2 + (Math.random() - 0.5) * 50,
                 metrics: actor.metrics,
-                assemblageId: assemblageId
+                assemblageId: assemblageId,
+                isHidden: (actor as any).isHidden || false
             } as SimulationNode;
+        });
+
+        // Loop through and update isHidden on existing nodes too to ensure real-time updates without remounting
+        newNodes.forEach(n => {
+            const actor = actors.find(a => a.id === n.id);
+            if (actor) {
+                n.isHidden = (actor as any).isHidden || false;
+            }
         });
 
         nodesRef.current = newNodes;
@@ -208,7 +222,7 @@ export function useForceGraph(
             });
 
             // 1. Collision
-            simulation.force("collide", d3.forceCollide().radius((d: any) => d.radius + 15).iterations(2));
+            simulation.force("collide", d3.forceCollide().radius((d: any) => d.isHidden ? 0 : (d.radius + 15)).iterations(2));
 
             // 2. Metric Forces (Compass)
             if (enableMetricAlignment) {
@@ -235,7 +249,7 @@ export function useForceGraph(
                 simulation.force("charge", d3.forceManyBody().strength(-100));
             } else {
                 // Fallback
-                simulation.force("charge", d3.forceManyBody().strength(-300));
+                simulation.force("charge", d3.forceManyBody().strength((d: any) => d.isHidden ? 0 : -300));
                 simulation.force("center", d3.forceCenter(width / 2, height / 2));
             }
         }
@@ -252,7 +266,11 @@ export function useForceGraph(
             if (validLinks.length > 0) {
                 simulation.force("link", d3.forceLink(validLinks)
                     .id((d: any) => d.id)
-                    .strength(isRadialMode ? 0 : 0.05)
+                    .strength((d: any) => {
+                        // If either end is hidden, link strength is 0
+                        if ((d.source as any).isHidden || (d.target as any).isHidden) return 0;
+                        return isRadialMode ? 0 : 0.05;
+                    })
                     .distance(100)
                 );
             }

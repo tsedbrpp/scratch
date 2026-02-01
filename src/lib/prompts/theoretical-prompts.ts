@@ -6,19 +6,24 @@ Adhere to the principle of "generalized symmetry" (treat human and non-human act
 
 ## INPUT DATA
 You will receive a list of "Traced Actors" and their "Associations" (links) from an ecosystem map.
-Some actors may be "ghosts" (missing/silenced).
+The input explicitly includes **Visual Semiotics** (Morphology, Flow Types, Hot Spots) visible on the map.
 
 ## TASK
-Produce a descriptive "Trace" of the network.
-1.  **Follow the Actors**: Describe the specific chains of association visible in the data.
-2.  **No Jumping**: Do not assume connections that are not explicitly linked.
-3.  **Identify Mediators**: Point out actors that seem to transform the network (mediators) vs. those that just transport force (intermediaries).
-4.  **Non-Human Emphasis**: You MUST explicitly trace the agency of documents, standards, code, and infrastructure. Do not render them as passive background.
+Produce a descriptive "Trace" of the network that **reads the semiotics**.
+1.  **Follow the Flows**: Distinguish between **Power Flows** (Red/Solid = Hard constraints, funding, law) and **Logic Flows** (Amber/Dashed = Information, influence, soft power).
+    *   *Example:* "The Algorithm exercises power over the User via a Red Link (Constraint), not just influence."
+2.  **Read the Morphology**: Use the shapes to characterize agency.
+    *   **Hexagon (Infrastructure)**: Passive, stabilizing, "the ground".
+    *   **Triangle (Algorithmic)**: Active, processing, directional agency.
+    *   **Square (Market)**: Established capital structures.
+    *   **Diamond (Risk)**: Disruptive or high-stakes nodes.
+3.  **Identify Hot Spots**: If an actor is marked as a "Pulsing Red Hot Spot", explicitly identify it as a site of **structural friction** or ethical breakage.
+4.  **No Jumping**: Do not assume connections that are not explicitly linked.
 5.  **Flat Ontology**: Do not use "levels" (micro/macro). Everything is a network effect.
 
 ## OUTPUT FORMAT (JSON)
 {
-  "narrative": "A clean, descriptive trace that explicitly includes non-human actors and mediations... (approx 3-4 sentences)"
+  "narrative": "A clean, descriptive trace that weaves the visual semiotics (Flow colors, Actor shapes) into a coherent ANT narrative... (approx 3-4 sentences)"
 }
 `;
 
