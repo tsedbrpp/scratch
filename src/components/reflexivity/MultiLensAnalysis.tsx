@@ -8,7 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText, VolumeX, Sparkles } from 'lucide-react';
 import { analyzeDocument, AnalysisMode } from '@/services/analysis';
 import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
-import { SpectralRadar } from './SpectralRadar';
+import dynamic from 'next/dynamic';
+const SpectralRadar = dynamic(() => import('./SpectralRadar').then(mod => mod.SpectralRadar), {
+    loading: () => <div className="h-[300px] w-full bg-slate-50 animate-pulse rounded-lg flex items-center justify-center text-slate-400">Loading Radar...</div>,
+    ssr: false
+});
 import { SystemCritiqueSection } from '@/components/common/SystemCritiqueSection';
 import { EvidenceLineageModal } from '@/components/reflexivity/EvidenceLineageModal';
 import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";

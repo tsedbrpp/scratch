@@ -66,7 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Trace (The Making)",
         items: [
             {
-                name: "Materials Archive",
+                name: "Data & Sources",
                 href: "/data",
                 icon: Database,
                 description: "Ingest and manage policy texts."

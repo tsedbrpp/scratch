@@ -4,7 +4,11 @@ import { Sparkles, Scale, Users, Hand, Eye, ShieldCheck, Landmark, Activity, Ale
 import { PromptDialog } from "@/components/transparency/PromptDialog";
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { Button } from "@/components/ui/button";
-import { GovernanceCompass } from "./GovernanceCompass";
+import dynamic from 'next/dynamic';
+const GovernanceCompass = dynamic(() => import('./GovernanceCompass').then(mod => mod.GovernanceCompass), {
+    loading: () => <div className="h-full w-full bg-slate-50 animate-pulse rounded-lg flex items-center justify-center text-slate-400">Loading Compass...</div>,
+    ssr: false
+});
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useViewMode } from "@/hooks/useViewMode";
 
@@ -60,7 +64,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
     });
     const effectiveAnalysis = { ...analysis };
 
-    // Helper to get list of existing actor names for checking duplicates
+    // Helper to get list of existing actor names for de-duplication
     const existingActorNames = ecosystemActors.map(a => a.name);
 
     if (baselineMatch) {
@@ -457,7 +461,7 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
                 <TabsContent value="deep-analysis" className="space-y-6 mt-4 animate-in fade-in-50 duration-300">
 
                     {/* Core Dimensions Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <DimensionCard
                             title="Governance & Power"
                             icon={<Landmark className="h-4 w-4 text-blue-600" />}

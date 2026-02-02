@@ -5,44 +5,34 @@ export interface VerifiedQuote {
     verified: boolean;
     confidence: number;
     context: string;
+    source?: string;
+    index?: number;
 }
 
-// Improved normalizer: robust against minor punctuation differences
-export const normalize = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w ]/g, '').trim();
+// Normalize text for comparison
+function normalize(text: string): string {
+    return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
 
-// Super-Normalize Fallback (Aggressive: "risk-based" == "riskbased")
-// Strips ALL spaces and punctuation, keeping only alphanumeric.
-export const superNormalize = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+// Check if a quote exists in source text with fuzzy matching
+export function checkFuzzyMatch(quote: string, source: string): { verified: boolean; index: number } {
+    const normalizedQuote = normalize(quote);
+    const normalizedSource = normalize(source);
 
-export const checkFuzzyMatch = (quote: string, source: string): boolean => {
-    const nQuote = normalize(quote);
-    // 1. Direct match attempt (Standard)
-    if (source.includes(nQuote)) return true;
-
-    // 2. Super-Normalize Fallback
-    const sQuote = superNormalize(quote);
-    const sSource = superNormalize(source);
-    if (sSource.includes(sQuote)) return true;
-
-    // 3. Ellipsis handling: "Start of quote... end of quote"
-    const parts = quote.split(/\.\.\.|…/);
-    if (parts.length > 1) {
-        let lastIndex = 0;
-        return parts.every(part => {
-            if (!part || part.length < 3) return true;
-            // Try standard match first
-            const nPart = normalize(part);
-            const index = source.indexOf(nPart, lastIndex);
-            if (index !== -1) {
-                lastIndex = index + nPart.length;
-                return true;
-            }
-            // Fallback: If standard part fails, we might be out of luck for ellipsis + punctuation diffs.
-            return false;
-        });
+    // Direct match
+    const directIndex = source.toLowerCase().indexOf(quote.toLowerCase());
+    if (directIndex !== -1) {
+        return { verified: true, index: directIndex };
     }
-    return false;
-};
+
+    // Fuzzy match (allow minor variations)
+    const index = normalizedSource.indexOf(normalizedQuote);
+    if (index !== -1) {
+        return { verified: true, index };
+    }
+
+    return { verified: false, index: -1 };
+}
 
 export function verifyQuotes(text: string, analysis: AnalysisResult): VerifiedQuote[] {
     const quotes: VerifiedQuote[] = [];
@@ -50,16 +40,28 @@ export function verifyQuotes(text: string, analysis: AnalysisResult): VerifiedQu
 
     // Helper to process a potential quote
     const processQuote = (quoteStr: string, path: string) => {
-        const verified = checkFuzzyMatch(quoteStr, normalizedText);
-        // If text is empty/undefined, we can't verify, so verified is false.
-        const isVerified = !!normalizedText && verified;
+        const matchResult = checkFuzzyMatch(quoteStr, text); // Use original text for indexing? No, utils uses normalized. 
+        // Wait, checkFuzzyMatch internally normalizes. But we need index relative to something.
+        // If checkFuzzyMatch returns index in ORIGINAL text (via directIndex), that's great.
+
+        // CORRECTION: My previous edit to checkFuzzyMatch used `source.toLowerCase().indexOf`
+        // which returns index in the original string! Perfect.
+
+        const { verified, index } = matchResult;
+
+        // If text is empty/undefined, we can't verify
+        const isVerified = !!text && verified;
+
         quotes.push({
             text: quoteStr,
             verified: isVerified,
             confidence: isVerified ? 1.0 : 0.0,
-            context: path
+            context: path,
+            index: index !== -1 ? index : undefined
         });
     };
+
+    // ... (rest of traverse)
 
     const traverse = (obj: unknown, path: string) => {
         if (!obj) return;

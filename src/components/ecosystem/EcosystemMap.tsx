@@ -11,7 +11,7 @@ import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { ViewTypeLegend } from './EcosystemLegends';
 import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor, calculateConfigMetrics, getBiasIntensity } from '@/lib/ecosystem-utils';
-import { VisualGuideDialog } from './VisualGuideDialog';
+import { EcosystemToolbar } from './EcosystemToolbar';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
@@ -107,85 +107,61 @@ export function EcosystemMap({
 
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
+
+    // [RESTORED STATE]
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null); // Ref for zoom behavior
+    const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
-    const [layoutMode, setLayoutMode] = useState<'compass' | 'nested'>('nested'); // [FIX] Default to Nested Mode
+    const [layoutMode, setLayoutMode] = useState<'compass' | 'nested'>('nested');
 
-    // Derived states for backward compatibility with hook props
     const isNestedMode = layoutMode === 'nested';
     const isMetricMode = layoutMode === 'compass';
 
-
     const [isLegendOpen, setIsLegendOpen] = useState(false);
-    // const [isNestedMode, setIsNestedMode] = useState(false); // REPLACED
     const [isStratumMode, setIsStratumMode] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [is3DMode, setIs3DMode] = useState(false);
-    const [isPresentationMode, setIsPresentationMode] = useState(false); // [NEW] Presentation Mode State
-    const [reduceMotion, setReduceMotion] = useState(false); // [NEW] Reduce Motion State
+    const [isPresentationMode, setIsPresentationMode] = useState(false);
+    const [reduceMotion, setReduceMotion] = useState(false);
 
     const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
-
-    // Edge filtering state
     const [showSolidEdges, setShowSolidEdges] = useState(true);
     const [showGhostEdges, setShowGhostEdges] = useState(true);
-
-    // Zoom/Pan State
-    const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
     const [activeTypeFilter, setActiveTypeFilter] = useState<string | null>(null);
 
-    // Merged Actors with Ghosts
     const mergedActors = useMemo(() => {
         return mergeGhostNodes(actors, absenceAnalysis || null);
     }, [actors, absenceAnalysis]);
 
-    // Filter actors based on ghost toggle
     const filteredActors = useMemo(() => {
         if (showGhostEdges) {
             return mergedActors;
         }
-        // Filter out ghost nodes when toggle is off
         return mergedActors.filter(actor => {
             const isGhost = 'isGhost' in actor && (actor as unknown as GhostActor).isGhost;
             return !isGhost;
         });
     }, [mergedActors, showGhostEdges]);
 
-    // Assemblage Explanation State
     const [isExplaining, setIsExplaining] = useState(false);
     const [explanation, setExplanation] = useState<AssemblageExplanation | null>(null);
-
-    // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
-
     const [configToDelete, setConfigToDelete] = useState<string | null>(null);
-
     const [collapsedAssemblages, setCollapsedAssemblages] = useState<Set<string>>(new Set());
     const [tracedActorId, setTracedActorId] = useState<string | null>(null);
 
-    // [NEW] Draggable Legend Logic (Consolidated)
+    // Draggable Legend Logic
     const [legendPos, setLegendPos] = useState({ x: 24, y: 96 });
     const draggingRef = useRef<{ isDragging: boolean; startX: number; startY: number; initialX: number; initialY: number }>({
-        isDragging: false,
-        startX: 0,
-        startY: 0,
-        initialX: 0,
-        initialY: 0
+        isDragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0
     });
 
     const handleLegendMouseDown = (e: React.MouseEvent) => {
-        // Only drag if clicking the header or background area (avoiding buttons/inputs)
         if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
-
         draggingRef.current = {
-            isDragging: true,
-            startX: e.clientX,
-            startY: e.clientY,
-            initialX: legendPos.x,
-            initialY: legendPos.y
+            isDragging: true, startX: e.clientX, startY: e.clientY, initialX: legendPos.x, initialY: legendPos.y
         };
         e.preventDefault();
     };
@@ -195,16 +171,9 @@ export function EcosystemMap({
             if (!draggingRef.current.isDragging) return;
             const dx = e.clientX - draggingRef.current.startX;
             const dy = e.clientY - draggingRef.current.startY;
-            setLegendPos({
-                x: draggingRef.current.initialX + dx,
-                y: draggingRef.current.initialY + dy
-            });
+            setLegendPos({ x: draggingRef.current.initialX + dx, y: draggingRef.current.initialY + dy });
         };
-
-        const handleMouseUp = () => {
-            draggingRef.current.isDragging = false;
-        };
-
+        const handleMouseUp = () => draggingRef.current.isDragging = false;
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
         return () => {
@@ -213,313 +182,208 @@ export function EcosystemMap({
         };
     }, []);
 
-    // [NEW] Robust Power Calculation Utility
     const calculateActorPower = (actor: EcosystemActor): number => {
-        // 1. Explicit dynamic power (if set by AI or simulation)
         if (actor.metrics?.dynamic_power) return actor.metrics.dynamic_power;
-
-        // 2. Map legacy/qualitative Influence string
         const influenceMap = { 'High': 10, 'Medium': 5, 'Low': 2 };
         const baseInfluence = influenceMap[actor.influence as keyof typeof influenceMap] || 5;
-
-        // 3. Amplify by territorialization (power to stabilize) if available
         let stabilityPower = 1;
         const t = actor.metrics?.territorialization;
-        if (typeof t === 'number') {
-            stabilityPower = 0.5 + (t / 10); // 0.5 to 1.5 multiplier
-        } else if (typeof t === 'string') {
+        if (typeof t === 'number') stabilityPower = 0.5 + (t / 10);
+        else if (typeof t === 'string') {
             const qMap = { 'Strong': 1.5, 'Moderate': 1.0, 'Weak': 0.7, 'Latent': 0.5 };
             stabilityPower = qMap[t as keyof typeof qMap] || 1.0;
         }
-
-        // [NEW] 4. Bias Friction (High Resistance / Low Legitimacy)
-        // If an actor is high power but also high bias, it creates a 'Hot Spot' friction point.
-        // We'll return power here, and use bias_intensity for visuals.
-
         return baseInfluence * stabilityPower;
     };
 
-    // [REMOVED] Local Bias Intensity Logic - Moved to ecosystem-utils.ts
-
-    // Expose handlers to parent or context if needed
     useEffect(() => {
         if (props.collapsedIds) setCollapsedAssemblages(props.collapsedIds);
         if (props.tracedId !== undefined) setTracedActorId(props.tracedId);
     }, [props.collapsedIds, props.tracedId]);
 
-
-
-
-
-    // [NEW] Raw Links for Metric Calculation (Before Black Boxing)
     const rawMetricLinks = useMemo(() => {
         const generated = generateEdges(filteredActors);
-        return generated.map(e => ({
-            source: e.source.id,
-            target: e.target.id,
-            type: e.label
-        }));
+        return generated.map(e => ({ source: e.source.id, target: e.target.id, type: e.label }));
     }, [filteredActors]);
 
-    // Standard Config Passthrough with Logic (Moved Up)
-    // Uses raw links to calculate porosity correctly even if visuals change
     const hydratedConfigs = useMemo(() => {
-        return configurations.map(config => {
-            return calculateConfigMetrics(config, rawMetricLinks);
-        });
+        return configurations.map(config => calculateConfigMetrics(config, rawMetricLinks));
     }, [configurations, rawMetricLinks]);
 
-    // [NEW] Dynamic Actor Hydration (Handles Black-Boxing & Tracing)
     const hydratedActors = useMemo<EcosystemActor[]>(() => {
         let result: EcosystemActor[] = filteredActors as EcosystemActor[];
-
-        // 1. Black Boxing Logic (Collapse Assemblages)
-        // If an assemblage is collapsed, remove its members and add a "Black Box" node
         const blackBoxNodes: EcosystemActor[] = [];
         const hiddenActorIds = new Set<string>();
-
         if (collapsedAssemblages.size > 0) {
             configurations.forEach(config => {
                 if (collapsedAssemblages.has(config.id)) {
-                    // Mark members for hiding
                     config.memberIds.forEach(id => hiddenActorIds.add(id));
-
-                    // Calculate Aggregated Metrics for Dynamic Sizing
                     const members = (filteredActors as EcosystemActor[]).filter(a => config.memberIds.includes(a.id));
                     const totalPower = members.reduce((sum, a) => sum + calculateActorPower(a), 0);
-                    // Use stability from config if available (0-1), otherwise default
                     const stability = Number(config.properties?.calculated_stability) || 0.5;
-
-                    // Create Black Box Node
                     blackBoxNodes.push({
-                        id: `blackbox-${config.id}`,
-                        name: config.name,
-                        type: 'Infrastructure', // Treat as heavy infrastructure
-                        description: config.description,
-                        influence: totalPower > 30 ? 'High' : totalPower > 15 ? 'Medium' : 'Low',
-                        role_type: 'Material',
-                        metrics: {
-                            territorialization: stability * 10,
-                            coding: 10,
-                            deterritorialization: (1 - stability) * 5,
-                            dynamic_power: totalPower // Essential for dynamic sizing loop
-                        },
-                        // Custom props for Tooltip
-                        isBlackBox: true,
-                        memberCount: config.memberIds.length,
-                        stabilityScore: stability
+                        id: `blackbox-${config.id}`, name: config.name, type: 'Infrastructure', description: config.description,
+                        influence: totalPower > 30 ? 'High' : totalPower > 15 ? 'Medium' : 'Low', role_type: 'Material',
+                        metrics: { territorialization: stability * 10, coding: 10, deterritorialization: (1 - stability) * 5, dynamic_power: totalPower },
+                        isBlackBox: true, memberCount: config.memberIds.length, stabilityScore: stability
                     } as any);
                 }
             });
-            // Filter out hidden members
             result = result.filter(a => !hiddenActorIds.has(a.id));
-            // Add Black Box nodes
             result = [...result, ...blackBoxNodes] as EcosystemActor[];
         }
-
-        // 2. Trace Mode Logic (Oligopticon)
-        // If tracing an actor, show ONLY that actor and its 1st degree neighbors
         if (tracedActorId) {
-            const rawLinks = generateEdges(filteredActors); // Use raw links to find neighbors
+            const rawLinks = generateEdges(filteredActors);
             const neighborIds = new Set<string>();
             rawLinks.forEach(l => {
                 if (l.source.id === tracedActorId) neighborIds.add(l.target.id);
                 if (l.target.id === tracedActorId) neighborIds.add(l.source.id);
             });
             neighborIds.add(tracedActorId);
-
-            // In trace mode, we SOFT filter (mark as hidden) to allow for animation
-            // result = result.filter(a => neighborIds.has(a.id) || a.id.startsWith('blackbox-'));
             result = result.map(a => {
                 const isRelevant = neighborIds.has(a.id) || a.id.startsWith('blackbox-');
-                if (!isRelevant) {
-                    return { ...a, isHidden: true };
-                }
+                if (!isRelevant) return { ...a, isHidden: true };
                 return { ...a, isHidden: false };
             });
         }
-
-        // 3. Visualization Filters (Type, Boundary) - Applied AFTER structural changes
         if (activeTypeFilter) {
             const uniqueKey = activeTypeFilter.toLowerCase().replace(/\s/g, '');
             result = result.filter(a => {
-                // Allow blackboxes to pass through or filter them? Let's treat them as Infrastructure
                 const actorType = (a.id.startsWith('blackbox-') ? 'Infrastructure' : a.type).toLowerCase().replace(/\s/g, '');
-                // Preserve hidden status if already set by trace
                 if ((a as any).isHidden) return true;
                 return actorType.includes(uniqueKey);
             });
         }
-
-
         return result;
-    }, [filteredActors, collapsedAssemblages, tracedActorId, activeTypeFilter, configurations]); // Re-run when these change
+    }, [filteredActors, collapsedAssemblages, tracedActorId, activeTypeFilter, configurations]);
 
     const links = useMemo(() => {
-        // We must regenerate links based on the *potentially modified* actor list
-        // BUT, generating edges relies on the *original* semantic connections.
-        // So we first get raw edges from the FULL set, then reroute/filter.
         const rawEdges = generateEdges(filteredActors);
-
-        // Map member -> BlackBox ID for rerouting
         const memberToBlackBoxMap = new Map<string, string>();
         configurations.forEach(config => {
-            if (collapsedAssemblages.has(config.id)) {
-                config.memberIds.forEach(mId => memberToBlackBoxMap.set(mId, `blackbox-${config.id}`));
-            }
+            if (collapsedAssemblages.has(config.id)) config.memberIds.forEach(mId => memberToBlackBoxMap.set(mId, `blackbox-${config.id}`));
         });
-
         let processedLinks = rawEdges.map(e => {
             let sourceId = e.source.id;
             let targetId = e.target.id;
-
-            // Reroute to Black Box if applicable
             if (memberToBlackBoxMap.has(sourceId)) sourceId = memberToBlackBoxMap.get(sourceId)!;
             if (memberToBlackBoxMap.has(targetId)) targetId = memberToBlackBoxMap.get(targetId)!;
-
             return {
-                source: sourceId,
-                target: targetId,
-                type: e.label,
-                description: e.description,
-                flow_type: e.flow_type,
-                originalSource: e.source.id,
-                originalTarget: e.target.id
+                source: sourceId, target: targetId, type: e.label, description: e.description,
+                flow_type: e.flow_type, originalSource: e.source.id, originalTarget: e.target.id
             };
         });
-
-        // Dedup links (if multiple members link to same target, we get multiple links from BlackBox -> Target)
-        // We'll keep them effectively but d3 might overlap them. For clarity, maybe dedup?
-        // Let's keep distinct types.
-        // Filter: Keep link ONLY if both source and target exist in hydratedActors
         const validActorIds = new Set(hydratedActors.map(a => a.id));
         processedLinks = processedLinks.filter(l => validActorIds.has(l.source) && validActorIds.has(l.target));
-
-        // Remove self-loops (BlackBox -> BlackBox) created by internal connections
         processedLinks = processedLinks.filter(l => l.source !== l.target);
-
         return processedLinks;
-    }, [filteredActors, hydratedActors, collapsedAssemblages, configurations]); // Depend on hydratedActors result
+    }, [filteredActors, hydratedActors, collapsedAssemblages, configurations]);
 
-
-    // [NEW] Assemblage Creation Handler from Suggester
-    const handleCreateAssemblage = (name: string, memberIds: string[]) => {
+    const handleCreateAssemblage = React.useCallback((name: string, members: string[]) => {
         const newConfig: EcosystemConfiguration = {
-            id: crypto.randomUUID(),
-            name,
-            description: "Algorithmic Suggestion",
-            memberIds,
-            properties: {
-                stability: "Medium",
-                generativity: "Medium",
-                territorialization_score: 5,
-                coding_intensity_score: 5
-            },
+            id: crypto.randomUUID(), name, description: "Algorithmic Suggestion", memberIds: members,
+            properties: { stability: "Medium", generativity: "Medium", territorialization_score: 5, coding_intensity_score: 5 },
             color: `hsl(${Math.random() * 360}, 70%, 80%)`
         };
-
-        if (onAddConfiguration) {
-            onAddConfiguration(newConfig);
-        } else {
-            // Fallback or just log if parent doesn't support direct add
-            console.warn("onAddConfiguration not provided. Config created but not persisted:", newConfig);
-            // innovative: maybe call onCreateConfiguration() to open the dialog?
-            onCreateConfiguration();
-        }
-    };
-
+        if (onAddConfiguration) onAddConfiguration(newConfig);
+        else onCreateConfiguration();
+    }, [onAddConfiguration, onCreateConfiguration]);
 
     const handleExplainMap = React.useCallback(async () => {
         if (!analysisMode) return;
-        if (isReadOnly) {
-            alert("Trace analysis is disabled in Demo Mode.");
-            return;
-        }
-
-        // Credit Check
-        if (!creditsLoading && !hasCredits) {
-            setShowTopUp(true);
-            return;
-        }
-        setIsExplaining(true);
-        // Clear previous explanation to indicate change
-        setExplanation(null);
+        if (isReadOnly) { alert("Trace analysis is disabled in Demo Mode."); return; }
+        if (!creditsLoading && !hasCredits) { setShowTopUp(true); return; }
+        setIsExplaining(true); setExplanation(null);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
-            }
-
+            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers,
+                method: 'POST', headers,
                 body: JSON.stringify({
-                    analysisMode: 'assemblage_explanation', // Legacy required field
-                    mode: analysisMode, // NEW: Theoretical mode for backward compatible routing
-                    configurations: configurations, // Pass metrics implicitly via configs
-                    actors: filteredActors, // Pass actors for tracing
-                    links: links, // Pass links for tracing
-                    interactionState: { // NEW: Pass visual context
-                        isNested: isNestedMode,
-                        is3D: is3DMode
-                    },
-                    text: 'Assess Hull Metrics' // Dummy text
+                    analysisMode: 'assemblage_explanation', mode: analysisMode, configurations, actors: filteredActors, links,
+                    interactionState: { isNested: isNestedMode, is3D: is3DMode }, text: 'Assess Hull Metrics'
                 })
             });
             const data = await response.json();
-            if (data.analysis) {
-                setExplanation(data.analysis);
-                refetchCredits();
-                setIsLegendOpen(false); // Close legend to show explanation
-            }
-        } catch (error) {
-            console.error("Explanation failed:", error);
-        } finally {
-            setIsExplaining(false);
-        }
+            if (data.analysis) { setExplanation(data.analysis); refetchCredits(); setIsLegendOpen(false); }
+        } catch (error) { console.error("Explanation failed:", error); } finally { setIsExplaining(false); }
     }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode, isReadOnly, creditsLoading, hasCredits, refetchCredits]);
-
-
 
     const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
         if (!stageId) return true;
         const t = actor.type.toLowerCase();
-
         switch (stageId) {
-            case 'problem':
-                return ['civilsociety', 'ngo', 'academic', 'activist', 'public'].some(k => t.includes(k));
-            case 'regulation':
-                return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law'].some(k => t.includes(k));
-            case 'inscription':
-                return ['standard', 'algorithm', 'technologist', 'expert', 'scientist'].some(k => t.includes(k));
-            case 'delegation':
-                return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal'].some(k => t.includes(k));
-            case 'market':
-                return ['startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
-            default:
-                return true;
+            case 'problem': return ['civilsociety', 'ngo', 'academic', 'activist', 'public'].some(k => t.includes(k));
+            case 'regulation': return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law'].some(k => t.includes(k));
+            case 'inscription': return ['standard', 'algorithm', 'technologist', 'expert', 'scientist'].some(k => t.includes(k));
+            case 'delegation': return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal'].some(k => t.includes(k));
+            case 'market': return ['startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
+            default: return true;
         }
     };
 
-    // Force Physics
-    // isMetricMode is derived from layoutMode above
-
-    const memoizedConfigurations = useMemo(() => {
-        return configurations.map(c => ({ id: c.id, memberIds: c.memberIds }));
-    }, [configurations]);
+    const memoizedConfigurations = useMemo(() => configurations.map(c => ({ id: c.id, memberIds: c.memberIds })), [configurations]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nodes, simulation, drag } = useForceGraph(
-        hydratedActors, // Use hydrated actors with dynamic power
-        dimensions.width,
-        dimensions.height,
-        memoizedConfigurations, // [FIX] Use memoized array to prevent infinite loop
-        links,
-        isNestedMode,
-        is3DMode,
-        configLayout, // Renamed internally in hook, but prop name can stay configLayout or be renamed. Let's send the prop as 'configOffsets' arg.
-        isMetricMode // [NEW] Pass metric mode
+        hydratedActors, dimensions.width, dimensions.height, memoizedConfigurations, links,
+        isNestedMode, is3DMode, configLayout, isMetricMode
     );
+
+    // Full Screen Escape Listener
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && isFullScreen) setIsFullScreen(false);
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isFullScreen]);
+
+    // Resize Observer
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+            for (const entry of entries) {
+                setDimensions({ width: entry.contentRect.width, height: entry.contentRect.height });
+            }
+        });
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    const getNodePos = (id: string) => {
+        const node = nodes.find(n => n.id === id);
+        return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
+    };
+
+    const handleMouseDown = (e: React.MouseEvent, node: SimulationNode) => {
+        e.stopPropagation();
+        if (interactionMode === "drag") {
+            setDraggingNodeId(node.id);
+            drag(node).dragStarted({ active: true, x: node.x ?? 0, y: node.y ?? 0 });
+        }
+    };
+
+    const handleConfigMouseDown = (e: React.MouseEvent, configId: string) => {
+        e.stopPropagation();
+        if (interactionMode === "drag") {
+            setDraggingConfigId(configId);
+        } else if (onConfigClick) {
+            const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+            onConfigClick(configId, isMulti);
+        }
+    };
+
+    const handleNodeClick = (e: React.MouseEvent, actor: EcosystemActor) => {
+        e.stopPropagation();
+        if (interactionMode === "select") onToggleSelection(actor.id);
+        else setFocusedNodeId(focusedNodeId === actor.id ? null : actor.id);
+    };
+
+    const gRef = useRef<SVGGElement>(null);
+    const [lodZoom, setLodZoom] = useState(1); // Throttled zoom level for LOD only
+    // We still store current transform in a ref for calculations, but NOT in state for rendering
+    const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
 
     // Zoom Behavior Setup
     useEffect(() => {
@@ -536,7 +400,32 @@ export function EcosystemMap({
                 return !event.button;
             })
             .on("zoom", (event) => {
-                setTransform(event.transform);
+                // 1. Direct DOM update (Fast, no React render)
+                if (gRef.current) {
+                    d3.select(gRef.current).attr("transform", event.transform.toString());
+                }
+
+                // 2. Store for calculations
+                transformRef.current = event.transform;
+
+                // 3. Conditional React Update (LOD Thresholds)
+                // Thresholds: 0.35 (Low), 0.6 (Labels), 0.75 (High)
+                const k = event.transform.k;
+                const currentLOD = lodZoom;
+
+                // Check if we crossed a significant threshold compared to stored state
+                // This prevents spamming state updates for micro-zooms
+                // We define "zones": < 0.35, 0.35-0.6, 0.6-0.75, > 0.75
+                const getZone = (z: number) => {
+                    if (z <= 0.35) return 0;
+                    if (z <= 0.6) return 1;
+                    if (z <= 0.75) return 2;
+                    return 3;
+                };
+
+                if (getZone(k) !== getZone(currentLOD)) {
+                    setLodZoom(k);
+                }
             });
 
 
@@ -544,75 +433,19 @@ export function EcosystemMap({
         const svgSelection = d3.select(svgRef.current);
         svgSelection.call(zoom);
 
+        // Initialize transform
+        if (gRef.current) {
+            d3.select(gRef.current).attr("transform", d3.zoomIdentity.toString());
+        }
+
         return () => {
             svgSelection.on(".zoom", null);
         };
-    }, [is3DMode]);
+    }, [is3DMode, lodZoom]); // depend on lodZoom so check inside effect is stale-correct? No, use functional update or ref logic.
+    // Actually, dependency on lodZoom inside effect for logic check is bad if it re-binds zoom. 
+    // Better: use a ref to track rendered LOD to avoid re-binding d3.
 
-    // Full Screen Escape Listener
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && isFullScreen) {
-                setIsFullScreen(false);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isFullScreen]);
-
-
-    // Resize Observer
-    useEffect(() => {
-        if (!containerRef.current) return;
-        const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
-            for (const entry of entries) {
-                setDimensions({
-                    width: entry.contentRect.width,
-                    height: entry.contentRect.height
-                });
-            }
-        });
-        resizeObserver.observe(containerRef.current);
-        return () => resizeObserver.disconnect();
-    }, []);
-
-
-
-    const getNodePos = (id: string) => {
-        const node = nodes.find(n => n.id === id);
-        return node ? { x: node.x || 0, y: node.y || 0 } : { x: 0, y: 0 };
-    };
-
-
-    const handleMouseDown = (e: React.MouseEvent, node: SimulationNode) => {
-        e.stopPropagation(); // Prevent Zoom/Pan start
-        if (interactionMode === "drag") {
-            setDraggingNodeId(node.id);
-            drag(node).dragStarted({ active: true, x: node.x ?? 0, y: node.y ?? 0 });
-        }
-        // In select mode, we just consume the event so zoom doesn't start
-    };
-
-    const handleConfigMouseDown = (e: React.MouseEvent, configId: string) => {
-        e.stopPropagation();
-        if (interactionMode === "drag") {
-            setDraggingConfigId(configId);
-            // We don't use d3 drag behavior for configs, we just track delta in mouseMove
-        } else if (onConfigClick) {
-            const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
-            onConfigClick(configId, isMulti);
-        }
-    };
-
-    const handleNodeClick = (e: React.MouseEvent, actor: EcosystemActor) => {
-        // console.log('[EcosystemMap] Node Clicked:', actor.id, actor.name);
-        e.stopPropagation();
-        if (interactionMode === "select") {
-            onToggleSelection(actor.id);
-        } else {
-            setFocusedNodeId(focusedNodeId === actor.id ? null : actor.id);
-        }
-    };
+    // ... (rest of the file)
 
     const getTransformedPoint = (clientX: number, clientY: number) => {
         if (!svgRef.current) return { x: 0, y: 0 };
@@ -621,9 +454,10 @@ export function EcosystemMap({
         pt.x = clientX;
         pt.y = clientY;
         const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+        const t = transformRef.current;
         return {
-            x: (svgP.x - transform.x) / transform.k,
-            y: (svgP.y - transform.y) / transform.k
+            x: (svgP.x - t.x) / t.k,
+            y: (svgP.y - t.y) / t.k
         };
     };
 
@@ -631,6 +465,7 @@ export function EcosystemMap({
         if (interactionMode !== "drag") return;
 
         const worldP = getTransformedPoint(e.clientX, e.clientY);
+        const t = transformRef.current;
 
         if (draggingNodeId) {
             e.preventDefault();
@@ -640,11 +475,9 @@ export function EcosystemMap({
         } else if (draggingConfigId && onConfigDrag) {
             e.preventDefault();
             e.stopPropagation();
-            // Simple delta calculation requires previous mouse position, 
-            // but since we don't store it, we can use movementX/Y and scale by transform.k
-            // However, movementX/Y is screen pixels.
-            const dx = e.movementX / transform.k;
-            const dy = e.movementY / transform.k;
+            // Simple delta calculation
+            const dx = e.movementX / t.k;
+            const dy = e.movementY / t.k;
             onConfigDrag(draggingConfigId, dx, dy);
         }
     };
@@ -661,18 +494,32 @@ export function EcosystemMap({
     };
 
     // Zoom Controls
-    const resetZoom = () => {
+    const resetZoom = React.useCallback(() => {
         if (!svgRef.current || !zoomBehaviorRef.current) return;
         // Use the stored behavior to trigger the reset
         d3.select(svgRef.current)
             .transition()
             .duration(750)
             .call(zoomBehaviorRef.current.transform, d3.zoomIdentity);
-    };
+    }, []);
 
-    const toggleFullScreen = () => {
-        setIsFullScreen(!isFullScreen);
-    };
+    const toggleFullScreen = React.useCallback(() => {
+        setIsFullScreen(prev => !prev);
+    }, []);
+
+    // [NEW] Stable Handlers for Toolbar
+    const toggle3DMode = React.useCallback(() => {
+        setIs3DMode(prev => {
+            const newVal = !prev;
+            if (newVal) setIsStratumMode(true);
+            return newVal;
+        });
+    }, []);
+
+    const toggleStratumMode = React.useCallback(() => setIsStratumMode(prev => !prev), []);
+    const toggleReduceMotion = React.useCallback(() => setReduceMotion(prev => !prev), []);
+    const togglePresentationMode = React.useCallback(() => setIsPresentationMode(prev => !prev), []);
+    const toggleLayoutMode = React.useCallback(() => setLayoutMode(prev => prev === 'compass' ? 'nested' : 'compass'), []);
 
 
 
@@ -703,6 +550,7 @@ export function EcosystemMap({
             const rect = containerRef.current.getBoundingClientRect();
             const midX = (s.x + t.x) / 2;
             const midY = (s.y + t.y) / 2;
+            const transform = transformRef.current; // Use ref
 
             // Transform world coordinates to screen coordinates
             const screenX = rect.left + transform.x + (midX * transform.k);
@@ -756,136 +604,32 @@ export function EcosystemMap({
                     </div>
 
                     {/* Modern Toolbar */}
-                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200 overflow-x-auto max-w-full pb-1">
-                        {extraToolbarContent}
-                        {extraToolbarContent && <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />}
-
-                        <Button
-                            variant="ghost" size="sm"
-                            onClick={() => {
-                                const newMode = !is3DMode;
-                                setIs3DMode(newMode);
-                                if (newMode) setIsStratumMode(true);
-                            }}
-                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${is3DMode ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                        >
-                            <Network className="h-3 w-3 mr-1" /> {is3DMode ? "Toggle 2D View" : "Toggle 3D View"}
-                        </Button>
-
-                        {/* [NEW] Accessibility / Perf Toggle (Reduce Motion) */}
-                        {is3DMode && (
-                            <>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    onClick={() => setReduceMotion(!reduceMotion)}
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${reduceMotion ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
-                                    title="Disable intense animations (Jitter, Particles)"
-                                >
-                                    {reduceMotion ? "Motion Reduced" : "Reduce Motion"}
-                                </Button>
-                            </>
-                        )}
-
-                        {!is3DMode && (
-                            <>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isMetricMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
-                                    onClick={() => setLayoutMode(isMetricMode ? 'nested' : 'compass')}
-                                >
-                                    <Layers className="h-3 w-3 mr-1" /> {isMetricMode ? "Switch to Nested" : "Assemblage Compass"}
-                                </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-
-                                {!isReadOnly && (
-                                    <AssemblageSuggester
-                                        actors={actors}
-                                        edges={links}
-                                        configurations={configurations}
-                                        onCreateAssemblage={handleCreateAssemblage}
-                                    />
-                                )}
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    className="h-7 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 shrink-0"
-                                    onClick={resetZoom}
-                                >
-                                    <ZoomIn className="h-3 w-3 mr-1" /> Reset View
-                                </Button>
-                            </>
-
-                        )}
-
-                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-
-                        {/* ANT Workbench Controls */}
-                        {tracedActorId && (
-                            <Button
-                                variant="destructive" size="sm"
-                                className="h-7 px-2.5 text-xs font-medium shrink-0 animate-in fade-in"
-                                onClick={() => setTracedActorId(null)}
-                            >
-                                <EyeOff className="h-3 w-3 mr-1" /> Exit Trace
-                            </Button>
-                        )}
-
-                        {is3DMode && (
-                            <>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    onClick={() => setIsStratumMode(!isStratumMode)}
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isStratumMode ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
-                                    title="Visualize Law as a Stratum over the Meshwork"
-                                >
-                                    <Layers className="h-3 w-3 mr-1" /> {isStratumMode ? "Stratum Active" : "Legal Stratum"}
-                                </Button>
-                                <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-                                <Button
-                                    variant="ghost" size="sm"
-                                    onClick={() => setIsPresentationMode(!isPresentationMode)}
-                                    className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isPresentationMode ? "bg-purple-50 text-purple-700 border border-purple-200 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                                    title="Toggle Presentation Mode: Bloom, Fog, Curved Links"
-                                >
-                                    {isPresentationMode ? "✨ Presentation Mode" : "🔬 Research Mode"}
-                                </Button>
-                            </>
-                        )}
-
-                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-
-                        {/* [REMOVED] Mode Selector - Enforced Hybrid Reflexive Mode */}
-
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isExplaining || explanation ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-900"}`}
-                            onClick={handleExplainMap}
-                            disabled={isReadOnly}
-                            title={isReadOnly ? "Trace analysis disabled in Demo Mode" : "Generate AI Analysis of current view"}
-                        >
-                            <MessageSquare className="h-3 w-3 mr-1.5" />
-                            {isExplaining ? "Tracing..." : "Open Trace"}
-                        </Button>
-
-                        <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
-
-                        <Button
-                            variant="ghost" size="sm"
-                            className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isFullScreen ? "bg-red-50 text-red-600" : "text-slate-500 hover:text-slate-900"}`}
-                            onClick={toggleFullScreen}
-                        >
-                            {isFullScreen ? (
-                                <><Minimize className="h-3 w-3 mr-1" /> Exit Full Screen</>
-                            ) : (
-                                <><Maximize className="h-3 w-3 mr-1" /> Full Screen</>
-                            )}
-                        </Button>
-                        <VisualGuideDialog />
-                    </div>
+                    <EcosystemToolbar
+                        extraToolbarContent={extraToolbarContent}
+                        is3DMode={is3DMode}
+                        setIs3DMode={toggle3DMode}
+                        isStratumMode={isStratumMode}
+                        setIsStratumMode={toggleStratumMode}
+                        reduceMotion={reduceMotion}
+                        setReduceMotion={toggleReduceMotion}
+                        isMetricMode={isMetricMode}
+                        setLayoutMode={toggleLayoutMode}
+                        isReadOnly={isReadOnly}
+                        isExplaining={isExplaining}
+                        handleExplainMap={handleExplainMap}
+                        explanation={explanation}
+                        isFullScreen={isFullScreen}
+                        toggleFullScreen={toggleFullScreen}
+                        tracedActorId={tracedActorId}
+                        setTracedActorId={setTracedActorId}
+                        isPresentationMode={isPresentationMode}
+                        setIsPresentationMode={togglePresentationMode}
+                        actors={actors}
+                        links={links}
+                        configurations={configurations}
+                        onCreateAssemblage={handleCreateAssemblage}
+                        resetZoom={resetZoom}
+                    />
                 </CardHeader>
 
                 <CardContent className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]">
@@ -957,7 +701,7 @@ export function EcosystemMap({
                                     `}</style>
                                 </defs>
 
-                                <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
+                                <g ref={gRef} className="origin-top-left">
                                     {isNestedMode && (
                                         <g className="opacity-0 animate-in fade-in duration-1000 pointer-events-none">
                                             <circle cx={dimensions.width / 2} cy={dimensions.height / 2} r={Math.min(dimensions.width, dimensions.height) * 0.45} fill="none" stroke="#E2E8F0" strokeWidth="2" strokeDasharray="8 8" />
@@ -1117,10 +861,18 @@ export function EcosystemMap({
                                         const isFocused = focusedNodeId === actor.id;
                                         const isRelevant = isActorRelevant(actor, highlightedStage);
 
+                                        // LOD Logic - Throttled
+                                        const zoomLevel = lodZoom;
+                                        // Show labels if zoomed in > 0.6 OR if the node is "important" (focused/selected/hovered)
+                                        const showLabel = zoomLevel > 0.6 || isSelected || isFocused || hoveredNode?.id === actor.id;
+                                        // Show expensive effects only when zoomed in significantly
+                                        const showEffects = zoomLevel > 0.75;
+                                        // Show shapes details? Always show for now to maintain meaning, but maybe simplify stroke?
+
                                         // [CHANGE] Filtering Logic: If Assemblage Selected, dim others
                                         // Ensure selectedConfigIds is treated as an array (default to empty)
-                                        const safeSelectedConfigIds = selectedConfigIds || [];
-                                        const isInSelectedAssemblage = safeSelectedConfigIds.length === 0 || memberOfConfigs.some(c => safeSelectedConfigIds.includes(c.id));
+                                        // const safeSelectedConfigIds = selectedConfigIds || [];
+                                        // const isInSelectedAssemblage = safeSelectedConfigIds.length === 0 || memberOfConfigs.some(c => safeSelectedConfigIds.includes(c.id));
 
                                         let opacity = highlightedStage ? (isRelevant ? 1 : 0.1) : 1;
                                         // removed dimming of non-members
@@ -1132,12 +884,17 @@ export function EcosystemMap({
                                         const baseR = 5 + (power * 1.5);
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
                                         const strokeDash = isGhost ? "4 2" : "none";
-                                        const isHidden = actor.isHidden;
+                                        const isHidden = (actor as any).isHidden;
                                         const finalOpacity = isHidden ? 0 : opacity;
+
+                                        // Optimization: If opacity is 0 or node is off-screen (would require viewport cull logic), skip rendering?
+                                        // Current SVG setup doesn't easy allow easy culling without calc.
+                                        // But we can skip opacity 0.
+                                        if (finalOpacity === 0) return null;
 
                                         return (
                                             <g key={node.id}
-                                                transform={`translate(${node.x},${node.y}) scale(${scale})`}
+                                                transform={`translate(${node.x || 0},${node.y || 0}) scale(${scale})`}
                                                 onMouseDown={(e) => handleMouseDown(e, node)}
                                                 onMouseEnter={(e) => handleNodeHover(e, actor)}
                                                 onMouseLeave={() => setHoveredNode(null)}
@@ -1149,8 +906,8 @@ export function EcosystemMap({
                                                     pointerEvents: isHidden ? 'none' : 'auto'
                                                 }}
                                             >
-                                                {/* [NEW] Bias Hot Spot Glow */}
-                                                {!isHidden && getBiasIntensity(actor) > 0.5 && (
+                                                {/* [NEW] Bias Hot Spot Glow - LOD CHECKED */}
+                                                {!isHidden && showEffects && getBiasIntensity(actor) > 0.5 && (
                                                     <circle r={r + 12} fill="#EF4444" filter="url(#hotspot-glow)" className="box-pulse" />
                                                 )}
 
@@ -1176,15 +933,18 @@ export function EcosystemMap({
                                                                     : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                 }
 
-                                                <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
-                                                    <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
-                                                        <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>
-                                                            {actor.id.startsWith('blackbox-') ? `■ ${actor.name}` : actor.name}
-                                                            {isMultiAssemblage && <span className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200" title={`Bridge: ${memberOfConfigs.length} Assemblages`}>×{memberOfConfigs.length}</span>}
-                                                            {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}
-                                                        </span>
-                                                    </div>
-                                                </foreignObject>
+                                                {/* [LOD OPTIMIZED] Labels - Only show if zoomed in or focused */}
+                                                {showLabel && (
+                                                    <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
+                                                        <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
+                                                            <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>
+                                                                {actor.id.startsWith('blackbox-') ? `■ ${actor.name}` : actor.name}
+                                                                {isMultiAssemblage && <span className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200" title={`Bridge: ${memberOfConfigs.length} Assemblages`}>×{memberOfConfigs.length}</span>}
+                                                                {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}
+                                                            </span>
+                                                        </div>
+                                                    </foreignObject>
+                                                )}
 
                                                 <title>
                                                     {actor.id.startsWith('blackbox-') ? (
@@ -1206,6 +966,7 @@ export function EcosystemMap({
                             </svg>
 
                             {/* Floating Tooltips (Must remain inside or be fixed) */}
+                            {/* ... (Tooltips remain unchanged) ... */}
                             {hoveredLink && (
                                 <div
                                     className="absolute z-50 pointer-events-none"

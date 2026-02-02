@@ -29,10 +29,18 @@ export async function runStressTest(openai: OpenAI, userId: string, text: string
 
     // 2. Analyze Original Text (Standard DSF)
     let origAnalysis = existingAnalysis;
-    if (origAnalysis && origAnalysis.governance_scores) {
-        console.log('[ANALYSIS] Utilizing EXISTING analysis from client. Skipping re-run.');
+
+    // [FIX] Check for verified quotes to ensure Audit functionality works
+    const hasAuditData = origAnalysis && origAnalysis.verified_quotes && origAnalysis.verified_quotes.length > 0;
+
+    if (origAnalysis && origAnalysis.governance_scores && hasAuditData) {
+        console.log('[ANALYSIS] Utilizing EXISTING analysis (with Audit Data). Skipping re-run.');
     } else {
-        console.log('[ANALYSIS] No existing analysis provided. Re-running standard DSF...');
+        if (!hasAuditData && origAnalysis) {
+            console.log('[ANALYSIS] Existing analysis found but missing Audit Data (Verified Quotes). Forcing re-run to extract evidence.');
+        } else {
+            console.log('[ANALYSIS] No existing analysis provided. Re-running standard DSF...');
+        }
         const dsfPrompt = await PromptRegistry.getEffectivePrompt(userId, 'dsf_lens');
         const origCompletion = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o",

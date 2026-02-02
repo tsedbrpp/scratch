@@ -30,7 +30,7 @@ interface Suggestion {
     name: string;
 }
 
-export function AssemblageSuggester({ actors, edges, configurations, onCreateAssemblage }: AssemblageSuggesterProps) {
+export const AssemblageSuggester = React.memo(function AssemblageSuggester({ actors, edges, configurations, onCreateAssemblage }: AssemblageSuggesterProps) {
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isCalculating, setIsCalculating] = useState(false);
@@ -194,4 +194,4 @@ export function AssemblageSuggester({ actors, edges, configurations, onCreateAss
             </PopoverContent>
         </Popover>
     );
-}
+});

@@ -57,7 +57,7 @@ interface TranslationChainProps {
     onHoverStage?: (stageId: string | null) => void;
 }
 
-export function TranslationChain({ actors = [], onHoverStage }: TranslationChainProps) {
+export const TranslationChain = React.memo(function TranslationChain({ actors = [], onHoverStage }: TranslationChainProps) {
 
     // Draggable Logic
     // ... (unchanged) ...
@@ -191,4 +191,4 @@ export function TranslationChain({ actors = [], onHoverStage }: TranslationChain
             </Card>
         </TooltipProvider>
     );
-}
+});

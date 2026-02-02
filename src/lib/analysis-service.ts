@@ -3,7 +3,7 @@ import { strategies } from './analysis-strategies';
 import crypto from 'crypto';
 import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
-import { verifyQuotes } from '@/lib/analysis-utils';
+import { verifyQuotes, checkFuzzyMatch } from '@/lib/analysis-utils';
 import { PositionalityData } from '@/types';
 import { parseAnalysisResponse } from '@/lib/analysis-parser';
 import { runStressTest } from '@/lib/analysis/stress-test-service';
@@ -139,6 +139,23 @@ export async function performAnalysis(
     // Stress Test
     if (analysisMode === 'stress_test') {
         analysis = await runStressTest(openai, userId, text, analysis, requestData.existingAnalysis);
+    }
+
+    // [VERIFICATION] Run Fuzzy Match on extracted quotes to validate they exist in source text
+    // This populates the 'verified' boolean which the UI requires to distinguish evidence from hallucinations.
+    if (analysis && analysis.verified_quotes && Array.isArray(analysis.verified_quotes)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        analysis.verified_quotes = analysis.verified_quotes.map((q: any) => ({
+            ...q,
+            verified: checkFuzzyMatch(q.text || "", text).verified
+        }));
+    } else if (analysis) {
+        // Fallback: Use the general verifyQuotes utility if the LLM didn't produce the array directly
+        // This scrapes quotes from other fields (like structural_pillars)
+        const scrapedQuotes = verifyQuotes(text, analysis);
+        if (scrapedQuotes.length > 0) {
+            analysis.verified_quotes = scrapedQuotes;
+        }
     }
 
     // [TRANSPARENCY] Create and populate provenance chain

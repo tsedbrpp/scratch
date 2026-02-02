@@ -12,7 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, GitGraph, Eye } from "lucide-react";
 import { PromptDialog } from "@/components/transparency/PromptDialog";
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
-import { LegitimacyAnalysisView } from "@/components/policy/LegitimacyAnalysisView";
+import dynamic from 'next/dynamic';
+const LegitimacyAnalysisView = dynamic(() => import('@/components/policy/LegitimacyAnalysisView').then(mod => mod.LegitimacyAnalysisView), {
+    loading: () => <div className="h-64 w-full bg-slate-50 animate-pulse rounded-lg flex items-center justify-center text-slate-400">Loading Analysis...</div>,
+    ssr: false
+});
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
 import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
 import { DriftAnalysisResult } from "@/services/bridging-analysis";

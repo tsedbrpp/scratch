@@ -5,6 +5,8 @@ import { AnalysisResult } from '@/types';
 import { fillRiskSummaryPrompt } from '@/lib/prompts/micro-fascism';
 import { PromptRegistry } from '@/lib/prompts/registry';
 import { capturePromptMetadata, calculateConfidenceScore } from '@/lib/transparency-utils';
+import { StorageService } from '@/lib/storage-service';
+import crypto from 'crypto';
 
 
 
@@ -26,6 +28,23 @@ export async function POST(req: NextRequest) {
         // 3. Fill Template with Dynamic Data
         const prompt = fillRiskSummaryPrompt(template, context || 'Unknown Document', risk);
 
+        // [CACHE] Check for existing narrative
+        const analysisHash = crypto.createHash('sha256').update(JSON.stringify(analysis)).digest('hex');
+        const cacheKey = `narrative:risk:${analysisHash}`;
+
+        const cached = await StorageService.getCache<{ narrative: string, risk: any, metadata: any, confidence: any }>(userId, cacheKey);
+        if (cached) {
+            console.log('[RISK SUMMARY] Cache Hit');
+            return NextResponse.json({
+                success: true,
+                risk: cached.risk,
+                narrative: cached.narrative,
+                metadata: cached.metadata,
+                confidence: cached.confidence,
+                from_cache: true
+            });
+        }
+
         // 4. Generate Narrative Explanation via AI
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const modelVersion = process.env.OPENAI_MODEL || "gpt-4o";
@@ -33,8 +52,7 @@ export async function POST(req: NextRequest) {
         const completion = await openai.chat.completions.create({
             model: modelVersion,
             messages: [{ role: 'system', content: prompt }],
-            temperature: 0.3,
-            max_tokens: 150
+            max_completion_tokens: 150
         });
 
         const narrative = completion.choices[0]?.message?.content || "Analysis complete.";
@@ -54,7 +72,7 @@ export async function POST(req: NextRequest) {
             apiKey
         );
 
-        return NextResponse.json({
+        const responseData = {
             success: true,
             risk,
             narrative,
@@ -65,7 +83,12 @@ export async function POST(req: NextRequest) {
                 justification: confidence.justification,
                 calculated_at: new Date().toISOString()
             }
-        });
+        };
+
+        // [CACHE] Save to Redis
+        await StorageService.setCache(userId, cacheKey, responseData, 60 * 60 * 24 * 7); // Cache for 1 week
+
+        return NextResponse.json(responseData);
 
     } catch (error) {
         console.error('[RISK SUMMARY ERROR]', error);

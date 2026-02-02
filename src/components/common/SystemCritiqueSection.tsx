@@ -3,6 +3,7 @@ import { Eye } from "lucide-react";
 import { AnalysisResult } from "@/types";
 import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { getGlossaryDefinition } from "@/lib/glossary-definitions";
+import { BlindSpotDashboard } from "@/components/analysis/BlindSpotDashboard";
 
 interface SystemCritiqueSectionProps {
     critique: NonNullable<AnalysisResult['system_critique']>;
@@ -22,15 +23,9 @@ export function SystemCritiqueSection({ critique }: SystemCritiqueSectionProps) 
                 />
             </div>
             <div className="p-4 space-y-4">
+                {/* Enhanced Blind Spots Dashboard */}
                 {critique.blind_spots && critique.blind_spots.length > 0 && (
-                    <div>
-                        <h5 className="text-[10px] font-bold text-purple-600 uppercase mb-1">Potential Blind Spots</h5>
-                        <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
-                            {critique.blind_spots.map((spot, i) => (
-                                <li key={i}>{spot}</li>
-                            ))}
-                        </ul>
-                    </div>
+                    <BlindSpotDashboard critique={critique} />
                 )}
 
                 {/* [Robustness] Show generic critique text if present (e.g. from fallback) */}

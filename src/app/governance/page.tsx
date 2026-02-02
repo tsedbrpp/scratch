@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Scale, Shield, Globe, AlertTriangle, Users, Sparkles, Brain, Loader2, Info } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+const FrameworkRadar = dynamic(() => import('@/components/governance/FrameworkRadar').then(mod => mod.FrameworkRadar), {
+    loading: () => <div className="h-[400px] w-full flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg animate-pulse">Loading Chart...</div>,
+    ssr: false
+});
 import {
     Dialog,
     DialogContent,
@@ -227,17 +231,14 @@ export default function GovernancePage() {
                         </div>
                     )}
                     <div className="h-[400px] w-full max-w-2xl">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={dynamicRadarData}>
-                                <PolarGrid />
-                                <PolarAngleAxis dataKey="dimension" />
-                                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                                <Radar name={getLabel(selectedSourceA)} dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                                {selectedSourceB && <Radar name={getLabel(selectedSourceB)} dataKey="B" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />}
-                                {selectedSourceC && <Radar name={getLabel(selectedSourceC)} dataKey="C" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />}
-                                <Legend />
-                            </RadarChart>
-                        </ResponsiveContainer>
+                        <FrameworkRadar
+                            data={dynamicRadarData}
+                            labelA={getLabel(selectedSourceA)}
+                            labelB={getLabel(selectedSourceB)}
+                            labelC={getLabel(selectedSourceC)}
+                            selectedSourceB={selectedSourceB}
+                            selectedSourceC={selectedSourceC}
+                        />
                     </div>
                 </CardContent>
             </Card>

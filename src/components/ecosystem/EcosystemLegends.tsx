@@ -6,7 +6,7 @@ interface LegendSectionProps {
     children: React.ReactNode;
 }
 
-const LegendSection = ({ title, children }: LegendSectionProps) => (
+const LegendSection = React.memo(({ title, children }: LegendSectionProps) => (
     <div>
         <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-3 border-b border-white/5 pb-2">
             {title}
@@ -15,7 +15,7 @@ const LegendSection = ({ title, children }: LegendSectionProps) => (
             {children}
         </div>
     </div>
-);
+));
 
 interface LegendRowProps {
     label: string;
@@ -24,7 +24,7 @@ interface LegendRowProps {
     icon?: React.ReactNode;
 }
 
-const LegendRow = ({ label, value, color, icon }: LegendRowProps) => (
+const LegendRow = React.memo(({ label, value, color, icon }: LegendRowProps) => (
     <div className="flex items-center justify-between">
         <span className="capitalize text-[11px] text-slate-300 font-medium">
             {label}
@@ -34,9 +34,9 @@ const LegendRow = ({ label, value, color, icon }: LegendRowProps) => (
             {icon ? icon : <div className="w-2.5 h-2.5 rounded-full shadow-lg" style={{ backgroundColor: color }} />}
         </div>
     </div>
-);
+));
 
-export const ViewTypeLegend = () => (
+export const ViewTypeLegend = React.memo(() => (
     <div className="w-56 flex flex-col gap-6 select-none z-[50] bg-slate-800/90 backdrop-blur-xl p-5 rounded-2xl border border-white/10 shadow-2xl text-xs text-white ring-1 ring-white/5 cursor-grab active:cursor-grabbing">
 
         {/* Actor Taxonomy Section */}
@@ -88,4 +88,4 @@ export const ViewTypeLegend = () => (
             </div>
         </div>
     </div>
-);
+));

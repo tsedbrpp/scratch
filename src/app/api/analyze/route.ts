@@ -51,8 +51,106 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
     }
 
-    // [NEW] Rate Limiting (skip for cache-only requests)
-    if (!checkCacheOnly) {
+    // --- CACHING LOGIC HOP (Moved Up) ---
+    console.log('[ANALYSIS] Starting cache check...');
+    let textForCache = text || '';
+
+    // Append documentId to ensure uniqueness even if text is identical
+    if (documentId) {
+      textForCache += `| doc:${documentId} `;
+    }
+
+    // Append assemblageId
+    if (assemblageId) {
+      textForCache += `| assemblage:${assemblageId} `;
+    }
+
+    // Append positionality
+    if (positionality) {
+      const posString = typeof positionality === 'object' ? JSON.stringify(positionality) : positionality;
+      textForCache += `| pos:${posString} `;
+    }
+
+    // Helper function to generate cache text for comparison modes
+    const generateComparisonCacheText = () => {
+      if (analysisMode === 'comparison' && sourceA && sourceB) {
+        const sources = [
+          { title: sourceA.title, text: sourceA.text },
+          { title: sourceB.title, text: sourceB.text }
+        ].sort((a, b) => a.title.localeCompare(b.title));
+        return `${sources[0].title}:${sources[0].text}| ${sources[1].title}:${sources[1].text}`;
+      }
+
+      if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
+        let cacheText = `ONTOLOGY_COMPARE:${sourceA.title} (${sourceA.data.nodes.length})| ${sourceB.title} (${sourceB.data.nodes.length})`;
+        if (sourceC) {
+          cacheText += `| ${sourceC.title} (${sourceC.data.nodes.length})`;
+        }
+        return cacheText;
+      }
+
+      if (analysisMode === 'comparative_synthesis' && documents) {
+        let cacheText = documents.map((d: { id: string }) => d.id).sort().join(',');
+        if (lens) {
+          cacheText += `| lens:${lens}`;
+        }
+        return cacheText;
+      }
+
+      if (analysisMode === 'resistance_synthesis' && documents) {
+        return documents.map((d: { title: string }) => d.title).sort().join(',');
+      }
+
+      return textForCache;
+    };
+
+    textForCache = generateComparisonCacheText();
+
+    const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown', PROMPT_VERSION);
+    let cachedAnalysis = null;
+    let isCacheHit = false;
+
+    try {
+      if (!force) {
+        console.log('[ANALYSIS] Checking Redis cache...');
+        const cacheUserId = getCacheUserId(analysisMode, userId);
+        cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
+
+        if (cachedAnalysis) {
+          console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey} `);
+
+          // [FIX] Ensure cached ecosystem analysis is an array
+          if (analysisMode === 'ecosystem' && !Array.isArray(cachedAnalysis)) {
+            const ca = cachedAnalysis as Record<string, unknown>;
+            if (Array.isArray(ca.impacts)) {
+              cachedAnalysis = ca.impacts;
+            } else if (ca.analysis && Array.isArray(ca.analysis)) {
+              cachedAnalysis = ca.analysis;
+            } else {
+              cachedAnalysis = [cachedAnalysis];
+            }
+          }
+
+          console.log(`[ANALYSIS] Completed(Cache Hit) in ${Date.now() - startTime} ms`);
+          return NextResponse.json({
+            success: true,
+            analysis: cachedAnalysis,
+            cached: true
+          });
+        } else {
+          console.log('[ANALYSIS] Cache Miss.');
+          if (checkCacheOnly) {
+            console.log('[ANALYSIS] checkCacheOnly=true, no cache found, returning null');
+            return NextResponse.json({ success: true, analysis: null, fromCache: false });
+          }
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Redis cache read failed:', cacheError);
+    }
+
+    // --- PAYWALL / RATE LIMIT (Only if Cache Miss) ---
+    if (!cachedAnalysis) { // Should always be true here if we didn't return above
       const rateLimit = await checkRateLimit(userId);
       if (!rateLimit.success) {
         return NextResponse.json(
@@ -67,12 +165,11 @@ export async function POST(request: NextRequest) {
           }
         );
       }
-    }
 
-    // [NEW] CREDIT CHECK (skip for cache-only requests)
-    if (!checkCacheOnly) {
       try {
         const { deductCredits } = await import('@/lib/redis-scripts');
+        // Unique reference for deduplication could be the cacheKey actually!
+        // But let's use a unique run ID to avoid issues with retries
         const newBalance = await deductCredits(userId, 1, 'SYSTEM', `run-${Date.now()}-${Math.random().toString(36).substring(7)}`);
 
         if (newBalance === -1) {
@@ -331,112 +428,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // --- CACHING LOGIC START ---
-    console.log('[ANALYSIS] Starting cache check...');
-    let textForCache = text || '';
-
-    // Append documentId to ensure uniqueness even if text is identical
-    if (documentId) {
-      textForCache += `| doc:${documentId} `;
-    }
-
-    // Append assemblageId to ensure specific assemblage analysis is cached uniquely
-    if (assemblageId) {
-      textForCache += `| assemblage:${assemblageId} `;
-    }
-
-    // Append positionality to cache key to ensure different perspectives get different analyses
-    if (positionality) {
-      const posString = typeof positionality === 'object' ? JSON.stringify(positionality) : positionality;
-      textForCache += `| pos:${posString} `;
-    }
-
-    // Helper function to generate cache text for comparison modes
-    const generateComparisonCacheText = () => {
-      if (analysisMode === 'comparison' && sourceA && sourceB) {
-        // Sort sources alphabetically to make cache key order-independent
-        const sources = [
-          { title: sourceA.title, text: sourceA.text },
-          { title: sourceB.title, text: sourceB.text }
-        ].sort((a, b) => a.title.localeCompare(b.title));
-        return `${sources[0].title}:${sources[0].text}| ${sources[1].title}:${sources[1].text}`;
-      }
-
-      if (analysisMode === 'ontology_comparison' && sourceA && sourceB) {
-        // Use titles and summary/node count for cache key to avoid huge JSON strings
-        let cacheText = `ONTOLOGY_COMPARE:${sourceA.title} (${sourceA.data.nodes.length})| ${sourceB.title} (${sourceB.data.nodes.length})`;
-        if (sourceC) {
-          cacheText += `| ${sourceC.title} (${sourceC.data.nodes.length})`;
-        }
-        return cacheText;
-      }
-
-      if (analysisMode === 'comparative_synthesis' && documents) {
-        let cacheText = documents.map((d: { id: string }) => d.id).sort().join(',');
-        if (lens) {
-          cacheText += `| lens:${lens}`;
-        }
-        return cacheText;
-      }
-
-      if (analysisMode === 'resistance_synthesis' && documents) {
-        return documents.map((d: { title: string }) => d.title).sort().join(',');
-      }
-
-      return textForCache;
-    };
-
-    textForCache = generateComparisonCacheText();
-
-    const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown', PROMPT_VERSION);
-
-    try {
-      // Skip cache if force is true
-      if (!force) {
-        console.log('[ANALYSIS] Checking Redis cache...');
-
-        const cacheUserId = getCacheUserId(analysisMode, userId);
-        let cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
-
-        if (cachedAnalysis) {
-          console.log(`[CACHE HIT] Returning cached analysis for key: ${cacheKey} `);
-
-          // [FIX] Ensure cached ecosystem analysis is an array
-          if (analysisMode === 'ecosystem' && !Array.isArray(cachedAnalysis)) {
-            // Cast to generic object to check for nested fields
-            const ca = cachedAnalysis as Record<string, unknown>;
-            if (Array.isArray(ca.impacts)) {
-              cachedAnalysis = ca.impacts;
-            } else if (ca.analysis && Array.isArray(ca.analysis)) {
-              cachedAnalysis = ca.analysis;
-            } else {
-              cachedAnalysis = [cachedAnalysis];
-            }
-          }
-
-          console.log(`[ANALYSIS] Completed(Cache Hit) in ${Date.now() - startTime} ms`);
-          return NextResponse.json({
-            success: true,
-            analysis: cachedAnalysis,
-            cached: true
-          });
-        }
-        console.log('[ANALYSIS] Cache Miss.');
-
-        // [NEW] If checkCacheOnly flag is set, return early without running analysis
-        if (requestData.checkCacheOnly) {
-          console.log('[ANALYSIS] checkCacheOnly=true, no cache found, returning null');
-          return NextResponse.json({
-            success: true,
-            analysis: null,
-            fromCache: false
-          });
-        }
-      }
-    } catch (cacheError) {
-      console.warn('Redis cache read failed:', cacheError);
-    }
-    // --- CACHING LOGIC END ---
+    // --- CACHING LOGIC (Handled Above) ---
 
     // [Feature] Decoupled Critique Mode
     if (analysisMode === 'critique') {
@@ -495,12 +487,12 @@ export async function POST(request: NextRequest) {
         `;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o", // Strong model for theory
+        model: process.env.OPENAI_MODEL || "gpt-4o", // Strong model for theory
         messages: [
           { role: "system", content: "You are a senior STS (Science and Technology Studies) scholar." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.7,
+        max_completion_tokens: 4000
       });
 
       const resultText = completion.choices[0].message.content || "Failed to generate synthesis.";

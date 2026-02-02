@@ -84,24 +84,24 @@ export async function POST(request: NextRequest) {
 
 async function extractRhetoric(openai: OpenAI, text: string) {
     const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: process.env.OPENAI_MODEL || "gpt-4o",
         messages: [
             { role: "system", content: "Extract key ethical claims, promises, and values from this policy document. Return as a bulleted list." },
             { role: "user", content: text.substring(0, 15000) } // Truncate to safe limit
         ],
-        temperature: 0.3,
+        max_completion_tokens: 500
     });
     return response.choices[0].message.content || "";
 }
 
 async function extractReality(openai: OpenAI, text: string) {
     const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: process.env.OPENAI_MODEL || "gpt-4o",
         messages: [
             { role: "system", content: "Extract technical mechanisms, implementation details, and architectural decisions from this technical document. Return as a bulleted list." },
             { role: "user", content: text.substring(0, 15000) }
         ],
-        temperature: 0.3,
+        max_completion_tokens: 500
     });
     return response.choices[0].message.content || "";
 }
@@ -119,7 +119,7 @@ async function traceDimension(openai: OpenAI, dimensionId: string, rhetoric: str
     const prompt = dimensionPrompts[dimensionId] || "Analyze the gap.";
 
     const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: process.env.OPENAI_MODEL || "gpt-4o",
         messages: [
             {
                 role: "system", content: `You are an expert impartial auditor tracing the "drift" between policy rhetoric and technical reality. 
@@ -139,7 +139,7 @@ async function traceDimension(openai: OpenAI, dimensionId: string, rhetoric: str
             { role: "user", content: `Rhetoric:\n${rhetoric}\n\nReality:\n${reality}` }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.4,
+        max_completion_tokens: 500
     });
 
     const content = JSON.parse(response.choices[0].message.content || "{}");

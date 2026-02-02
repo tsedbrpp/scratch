@@ -19,7 +19,7 @@ interface MicroFascismRiskCardProps {
 }
 
 export function MicroFascismRiskCard({ risk, analysis, sourceTitle, onUpdate, className, compact = false }: MicroFascismRiskCardProps) {
-    const [narrative, setNarrative] = useState<string | null>(null);
+    const [narrative, setNarrative] = useState<string | null>(analysis.extended_risk_diagnostic || null);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleRebuttal = (dimensionKey: string, text: string) => {
@@ -69,6 +69,9 @@ export function MicroFascismRiskCard({ risk, analysis, sourceTitle, onUpdate, cl
             const data = await response.json();
             if (data.success && data.narrative) {
                 setNarrative(data.narrative);
+                if (onUpdate) {
+                    onUpdate({ extended_risk_diagnostic: data.narrative });
+                }
             }
         } catch (error) {
             console.error(error);

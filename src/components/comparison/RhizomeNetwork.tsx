@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import mermaid from 'mermaid';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Network, Download } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { Network } from 'lucide-react';
+import { ConceptMap, MarkmapNode } from '@/lib/diagram-wrapper';
 
 interface AssemblageNetwork {
     nodes: string[];
@@ -15,113 +14,53 @@ interface RhizomeNetworkProps {
     network: AssemblageNetwork;
 }
 
-export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
-    const chartRef = useRef<HTMLDivElement>(null);
+// Transform flat network to Markmap tree
+function buildMarkmapData(network: AssemblageNetwork): MarkmapNode {
+    if (!network || network.nodes.length === 0) {
+        return { content: "Empty Network" };
+    }
 
-    useEffect(() => {
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'base',
-            themeVariables: {
-                primaryColor: '#e0e7ff',
-                primaryTextColor: '#1e1b4b',
-                primaryBorderColor: '#6366f1',
-                lineColor: '#64748b',
-                secondaryColor: '#f0fdf4',
-                tertiaryColor: '#fef2f2',
-            },
-            flowchart: {
-                curve: 'basis'
-            }
-        });
-    }, []);
+    const { nodes, edges } = network;
+    const targets = new Set(edges.map(e => e.to));
+    // Roots are nodes not in targets (no incoming edges)
+    const roots = nodes.filter(n => !targets.has(n));
+    // If no roots (cycle), pick the first node
+    const actualRoots = roots.length > 0 ? roots : [nodes[0]];
 
-    useEffect(() => {
-        if (!network || !chartRef.current) return;
+    // Build adjacency list
+    const adj: Record<string, string[]> = {};
+    edges.forEach(e => {
+        if (!adj[e.from]) adj[e.from] = [];
+        adj[e.from].push(e.to);
+    });
 
-        const renderChart = async () => {
-            try {
-                // Construct Mermaid definition
-                let def = 'graph TD\n';
+    const visited = new Set<string>();
 
-                // Add styling
-                def += 'classDef policy fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#1e1b4b;\n';
-                def += 'classDef ancestor fill:#f0fdf4,stroke:#22c55e,stroke-width:1px,color:#15803d;\n';
-                def += 'classDef other fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,color:#475569;\n';
+    function buildNode(id: string): MarkmapNode {
+        visited.add(id);
+        const childrenIds = adj[id] || [];
+        // Prevent infinite recursion in cycles
+        const validChildren = childrenIds.filter(c => !visited.has(c));
 
-                // Add edges
-                network.edges.forEach((edge, i) => {
-                    const safeFrom = edge.from.replace(/[^a-zA-Z0-9]/g, '_');
-                    const safeTo = edge.to.replace(/[^a-zA-Z0-9]/g, '_');
-                    // Add labels
-                    def += `${safeFrom}["${edge.from}"] -->|"${edge.type}"| ${safeTo}["${edge.to}"]\n`;
-                });
-
-                // Apply classes via heuristic (Basic: ancestors likely roots without incoming)
-                // For now, apply policy class to all
-                network.nodes.forEach(node => {
-                    const safeId = node.replace(/[^a-zA-Z0-9]/g, '_');
-                    if (node.includes("OECD") || node.includes("GDPR") || node.includes("UNESCO")) {
-                        def += `class ${safeId} ancestor;\n`;
-                    } else {
-                        def += `class ${safeId} policy;\n`;
-                    }
-                });
-
-                chartRef.current!.innerHTML = '';
-                const { svg } = await mermaid.render(`rhizome-${Date.now()}`, def);
-                chartRef.current!.innerHTML = svg;
-
-            } catch (error) {
-                console.error("Mermaid render failed:", error);
-                if (chartRef.current) {
-                    chartRef.current.innerHTML = '<p class="text-sm text-red-500">Failed to render network graph.</p>';
-                }
-            }
+        const node: MarkmapNode = {
+            content: id,
         };
 
-        renderChart();
-    }, [network]);
+        if (validChildren.length > 0) {
+            node.children = validChildren.map(buildNode);
+        }
+        return node;
+    }
 
-    const handleDownload = () => {
-        if (!chartRef.current) return;
-        const svgElement = chartRef.current.querySelector('svg');
-        if (!svgElement) return;
-
-        // Serialize SVG
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgElement);
-
-        // Prepare Canvas
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-
-        // Get dimensions from SVG or fallback
-        const svgWidth = svgElement.viewBox.baseVal.width || 800;
-        const svgHeight = svgElement.viewBox.baseVal.height || 600;
-
-        // Scale up for better resolution
-        const scale = 2;
-        canvas.width = svgWidth * scale;
-        canvas.height = svgHeight * scale;
-
-        img.onload = () => {
-            if (ctx) {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height); // White background
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                // Trigger Download
-                const link = document.createElement('a');
-                link.download = `assemblage-rhizome-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }
-        };
-
-        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+    // Creating a synthetic root if multiple roots exist
+    return {
+        content: "Assemblage Rhizome",
+        children: actualRoots.map(buildNode)
     };
+}
+
+export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
+    const data = useMemo(() => buildMarkmapData(network), [network]);
 
     if (!network || network.nodes.length === 0) return null;
 
@@ -137,13 +76,9 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
                         Tracing shared ancestry and inter-referential citations.
                     </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2 h-8">
-                    <Download className="h-3.5 w-3.5 text-indigo-600" />
-                    Export Map
-                </Button>
             </CardHeader>
-            <CardContent className="p-4 bg-white flex items-center justify-center min-h-[400px] overflow-auto">
-                <div ref={chartRef} className="w-full flex justify-center" />
+            <CardContent className="p-0 bg-white min-h-[400px] h-96">
+                <ConceptMap data={data} options={{ fitRatio: 0.95 }} />
             </CardContent>
         </Card>
     );

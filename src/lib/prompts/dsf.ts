@@ -141,6 +141,9 @@ Required narrative fields:
 - **territorialization_narrative**: Describe stabilization/destabilization dynamics
 - **material_flow_narrative**: Describe how resources, data, or power circulate
 
+REQUIRED:
+- You MUST populate the 'verified_quotes' array with at least 3-5 distinct, verbatim quotes that serve as 'evidence' for your governance scoring.
+
 These narratives are the PRIMARY OUTPUT for interpretive scholarship. Scores are merely tools for your analysis, not the end product.
 
 ============================================================
@@ -240,7 +243,14 @@ Do NOT include commentary, prefaces, or text outside the JSON.
     "market_consolidation_risk": "High",
     "explanation": "Why this creates consolidation..."
   },
-  "silenced_voices": ["Group 1", "Group 2", "Group 3"]
+  "silenced_voices": ["Group 1", "Group 2", "Group 3"],
+  "verified_quotes": [
+    {
+      "text": "Exact quote from text",
+      "source": "Title or proximity in text",
+      "relevance": "Why this quote proves a structural power dynamic"
+    }
+  ]
 }
 
 ============================================================

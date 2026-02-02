@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
                 }
             ],
             response_format: { type: 'json_object' },
-            temperature: 0.3,
+            max_completion_tokens: 1500
         });
 
         logger.debug('OpenAI completion received');

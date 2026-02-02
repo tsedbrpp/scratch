@@ -14,10 +14,11 @@ interface LiberatoryCapacityCardProps {
     sourceTitle?: string;
     className?: string;
     compact?: boolean;
+    onUpdate?: (updates: Partial<AnalysisResult>) => Promise<void> | void;
 }
 
-export function LiberatoryCapacityCard({ capacity, analysis, sourceTitle, className, compact = false }: LiberatoryCapacityCardProps) {
-    const [narrative, setNarrative] = useState<string | null>(null);
+export function LiberatoryCapacityCard({ capacity, analysis, sourceTitle, onUpdate, className, compact = false }: LiberatoryCapacityCardProps) {
+    const [narrative, setNarrative] = useState<string | null>(analysis.extended_liberatory_diagnostic || null);
     const [isLoading, setIsLoading] = useState(false);
 
     if (!capacity) return null;
@@ -48,6 +49,9 @@ export function LiberatoryCapacityCard({ capacity, analysis, sourceTitle, classN
             const data = await response.json();
             if (data.success && data.narrative) {
                 setNarrative(data.narrative);
+                if (onUpdate) {
+                    onUpdate({ extended_liberatory_diagnostic: data.narrative });
+                }
             }
         } catch (error) {
             console.error(error);

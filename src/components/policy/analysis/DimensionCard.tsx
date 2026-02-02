@@ -3,9 +3,19 @@ import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { getGlossaryDefinition } from "@/lib/glossary-definitions";
 import { HelpCircle } from "lucide-react";
 
-export function DimensionCard({ title, icon, content, color, glossaryTerm, videoUrl }: { title: string, icon: React.ReactNode, content: string, color: string, glossaryTerm?: string, videoUrl?: string }) {
+export function DimensionCard({
+    title, icon, content, color, glossaryTerm, videoUrl, visual
+}: {
+    title: string,
+    icon: React.ReactNode,
+    content: string,
+    color: string,
+    glossaryTerm?: string,
+    videoUrl?: string,
+    visual?: React.ReactNode
+}) {
     return (
-        <div className={`group p-4 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-${color}-200 transition-all duration-200`}>
+        <div className={`group p-4 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-${color}-200 transition-all duration-200 flex flex-col h-full`}>
             <div className="flex items-center gap-2 mb-3">
                 <div className={`p-1.5 rounded-md bg-${color}-50 group-hover:bg-${color}-100 transition-colors`}>
                     {icon}
@@ -25,9 +35,10 @@ export function DimensionCard({ title, icon, content, color, glossaryTerm, video
                     </div>
                 )}
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
+            <p className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors flex-1">
                 {content}
             </p>
+            {visual && visual}
         </div>
     );
 }

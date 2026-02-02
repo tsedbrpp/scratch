@@ -17,6 +17,42 @@ export interface UserRebuttal {
     user: string;
 }
 
+// Blind Spot Type System (Progressive Enhancement: Tier 0-3)
+
+/** Tier 1: Basic structured blind spot with severity and category */
+export interface BlindSpotBasic {
+    id: string;
+    title: string;
+    category?: "epistemic" | "power" | "materiality" | "temporality" | "coloniality";
+    severity?: "low" | "medium" | "high";
+}
+
+/** Tier 2: Enhanced blind spot with evidence and implications */
+export interface BlindSpotEnhanced extends BlindSpotBasic {
+    description: string;
+    severity_rationale?: string;
+    evidence?: {
+        type: "absence" | "assumption" | "omission";
+        quote?: string;
+        context: string;
+    };
+    implications?: string;
+    suggested_mitigations?: string[];
+}
+
+/** Tier 3: Interactive blind spot with status tracking */
+export interface BlindSpotInteractive extends BlindSpotEnhanced {
+    status: "detected" | "acknowledged" | "addressed" | "suppressed";
+    addressed_in?: string; // Reference to follow-up analysis ID
+    suppression_justification?: string;
+    user_notes?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+/** Union type for backward compatibility (Tier 0 = string) */
+export type BlindSpot = string | BlindSpotBasic | BlindSpotEnhanced | BlindSpotInteractive;
+
 export interface AnalysisResult {
     rebuttals?: Record<string, UserRebuttal>; // Keyed by risk dimension ID (e.g. 'normalization_of_violence')
     accountability_map?: {
@@ -110,10 +146,12 @@ export interface AnalysisResult {
     }[];
     system_critique?: {
         critique?: string;
-        blind_spots: string[];
+        blind_spots: BlindSpot[]; // Now accepts any tier
         over_interpretation?: string;
         legitimacy_correction?: string;
         implications?: string[];
+        epistemic_coverage_score?: number; // 0-100, calculated from severity
+        detection_tier?: 0 | 1 | 2 | 3; // Tracks what AI produced
     };
     stress_test_report?: {
         original_score: number;
@@ -133,6 +171,10 @@ export interface AnalysisResult {
     }[];
     perspectives?: Record<string, string>;
     provisional_status?: import('./provisional').ProvisionalInscription;
+
+    // Extended Diagnostics (narratives generated on-demand)
+    extended_risk_diagnostic?: string;
+    extended_liberatory_diagnostic?: string;
 
     // Transparency & Provenance fields (Phase 1)
     confidence?: import('./provenance').ConfidenceScore;
