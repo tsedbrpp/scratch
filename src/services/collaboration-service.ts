@@ -168,5 +168,90 @@ export class CollaborationService {
             createdBy: raw.createdBy
         };
     }
+
+    /**
+     * Alias for getTeam - used by API endpoints
+     */
+    static async getTeamInfo(teamId: string) {
+        return this.getTeam(teamId);
+    }
+
+    /**
+     * Get all team members with their roles and details
+     */
+    static async getTeamMembers(teamId: string): Promise<Array<{
+        userId: string;
+        email: string;
+        role: TeamRole;
+        joinedAt: number;
+    }>> {
+        const memberIds = await redis.smembers(`${teamId}:members`);
+        const roles = await redis.hgetall(`${teamId}:roles`);
+
+        const members = await Promise.all(
+            memberIds.map(async (userId) => {
+                // In a real app, fetch user details from Clerk or user service
+                // For now, return basic info
+                return {
+                    userId,
+                    email: userId, // Placeholder - should fetch from user service
+                    role: (roles[userId] || 'EDITOR') as TeamRole,
+                    joinedAt: Date.now() // Placeholder - should track actual join time
+                };
+            })
+        );
+
+        return members;
+    }
+
+    /**
+     * Check if user is a member of the team
+     */
+    static async isTeamMember(teamId: string, userId: string): Promise<boolean> {
+        return await redis.sismember(`${teamId}:members`, userId) === 1;
+    }
+
+    /**
+     * Remove a member from the team
+     */
+    static async removeMember(teamId: string, userId: string): Promise<void> {
+        const pipeline = redis.pipeline();
+        pipeline.srem(`${teamId}:members`, userId);
+        pipeline.hdel(`${teamId}:roles`, userId);
+        pipeline.srem(`user:${userId}:teams`, teamId);
+        await pipeline.exec();
+
+        await AuditService.log('MEMBER_REMOVED', userId, {
+            targetId: teamId,
+            metadata: { removedBy: 'owner' }
+        });
+    }
+
+    /**
+     * Get invitation details (for preview before accepting)
+     */
+    static async getInviteDetails(compositeToken: string): Promise<{
+        teamName: string;
+        inviterEmail: string;
+        role: string;
+    } | null> {
+        const [inviteId] = compositeToken.split(':');
+        if (!inviteId) return null;
+
+        const raw = await redis.get(`invitation:${inviteId}`);
+        if (!raw) return null;
+
+        const invite = JSON.parse(raw);
+        const team = await this.getTeam(invite.teamId);
+
+        if (!team) return null;
+
+        return {
+            teamName: team.name,
+            inviterEmail: invite.email,
+            role: invite.role
+        };
+    }
 }
+
 

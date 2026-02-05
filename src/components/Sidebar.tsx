@@ -22,7 +22,8 @@ import {
     Coins,
     LogIn,
     UserPlus,
-    Gift
+    Gift,
+    Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,6 +34,7 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 import { useViewMode } from "@/hooks/useViewMode"; // [PD]
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"; // [PD]
 import { WorkspaceSelector } from "@/components/collaboration/WorkspaceSelector"; // [Collab]
+import { useWorkspace } from "@/providers/WorkspaceProvider"; // [Collab]
 
 interface NavGroup {
     title: string;
@@ -42,6 +44,7 @@ interface NavGroup {
         icon: LucideIcon;
         description: string;
         advancedOnly?: boolean; // [PD]
+        teamOnly?: boolean; // Only show in team workspaces
     }[];
 }
 
@@ -160,6 +163,13 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Settings",
         items: [
             {
+                name: "Team Settings",
+                href: "/settings/team",
+                icon: Settings,
+                description: "Manage team members and invitations.",
+                teamOnly: true // Only show in team workspaces
+            },
+            {
                 name: "Billing & Credits",
                 href: "/settings/billing",
                 icon: Coins,
@@ -185,8 +195,9 @@ const NAV_GROUPS: NavGroup[] = [
 function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { pathname: string; isMounted: boolean; isCollapsed: boolean; toggleCollapse?: () => void }) {
     const { isReadOnly } = useDemoMode();
     const { isSignedIn } = useAuth();
-
     const { isGuided } = useViewMode(); // [PD]
+    const { workspaceType } = useWorkspace(); // [Collab]
+    const isTeamWorkspace = workspaceType === 'TEAM';
 
     return (
         <div className="flex flex-col h-full bg-slate-950 text-slate-100 border-r border-slate-900 shadow-2xl">
@@ -222,8 +233,12 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-3 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 {NAV_GROUPS.map((group, groupIndex) => {
-                    // [PD] Filter Items based on View Mode
-                    const visibleItems = group.items.filter(item => !isGuided || !item.advancedOnly);
+                    // [PD] Filter Items based on View Mode and Workspace Type
+                    const visibleItems = group.items.filter(item => {
+                        if (isGuided && item.advancedOnly) return false;
+                        if (item.teamOnly && !isTeamWorkspace) return false;
+                        return true;
+                    });
 
                     if (visibleItems.length === 0) return null;
 
