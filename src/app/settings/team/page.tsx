@@ -22,7 +22,7 @@ export default function TeamSettingsPage() {
     if (!isTeamWorkspace) {
         return (
             <div className="container max-w-4xl mx-auto py-12">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-700 border-zinc-500">
                     <CardContent className="pt-6">
                         <div className="text-center py-8">
                             <Users className="w-16 h-16 mx-auto mb-4 text-zinc-600" />
@@ -55,7 +55,7 @@ export default function TeamSettingsPage() {
     if (error || !teamDetails) {
         return (
             <div className="container max-w-4xl mx-auto py-12">
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card className="bg-zinc-700 border-zinc-500">
                     <CardContent className="pt-6">
                         <div className="text-center py-8">
                             <p className="text-red-400">{error || 'Failed to load team details'}</p>
@@ -91,7 +91,7 @@ export default function TeamSettingsPage() {
             </div>
 
             {/* Team Info Card */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-700 border-zinc-500">
                 <CardHeader>
                     <CardTitle className="text-white">Team Information</CardTitle>
                     <CardDescription>Basic details about your team</CardDescription>
@@ -121,7 +121,7 @@ export default function TeamSettingsPage() {
             </Card>
 
             {/* Members Card */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-700 border-zinc-500">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
