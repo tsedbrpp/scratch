@@ -26,7 +26,7 @@ export async function PUT(
             console.error(`[API] Source not found for User: ${userId}, SourceID: ${id}`);
             // Verification: Log available source IDs for this user to see if it exists
             // This is expensive but useful for debugging this specific error
-            const { getSources } = require('@/lib/store');
+            const { getSources } = await import('@/lib/store');
             const existing = await getSources(userId);
             console.log(`[API] User ${userId} has ${existing.length} sources. IDs: ${existing.map((s: any) => s.id).join(', ')}`);
 

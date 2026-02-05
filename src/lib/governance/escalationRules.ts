@@ -151,7 +151,7 @@ export async function evaluateEscalation(analysis: AnalysisResult, context?: Sys
     // 1. Run Deterministic Rules
     const deterministic = evaluateDeterministicRules(analysis, config);
     let finalLevel = deterministic.level;
-    let finalReasons = [...deterministic.reasons];
+    const finalReasons = [...deterministic.reasons];
     let finalRationale = deterministic.reasons.join('\n'); // Default rationale from rules
 
     // 2. Hybrid Check

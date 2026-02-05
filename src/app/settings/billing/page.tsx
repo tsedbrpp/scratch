@@ -124,7 +124,7 @@ export default function BillingPage() {
             // Direct Redirect to Stripe URL
             window.location.href = data.url;
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Purchase Flow Error:", error);
             alert(`Failed to initiate purchase: ${error.message}`);
             setLoading(false);

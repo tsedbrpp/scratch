@@ -303,7 +303,7 @@ export default function SynthesisPage() {
                     alert("Comparison failed: " + (data.error || "Unknown error"));
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Comparison error:", error);
             if (error.name === 'AbortError') {
                 alert("Analysis timed out (60s limit). The documents may be too large or the AI service is busy. Please try again.");

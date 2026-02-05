@@ -20,8 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const secretFs = require('fs');
-        secretFs.appendFileSync('debug_cultural.log', `[DEBUG] Request received. Env Key First 5 chars: ${(process.env.OPENAI_API_KEY || '').substring(0, 5)}\n`);
+        fs.appendFileSync('debug_cultural.log', `[DEBUG] Request received. Env Key First 5 chars: ${(process.env.OPENAI_API_KEY || '').substring(0, 5)}\n`);
     } catch (e) { console.error('Log write failed', e); }
 
     const userId = await getAuthenticatedUserId(request);
@@ -75,8 +74,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error: unknown) {
         try {
-            const secretFs = require('fs');
-            secretFs.appendFileSync('debug_cultural.log', `[ERROR] Analysis failed: ${error instanceof Error ? error.message : String(error)} \nStack: ${error instanceof Error ? error.stack : ''}\n`);
+            fs.appendFileSync('debug_cultural.log', `[ERROR] Analysis failed: ${error instanceof Error ? error.message : String(error)} \nStack: ${error instanceof Error ? error.stack : ''}\n`);
         } catch (e) { console.error('Log write failed', e); }
 
         console.error(`[CULTURAL ANALYSIS ERROR] Failed: `, error);

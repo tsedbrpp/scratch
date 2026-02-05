@@ -195,7 +195,7 @@ Return a JSON object following the exact schema specified in the system prompt.
             cacheKey: actorHash
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Territorialization simulation error:', error);
         return NextResponse.json(
             { success: false, error: error.message },
@@ -246,7 +246,7 @@ export async function GET(req: NextRequest) {
             cached: false
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Cache retrieval error:', error);
         return NextResponse.json(
             { success: false, error: error.message },

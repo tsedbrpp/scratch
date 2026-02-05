@@ -63,7 +63,7 @@ export async function runEscalationEvaluation(
 
         const reasons: EscalationReasonCode[] = [];
         let level: EscalationLevel = 'NONE';
-        let rationaleParts: string[] = [];
+        const rationaleParts: string[] = [];
 
         // 1. Check for Epistemic Uncertainty (The "Uncertainty Principle")
         // If the auditor is unsure, we escalate to MEDIUM for human review.

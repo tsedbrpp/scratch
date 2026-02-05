@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getEffectiveContext(request, userId);
     contextId = ctx.contextId;
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e.message === 'Access Denied to Workspace') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     throw e;
   }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     const cacheKey = generateCacheKey(analysisMode || 'default', textForCache, sourceType || 'unknown', PROMPT_VERSION);
     let cachedAnalysis = null;
-    let isCacheHit = false;
+    const isCacheHit = false;
 
     try {
       if (!force) {

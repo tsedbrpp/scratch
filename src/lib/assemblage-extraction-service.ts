@@ -148,9 +148,9 @@ export class AssemblageExtractionService {
                     actors.find(a => normalize(a.name).includes(n) || n.includes(normalize(a.name)));
             };
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const sourceActor = findActor(r.source);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const targetActor = findActor(r.target);
 
             if (sourceActor && targetActor) {

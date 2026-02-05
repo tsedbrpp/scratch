@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, analysis });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Trajectory analysis error:', error);
         return NextResponse.json(
             { success: false, error: error.message || 'Failed to analyze trajectory' },

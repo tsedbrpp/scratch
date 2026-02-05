@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
         console.log("[Checkout API] Session created:", session.id);
         return NextResponse.json({ sessionId: session.id, url: session.url });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('[Checkout API] Error creating checkout session:', err);
         return NextResponse.json({ error: `Stripe Error: ${err.message}` }, { status: 500 });
     }

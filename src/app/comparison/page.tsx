@@ -221,7 +221,7 @@ export default function ComparisonPage() {
 
             await updateSource(sourceId, updates);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Deep analysis failed:", error);
             if (error.message?.includes("Insufficient Credits")) {
                 if (confirm("Insufficient Credits. Would you like to top up now?")) {

@@ -155,7 +155,7 @@ export function CodingView({ isExpanded, nodes }: Props) {
             if (isPausedRef.current) return;
 
             // Update
-            let newItems: ProcessedItem[] = [];
+            const newItems: ProcessedItem[] = [];
 
             particles.forEach(p => {
                 p.x += p.vx;
@@ -237,7 +237,7 @@ export function CodingView({ isExpanded, nodes }: Props) {
             // Update Transforms & Styles
             selection.attr("transform", d => {
                 let scale = 1;
-                let rotate = 0;
+                const rotate = 0;
                 let tx = d.x;
                 let ty = d.y;
 
