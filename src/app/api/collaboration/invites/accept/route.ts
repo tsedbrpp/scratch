@@ -11,6 +11,14 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { token } = body;
 
+        console.log('[Accept Invitation]', {
+            userId,
+            token,
+            tokenLength: token?.length,
+            hasColon: token?.includes(':'),
+            timestamp: new Date().toISOString()
+        });
+
         if (!token) {
             return NextResponse.json({ error: "Missing Invitation Token" }, { status: 400 });
         }
