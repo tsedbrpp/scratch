@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useTeam } from '@/hooks/useTeam';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export default function TeamSettingsPage() {
     const router = useRouter();
+    const { userId } = useAuth();
     const { workspaceType, currentWorkspaceId } = useWorkspace();
     const { teamDetails, isLoading, error, isTeamWorkspace, removeMember } = useTeam();
     const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -69,7 +71,7 @@ export default function TeamSettingsPage() {
         );
     }
 
-    const currentUserMember = teamDetails.members.find(m => m.userId === currentWorkspaceId);
+    const currentUserMember = teamDetails.members.find(m => m.userId.toLowerCase() === userId?.toLowerCase());
     const currentUserRole = currentUserMember?.role;
     const isOwner = currentUserRole === 'OWNER';
 
