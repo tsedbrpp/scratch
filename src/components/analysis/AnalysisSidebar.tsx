@@ -7,7 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useViewMode } from "@/hooks/useViewMode";
 import { cn } from "@/lib/utils";
+import { HealthIndicator } from "@/components/governance/HealthIndicator";
+import { EscalationStatus } from "@/types/escalation";
 
+// ... (AnalysisSection type remains same)
 export type AnalysisSection =
     | 'overview'
     | 'tensions'
@@ -24,18 +27,20 @@ interface NavButtonProps {
     label: string;
     sub?: string;
     onClick: () => void;
+    locked?: boolean; // [NEW] Gating support
 }
 
-function NavButton({ active, icon: Icon, label, sub, onClick }: NavButtonProps) {
+function NavButton({ active, icon: Icon, label, sub, onClick, locked }: NavButtonProps) {
     const content = (
         <Button
             variant="ghost"
-            onClick={onClick}
+            onClick={locked ? undefined : onClick}
             className={cn(
                 "w-full justify-start h-auto text-left px-3 py-2.5 mb-1 transition-all duration-200",
                 active
                     ? "bg-slate-100/80 text-indigo-900 border-l-2 border-indigo-600 rounded-l-none rounded-r-md"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent",
+                locked && "opacity-50 cursor-not-allowed grayscale"
             )}
         >
             <div className="flex items-start gap-3">
@@ -43,6 +48,7 @@ function NavButton({ active, icon: Icon, label, sub, onClick }: NavButtonProps) 
                 <div className="flex-1 overflow-hidden">
                     <div className={cn("font-semibold leading-tight", active ? "text-slate-900" : "text-slate-600")}>
                         {label}
+                        {locked && <span className="ml-2 text-rose-500 text-[10px] uppercase font-bold">(Locked)</span>}
                     </div>
                     {sub && (
                         <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate leading-tight">
@@ -61,9 +67,20 @@ interface AnalysisSidebarProps {
     activeSection: AnalysisSection;
     onSectionChange: (section: AnalysisSection) => void;
     className?: string;
+    // [NEW] Escalation Props
+    escalationStatus?: EscalationStatus | null;
+    isAnalyzing?: boolean;
+    onEscalationClick?: () => void;
 }
 
-export function AnalysisSidebar({ activeSection, onSectionChange, className }: AnalysisSidebarProps) {
+export function AnalysisSidebar({
+    activeSection,
+    onSectionChange,
+    className,
+    escalationStatus,
+    isAnalyzing,
+    onEscalationClick
+}: AnalysisSidebarProps) {
     const { mode, toggleMode, isAdvanced } = useViewMode();
 
     return (
@@ -100,7 +117,17 @@ export function AnalysisSidebar({ activeSection, onSectionChange, className }: A
 
             {/* Core Assemblage */}
             <div className="mb-2 px-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Core Assemblage</h3>
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Assemblage</h3>
+                </div>
+                {/* [NEW] Health Indicator */}
+                <div className="mb-3">
+                    <HealthIndicator
+                        status={escalationStatus || null}
+                        isAnalyzing={!!isAnalyzing}
+                        onClick={onEscalationClick}
+                    />
+                </div>
             </div>
 
             <div className="space-y-1">

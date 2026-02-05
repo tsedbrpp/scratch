@@ -408,6 +408,53 @@ export function generateFullReportPDF(sources: Source[]) {
                 generator.addText(expl, STYLE.colors.secondary);
             }
         }
+        // 5. Procedural Inscription (Escalation Status)
+        if (source.analysis && source.analysis.escalation_status) {
+            const esc = source.analysis.escalation_status;
+            // Only show if relevant (skip NONE)
+            if (esc.level !== 'NONE') {
+                generator.addSectionHeader("Procedural Inscription (Governance)");
+
+                // Status Badge logic (text representation)
+                let statusText = `STATUS: ${esc.status}`;
+                if (esc.status === 'DETECTED') statusText += " (Unresolved Risk)";
+                if (esc.status === 'RESOLVED') statusText += " (Mitigated)";
+                if (esc.status === 'DEFERRED') statusText += " (Structurally Deferred)";
+
+                generator.addSubHeader(statusText);
+
+                // Rationale
+                if (esc.rationale) {
+                    generator.addText(`Rationale: ${esc.rationale}`, STYLE.colors.secondary);
+                }
+
+                // Reasons
+                if (esc.reasons && esc.reasons.length > 0) {
+                    generator.addText("Detected Risks:", STYLE.colors.primary);
+                    esc.reasons.forEach(r => generator.addText(`• ${r}`, STYLE.colors.secondary));
+                }
+
+                // Inscribed Actions (Mitigations / Deferrals)
+                if (esc.actions && esc.actions.length > 0) {
+                    generator.addSubHeader("Reassembly Inscriptions");
+                    esc.actions.forEach(action => {
+                        const date = new Date(action.timestamp).toLocaleDateString();
+                        let actionText = `[${date}] ${action.type}`;
+                        if (action.type === 'MITIGATION') {
+                            actionText += `: ${action.strategyId}`;
+                        } else if (action.type === 'DEFERRAL') {
+                            actionText += `: ${action.reason}`;
+                        }
+                        generator.addText(actionText, STYLE.colors.primary);
+
+                        // Check if rationale exists (optional on RE_EVALUATION)
+                        if ('rationale' in action && action.rationale) {
+                            generator.addText(`   "${action.rationale}"`, STYLE.colors.subtle);
+                        }
+                    });
+                }
+            }
+        }
     });
 
     generator.addFooter();

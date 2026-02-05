@@ -1,10 +1,11 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import * as d3 from 'd3';
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Network, MousePointer2, Layers, EyeOff, ChevronDown, ZoomIn, Maximize, Minimize, MessageSquare, X, Trash2 } from 'lucide-react';
+import { Layers, EyeOff, ChevronDown, Maximize, Minimize, MessageSquare, X, Trash2, Activity } from 'lucide-react';
 import { useForceGraph, SimulationNode } from '@/hooks/useForceGraph';
 import { generateEdges, getHullPath } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
@@ -18,12 +19,13 @@ const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.
     loading: () => <div className="h-full flex items-center justify-center bg-slate-50 text-slate-400">Loading 3D Engine...</div>
 });
 
-import { AnalysisMode, ModeSelector } from '@/components/ui/mode-selector';
+import { AnalysisMode } from '@/components/ui/mode-selector';
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { getGlossaryDefinition } from "@/lib/glossary-definitions";
-import { AssemblageSuggester } from './AssemblageSuggester';
+import { AssemblageDynamics } from './AssemblageDynamics';
+
 
 interface EcosystemMapProps {
     actors: EcosystemActor[];
@@ -84,7 +86,6 @@ export function EcosystemMap({
     onDeleteConfiguration,
     absenceAnalysis,
     analysisMode = "hybrid_reflexive",
-    setAnalysisMode,
     configLayout = {},
     onConfigSelect,
     // onClearConfig, // Unused but kept for interface compatibility if needed
@@ -107,6 +108,8 @@ export function EcosystemMap({
 
     const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
     const [draggingConfigId, setDraggingConfigId] = useState<string | null>(null);
+
+    const { currentWorkspaceId } = useWorkspace(); // [NEW] Injected Hook
 
     // [RESTORED STATE]
     const svgRef = useRef<SVGSVGElement>(null);
@@ -149,6 +152,7 @@ export function EcosystemMap({
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
     const [configToDelete, setConfigToDelete] = useState<string | null>(null);
+    const [showDynamics, setShowDynamics] = useState(false);
     const [collapsedAssemblages, setCollapsedAssemblages] = useState<Set<string>>(new Set());
     const [tracedActorId, setTracedActorId] = useState<string | null>(null);
 
@@ -222,11 +226,13 @@ export function EcosystemMap({
                     const totalPower = members.reduce((sum, a) => sum + calculateActorPower(a), 0);
                     const stability = Number(config.properties?.calculated_stability) || 0.5;
                     blackBoxNodes.push({
-                        id: `blackbox-${config.id}`, name: config.name, type: 'Infrastructure', description: config.description,
+                        id: `blackbox-${config.id}`,
+                        sourceId: 'system-generated', // [FIX] Added required sourceId
+                        name: config.name, type: 'Infrastructure', description: config.description,
                         influence: totalPower > 30 ? 'High' : totalPower > 15 ? 'Medium' : 'Low', role_type: 'Material',
                         metrics: { territorialization: stability * 10, coding: 10, deterritorialization: (1 - stability) * 5, dynamic_power: totalPower },
                         isBlackBox: true, memberCount: config.memberIds.length, stabilityScore: stability
-                    } as any);
+                    });
                 }
             });
             result = result.filter(a => !hiddenActorIds.has(a.id));
@@ -250,7 +256,7 @@ export function EcosystemMap({
             const uniqueKey = activeTypeFilter.toLowerCase().replace(/\s/g, '');
             result = result.filter(a => {
                 const actorType = (a.id.startsWith('blackbox-') ? 'Infrastructure' : a.type).toLowerCase().replace(/\s/g, '');
-                if ((a as any).isHidden) return true;
+                if (a.isHidden) return true;
                 return actorType.includes(uniqueKey);
             });
         }
@@ -296,7 +302,9 @@ export function EcosystemMap({
         setIsExplaining(true); setExplanation(null);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (currentWorkspaceId) headers['x-workspace-id'] = currentWorkspaceId;
             if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+
             const response = await fetch('/api/analyze', {
                 method: 'POST', headers,
                 body: JSON.stringify({
@@ -582,7 +590,6 @@ export function EcosystemMap({
         <div className="relative w-full h-full">
             <Card
                 className={`flex flex-col shadow-none border border-slate-200 bg-white transition-all duration-300 relative ${isFullScreen ? 'fixed inset-0 z-50 h-screen w-screen rounded-none' : 'h-[800px]'}`}
-                ref={containerRef}
             >
                 <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
 
@@ -632,7 +639,10 @@ export function EcosystemMap({
                     />
                 </CardHeader>
 
-                <CardContent className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]">
+                <CardContent
+                    ref={containerRef}
+                    className="flex-1 p-0 relative overflow-hidden bg-[#FAFAFA]"
+                >
                     {/* ... (Existing Map Content) ... */}
                     {is3DMode ? (
                         <div className="relative w-full h-full">
@@ -777,8 +787,8 @@ export function EcosystemMap({
                                         const targetIsGhost = targetActor && 'isGhost' in targetActor && (targetActor as GhostActor).isGhost;
                                         const isGhostLink = sourceIsGhost || targetIsGhost;
 
-                                        const sourceIsHidden = sourceActor && (sourceActor as any).isHidden;
-                                        const targetIsHidden = targetActor && (targetActor as any).isHidden;
+                                        const sourceIsHidden = sourceActor && sourceActor.isHidden;
+                                        const targetIsHidden = targetActor && targetActor.isHidden;
                                         const isHiddenLink = sourceIsHidden || targetIsHidden;
 
                                         if (isGhostLink && !showGhostEdges) return null;
@@ -788,7 +798,7 @@ export function EcosystemMap({
                                         const isHovered = hoveredLink && hoveredLink.source === link.source && hoveredLink.target === link.target;
 
                                         // [NEW] Flow Type Logic (Power vs Logic vs Ghost)
-                                        const flowType = (link as any).flow_type || 'logic';
+                                        const flowType = link.flow_type || 'logic';
 
                                         let strokeColor = flowType === 'power' ? "#EF4444" : "#F59E0B";
                                         let strokeDash = flowType === 'logic' ? "5 3" : "none";
@@ -884,7 +894,7 @@ export function EcosystemMap({
                                         const baseR = 5 + (power * 1.5);
                                         const r = isFocused || isSelected ? baseR + 2 : baseR;
                                         const strokeDash = isGhost ? "4 2" : "none";
-                                        const isHidden = (actor as any).isHidden;
+                                        const isHidden = actor.isHidden;
                                         const finalOpacity = isHidden ? 0 : opacity;
 
                                         // Optimization: If opacity is 0 or node is off-screen (would require viewport cull logic), skip rendering?
@@ -1249,6 +1259,16 @@ export function EcosystemMap({
                 </div>
             )}
 
+            {/* DYNAMICS OVERLAY */}
+            {/* DYNAMICS OVERLAY */}
+            {showDynamics && (
+                <AssemblageDynamics
+                    onClose={() => setShowDynamics(false)}
+                    nodes={nodes}
+                    links={links}
+                />
+            )}
+
             {/* CENTRALLY POSITIONED DIALOGS */}
             <Dialog open={!!selectedLink} onOpenChange={(open) => !open && setSelectedLink(null)}>
                 <DialogContent className="sm:max-w-md bg-white">
@@ -1272,17 +1292,28 @@ export function EcosystemMap({
                 </DialogContent>
             </Dialog>
 
-            {!isLegendOpen && (
+            <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-[90]">
+                {!isLegendOpen && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-10 px-4 bg-white shadow-xl text-sm font-medium border-slate-200 hover:bg-slate-50 text-indigo-700 pointer-events-auto ring-1 ring-slate-900/5 transition-all"
+                        onClick={() => setIsLegendOpen(true)}
+                    >
+                        <Layers className="h-4 w-4 mr-2" />
+                        Legend
+                    </Button>
+                )}
                 <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
-                    className="absolute bottom-6 right-6 h-10 px-4 bg-white shadow-xl text-sm font-medium z-[9999] border-slate-200 hover:bg-slate-50 text-indigo-700 pointer-events-auto ring-1 ring-slate-900/5 transition-all"
-                    onClick={() => setIsLegendOpen(true)}
+                    className="h-10 px-4 bg-indigo-600 shadow-xl text-sm font-medium border-indigo-500 hover:bg-indigo-700 text-white pointer-events-auto ring-1 ring-slate-900/5 transition-all"
+                    onClick={() => setShowDynamics(true)}
                 >
-                    <Layers className="h-4 w-4 mr-2" />
-                    Legend
+                    <Activity className="h-4 w-4 mr-2" />
+                    Dynamics
                 </Button>
-            )}
+            </div>
 
             {focusedNodeId && (
                 <div className="absolute bottom-4 left-4">

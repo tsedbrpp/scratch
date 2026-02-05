@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StorageService } from '@/lib/storage-service';
-import { auth } from '@clerk/nextjs/server';
-import { isReadOnlyAccess } from '@/lib/auth-helper';
+import { isReadOnlyAccess, getAuthenticatedUserId } from '@/lib/auth-helper';
+import { validateWorkspaceAccess } from '@/lib/auth-middleware';
+
+// Helper to resolve effective context
+async function getEffectiveContext(req: NextRequest) {
+    const userId = await getAuthenticatedUserId(req);
+    if (!userId) return { error: { message: "Unauthorized", status: 401 }, status: 401 };
+
+    const workspaceId = req.headers.get('x-workspace-id');
+    const targetContext = workspaceId || userId;
+
+    const access = await validateWorkspaceAccess(userId, targetContext);
+
+    if (!access.allowed) {
+        return { error: { message: "Access Denied", status: 403 }, status: 403 };
+    }
+
+    return { userId, contextId: targetContext, role: access.role };
+}
 
 export async function GET(request: NextRequest) {
-    let { userId } = await auth();
-
-    // Check for demo user if not authenticated
-    if (!userId && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-        const demoUserId = request.headers.get('x-demo-user-id');
-        if (demoUserId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
-            userId = demoUserId;
-        }
-    }
-
-    if (!userId) {
-        return new NextResponse("Unauthorized", { status: 401 });
-    }
+    const ctx = await getEffectiveContext(request);
+    if (ctx.error) return NextResponse.json({ error: ctx.error.message }, { status: ctx.status });
+    const { contextId } = ctx;
 
     const searchParams = request.nextUrl.searchParams;
     const key = searchParams.get('key');
@@ -26,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const data = await StorageService.get(userId, key);
+        const data = await StorageService.get(contextId, key);
         return NextResponse.json({ value: data });
     } catch (error) {
         console.error('Failed to fetch storage item:', error);
@@ -40,10 +47,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Storage updates disabled in Demo Mode" }, { status: 403 });
     }
 
-    const { userId } = await auth();
+    const ctx = await getEffectiveContext(request);
+    if (ctx.error) return NextResponse.json({ error: ctx.error.message }, { status: ctx.status });
+    const { contextId, role } = ctx;
 
-    if (!userId) {
-        return new NextResponse("Unauthorized", { status: 401 });
+    // RBAC: Viewers cannot write to storage
+    if (role === 'VIEWER') {
+        return NextResponse.json({ error: "Viewers cannot modify storage" }, { status: 403 });
     }
 
     try {
@@ -54,7 +64,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Key is required' }, { status: 400 });
         }
 
-        await StorageService.set(userId, key, value);
+        await StorageService.set(contextId, key, value);
 
         return NextResponse.json({ success: true });
     } catch (error) {

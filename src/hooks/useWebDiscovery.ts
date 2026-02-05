@@ -1,21 +1,36 @@
 import { useState } from 'react';
 import { SearchResult, ResistanceArtifact } from '@/types/resistance';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 interface UseWebDiscoveryProps {
     onImport: (artifact: Omit<ResistanceArtifact, 'id' | 'uploaded_at' | 'uploaded_by'>) => void;
 }
 
 export function useWebDiscovery({ onImport }: UseWebDiscoveryProps) {
+    const { currentWorkspaceId } = useWorkspace();
     const [query, setQuery] = useState("AI Act resistance manifesto filetype:pdf");
     const [results, setResults] = useState<SearchResult[] | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [importingUrl, setImportingUrl] = useState<string | null>(null);
     const [isDemoMode, setIsDemoMode] = useState(false);
 
+    const getHeaders = (base: HeadersInit = {}) => {
+        const headers = { ...base } as Record<string, string>;
+        if (currentWorkspaceId) {
+            headers['x-workspace-id'] = currentWorkspaceId;
+        }
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+        }
+        return headers;
+    };
+
     const handleSearch = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/resistance/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`/api/resistance/search?q=${encodeURIComponent(query)}`, {
+                headers: getHeaders()
+            });
             const data = await response.json();
 
             if (data.results) {
@@ -46,14 +61,9 @@ export function useWebDiscovery({ onImport }: UseWebDiscoveryProps) {
         try {
             let extractedText = "";
             try {
-                const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-                }
-
                 const response = await fetch('/api/fetch-url', {
                     method: 'POST',
-                    headers: headers,
+                    headers: getHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ url: result.url })
                 });
                 const data = await response.json();

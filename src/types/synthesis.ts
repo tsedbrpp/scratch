@@ -1,4 +1,6 @@
 
+import { EscalationStatus } from './escalation';
+
 export interface SynthesisTopologyAxis {
     a_score: number;
     b_score: number;
@@ -48,5 +50,10 @@ export interface SynthesisComparisonResult {
                 weight?: number;
             }>;
         };
+    };
+    // [NEW] Governance Status from Sources
+    escalation_status?: {
+        sourceA: EscalationStatus;
+        sourceB: EscalationStatus;
     };
 }

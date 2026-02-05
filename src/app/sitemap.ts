@@ -4,26 +4,27 @@ import { MetadataRoute } from 'next';
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://instanttea.com';
 
-    // Core static pages
-    const routes = [
-        '',
-        '/about',
-        '/privacy',
-        '/terms',
-        '/why-credits',
-        '/governance/contributor-credits',
-        '/contact',
-        '/login',
-        '/sign-up',
-        '/data',
-        '/ecosystem',
-        '/synthesis',
-    ];
+    // Only include publicly accessible pages (no auth required)
+    const routes: Array<{
+        path: string;
+        changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+        priority: number;
+    }> = [
+            { path: '', changeFrequency: 'weekly', priority: 1.0 },
+            { path: '/about', changeFrequency: 'monthly', priority: 0.8 },
+            { path: '/privacy', changeFrequency: 'monthly', priority: 0.5 },
+            { path: '/terms', changeFrequency: 'monthly', priority: 0.5 },
+            { path: '/why-credits', changeFrequency: 'monthly', priority: 0.7 },
+            { path: '/governance/contributor-credits', changeFrequency: 'monthly', priority: 0.6 },
+            { path: '/contact', changeFrequency: 'monthly', priority: 0.7 },
+            { path: '/login', changeFrequency: 'monthly', priority: 0.4 },
+            { path: '/sign-up', changeFrequency: 'monthly', priority: 0.6 },
+        ];
 
     return routes.map((route) => ({
-        url: `${baseUrl}${route}`,
+        url: `${baseUrl}${route.path}`,
         lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: route === '' ? 1 : 0.8,
+        changeFrequency: route.changeFrequency,
+        priority: route.priority,
     }));
 }

@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { getAuthenticatedUserId, isReadOnlyAccess } from '@/lib/auth-helper';
+import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 import {
   getAnalysisConfig,
   runCritiqueLoop,
@@ -29,22 +30,41 @@ function getCacheUserId(analysisMode: string, actualUserId: string): string {
     : actualUserId;
 }
 
+// Helper to resolve effective context
+async function getEffectiveContext(req: NextRequest, userId: string) {
+  const workspaceId = req.headers.get('x-workspace-id');
+  const targetContext = workspaceId || userId;
+  const access = await validateWorkspaceAccess(userId, targetContext);
+
+  if (!access.allowed) throw new Error('Access Denied to Workspace');
+  return { contextId: targetContext, role: access.role };
+}
+
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`[ANALYSIS] Request started at ${new Date(startTime).toISOString()} `);
 
   const userId = await getAuthenticatedUserId(request);
-
   if (!userId) {
     console.log('[ANALYSIS] Unauthorized. Headers:', Object.fromEntries(request.headers));
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // [NEW] Resolve Context (Personal vs Team)
+  let contextId = userId;
+  try {
+    const ctx = await getEffectiveContext(request, userId);
+    contextId = ctx.contextId;
+  } catch (e: any) {
+    if (e.message === 'Access Denied to Workspace') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    throw e;
+  }
+
   try {
     const requestData = await request.json();
     const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode, checkCacheOnly, assemblageId } = requestData;
-    console.log(`[ANALYSIS] Received request. Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, AssemblageID: ${assemblageId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
+    console.log(`[ANALYSIS] Received request. Context: ${contextId}, Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, AssemblageID: ${assemblageId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
 
     // [NEW] BLOCK READ-ONLY DEMO USERS (unless they're only checking cache)
     if (!checkCacheOnly && await isReadOnlyAccess()) {
@@ -113,7 +133,7 @@ export async function POST(request: NextRequest) {
     try {
       if (!force) {
         console.log('[ANALYSIS] Checking Redis cache...');
-        const cacheUserId = getCacheUserId(analysisMode, userId);
+        const cacheUserId = getCacheUserId(analysisMode, contextId); // Use contextId here
         cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
 
         if (cachedAnalysis) {
@@ -151,6 +171,7 @@ export async function POST(request: NextRequest) {
 
     // --- PAYWALL / RATE LIMIT (Only if Cache Miss) ---
     if (!cachedAnalysis) { // Should always be true here if we didn't return above
+      // Rate limit check uses Real User ID (UserId), not ContextId, as quotas are per-user
       const rateLimit = await checkRateLimit(userId);
       if (!rateLimit.success) {
         return NextResponse.json(
@@ -168,8 +189,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const { deductCredits } = await import('@/lib/redis-scripts');
-        // Unique reference for deduplication could be the cacheKey actually!
-        // But let's use a unique run ID to avoid issues with retries
+        // Credits are deducted from the USER, even if working in a Team
         const newBalance = await deductCredits(userId, 1, 'SYSTEM', `run-${Date.now()}-${Math.random().toString(36).substring(7)}`);
 
         if (newBalance === -1) {
@@ -214,7 +234,7 @@ export async function POST(request: NextRequest) {
 
       try {
         if (!force) {
-          const cached = await StorageService.getCache(userId, cacheKey);
+          const cached = await StorageService.getCache(contextId, cacheKey); // Use contextId
           if (cached) {
             console.log(`[CACHE HIT] Returning cached ${mode} analysis`);
             return NextResponse.json({ success: true, analysis: cached, cached: true });
@@ -236,7 +256,7 @@ export async function POST(request: NextRequest) {
 
         if (openai) {
           // Generate Narrative via LLM
-          const { analysis } = await performAnalysis(openai, userId, {
+          const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
             analysisMode: 'ant_trace',
             actors: tracedActors,
             links: associations
@@ -275,7 +295,7 @@ export async function POST(request: NextRequest) {
 
         if (openai) {
           // Generate Narrative via LLM
-          const { analysis } = await performAnalysis(openai, userId, {
+          const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
             analysisMode: 'assemblage_realist',
             traced_actors: tracedActors,
             detected_mechanisms: mechanisms,
@@ -315,7 +335,7 @@ export async function POST(request: NextRequest) {
 
         if (openai) {
           // Generate Narrative via LLM
-          const { analysis } = await performAnalysis(openai, userId, {
+          const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
             analysisMode: 'hybrid_reflexive',
             actors: tracedActors, // [NEW] Pass full actor objects for visual usage
             links: associations,  // [NEW] Pass full links for visual usage
@@ -343,7 +363,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Cache and Return
-      await StorageService.setCache(userId, cacheKey, analysisResult, 86400);
+      await StorageService.setCache(contextId, cacheKey, analysisResult, 86400); // Use contextId
 
       return NextResponse.json({
         success: true,
@@ -395,7 +415,7 @@ export async function POST(request: NextRequest) {
 
 
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis' && analysisMode !== 'escalation_evaluation') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -442,7 +462,7 @@ export async function POST(request: NextRequest) {
 
       console.log('[ANALYSIS] Mode is CRITIQUE. bypassing main generation.');
       // Run only the critique loop
-      const critique = await runCritiqueLoop(openai, userId, text, requestData.existingAnalysis);
+      const critique = await runCritiqueLoop(openai, contextId, text, requestData.existingAnalysis); // Use ContextId
       return NextResponse.json({
         success: true,
         analysis: { system_critique: critique } // Wrap in analysis object for consistency
@@ -503,6 +523,33 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // [New] Pattern Sentinel (Escalation Evaluation)
+    if (analysisMode === 'escalation_evaluation') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Pattern Sentinel" }, { status: 500 });
+      }
+
+      console.log('[ANALYSIS] Mode is ESCALATION_EVALUATION (Pattern Sentinel).');
+      const { runEscalationEvaluation } = await import('@/lib/governance/escalation-service');
+
+      const analysisToevaluate = requestData.existingAnalysis;
+      const config = {
+        recurrence_count: requestData.recurrence_count || 0,
+        evaluator_variance: requestData.evaluator_variance || 0 // Default
+      };
+
+      if (!analysisToevaluate) {
+        return NextResponse.json({ error: "Missing existingAnalysis" }, { status: 400 });
+      }
+
+      const escalationStatus = await runEscalationEvaluation(openai, analysisToevaluate, config);
+
+      return NextResponse.json({
+        success: true,
+        analysis: { escalation_status: escalationStatus }
+      });
+    }
+
 
 
     // [Feature] Comprehensive Scan
@@ -514,7 +561,7 @@ export async function POST(request: NextRequest) {
       // Check cache unless force=true
       if (!force) {
         console.log('[COMPREHENSIVE] Checking cache...');
-        const cacheUserId = getCacheUserId(analysisMode, userId);
+        const cacheUserId = getCacheUserId(analysisMode, contextId); // Use ContextId
         const cachedAnalysis = await StorageService.getCache(cacheUserId, cacheKey);
 
         if (cachedAnalysis) {
@@ -532,12 +579,12 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('[ANALYSIS] Mode is COMPREHENSIVE. Running multi-stage workflow.');
-      const result = await runComprehensiveAnalysis(openai, userId, requestData);
+      const result = await runComprehensiveAnalysis(openai, contextId, requestData); // Use ContextId
 
       // Cache the comprehensive result
       try {
         if (result.analysis && typeof result.analysis === 'object') {
-          const cacheUserId = getCacheUserId(analysisMode, userId);
+          const cacheUserId = getCacheUserId(analysisMode, contextId); // Use ContextId
           await StorageService.setCache(cacheUserId, cacheKey, result.analysis, 86400); // 24 hours
           console.log(`[COMPREHENSIVE] Saved to cache: ${cacheKey}`);
         }
@@ -556,13 +603,13 @@ export async function POST(request: NextRequest) {
     if (!openai) {
       return NextResponse.json({ error: "OpenAI API Key required for Standard Analysis" }, { status: 500 });
     }
-    const { analysis, usage } = await performAnalysis(openai, userId, requestData);
+    const { analysis, usage } = await performAnalysis(openai, contextId, requestData); // Use ContextId
 
     // ---------------------
     // Cache the result
     try {
       if (analysis && typeof analysis === 'object' && !analysis.error) {
-        const cacheUserId = getCacheUserId(analysisMode, userId);
+        const cacheUserId = getCacheUserId(analysisMode, contextId); // Use ContextId
 
         await StorageService.setCache(cacheUserId, cacheKey, analysis, 86400); // 24 hours
         console.log(`[ANALYSIS] Saved to cache: ${cacheKey}`);

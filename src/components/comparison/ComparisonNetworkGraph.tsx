@@ -726,7 +726,11 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
                     title={
                         <div className="flex items-center gap-2 text-indigo-700">
                             <Sparkles className="w-4 h-4" />
-                            {interpretation.title || "Graph Analysis"}
+                            {interpretation.title ? (
+                                interpretation.title.length > 100
+                                    ? interpretation.title.substring(0, 97) + "..."
+                                    : interpretation.title
+                            ) : "Graph Analysis"}
                         </div>
                     }
                     onClose={() => setShowInterpretationDialog(false)}

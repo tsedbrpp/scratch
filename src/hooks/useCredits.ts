@@ -1,27 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useDemoMode } from './useDemoMode';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 export function useCredits() {
+    const { currentWorkspaceId } = useWorkspace();
     const [credits, setCredits] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const { isReadOnly } = useDemoMode();
 
     const fetchCredits = async () => {
         if (isReadOnly) {
-            // Demo users have infinite "virtual" credits for UI purposes, or 0 if we want to restrict them?
-            // Actually, demo mode restrictions are usually handled by `isReadOnly` flags directly.
-            // But if we want to reuse this hook for real users, we fetch from API.
-            // Let's return a safe default for demo mode or handle it upstream.
-            // For now, let's say demo users have 0 "real" credits but we rely on isReadOnly for permissions.
-            // Wait, the requirement is "users with zero credit".
-            // Demo user logic is separate.
             setCredits(0);
             setLoading(false);
             return;
         }
 
         try {
-            const response = await fetch('/api/credits');
+            const headers: HeadersInit = {};
+            if (currentWorkspaceId) {
+                headers['x-workspace-id'] = currentWorkspaceId;
+            }
+
+            const response = await fetch('/api/credits', { headers });
             if (response.ok) {
                 const data = await response.json();
                 setCredits(data.credits);
@@ -35,7 +35,7 @@ export function useCredits() {
 
     useEffect(() => {
         fetchCredits();
-    }, [isReadOnly]);
+    }, [isReadOnly, currentWorkspaceId]);
 
     return {
         credits,

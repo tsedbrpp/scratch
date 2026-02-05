@@ -86,18 +86,18 @@ export function DraggableCard({
             {/* Draggable Header */}
             <div
                 className={cn(
-                    "p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between select-none cursor-grab active:cursor-grabbing bg-slate-50/50 dark:bg-slate-900/50 rounded-t-xl",
+                    "p-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between select-none cursor-grab active:cursor-grabbing bg-slate-50/50 dark:bg-slate-900/50 rounded-t-xl",
                     isDragging && "cursor-grabbing"
                 )}
                 onMouseDown={handleMouseDown}
             >
-                <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2 pointer-events-none">
+                <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2 pointer-events-none flex-1 pr-4">
                     {title}
                 </div>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0 -mt-1 -mr-1"
                     onClick={onClose}
                 >
                     <X className="w-4 h-4" />

@@ -2,20 +2,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { ResistanceArtifact } from '@/types/resistance';
 import { StorageService } from '@/lib/storage-service';
+import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 import { getAuthenticatedUserId } from '@/lib/auth-helper';
+
+// Helper to validate access and get context
+async function getEffectiveContext(req: NextRequest) {
+    const userId = await getAuthenticatedUserId(req);
+    if (!userId) return { error: { message: "Unauthorized", status: 401 }, status: 401 };
+
+    const workspaceId = req.headers.get('x-workspace-id');
+    // Default to Personal Workspace if no header
+    const targetContext = workspaceId || userId;
+
+    const access = await validateWorkspaceAccess(userId, targetContext);
+
+    if (!access.allowed) {
+        return { error: { message: "Access Denied", status: 403 }, status: 403 };
+    }
+
+    return { userId, contextId: targetContext, role: access.role };
+}
 
 /**
  * GET /api/resistance/artifacts
  * List all resistance artifacts
  */
 export async function GET(request: NextRequest) {
-    const userId = await getAuthenticatedUserId(request);
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const ctx = await getEffectiveContext(request);
+    if (ctx.error) return NextResponse.json({ error: ctx.error.message }, { status: ctx.status });
+    const { contextId } = ctx;
 
     try {
-        const artifacts = await StorageService.get<ResistanceArtifact[]>(userId, 'resistance_artifacts');
+        const artifacts = await StorageService.get<ResistanceArtifact[]>(contextId, 'resistance_artifacts');
 
         return NextResponse.json({
             success: true,
@@ -35,9 +53,13 @@ export async function GET(request: NextRequest) {
  * Create a new resistance artifact
  */
 export async function POST(request: NextRequest) {
-    const userId = await getAuthenticatedUserId(request);
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ctx = await getEffectiveContext(request);
+    if (ctx.error) return NextResponse.json({ error: ctx.error.message }, { status: ctx.status });
+    const { userId, contextId, role } = ctx;
+
+    // RBAC Check
+    if (role === 'VIEWER') {
+        return NextResponse.json({ error: "Viewers cannot create artifacts" }, { status: 403 });
     }
 
     try {
@@ -47,19 +69,19 @@ export async function POST(request: NextRequest) {
         const newArtifact: ResistanceArtifact = {
             id: uuidv4(),
             ...body,
-            uploaded_by: userId,
+            uploaded_by: userId, // Keep explicit user attribution even in team context
             uploaded_at: new Date().toISOString(),
         };
 
-        // Get existing artifacts
-        let artifacts = await StorageService.get<ResistanceArtifact[]>(userId, 'resistance_artifacts');
+        // Get existing artifacts (scoped to context)
+        let artifacts = await StorageService.get<ResistanceArtifact[]>(contextId, 'resistance_artifacts');
         if (!artifacts) artifacts = [];
 
         // Add new artifact
         artifacts.push(newArtifact);
 
-        // Save back to Redis
-        await StorageService.set(userId, 'resistance_artifacts', artifacts);
+        // Save back to Redis (scoped to context)
+        await StorageService.set(contextId, 'resistance_artifacts', artifacts);
 
         return NextResponse.json({
             success: true,
@@ -79,13 +101,17 @@ export async function POST(request: NextRequest) {
  * Delete all resistance artifacts (for testing)
  */
 export async function DELETE(request: NextRequest) {
-    const userId = await getAuthenticatedUserId(request);
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ctx = await getEffectiveContext(request);
+    if (ctx.error) return NextResponse.json({ error: ctx.error.message }, { status: ctx.status });
+    const { contextId, role } = ctx;
+
+    // RBAC Check
+    if (role === 'VIEWER') {
+        return NextResponse.json({ error: "Viewers cannot delete artifacts" }, { status: 403 });
     }
 
     try {
-        await StorageService.delete(userId, 'resistance_artifacts');
+        await StorageService.delete(contextId, 'resistance_artifacts');
 
         return NextResponse.json({
             success: true,

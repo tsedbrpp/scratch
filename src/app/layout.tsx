@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
   description: "Rapidly translate complex socio-technical systems into provisional snapshots. The premier research tool for Actor-Network Theory (ANT), Assemblage Theory, and AI Governance analysis.",
   keywords: ["AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
     description: "Rapidly translate complex socio-technical systems into provisional snapshots.",
@@ -38,12 +41,17 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 import { ResearchWorkflowGuide } from "@/components/ResearchWorkflowGuide";
 import { Toaster } from "sonner";
 import { DemoModeAlert } from "@/components/DemoModeAlert";
 import { CookieConsent } from "@/components/privacy/CookieConsent";
+
+import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 
 export default function RootLayout({
   children,
@@ -57,16 +65,18 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
           suppressHydrationWarning
         >
-          <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto p-4 pt-20 md:p-8 md:pt-8">
-              {children}
-            </main>
-          </div>
-          <ResearchWorkflowGuide />
-          <DemoModeAlert />
-          <Toaster />
-          <CookieConsent />
+          <WorkspaceProvider>
+            <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
+              <Sidebar />
+              <main className="flex-1 overflow-y-auto p-4 pt-20 md:p-8 md:pt-8">
+                {children}
+              </main>
+            </div>
+            <ResearchWorkflowGuide />
+            <DemoModeAlert />
+            <Toaster />
+            <CookieConsent />
+          </WorkspaceProvider>
         </body>
       </html>
     </ClerkProvider>

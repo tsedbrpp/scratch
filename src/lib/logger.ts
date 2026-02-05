@@ -47,5 +47,22 @@ export const logger = {
         if (isDevelopment || isDebugMode) {
             console.log('[CRITIQUE]', ...args);
         }
+    },
+
+    governance: (...args: any[]) => {
+        if (isDevelopment || isDebugMode) {
+            console.log('[GOVERNANCE]', ...args);
+        }
+    },
+
+    audit: (...args: any[]) => {
+        // Audit logs are critical, always show them or send them to external
+        console.log('[AUDIT]', ...args);
+    },
+
+    collaboration: (...args: any[]) => {
+        if (isDevelopment || isDebugMode) {
+            console.log('[COLLAB]', ...args);
+        }
     }
 };

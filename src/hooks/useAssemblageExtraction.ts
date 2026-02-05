@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EcosystemActor, EcosystemConfiguration } from '@/types/ecosystem';
-import { inferActorType } from '@/lib/ecosystem-utils';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
+import { mapApiResponseToAssemblage, ApiResponse } from '@/lib/assemblage-mapper';
 
 interface UseAssemblageExtractionProps {
     isReadOnly: boolean;
@@ -9,12 +10,15 @@ interface UseAssemblageExtractionProps {
     setIsTopUpOpen: (open: boolean) => void;
 }
 
+
+
 export function useAssemblageExtraction({
     isReadOnly,
     hasCredits,
     creditsLoading,
     setIsTopUpOpen
 }: UseAssemblageExtractionProps) {
+    const { currentWorkspaceId } = useWorkspace();
     const [isExtracting, setIsExtracting] = useState(false);
 
     const extractAssemblage = async (
@@ -25,6 +29,7 @@ export function useAssemblageExtraction({
         newActors?: EcosystemActor[];
         newConfig?: EcosystemConfiguration;
         memberIds?: string[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         analysisData?: any;
     }> => {
         if (isReadOnly) {
@@ -42,6 +47,9 @@ export function useAssemblageExtraction({
         setIsExtracting(true);
         try {
             const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (currentWorkspaceId) {
+                headers['x-workspace-id'] = currentWorkspaceId;
+            }
             if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
@@ -68,7 +76,7 @@ export function useAssemblageExtraction({
             });
 
             const data = await response.json();
-            const analysis = data.analysis;
+            const analysis: ApiResponse = data.analysis;
 
             if (!analysis) {
                 console.error("Extraction returned no analysis data:", data);
@@ -79,77 +87,10 @@ export function useAssemblageExtraction({
             const memberIds: string[] = [];
             const newActors: EcosystemActor[] = [];
 
-            // [NEW] Check if actors are already hydrated (Internal Service)
-
-            const firstActor = (analysis.actors && analysis.actors.length > 0) ? analysis.actors[0] : null;
-
-            if (firstActor && firstActor.id && firstActor.metrics && typeof firstActor.metrics.territorialization !== 'undefined') {
-                console.log("Using Pre-Hydrated Actors from Service");
-                newActors.push(...analysis.actors);
-                memberIds.push(...analysis.actors.map((a: any) => a.id));
-            }
-            // [LEGACY] Raw AI Response mapping
-            else if (!Array.isArray(analysis) && analysis.actors && Array.isArray(analysis.actors)) {
-                console.log("Using Explicit Actors from Analysis (Raw Mode):", analysis.actors);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                analysis.actors.forEach((a: any) => {
-                    const m = a.metrics || {};
-                    const id = crypto.randomUUID();
-                    newActors.push({
-                        id,
-                        name: a.name,
-                        type: a.type || 'Civil Society',
-                        description: a.description || `Identified as ${a.type}`,
-                        influence: "Medium", // Legacy field
-                        metrics: {
-                            territorialization: "Moderate",
-                            coding: "Moderate",
-                            deterritorialization: "Moderate",
-                            rationale: m.rationale || "No rationale provided.",
-                            // Store dimensions for tooltip
-                            territoriality: m.territoriality,
-                            centrality: m.centrality,
-                            counter_conduct: m.counter_conduct,
-                            discursive_opposition: m.discursive_opposition
-                        },
-                        quotes: a.evidence_quotes || [],
-                        region: a.region || "Unknown",
-                        role_type: a.role_type,
-                        trace_metadata: a.trace_metadata || {
-                            source: "ai_inference",
-                            evidence: (a.evidence_quotes && a.evidence_quotes[0]) || "Inferred from analysis",
-                            provisional: true,
-                            confidence: 0.85
-                        },
-                        reflexive_log: a.reflexive_log || []
-                    });
-                    memberIds.push(id);
-                });
-
-            } else {
-                // Fallback: Infer from Impacts (Legacy)
-                const impacts = (analysis && !Array.isArray(analysis)) ? (analysis.impacts || []) : (Array.isArray(analysis) ? analysis : []);
-                const uniqueActors = new Set<string>();
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                impacts.forEach((imp: any) => {
-                    if (imp.actor) uniqueActors.add(imp.actor);
-                });
-
-                Array.from(uniqueActors).forEach(name => {
-                    const id = crypto.randomUUID();
-                    newActors.push({
-                        id,
-                        name,
-                        type: inferActorType(name),
-                        description: `Actor identified via impact analysis.`,
-                        influence: "Medium",
-                        metrics: { territorialization: "Moderate", deterritorialization: "Moderate", coding: "Moderate" },
-                        quotes: [],
-                        region: "Unknown"
-                    });
-                    memberIds.push(id);
-                });
-            }
+            // [REFACTORED] Use dedicated mapper utility
+            const { newActors: extractedActors, memberIds: extractedIds } = mapApiResponseToAssemblage(analysis);
+            newActors.push(...extractedActors);
+            memberIds.push(...extractedIds);
 
             if (memberIds.length > 0) {
                 const newConfig: EcosystemConfiguration = {

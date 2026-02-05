@@ -1,9 +1,25 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { executeGoogleSearch } from '@/lib/search-service';
+import { getAuthenticatedUserId } from '@/lib/auth-helper';
+import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 
 export async function POST(request: NextRequest) {
     try {
+        const userId = await getAuthenticatedUserId(request);
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Validate Workspace Access (optional for pure search, but good for rate limiting/billing context)
+        const workspaceId = request.headers.get('x-workspace-id');
+        if (workspaceId) {
+            const access = await validateWorkspaceAccess(userId, workspaceId);
+            if (!access.allowed) {
+                return NextResponse.json({ error: "Access Denied to Workspace" }, { status: 403 });
+            }
+        }
+
         const { actorName, context } = await request.json();
 
         if (!actorName) {

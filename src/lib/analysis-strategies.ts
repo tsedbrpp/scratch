@@ -172,13 +172,26 @@ ${text}
 Please analyze the legitimacy and justification orders in this text.`
     }),
 
-    comparative_synthesis: async (userId, { documents, lens = 'assemblage' }) => ({
-        systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparative_synthesis_v2'),
-        userContent: `DOCUMENTS TO SYNTHESIZE:
+    comparative_synthesis: async (userId, { documents, lens = 'assemblage' }) => {
+        // [GOVERNANCE] Extract Mandatory Mitigations (Material Consequence)
+        const mitigations = documents
+            .flatMap((d: any) => d.analysis?.escalation_status?.actions || [])
+            .filter((a: any) => a.type === 'MITIGATION');
+
+        const mitigationText = mitigations.length > 0
+            ? `\n\n*** MANDATORY THEORETICAL CORRECTIONS (GOVERNANCE OVERRIDES) ***\nThe following context MUST be integrated into the synthesis narrative as corrected facts/perspectives:\n${mitigations.map((m: any) => `- ${m.rationale}`).join('\n')}`
+            : "";
+
+        return {
+            systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'comparative_synthesis_v2'),
+            userContent: `DOCUMENTS TO SYNTHESIZE:
 ${JSON.stringify(documents, null, 2)}
 
+${mitigationText}
+
 Please synthesize the analysis results for these documents.${getLensInstruction(lens)}`
-    }),
+        };
+    },
 
     cultural_holes: async (userId, { sourceType, text }) => ({
         systemPrompt: await PromptRegistry.getEffectivePrompt(userId, 'cultural_holes'),

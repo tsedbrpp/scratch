@@ -1,5 +1,7 @@
 export type QualitativeMetric = "Strong" | "Moderate" | "Weak" | "Latent";
 
+import { EscalationStatus } from './escalation';
+
 export interface ReflexiveLogEntry {
     id: string;
     timestamp: number;
@@ -11,6 +13,7 @@ export interface ReflexiveLogEntry {
 
 export interface EcosystemActor {
     id: string;
+    sourceId: string; // [NEW] Track origin document for filtering
     name: string;
     type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
     description: string;
@@ -55,6 +58,9 @@ export interface EcosystemActor {
     memberCount?: number;
     stabilityScore?: number;
     isHidden?: boolean;
+
+    // [NEW] Governance Status
+    escalation_status?: EscalationStatus;
 }
 
 export interface EcosystemConfiguration {
@@ -120,6 +126,8 @@ export interface AssemblageAnalysis {
         lines_of_flight: { description: string; risk_level: "High" | "Medium" | "Low" }[];
         reterritorialization_forces: string[];
     };
+    // [NEW] Governance Status
+    escalation_status?: EscalationStatus;
 }
 
 export interface AiAbsenceAnalysis {
@@ -141,6 +149,7 @@ export interface TranslationStage {
     fidelity_score?: number; // 0-1, calculated dynamically
     betrayal_type?: "Simplification" | "Displacement" | "None";
     active_actor_count?: number; // The logic-based count of actors present in this stage
+    dominant_logic?: string; // Phase 3: Recurrence Tracking
 }
 
 export interface AssemblageExplanationHull {

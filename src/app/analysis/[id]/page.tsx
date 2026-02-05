@@ -12,10 +12,12 @@ import { LegitimacyClaimsView } from "@/components/analysis/LegitimacyClaimsView
 import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 import { VerifiedEvidenceSection } from "@/components/policy/analysis/VerifiedEvidenceSection";
 import { StressTestSection } from "@/components/policy/analysis/StressTestSection";
-import { Loader2, ArrowLeft, RefreshCw, Zap, ShieldCheck, BadgeCheck } from "lucide-react";
+import { Loader2, ArrowLeft, RefreshCw, Zap, ShieldCheck, BadgeCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { analyzeDocument, AnalysisMode } from "@/services/analysis";
 import { AnalysisResult } from "@/types";
+import { useEscalation } from "@/hooks/useEscalation";
+import { ResolutionDrawer } from "@/components/governance/ResolutionDrawer";
 
 function AnalysisPageContent() {
     const params = useParams();
@@ -26,6 +28,13 @@ function AnalysisPageContent() {
 
     // We reuse the global sources state for now
     const { sources, isLoading: isSourcesLoading, updateSource } = useSources();
+
+    // Find the source
+    const source = sources.find(s => s.id === sourceId);
+
+    // [NEW] Escalation Hook
+    const escalation = useEscalation(source?.analysis, sources);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     // Initialize from URL or default to 'overview'
     const initialSection = (searchParams.get('section') as AnalysisSection) || 'overview';
@@ -49,9 +58,6 @@ function AnalysisPageContent() {
         params.set('section', section);
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     };
-
-    // Find the source
-    const source = sources.find(s => s.id === sourceId);
 
     const handleAnalyze = async (mode: AnalysisMode) => {
         if (!source || isAnalyzing) return;
@@ -117,6 +123,29 @@ function AnalysisPageContent() {
         if (!source) return;
         const updatedAnalysis = { ...source.analysis, ...updates };
         await updateSource(source.id, { analysis: updatedAnalysis });
+        // Trigger re-evaluation when analysis updates
+        escalation.reEvaluate();
+    };
+
+    // [NEW] Handle Reassembly Action
+    const handleReassembly = async (action: import("@/types/escalation").ReassemblyAction) => {
+        if (!source) return;
+        // 1. Add action to escalation hook state
+        escalation.addReassemblyAction(action);
+
+        // 2. Persist to Source (update escalation_status)
+        // Note: For now we update the analysis object, but ideally this lives on source level too
+        // We will attach the new status to the analysis object for persistence
+        if (escalation.status) {
+            const updatedStatus = {
+                ...escalation.status,
+                status: action.type === 'MITIGATION' ? 'RESOLVED' : action.type === 'DEFERRAL' ? 'DEFERRED' : escalation.status.status,
+                actions: [...escalation.status.actions, action]
+            };
+
+            // Cast to any to avoid type check issues if types are not perfectly synced yet
+            await handleUpdateAnalysis({ escalation_status: updatedStatus } as any);
+        }
     };
 
     if (isSourcesLoading) {
@@ -159,6 +188,9 @@ function AnalysisPageContent() {
                 activeSection={activeSection}
                 onSectionChange={handleSectionChange}
                 className="shrink-0 z-20 shadow-sm"
+                escalationStatus={escalation.status}
+                isAnalyzing={escalation.isAnalyzing}
+                onEscalationClick={() => setIsDrawerOpen(true)}
             />
 
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
@@ -179,6 +211,32 @@ function AnalysisPageContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* [DEV TOOL] Simulate Uncertainty */}
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 shadow-lg"
+                            onClick={() => {
+                                // Correctly update hook state so subsequent actions work
+                                escalation.setManualStatus({
+                                    level: 'MEDIUM',
+                                    status: 'DETECTED',
+                                    reasons: ['MANUAL_TRIGGER'],
+                                    rationale: `Pattern Sentinel reported high epistemic uncertainty.\n\nAmbiguity Context:\nPossible Hidden Normativity: The phrase presents a specific governance model as a factual description without examining alternative models.\nEvidence: "This policy constructs AI governance as a centralized, technocratic consumer-protection regime"`,
+                                    timestamp: Date.now(),
+                                    configuration: {
+                                        recurrence_count: 1,
+                                        corpusSize: 10
+                                    },
+                                    actions: []
+                                });
+                                setIsDrawerOpen(true);
+                            }}
+                        >
+                            <Sparkles className="mr-2 h-3 w-3" />
+                            Test: Uncertainty
+                        </Button>
+
                         {activeSection === 'reflexivity' && (
                             <Button
                                 size="sm"
@@ -233,7 +291,7 @@ function AnalysisPageContent() {
                         )}
 
                         {activeSection === 'assemblage_dynamics' && (
-                            <AssemblageDynamicsView analysis={source.analysis} />
+                            <AssemblageDynamicsView analysis={source.analysis} sourceId={source.id} />
                         )}
 
                         {activeSection === 'legitimacy' && (
@@ -305,8 +363,17 @@ function AnalysisPageContent() {
                         )}
                     </div>
                 </main>
-            </div>
-        </div>
+            </div >
+
+            {/* [NEW] Resolution Drawer */}
+            < ResolutionDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)
+                }
+                status={escalation.status}
+                onReassemblyAction={handleReassembly}
+            />
+        </div >
     );
 }
 

@@ -98,6 +98,7 @@ export interface AnalysisResult {
         coloniality?: string; // New explanation
     };
     // Assemblage Dynamics
+    assemblage_analysis?: import('./ecosystem').AssemblageAnalysis;
     assemblage_dynamics?: {
         territorialization: string;
         deterritorialization: string;
@@ -180,6 +181,9 @@ export interface AnalysisResult {
     confidence?: import('./provenance').ConfidenceScore;
     metadata?: import('./provenance').PromptMetadata;
     provenance_chain?: import('./provenance').ProvenanceChain;
+
+    // [NEW] Governance Status
+    escalation_status?: import('./escalation').EscalationStatus;
 }
 
 // Core interfaces for analysis

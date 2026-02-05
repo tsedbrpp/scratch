@@ -10,8 +10,8 @@ import { HelpCircle } from "lucide-react";
 import Link from "next/link";
 
 interface HelpTooltipProps {
-    title: string;
-    description: string;
+    title?: string;
+    description?: string;
     videoUrl?: string;
     glossaryTerm?: string;
     learnMoreUrl?: string;

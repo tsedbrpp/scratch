@@ -32,6 +32,7 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 
 import { useViewMode } from "@/hooks/useViewMode"; // [PD]
 import { ViewModeToggle } from "@/components/ui/view-mode-toggle"; // [PD]
+import { WorkspaceSelector } from "@/components/collaboration/WorkspaceSelector"; // [Collab]
 
 interface NavGroup {
     title: string;
@@ -211,9 +212,10 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                 </Link>
             </div>
 
-            {/* [PD] View Toggle */}
+            {/* [PD] View Toggle & Workspace */}
             {!isCollapsed && (
-                <div className="px-3 pt-3">
+                <div className="px-3 pt-3 space-y-2">
+                    <WorkspaceSelector />
                     <ViewModeToggle className="bg-slate-900 border-slate-800" />
                 </div>
             )}

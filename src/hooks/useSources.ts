@@ -1,25 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Source } from '@/types';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 export function useSources() {
+    const { currentWorkspaceId } = useWorkspace();
     const [sources, setSources] = useState<Source[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchSources();
-    }, []);
+    const getHeaders = useCallback((base: HeadersInit = {}) => {
+        const headers = { ...base } as Record<string, string>;
+        if (currentWorkspaceId) {
+            headers['x-workspace-id'] = currentWorkspaceId;
+        }
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+        }
+        return headers;
+    }, [currentWorkspaceId]);
 
-    const fetchSources = async () => {
+    const fetchSources = useCallback(async () => {
+        setIsLoading(true);
         try {
-            const headers: HeadersInit = {};
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-            }
-
             const response = await fetch('/api/sources', {
                 cache: 'no-store',
-                headers
+                headers: getHeaders()
             });
             if (!response.ok) throw new Error('Failed to fetch sources');
             const data = await response.json();
@@ -29,18 +34,19 @@ export function useSources() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [getHeaders]);
 
-    const addSource = async (source: Source) => {
+    useEffect(() => {
+        if (currentWorkspaceId) {
+            fetchSources();
+        }
+    }, [currentWorkspaceId, fetchSources]);
+
+    const addSource = useCallback(async (source: Source) => {
         try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-            }
-
             const response = await fetch('/api/sources', {
                 method: 'POST',
-                headers: headers,
+                headers: getHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(source),
             });
             if (!response.ok) throw new Error('Failed to add source');
@@ -51,18 +57,13 @@ export function useSources() {
             setError(err instanceof Error ? err.message : 'Failed to add source');
             throw err;
         }
-    };
+    }, [getHeaders]);
 
-    const updateSource = async (id: string, updates: Partial<Source>) => {
+    const updateSource = useCallback(async (id: string, updates: Partial<Source>) => {
         try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-            }
-
             const response = await fetch(`/api/sources/${id}`, {
                 method: 'PUT',
-                headers: headers,
+                headers: getHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(updates),
             });
             if (!response.ok) {
@@ -83,18 +84,13 @@ export function useSources() {
             setError(err instanceof Error ? err.message : 'Failed to update source');
             throw err;
         }
-    };
+    }, [getHeaders]);
 
-    const deleteSource = async (id: string) => {
+    const deleteSource = useCallback(async (id: string) => {
         try {
-            const headers: HeadersInit = {};
-            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-            }
-
             const response = await fetch(`/api/sources/${id}`, {
                 method: 'DELETE',
-                headers: headers
+                headers: getHeaders()
             });
             // If successful OR if 404 (already deleted), update state
             if (response.ok || response.status === 404) {
@@ -106,9 +102,9 @@ export function useSources() {
             setError(err instanceof Error ? err.message : 'Failed to delete source');
             throw err;
         }
-    };
+    }, [getHeaders]);
 
-    return {
+    return useMemo(() => ({
         sources,
         isLoading,
         error,
@@ -116,5 +112,5 @@ export function useSources() {
         updateSource,
         deleteSource,
         refresh: fetchSources
-    };
+    }), [sources, isLoading, error, addSource, updateSource, deleteSource, fetchSources]);
 }

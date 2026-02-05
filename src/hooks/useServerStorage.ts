@@ -1,25 +1,33 @@
 import { useState, useEffect, useCallback } from "react";
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
+    const { currentWorkspaceId } = useWorkspace();
     const [storedValue, setStoredValue] = useState<T>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
+
+    const getHeaders = (base: HeadersInit = {}) => {
+        const headers = { ...base } as Record<string, string>;
+        if (currentWorkspaceId) {
+            headers['x-workspace-id'] = currentWorkspaceId;
+        }
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+        }
+        return headers;
+    };
 
     // Fetch initial value from server
     useEffect(() => {
         let isMounted = true;
+        // If workspace is loading or undefined initially, we might wait?
+        // But for now, we'll fetch.
 
         const fetchValue = async () => {
             try {
-                const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                // Send demo user ID if configured (relaxed check to match EcosystemPage)
-                // Send demo user ID if configured (relaxed check to match EcosystemPage)
                 // Fix: Must match auth-helper logic (check enable flag, fallback to 'demo-user')
-                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-                }
-
                 const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
-                    headers: headers
+                    headers: getHeaders()
                 });
 
                 if (response.ok) {
@@ -39,12 +47,18 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             }
         };
 
-        fetchValue();
+        if (currentWorkspaceId) {
+            fetchValue();
+        } else {
+            // If no workspace, maybe we shouldn't fetch? Or fetch default?
+            // Assuming default logic handles it, or just fetch to fail/return null
+            fetchValue();
+        }
 
         return () => {
             isMounted = false;
         };
-    }, [key]);
+    }, [key, currentWorkspaceId]);
 
     // Return a wrapped version of useState's setter function that ...
     // ... persists the new value to the server.
@@ -55,14 +69,9 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                 const valueToStore = value instanceof Function ? value(prevValue) : value;
 
                 // Save to server
-                const headers: HeadersInit = { 'Content-Type': 'application/json' };
-                if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
-                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
-                }
-
                 fetch('/api/storage', {
                     method: 'POST',
-                    headers: headers,
+                    headers: getHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ key, value: valueToStore }),
                 }).catch(err => console.error(`Failed to save storage key "${key}":`, err));
 
@@ -71,7 +80,8 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         } catch (error) {
             console.error(`Error setting value for key "${key}":`, error);
         }
-    }, [key]);
+    }, [key, currentWorkspaceId]);
+
 
     return [storedValue, setValue, isLoading];
 }

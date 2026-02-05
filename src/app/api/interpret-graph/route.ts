@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         **Output Format:**
         Return a JSON object:
         {
-            "title": "Short catchy title describing the contrast (e.g. 'The Bureaucracy of Risk vs. The Shield of Rights')",
+            "title": "Short catchy title (MAX 10 WORDS) describing the contrast (e.g. 'Bureaucracy of Risk vs. Shield of Rights')",
             "analysis": "A clear, non-academic paragraph explaining what the visual patterns mean. Use bolding."
         }`;
 

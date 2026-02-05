@@ -20,7 +20,7 @@ export interface SimulationNode extends d3.SimulationNodeDatum {
     isHidden?: boolean;
 }
 
-interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
+export interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
     source: string | SimulationNode;
     target: string | SimulationNode;
     type: string;

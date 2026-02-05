@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep 
 
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useAssemblageExtraction } from "@/hooks/useAssemblageExtraction";
+import { useWorkspace } from "@/providers/WorkspaceProvider"; // [NEW] Workspace Context
 
 
 // Components
@@ -36,6 +37,7 @@ function EcosystemContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { isReadOnly } = useDemoMode();
+    const { currentWorkspaceId } = useWorkspace(); // [NEW] Workspace ID
     const returnToSynthesis = searchParams.get("returnTo") === "synthesis";
     // Sources for policy selection
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
@@ -141,9 +143,12 @@ function EcosystemContent() {
 
                 await Promise.all(batch.map(async (actor) => {
                     try {
+                        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                        if (currentWorkspaceId) headers['x-workspace-id'] = currentWorkspaceId;
+
                         const response = await fetch('/api/enrich-actor', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers,
                             body: JSON.stringify({
                                 actorName: actor.name,
                                 context: actor.type === 'Policymaker' ? 'government ministry' : 'official website, home page'
@@ -446,6 +451,7 @@ function EcosystemContent() {
                                                 if (confirmMigrate) {
                                                     try {
                                                         const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                                                        if (currentWorkspaceId) headers['x-workspace-id'] = currentWorkspaceId;
                                                         if (process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                                                             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
                                                         }
@@ -457,7 +463,8 @@ function EcosystemContent() {
                                                 }
                                             }
                                             setSelectedPolicyId(val);
-                                        }}
+                                        }
+                                        }
                                     >
                                         <SelectTrigger className="h-9 text-sm">
                                             <SelectValue placeholder="Select a policy document..." />

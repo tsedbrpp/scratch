@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+// 1. Define Routes that MUST be protected
 const isProtectedRoute = createRouteMatcher([
     "/dashboard(.*)",
     "/data(.*)",
@@ -15,59 +16,45 @@ const isProtectedRoute = createRouteMatcher([
     "/comparison(.*)",
     "/admin(.*)",
     "/settings(.*)",
-    "/api(.*)" // [NEW] Protect all API routes by default
+    "/api(.*)" // Protects all API routes by default
 ]);
 
-// Explicitly define public routes (webhooks must be public for Stripe)
+// 2. Define Public Routes (Homepage + Webhooks)
+// These take precedence over protected routes
 const isPublicRoute = createRouteMatcher([
     "/",
     "/api/webhooks(.*)"
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-    // Explicitly allow landin page and public routes (webhooks)
+    // A. Public Routes: Allow immediately (Crucial for SEO)
     if (isPublicRoute(request)) {
-        console.log('[MIDDLEWARE] Allowing public route:', request.nextUrl.pathname);
         return;
     }
 
-    // Bypass auth if demo mode is enabled (but NOT for API routes generally, unless specific logic handles it - though here we might want to be careful. 
-    // Actually, demo mode usually implies read-only access to protected UI, but API access still needs control. 
-    // However, the previous logic was: if demo mode, return. This effectively disables auth for the whole app in demo mode. 
-    // We should probably keep that for the UI but maybe enforced stricter for API? 
-    // For now, I will preserve existing behavior but ensure API catch-all works when NOT in demo mode.)
-    // Bypass auth if demo mode is enabled
-    // We log the value to debug Vercel environment behavior
-    // Robust check: Next.js middleware sometimes only sees server-side vars or public vars depending on bundling.
-    // We check both to be safe.
+    // B. Demo Mode Logic
+    // Handles access for demo users without forcing Clerk login
     const demoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE || process.env.ENABLE_DEMO_MODE;
-    console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname, 'Demo Mode Env:', demoMode);
 
     if (demoMode === "true") {
         const { userId } = await auth();
-        // Only bypass auth if user is NOT logged in. 
-        // If logged in, we proceed to standard protection checks.
+        // If user is NOT logged in, bypass auth so they can see the demo
         if (!userId) {
-            console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode (No Session)');
+            console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode');
             return;
         }
-        console.log('[MIDDLEWARE] Valid Session detected in Demo Environment. Proceeding with Auth.');
     }
 
-
-
+    // C. Protected Routes: Enforce Login
     if (isProtectedRoute(request)) {
-        console.log('[MIDDLEWARE] Protecting route:', request.nextUrl.pathname);
         await auth.protect();
-    } else {
-        console.log('[MIDDLEWARE] Allowing public route:', request.nextUrl.pathname);
     }
 });
 
 export const config = {
     matcher: [
-        // Skip Next.js internals and all static files, unless found in search params
-        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt)).*)',
+        // Skip Next.js internals and all static files, plus SEO files
+        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt)|robots\\.txt|sitemap\\.xml).*)',
         // Always run for API routes
         '/(api|trpc)(.*)',
     ],
