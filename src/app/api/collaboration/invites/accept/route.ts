@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
         if (!userId) return createUnauthorizedResponse();
 
         const body = await req.json();
-        const { token } = body;
+        let { token } = body;
+
+        // URL-decode the token (colon gets encoded as %3A in URLs)
+        token = decodeURIComponent(token);
 
         console.log('[Accept Invitation]', {
             userId,
