@@ -81,7 +81,7 @@ export const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ open, on
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[500px] bg-zinc-700 border-zinc-500 shadow-2xl text-white">
+            <DialogContent className="sm:max-w-[500px] bg-zinc-600 border-zinc-400 shadow-2xl text-white">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <UserPlus className="w-5 h-5 text-indigo-400" />
