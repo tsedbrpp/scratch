@@ -208,7 +208,9 @@ export class CollaborationService {
      * Check if user is a member of the team
      */
     static async isTeamMember(teamId: string, userId: string): Promise<boolean> {
-        return await redis.sismember(`${teamId}:members`, userId) === 1;
+        // Normalize userId to lowercase to match createTeam behavior
+        const normUserId = userId.toLowerCase();
+        return await redis.sismember(`${teamId}:members`, normUserId) === 1;
     }
 
     /**
