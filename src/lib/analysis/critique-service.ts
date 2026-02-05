@@ -1,5 +1,6 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import OpenAI from 'openai';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PromptRegistry } from '@/lib/prompts/registry';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

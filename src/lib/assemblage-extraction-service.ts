@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { executeGoogleSearch } from '@/lib/search-service';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EcosystemActor, EcosystemEdge } from '@/types/ecosystem';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -148,9 +149,9 @@ export class AssemblageExtractionService {
                     actors.find(a => normalize(a.name).includes(n) || n.includes(normalize(a.name)));
             };
 
-             
+
             const sourceActor = findActor(r.source);
-             
+
             const targetActor = findActor(r.target);
 
             if (sourceActor && targetActor) {

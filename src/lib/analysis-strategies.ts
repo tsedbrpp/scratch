@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PromptRegistry } from '@/lib/prompts/registry';
 
 type StrategyResult = { systemPrompt: string; userContent: string };
