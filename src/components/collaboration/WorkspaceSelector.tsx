@@ -175,17 +175,16 @@ export const WorkspaceSelector = () => {
                             autoFocus
                         />
                     </div>
+                    <DialogFooter>
+                        <Button
+                            type="submit"
+                            disabled={isCreating || !newTeamName.trim()}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                            {isCreating ? 'Creating...' : 'Create Team'}
+                        </Button>
+                    </DialogFooter>
                 </form>
-                <DialogFooter>
-                    <Button
-                        type="submit"
-                        onClick={handleCreateTeam}
-                        disabled={isCreating || !newTeamName.trim()}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                    >
-                        {isCreating ? 'Creating...' : 'Create Team'}
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
