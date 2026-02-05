@@ -22,7 +22,7 @@ interface PageProps {
 export default function AcceptInvitePage({ params }: PageProps) {
     const router = useRouter();
     const { userId, isLoaded } = useAuth();
-    const { switchToWorkspace } = useWorkspace();
+    const { switchWorkspace } = useWorkspace();
     const [inviteDetails, setInviteDetails] = useState<InviteDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export default function AcceptInvitePage({ params }: PageProps) {
 
             // Switch to team workspace and redirect
             setTimeout(() => {
-                switchToWorkspace(data.teamId);
+                switchWorkspace(data.teamId);
                 router.push('/dashboard');
             }, 1500);
         } catch (err) {
