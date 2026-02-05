@@ -7,7 +7,7 @@ export async function GET(
     { params }: { params: { token: string } }
 ) {
     try {
-        const { token } = params;
+        const { token } = await params;
 
         const details = await CollaborationService.getInviteDetails(token);
 

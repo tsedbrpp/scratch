@@ -11,7 +11,7 @@ export async function GET(
         const userId = await getAuthenticatedUserId(req);
         if (!userId) return createUnauthorizedResponse();
 
-        const { teamId } = params;
+        const { teamId } = await params;
 
         // Debug logging
         console.log('[Team Access Check]', {
