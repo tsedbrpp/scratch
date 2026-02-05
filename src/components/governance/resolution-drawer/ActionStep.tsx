@@ -1,10 +1,9 @@
 import React from 'react';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EscalationStatus, DeferralReason } from '@/types/escalation';
-import { Sparkles, ShieldCheck, CheckCircle } from 'lucide-react';
 
 interface ActionStepProps {
     pathway: 'MITIGATION' | 'JUSTIFICATION' | 'DEFERRAL';
