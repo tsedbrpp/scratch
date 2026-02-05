@@ -57,12 +57,13 @@ export async function validateWorkspaceAccess(
 
     // 5. Team Scope Check
     if (normContext.startsWith('team_')) {
-        const teamKey = `team:${normContext}`;
+        // Redis keys in CollaborationService use format: ${teamId}:metadata, ${teamId}:members, ${teamId}:roles
+        // NOT team:${teamId}:metadata - so we use normContext directly
 
         // A. Existence Check (Prevent Enumeration by masking 404 as 403)
         // We do NOT return "Team Not Found" to the user, we return "Access Denied".
         // This prevents attackers from guessing IDs to see which ones return 404 vs 403.
-        const exists = await redis.exists(`${teamKey}:metadata`);
+        const exists = await redis.exists(`${normContext}:metadata`);
         if (!exists) {
             // Log for debugging/security but return generic error
             return { allowed: false, scope: 'TEAM', reason: 'Access Denied', statusCode: 403 };
@@ -70,14 +71,14 @@ export async function validateWorkspaceAccess(
 
         // B. Membership Check
         // SISMEMBER is O(1) - Fast
-        const isMember = await redis.sismember(`${teamKey}:members`, normUser);
+        const isMember = await redis.sismember(`${normContext}:members`, normUser);
         if (!isMember) {
             return { allowed: false, scope: 'TEAM', reason: 'Access Denied', statusCode: 403 };
         }
 
         // C. Role Retrieval
         // If they are a member, they MUST have a role. Fallback to VIEWER if missing (Fail Safe).
-        const roleRaw = await redis.hget(`${teamKey}:roles`, normUser);
+        const roleRaw = await redis.hget(`${normContext}:roles`, normUser);
         const role = (roleRaw || 'VIEWER') as TeamRole;
 
         return { allowed: true, scope: 'TEAM', role, statusCode: 200 };

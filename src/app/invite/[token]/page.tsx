@@ -10,39 +10,49 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Users, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface InvitePageProps {
-    params: { token: string };
+interface InviteDetails {
+    teamName: string;
+    inviterEmail: string;
+    role: string;
 }
 
-export default function AcceptInvitePage({ params }: InvitePageProps) {
+interface PageProps {
+    params: Promise<{ token: string }>;
+}
+
+export default function AcceptInvitePage({ params }: PageProps) {
     const router = useRouter();
     const { userId, isLoaded } = useAuth();
-    const { switchWorkspace } = useWorkspace();
-    const [inviteData, setInviteData] = useState<{
-        teamName: string;
-        inviterEmail: string;
-        role: string;
-    } | null>(null);
+    const { switchToWorkspace } = useWorkspace();
+    const [inviteDetails, setInviteDetails] = useState<InviteDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAccepting, setIsAccepting] = useState(false);
     const [accepted, setAccepted] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
+
+    // Unwrap params
+    useEffect(() => {
+        params.then(p => setToken(p.token));
+    }, [params]);
 
     useEffect(() => {
+        if (!token) return;
+
         // Redirect to login if not authenticated
         if (isLoaded && !userId) {
-            router.push(`/sign-in?redirect_url=/invite/${params.token}`);
+            router.push(`/sign-in?redirect_url=/invite/${token}`);
             return;
         }
 
-        if (isLoaded && userId) {
+        if (isLoaded && token) {
             fetchInviteDetails();
         }
-    }, [isLoaded, userId]);
+    }, [isLoaded, token]);
 
     const fetchInviteDetails = async () => {
         try {
-            const res = await fetch(`/api/collaboration/invites/${params.token}`);
+            const res = await fetch(`/api/collaboration/invites/${token}`);
             const data = await res.json();
 
             if (!res.ok) {
@@ -65,14 +75,15 @@ export default function AcceptInvitePage({ params }: InvitePageProps) {
         }
     };
 
-    const handleAcceptInvite = async () => {
-        setIsAccepting(true);
+    const acceptInvitation = async () => {
+        if (!token) return;
 
+        setIsAccepting(true);
         try {
             const res = await fetch('/api/collaboration/invites/accept', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: params.token })
+                body: JSON.stringify({ token })
             });
 
             const data = await res.json();
