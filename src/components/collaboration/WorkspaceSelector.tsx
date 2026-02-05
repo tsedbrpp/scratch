@@ -154,7 +154,7 @@ export const WorkspaceSelector = () => {
             </DropdownMenu>
 
             {/* Create Team Dialog */}
-            <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-700 shadow-2xl backdrop-blur-sm">
+            <DialogContent className="sm:max-w-[425px] bg-zinc-800 border-zinc-600 shadow-2xl backdrop-blur-sm">
                 <DialogHeader>
                     <DialogTitle>Create Team</DialogTitle>
                     <DialogDescription>
