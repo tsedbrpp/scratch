@@ -158,4 +158,4 @@ export const BRAZIL_BASELINE: Source = {
     analysis: BRAZIL_GOVERNANCE_ANALYSIS
 };
 
-export const BASELINE_SOURCES: Source[] = [EU_BASELINE, BRAZIL_BASELINE];
+export const BASELINE_SOURCES: Source[] = [];
