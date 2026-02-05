@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { verifyQuotes, checkFuzzyMatch } from '@/lib/analysis-utils';
-import { PositionalityData } from '@/types';
+import { PositionalityData, Source } from '@/types';
 import { parseAnalysisResponse } from '@/lib/analysis-parser';
 import { runStressTest } from '@/lib/analysis/stress-test-service';
 import { runCritiqueLoop } from '@/lib/analysis/critique-service';
@@ -22,14 +22,10 @@ export async function getAnalysisConfig(
         text?: string;
         title?: string;
         sourceType?: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sourceA?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sourceB?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sourceC?: any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        documents?: any[];
+        sourceA?: Source;
+        sourceB?: Source;
+        sourceC?: Source;
+        documents?: Source[];
         lens?: string;
     }
 ): Promise<AnalysisConfig> {
@@ -90,10 +86,17 @@ export function generateCalibrationContext(positionality: string | Positionality
 export async function performAnalysis(
     openai: OpenAI,
     userId: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    requestData: any
+    requestData: {
+        text: string;
+        sourceType?: string;
+        analysisMode?: string;
+        positionality?: string | PositionalityData;
+        lens?: string;
+        existingAnalysis?: unknown;
+        [key: string]: unknown;
+    }
 ) {
-    const { text, sourceType, analysisMode, positionality, lens } = requestData;
+    const { text, sourceType, analysisMode = 'dsf', positionality, lens } = requestData;
 
     // Config
     const config = await getAnalysisConfig(userId, analysisMode, requestData);
@@ -202,7 +205,7 @@ export async function performAnalysis(
     };
 }
 
-export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, requestData: any) {
+export async function runComprehensiveAnalysis(openai: OpenAI, userId: string, requestData: { text: string;[key: string]: unknown }) {
     logger.analysis(`[COMPREHENSIVE] Starting Comprehensive Scan for User ${userId}`);
 
     // 1. Run Standard Scan (Assemblage V3)

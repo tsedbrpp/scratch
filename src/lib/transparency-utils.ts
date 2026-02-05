@@ -24,24 +24,32 @@ export function capturePromptMetadata(
  * Extracts confidence score and justification from LLM response
  * Expects the LLM to include a confidence field in its JSON response
  */
-export function extractConfidenceScore(response: any): { score: number; justification: string } | null {
+export function extractConfidenceScore(response: unknown): { score: number; justification: string } | null {
+    // Type guard: ensure response is an object
+    if (typeof response !== 'object' || response === null) {
+        return null;
+    }
+
+    const resp = response as Record<string, unknown>;
+
     // Try to find confidence in various possible locations
-    if (response.confidence_score !== undefined) {
+    if (resp.confidence_score !== undefined) {
         return {
-            score: response.confidence_score,
-            justification: response.confidence_justification || "No justification provided"
+            score: typeof resp.confidence_score === 'number' ? resp.confidence_score : 0,
+            justification: typeof resp.confidence_justification === 'string' ? resp.confidence_justification : "No justification provided"
         };
     }
 
-    if (response.confidence !== undefined) {
-        if (typeof response.confidence === 'object') {
+    if (resp.confidence !== undefined) {
+        if (typeof resp.confidence === 'object' && resp.confidence !== null) {
+            const conf = resp.confidence as Record<string, unknown>;
             return {
-                score: response.confidence.score || 0,
-                justification: response.confidence.justification || "No justification provided"
+                score: typeof conf.score === 'number' ? conf.score : 0,
+                justification: typeof conf.justification === 'string' ? conf.justification : "No justification provided"
             };
         }
         return {
-            score: response.confidence,
+            score: typeof resp.confidence === 'number' ? resp.confidence : 0,
             justification: "No justification provided"
         };
     }
