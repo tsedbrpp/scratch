@@ -6,7 +6,6 @@ import { useAuth } from '@clerk/nextjs';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Users, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,7 +30,7 @@ export default function AcceptInvitePage({ params }: PageProps) {
     const [accepted, setAccepted] = useState(false);
     const [token, setToken] = useState<string | null>(null);
 
-    // Unwrap params
+    // Unwrap params Promise
     useEffect(() => {
         params.then(p => setToken(p.token));
     }, [params]);
@@ -45,12 +44,14 @@ export default function AcceptInvitePage({ params }: PageProps) {
             return;
         }
 
-        if (isLoaded && token) {
+        if (isLoaded && userId) {
             fetchInviteDetails();
         }
-    }, [isLoaded, token]);
+    }, [isLoaded, userId, token]);
 
     const fetchInviteDetails = async () => {
+        if (!token) return;
+
         try {
             const res = await fetch(`/api/collaboration/invites/${token}`);
             const data = await res.json();
@@ -67,7 +68,7 @@ export default function AcceptInvitePage({ params }: PageProps) {
                 return;
             }
 
-            setInviteData(data);
+            setInviteDetails(data);
         } catch (err) {
             setError('Failed to load invitation details');
         } finally {
@@ -75,10 +76,11 @@ export default function AcceptInvitePage({ params }: PageProps) {
         }
     };
 
-    const acceptInvitation = async () => {
+    const handleAcceptInvite = async () => {
         if (!token) return;
 
         setIsAccepting(true);
+
         try {
             const res = await fetch('/api/collaboration/invites/accept', {
                 method: 'POST',
@@ -95,11 +97,11 @@ export default function AcceptInvitePage({ params }: PageProps) {
             }
 
             setAccepted(true);
-            toast.success(`Welcome to ${inviteData?.teamName}!`);
+            toast.success(`Welcome to ${inviteDetails?.teamName}!`);
 
             // Switch to team workspace and redirect
             setTimeout(() => {
-                switchWorkspace(data.teamId);
+                switchToWorkspace(data.teamId);
                 router.push('/dashboard');
             }, 1500);
         } catch (err) {
@@ -113,7 +115,9 @@ export default function AcceptInvitePage({ params }: PageProps) {
             <div className="min-h-screen flex items-center justify-center bg-zinc-950">
                 <Card className="w-full max-w-md bg-zinc-900 border-zinc-800">
                     <CardContent className="pt-6">
-                        <Skeleton className="h-32 bg-zinc-800" />
+                        <div className="text-center py-8">
+                            <p className="text-zinc-400">Loading invitation...</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -171,15 +175,15 @@ export default function AcceptInvitePage({ params }: PageProps) {
                     <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
                         <div>
                             <p className="text-sm text-zinc-400">Team Name</p>
-                            <p className="text-lg font-semibold text-white">{inviteData?.teamName}</p>
+                            <p className="text-lg font-semibold text-white">{inviteDetails?.teamName}</p>
                         </div>
                         <div>
                             <p className="text-sm text-zinc-400">Invited by</p>
-                            <p className="text-white">{inviteData?.inviterEmail}</p>
+                            <p className="text-white">{inviteDetails?.inviterEmail}</p>
                         </div>
                         <div>
                             <p className="text-sm text-zinc-400">Role</p>
-                            <p className="text-white font-medium">{inviteData?.role}</p>
+                            <p className="text-white font-medium">{inviteDetails?.role}</p>
                         </div>
                     </div>
 
