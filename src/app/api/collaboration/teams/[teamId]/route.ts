@@ -13,8 +13,23 @@ export async function GET(
 
         const { teamId } = params;
 
+        // Debug logging
+        console.log('[Team Access Check]', {
+            userId,
+            teamId,
+            timestamp: new Date().toISOString()
+        });
+
         // 1. Verify user has access to this team
         const isMember = await CollaborationService.isTeamMember(teamId, userId);
+
+        console.log('[Team Access Result]', {
+            userId,
+            teamId,
+            isMember,
+            timestamp: new Date().toISOString()
+        });
+
         if (!isMember) {
             return NextResponse.json({ error: 'Access denied' }, { status: 403 });
         }
