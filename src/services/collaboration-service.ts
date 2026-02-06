@@ -195,7 +195,8 @@ export class CollaborationService {
 
                 try {
                     const { clerkClient } = await import('@clerk/nextjs/server');
-                    const user = await clerkClient().users.getUser(userId);
+                    const client = await clerkClient();
+                    const user = await client.users.getUser(userId);
                     email = user.emailAddresses[0]?.emailAddress || userId;
                 } catch (error) {
                     console.warn(`[getTeamMembers] Failed to fetch user ${userId} from Clerk:`, error);
