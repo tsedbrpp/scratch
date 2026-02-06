@@ -148,6 +148,17 @@ function AnalysisPageContent() {
         }
     };
 
+    // [Collab Fix] Redirect if source not found after loading (happens after workspace switch)
+    useEffect(() => {
+        if (!isSourcesLoading && !source && sourceId) {
+            // Briefly wait to ensure it's not a transient state
+            const timer = setTimeout(() => {
+                router.push('/data');
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isSourcesLoading, source, sourceId, router]);
+
     if (isSourcesLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-slate-50">
@@ -165,9 +176,13 @@ function AnalysisPageContent() {
                 <div className="text-center max-w-md p-6">
                     <h2 className="text-xl font-bold text-slate-800 mb-2">Document Not Found</h2>
                     <p className="text-slate-500 mb-6">The analysis you requested could not be located using ID: {sourceId}</p>
-                    <Button onClick={() => router.push('/data')} variant="secondary">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Returns to Documents
-                    </Button>
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                        <p className="text-xs text-slate-400">Redirecting to documents list...</p>
+                        <Button onClick={() => router.push('/data')} variant="secondary">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Returns to Documents
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -228,7 +243,8 @@ function AnalysisPageContent() {
                                         recurrence_count: 1,
                                         corpusSize: 10
                                     },
-                                    actions: []
+                                    actions: [],
+                                    printed_limitations: []
                                 });
                                 setIsDrawerOpen(true);
                             }}

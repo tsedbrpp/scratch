@@ -42,6 +42,7 @@ export interface EscalationConfiguration {
     risk_domain_severity?: 'GENERAL' | 'MEDICAL' | 'LEGAL' | 'CRITICAL';
     evaluator_variance?: number; // 0-1
     enforcement_signal_strength?: 'LOW' | 'MEDIUM' | 'HIGH';
+    corpusSize?: number; // [FIX] Added missing property
 }
 
 export interface EscalationStatus {
@@ -50,6 +51,7 @@ export interface EscalationStatus {
     reasons: EscalationReasonCode[];
     rationale?: string; // AI or Rule rationale
     configuration?: EscalationConfiguration;
+    timestamp?: number; // [FIX] Added missing property
     actions: ReassemblyAction[]; // Audit trail
     printed_limitations: string[]; // For PDF inscription
 }

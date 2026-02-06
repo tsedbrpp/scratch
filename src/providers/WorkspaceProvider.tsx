@@ -59,19 +59,15 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (isLoaded && userId && !currentWorkspaceId) {
             // Restore from localStorage if possible
             const saved = localStorage.getItem('last_workspace_id');
-            // Verify access to saved workspace (basic check: matches userId or starts with team_)
-            // Ideally we check if it is in valid list, but list fetches async.
-            // For MVP: Default to userId, then allow switch if valid.
             if (saved) {
-                // We'll validate strictly after fetching teams, but optimistically set it now.
-                // Or safer: Set to userId first.
-                // Let's set to userId first to be safe, then let the fetchTeams logic override if saving is robust.
-                setCurrentWorkspaceId(userId);
+                // Optimistically set the saved ID (Team or Personal)
+                setCurrentWorkspaceId(saved);
             } else {
+                // Default to Personal IMMEDIATELY if no saved state
                 setCurrentWorkspaceId(userId);
             }
         }
-    }, [isLoaded, userId]);
+    }, [isLoaded, userId, currentWorkspaceId]);
 
     // 2. Fetch Teams
     const fetchTeams = async () => {
@@ -157,7 +153,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     return (
         <WorkspaceContext.Provider value={{
-            currentWorkspaceId: currentWorkspaceId || userId || null, // Fallback to userId
+            currentWorkspaceId,
             workspaceType,
             availableTeams,
             isLoading,
