@@ -81,7 +81,9 @@ export interface AnalysisResult {
         flexibility: number;
         market_power: number;
         procedurality: number;
-        coloniality?: number; // New score
+        coloniality?: number;
+        epistemic_asymmetry?: number;
+        power_concentration?: number;
     };
     structural_pillars?: {
         risk?: { title: string; description: string; badge: string; quote?: string };

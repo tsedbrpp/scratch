@@ -12,6 +12,9 @@ import { DEFAULT_PERSPECTIVE_A, DEFAULT_PERSPECTIVE_B } from "@/lib/perspectives
 import { useCredits } from "@/hooks/useCredits";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+import { TransparencyPanel } from "@/components/analysis/TransparencyPanel";
+import { TransparencyService } from "@/services/transparency-service";
+import { AlertTriangle } from "lucide-react";
 
 // Lazy load heavy compass
 const GovernanceCompass = dynamic(() => import('@/components/policy/GovernanceCompass').then(mod => mod.GovernanceCompass), {
@@ -276,6 +279,55 @@ export function OverviewDashboard({
                 </div>
             </div>
 
+            {/* Algorithmic Transparency - Phase 2 (Global Section) */}
+            <div className="pt-8 border-t border-slate-200 mt-8 space-y-6">
+                <div className="flex items-center gap-2 px-1 text-indigo-900/60 transition-colors hover:text-indigo-900">
+                    <Sparkles className="h-4 w-4" />
+                    <h4 className="text-sm font-bold uppercase tracking-wider">Algorithmic Transparency & Methodology</h4>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 mt-2">
+                    <TransparencyPanel
+                        metadata={TransparencyService.getEpistemicAsymmetryTransparency()}
+                        score={analysis.governance_scores?.epistemic_asymmetry || analysis.governance_scores?.coloniality || 0}
+                    />
+                    <TransparencyPanel
+                        metadata={TransparencyService.getPowerConcentrationTransparency()}
+                        score={analysis.governance_scores?.power_concentration || analysis.governance_scores?.centralization || 0}
+                    />
+                </div>
+
+                {/* Overall Design Rationale & Caveats */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 transition-all hover:bg-slate-100/50">
+                    <div className="flex items-center gap-2 mb-4">
+                        <AlertTriangle className="h-5 w-5 text-amber-600" />
+                        <h4 className="text-lg font-bold text-slate-800 leading-none">Scoring Rationale & Structural Limitations</h4>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1">Key Design Decisions</h5>
+                            <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                                {TransparencyService.generateTransparencyReport({}).design_decisions.map((decision, i) => (
+                                    <li key={i}>{decision}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="space-y-3">
+                            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1">Platform Limitations</h5>
+                            <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                                {TransparencyService.generateTransparencyReport({}).overall_caveats.map((caveat, i) => (
+                                    <li key={i}>{caveat}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="mt-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400 uppercase tracking-widest flex justify-between items-center font-bold">
+                        <span>Transparency System v2.0 (Metric Kernel Upgrade)</span>
+                        <span>Design Positionality: Western Critical Theory / Assemblage Theory / Bridging CSS</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

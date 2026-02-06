@@ -3,6 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Eye, Target, Lightbulb } from "lucide-react";
+import { TransparencyPanel } from "./analysis/TransparencyPanel";
+import { TransparencyService } from "@/services/transparency-service";
 
 interface AnalysisResult {
     situated_teleology?: string;
@@ -90,6 +92,12 @@ export function AnalysisResults({ analysis, sourceTitle }: AnalysisResultsProps)
                         </p>
                     </div>
                 )}
+
+                <div className="mt-6 pt-6 border-t border-purple-200">
+                    <TransparencyPanel
+                        metadata={TransparencyService.getEpistemicAsymmetryTransparency()}
+                    />
+                </div>
             </CardContent>
         </Card>
     );

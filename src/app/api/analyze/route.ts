@@ -660,10 +660,14 @@ export async function POST(request: NextRequest) {
       console.warn('[DEBUG_TOPOLOGY] topology_analysis object is MISSING entirely.');
     }
 
+    const { TransparencyService } = await import('@/services/transparency-service');
+    const transparency = TransparencyService.generateTransparencyReport(analysis);
+
     return NextResponse.json({
       success: true,
       analysis,
-      usage
+      usage,
+      transparency
     });
 
   } catch (error: unknown) {
