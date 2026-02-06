@@ -104,7 +104,7 @@ export class AssemblageExtractionService {
         const content = response.choices[0].message.content;
         if (!content) throw new Error("No extracted content from AI");
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const result = JSON.parse(content) as any;
 
         // Map to internal types
@@ -172,7 +172,7 @@ export class AssemblageExtractionService {
         };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     private static validateType(type: string): any {
         const validTypes = ["Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset", "AlgorithmicAgent", "LegalObject"];
         const match = validTypes.find(t => t.toLowerCase() === type.toLowerCase());

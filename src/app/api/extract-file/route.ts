@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
                 const pdfParse = (await import('pdf-parse-fork')).default;
                 const data = await pdfParse(buffer);
                 text = data.text;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                 
             } catch (pdfError: unknown) {
                 console.error("[PDF PARSE ERROR]", pdfError);
                 return NextResponse.json({ error: "Failed to parse PDF: " + pdfError.message }, { status: 500 });

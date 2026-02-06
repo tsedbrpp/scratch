@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import OpenAI from 'openai';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PromptRegistry } from '@/lib/prompts/registry';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function runCritiqueLoop(openai: OpenAI, userId: string, verificationText: string, analysis: any) {
     try {
         console.log('[CRITIQUE] Starting Devil\'s Advocate loop...');
