@@ -26,7 +26,7 @@ export function DeleteTeamDialog({
     memberCount
 }: DeleteTeamDialogProps) {
     const router = useRouter();
-    const { switchWorkspace } = useWorkspace();
+    const { switchWorkspace, refreshTeams } = useWorkspace();
     const [confirmText, setConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -51,6 +51,9 @@ export function DeleteTeamDialog({
 
             // Switch to personal workspace
             switchWorkspace('PERSONAL');
+
+            // Refresh team list to remove deleted team
+            await refreshTeams();
 
             // Close dialog and redirect
             onOpenChange(false);
