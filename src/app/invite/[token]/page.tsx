@@ -22,7 +22,7 @@ interface PageProps {
 export default function AcceptInvitePage({ params }: PageProps) {
     const router = useRouter();
     const { userId, isLoaded } = useAuth();
-    const { switchWorkspace } = useWorkspace();
+    const { switchWorkspace, refreshTeams } = useWorkspace();
     const [inviteDetails, setInviteDetails] = useState<InviteDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -98,6 +98,9 @@ export default function AcceptInvitePage({ params }: PageProps) {
 
             setAccepted(true);
             toast.success(`Welcome to ${inviteDetails?.teamName}!`);
+
+            // Refresh team list to show new team
+            await refreshTeams();
 
             // Switch to team workspace and redirect
             setTimeout(() => {
