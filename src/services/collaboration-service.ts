@@ -254,6 +254,117 @@ export class CollaborationService {
             role: invite.role
         };
     }
+
+    /**
+     * Permanently deletes a team and all associated data.
+     * Only callable by team OWNER.
+     */
+    static async deleteTeam(teamId: string, requesterId: string): Promise<{
+        success: boolean;
+        error?: string;
+        members?: string[];
+        teamName?: string;
+    }> {
+        const normRequester = requesterId.toLowerCase();
+
+        // 1. Pre-deletion checks
+        // Verify team exists and get metadata
+        const metadataRaw = await redis.hgetall(`${teamId}:metadata`);
+        if (!metadataRaw || Object.keys(metadataRaw).length === 0) {
+            // Team already deleted - idempotent
+            return { success: true, members: [] };
+        }
+
+        const teamName = metadataRaw.name;
+
+        // Verify requester is OWNER
+        const requesterRole = await redis.hget(`${teamId}:roles`, normRequester);
+        if (requesterRole !== 'OWNER') {
+            return { success: false, error: 'Only team owners can delete teams' };
+        }
+
+        // Get member list for notifications
+        const members = await redis.smembers(`${teamId}:members`);
+
+        // 2. Delete team-owned content using SCAN (safe for production)
+        // Explicit patterns to avoid over-deletion
+        const contentPatterns = [
+            `${teamId}:sources`,
+            `${teamId}:chunks`,
+            `${teamId}:embeddings`,
+            `${teamId}:analysis`,
+            `${teamId}:*` // Catch-all for any other team-scoped keys
+        ];
+
+        const pipeline = redis.pipeline();
+
+        // Use SCAN for safe iteration (non-blocking)
+        for (const pattern of contentPatterns) {
+            let cursor = '0';
+            do {
+                const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+                if (keys.length > 0) {
+                    keys.forEach(key => pipeline.del(key));
+                }
+                cursor = nextCursor;
+            } while (cursor !== '0');
+        }
+
+        // 3. Delete collaboration metadata
+        pipeline.del(`${teamId}:metadata`);
+        pipeline.del(`${teamId}:members`);
+        pipeline.del(`${teamId}:roles`);
+
+        // 4. Remove team from all members' team lists
+        members.forEach(userId => {
+            pipeline.srem(`user:${userId}:teams`, teamId);
+        });
+
+        // 5. Delete pending invitations for this team
+        // Note: Current invitation storage doesn't prefix by team
+        // This is a known limitation - we scan all invitations
+        // Future: Store as `invitation:${teamId}:${inviteId}` for efficient cleanup
+        let inviteCursor = '0';
+        do {
+            const [nextCursor, inviteKeys] = await redis.scan(inviteCursor, 'MATCH', 'invitation:*', 'COUNT', 100);
+            for (const key of inviteKeys) {
+                const inviteData = await redis.get(key);
+                if (inviteData) {
+                    const invite = JSON.parse(inviteData);
+                    if (invite.teamId === teamId) {
+                        pipeline.del(key);
+                    }
+                }
+            }
+            inviteCursor = nextCursor;
+        } while (inviteCursor !== '0');
+
+        // 6. Execute deletion pipeline
+        const results = await pipeline.exec();
+
+        // Check for pipeline failures
+        const failures = results?.filter(([err]) => err !== null);
+        if (failures && failures.length > 0) {
+            console.error('[Delete Team] Pipeline failures:', failures);
+            return { success: false, error: 'Partial deletion failure - please contact support' };
+        }
+
+        // 7. Audit log
+        await AuditService.log('TEAM_DELETED', normRequester, {
+            targetId: teamId,
+            metadata: {
+                teamName,
+                memberCount: members.length,
+                deletedBy: normRequester
+            }
+        });
+
+        return {
+            success: true,
+            members,
+            teamName
+        };
+    }
 }
 
 

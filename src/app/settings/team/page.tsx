@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InviteMemberDialog } from '@/components/collaboration/InviteMemberDialog';
+import { DeleteTeamDialog } from '@/components/collaboration/DeleteTeamDialog';
 import { TeamMembers } from '@/components/collaboration/TeamMembers';
-import { Users, UserPlus, ArrowLeft, Settings } from 'lucide-react';
+import { Users, UserPlus, ArrowLeft, Settings, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function TeamSettingsPage() {
@@ -19,6 +20,7 @@ export default function TeamSettingsPage() {
     const { workspaceType, currentWorkspaceId } = useWorkspace();
     const { teamDetails, isLoading, error, isTeamWorkspace, removeMember } = useTeam();
     const [showInviteDialog, setShowInviteDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     // Guard: Redirect if not in team workspace
     if (!isTeamWorkspace) {
@@ -157,8 +159,53 @@ export default function TeamSettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Invite Dialog */}
+            {/* Danger Zone - Owner Only */}
+            {isOwner && (
+                <Card className="bg-red-950/20 border-red-900/50">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-red-900/30 rounded-lg">
+                                <AlertTriangle className="w-5 h-5 text-red-400" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-white">Danger Zone</CardTitle>
+                                <CardDescription className="text-red-300">
+                                    Irreversible and destructive actions
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-start justify-between gap-4 p-4 bg-red-950/30 border border-red-900/50 rounded-lg">
+                            <div>
+                                <h4 className="font-semibold text-white mb-1">Delete this team</h4>
+                                <p className="text-sm text-red-200">
+                                    Permanently delete this team, all documents, and remove all members. This action cannot be undone.
+                                </p>
+                            </div>
+                            <Button
+                                variant="destructive"
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="shrink-0"
+                            >
+                                Delete Team
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Dialogs */}
             <InviteMemberDialog open={showInviteDialog} onOpenChange={setShowInviteDialog} />
+            {teamDetails && (
+                <DeleteTeamDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                    teamId={currentWorkspaceId!}
+                    teamName={teamDetails.name}
+                    memberCount={teamDetails.members.length}
+                />
+            )}
         </div>
     );
 }

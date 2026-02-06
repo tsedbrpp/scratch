@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUserId } from '@/lib/auth-helper';
 import { CollaborationService } from '@/services/collaboration-service';
 import { createErrorResponse, createUnauthorizedResponse } from '@/lib/api-helpers';
+import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 
 export async function GET(
     req: NextRequest,
@@ -47,6 +48,54 @@ export async function GET(
             ...teamInfo,
             members
         });
+    } catch (error) {
+        return createErrorResponse(error);
+    }
+}
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ teamId: string }> }
+) {
+    try {
+        const userId = await getAuthenticatedUserId(req);
+        if (!userId) return createUnauthorizedResponse();
+
+        const { teamId } = await params;
+
+        console.log('[Delete Team Request]', {
+            userId,
+            teamId,
+            timestamp: new Date().toISOString()
+        });
+
+        // Verify ownership via validateWorkspaceAccess
+        const access = await validateWorkspaceAccess(userId, teamId);
+        if (!access.allowed || access.role !== 'OWNER') {
+            return NextResponse.json(
+                { error: 'Only team owners can delete teams' },
+                { status: 403 }
+            );
+        }
+
+        // Delete team and get member list
+        const result = await CollaborationService.deleteTeam(teamId, userId);
+
+        if (!result.success) {
+            return NextResponse.json({ error: result.error }, { status: 400 });
+        }
+
+        console.log('[Delete Team Success]', {
+            teamId,
+            teamName: result.teamName,
+            memberCount: result.members?.length,
+            timestamp: new Date().toISOString()
+        });
+
+        // TODO: Send notifications to members
+        // Future enhancement: await NotificationService.teamDeleted(teamId, result.members);
+
+        return new NextResponse(null, { status: 204 });
     } catch (error) {
         return createErrorResponse(error);
     }
