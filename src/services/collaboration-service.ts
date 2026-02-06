@@ -20,10 +20,10 @@ export class CollaborationService {
      * Creates a new Team Workspace with the creator as OWNER.
      */
     static async createTeam(name: string, ownerId: string): Promise<{ success: boolean; teamId?: string; error?: string }> {
-        const normOwner = ownerId.toLowerCase();
+        // Don't lowercase user IDs - Clerk IDs are case-sensitive
 
         // 1. Check Quota
-        const userTeams = await this.listMyTeams(normOwner);
+        const userTeams = await this.listMyTeams(ownerId);
         if (userTeams.length >= this.MAX_TEAMS_PER_USER) {
             return { success: false, error: 'Quota Exceeded: Max 5 Teams per User.' };
         }
@@ -39,26 +39,26 @@ export class CollaborationService {
         // Metadata
         pipeline.hset(`${teamId}:metadata`, {
             name,
-            createdBy: normOwner,
+            createdBy: ownerId,
             createdAt: timestamp,
             status: 'active'
         });
 
         // Membership
-        pipeline.sadd(`${teamId}:members`, normOwner);
+        pipeline.sadd(`${teamId}:members`, ownerId);
 
         // Role
         pipeline.hset(`${teamId}:roles`, {
-            [normOwner]: 'OWNER'
+            [ownerId]: 'OWNER'
         });
 
         // Add to User's list (Index)
-        pipeline.sadd(`user:${normOwner}:teams`, teamId);
+        pipeline.sadd(`user:${ownerId}:teams`, teamId);
 
         await pipeline.exec();
 
         // 4. Audit Log
-        await AuditService.log('TEAM_CREATED', normOwner, {
+        await AuditService.log('TEAM_CREATED', ownerId, {
             targetId: teamId,
             metadata: { name }
         });
@@ -67,7 +67,7 @@ export class CollaborationService {
     }
 
     static async listMyTeams(userId: string): Promise<string[]> {
-        return await redis.smembers(`user:${userId.toLowerCase()}:teams`);
+        return await redis.smembers(`user:${userId}:teams`);
     }
 
     // ----------------------------------------------------------------------
@@ -193,13 +193,23 @@ export class CollaborationService {
                 // Fetch user details from Clerk
                 let email = userId; // Fallback to userId if Clerk fetch fails
 
+                console.log(`[getTeamMembers] Fetching user details for: ${userId}`);
+
                 try {
                     const { clerkClient } = await import('@clerk/nextjs/server');
                     const client = await clerkClient();
                     const user = await client.users.getUser(userId);
+
+                    console.log(`[getTeamMembers] Clerk user data:`, {
+                        userId: user.id,
+                        emailCount: user.emailAddresses.length,
+                        primaryEmail: user.emailAddresses[0]?.emailAddress
+                    });
+
                     email = user.emailAddresses[0]?.emailAddress || userId;
+                    console.log(`[getTeamMembers] Using email: ${email}`);
                 } catch (error) {
-                    console.warn(`[getTeamMembers] Failed to fetch user ${userId} from Clerk:`, error);
+                    console.error(`[getTeamMembers] Failed to fetch user ${userId} from Clerk:`, error);
                     // Keep fallback email = userId
                 }
 
@@ -212,6 +222,7 @@ export class CollaborationService {
             })
         );
 
+        console.log(`[getTeamMembers] Final members:`, members.map(m => ({ userId: m.userId, email: m.email })));
         return members;
     }
 
@@ -219,9 +230,8 @@ export class CollaborationService {
      * Check if user is a member of the team
      */
     static async isTeamMember(teamId: string, userId: string): Promise<boolean> {
-        // Normalize userId to lowercase to match createTeam behavior
-        const normUserId = userId.toLowerCase();
-        return await redis.sismember(`${teamId}:members`, normUserId) === 1;
+        const members = await redis.smembers(`${teamId}:members`);
+        return members.includes(userId);
     }
 
     /**
@@ -276,8 +286,6 @@ export class CollaborationService {
         members?: string[];
         teamName?: string;
     }> {
-        const normRequester = requesterId.toLowerCase();
-
         // 1. Pre-deletion checks
         // Verify team exists and get metadata
         const metadataRaw = await redis.hgetall(`${teamId}:metadata`);
@@ -289,7 +297,7 @@ export class CollaborationService {
         const teamName = metadataRaw.name;
 
         // Verify requester is OWNER
-        const requesterRole = await redis.hget(`${teamId}:roles`, normRequester);
+        const requesterRole = await redis.hget(`${teamId}:roles`, requesterId);
         if (requesterRole !== 'OWNER') {
             return { success: false, error: 'Only team owners can delete teams' };
         }
@@ -361,12 +369,12 @@ export class CollaborationService {
         }
 
         // 7. Audit log
-        await AuditService.log('TEAM_DELETED', normRequester, {
+        await AuditService.log('TEAM_DELETED', requesterId, {
             targetId: teamId,
             metadata: {
                 teamName,
                 memberCount: members.length,
-                deletedBy: normRequester
+                deletedBy: requesterId
             }
         });
 
