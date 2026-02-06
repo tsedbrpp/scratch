@@ -102,11 +102,13 @@ export default function AcceptInvitePage({ params }: PageProps) {
             // Refresh team list to show new team
             await refreshTeams();
 
-            // Switch to team workspace and redirect
+            // Switch to team workspace immediately after refresh
+            switchWorkspace(data.teamId);
+
+            // Small delay before redirect to allow workspace switch to complete
             setTimeout(() => {
-                switchWorkspace(data.teamId);
                 router.push('/dashboard');
-            }, 1500);
+            }, 500);
         } catch (err) {
             toast.error('Network error accepting invitation');
             setIsAccepting(false);
