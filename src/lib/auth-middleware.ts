@@ -37,53 +37,39 @@ export async function validateWorkspaceAccess(
         return { allowed: false, scope: 'PERSONAL', reason: 'Invalid ID inputs', statusCode: 400 };
     }
 
-    // 2. Normalize Casing (Case-Sensitivity Defense)
-    const normUser = userId.toLowerCase();
-    const normContext = contextId.toLowerCase();
-
-    // 3. Prefix Injection Defense
+    // 2. Prefix Injection Defense
     // Users cannot spoof system or team IDs as their own userId
     const RESERVED_PREFIXES = ['team_', 'system_', 'admin_'];
-    if (RESERVED_PREFIXES.some(pre => normUser.startsWith(pre))) {
+    if (RESERVED_PREFIXES.some(pre => userId.toLowerCase().startsWith(pre))) {
         // Log this security event (Audit Log TODO)
         logger.error(`[SECURITY] Prefix Injection Attempt: User ${userId} tried to act as reserved entity.`);
         return { allowed: false, scope: 'PERSONAL', reason: 'Invalid User Identity', statusCode: 403 };
     }
 
-    // 4. Personal Scope Check
-    if (normContext === normUser) {
-        return { allowed: true, scope: 'PERSONAL', role: 'OWNER', statusCode: 200 };
-    }
+    // 3. Determine Scope
+    if (contextId.startsWith('team_')) {
+        // Team Workspace Access
+        const isMember = await redis.sismember(`${contextId}:members`, userId);
 
-    // 5. Team Scope Check
-    if (normContext.startsWith('team_')) {
-        // Redis keys in CollaborationService use format: ${teamId}:metadata, ${teamId}:members, ${teamId}:roles
-        // NOT team:${teamId}:metadata - so we use normContext directly
-
-        // A. Existence Check (Prevent Enumeration by masking 404 as 403)
-        // We do NOT return "Team Not Found" to the user, we return "Access Denied".
-        // This prevents attackers from guessing IDs to see which ones return 404 vs 403.
-        const exists = await redis.exists(`${normContext}:metadata`);
-        if (!exists) {
-            // Log for debugging/security but return generic error
-            return { allowed: false, scope: 'TEAM', reason: 'Access Denied', statusCode: 403 };
-        }
-
-        // B. Membership Check
-        // SISMEMBER is O(1) - Fast
-        const isMember = await redis.sismember(`${normContext}:members`, normUser);
         if (!isMember) {
             return { allowed: false, scope: 'TEAM', reason: 'Access Denied', statusCode: 403 };
         }
 
-        // C. Role Retrieval
-        // If they are a member, they MUST have a role. Fallback to VIEWER if missing (Fail Safe).
-        const roleRaw = await redis.hget(`${normContext}:roles`, normUser);
-        const role = (roleRaw || 'VIEWER') as TeamRole;
+        // Fetch Role
+        const role = await redis.hget(`${contextId}:roles`, userId) as TeamRole | null;
 
-        return { allowed: true, scope: 'TEAM', role, statusCode: 200 };
+        return {
+            allowed: true,
+            scope: 'TEAM',
+            role: role || 'VIEWER',
+            statusCode: 200
+        };
+    } else {
+        // Personal Workspace Access
+        if (contextId === userId) {
+            return { allowed: true, scope: 'PERSONAL', role: 'OWNER', statusCode: 200 };
+        } else {
+            return { allowed: false, scope: 'PERSONAL', reason: 'Access Denied', statusCode: 403 };
+        }
     }
-
-    // 6. Unknown Context Type (Fail Closed)
-    return { allowed: false, scope: 'PERSONAL', reason: 'Invalid Context Type', statusCode: 403 };
 }
