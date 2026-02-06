@@ -190,11 +190,21 @@ export class CollaborationService {
 
         const members = await Promise.all(
             memberIds.map(async (userId) => {
-                // In a real app, fetch user details from Clerk or user service
-                // For now, return basic info
+                // Fetch user details from Clerk
+                let email = userId; // Fallback to userId if Clerk fetch fails
+
+                try {
+                    const { clerkClient } = await import('@clerk/nextjs/server');
+                    const user = await clerkClient().users.getUser(userId);
+                    email = user.emailAddresses[0]?.emailAddress || userId;
+                } catch (error) {
+                    console.warn(`[getTeamMembers] Failed to fetch user ${userId} from Clerk:`, error);
+                    // Keep fallback email = userId
+                }
+
                 return {
                     userId,
-                    email: userId, // Placeholder - should fetch from user service
+                    email,
                     role: (roles[userId] || 'EDITOR') as TeamRole,
                     joinedAt: Date.now() // Placeholder - should track actual join time
                 };
