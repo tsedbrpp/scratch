@@ -282,7 +282,17 @@ export default function GovernanceOrchestrationPage() {
                                 </h4>
                                 {proposal.targetSourceTitle && (
                                     <div className="text-xs text-slate-500 mb-1">
-                                        <span className="font-semibold text-slate-700">Target:</span> {proposal.targetSourceTitle}
+                                        <span className="font-semibold text-slate-700">Target:</span>
+                                        {proposal.targetSourceId ? (
+                                            <Link
+                                                href={`/data?sourceId=${proposal.targetSourceId}`}
+                                                className="ml-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                                            >
+                                                {proposal.targetSourceTitle}
+                                            </Link>
+                                        ) : (
+                                            <span className="ml-1">{proposal.targetSourceTitle}</span>
+                                        )}
                                     </div>
                                 )}
                                 <p className="text-slate-500 text-xs line-clamp-2 italic bg-slate-50 p-1 rounded border border-slate-100">

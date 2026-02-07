@@ -2,13 +2,14 @@
 // Force cache refresh
 
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useTeam } from "@/hooks/useTeam";
+import { useSearchParams } from "next/navigation";
 import { ReportData, LensType } from "@/types/report";
 import {
     ResistanceSynthesisResult,
@@ -38,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, Plus, Search, Filter, Download, FileText, Database, Share2, Trash2, ExternalLink } from "lucide-react";
 import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
 import { ReportSectionSelection } from "@/types/report";
 import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
@@ -50,7 +51,9 @@ import { FileDropZone } from "@/components/ui/FileDropZone";
 import { extractTextFromDOCX } from "@/utils/docxExtractor";
 import { MethodLog } from "@/types/logs";
 
-export default function PolicyDocumentsPage() {
+import { Suspense } from 'react';
+
+function PolicyDocumentsPageContent() {
     // ----------------------------------------------------------------------
     // 1. Hooks & State
     // ----------------------------------------------------------------------
@@ -96,6 +99,19 @@ export default function PolicyDocumentsPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
     const [showTopUp, setShowTopUp] = useState(false);
+
+    // Deep Linking Support
+    const searchParams = useSearchParams();
+    const sourceIdParam = searchParams.get('sourceId');
+
+    useEffect(() => {
+        if (sourceIdParam && sources.length > 0) {
+            const match = sources.find(s => s.id === sourceIdParam);
+            if (match) {
+                setFocusedSourceId(match.id);
+            }
+        }
+    }, [sourceIdParam, sources]);
 
     // ----------------------------------------------------------------------
     // 2. Computed Values
@@ -812,40 +828,6 @@ export default function PolicyDocumentsPage() {
                             </div>
                         </FileDropZone>
                     )}
-
-                    {/* Focus Mode View */}
-                    {focusedSourceId && (() => {
-                        const focusedSource = sources.find(s => s.id === focusedSourceId);
-                        if (!focusedSource) return null;
-
-                        return (
-                            <PolicyFocusView
-                                source={focusedSource}
-                                onUpdateSource={async (updates) => {
-                                    await updateSource(focusedSource.id, updates);
-                                }}
-                                onClose={() => setFocusedSourceId(null)}
-                            />
-                        );
-                    })()}
-                </TabsContent>
-
-                <TabsContent value="resistance" className="mt-0">
-                    {selectedArtifact ? (
-                        <ResistanceArtifactView
-                            artifact={selectedArtifact}
-                            onBack={() => setSelectedArtifact(null)}
-                            onUpdate={setSelectedArtifact}
-                        />
-                    ) : (
-                        <ArtifactRepository
-                            onSelectArtifact={setSelectedArtifact}
-                        />
-                    )}
-                </TabsContent>
-
-                <TabsContent value="compare">
-                    <PolicyComparisonView sources={selectedSources} />
                 </TabsContent>
             </Tabs>
 
@@ -898,5 +880,14 @@ export default function PolicyDocumentsPage() {
                 }}
             />
         </div>
+    );
+}
+
+
+export default function PolicyDocumentsPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>}>
+            <PolicyDocumentsPageContent />
+        </Suspense>
     );
 }

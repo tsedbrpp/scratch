@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, Coins, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CREDIT_PACKAGES, CreditPackage } from "@/config/pricing";
 
 interface CreditTopUpDialogProps {
     open: boolean;
@@ -10,37 +11,32 @@ interface CreditTopUpDialogProps {
     onSuccess: () => void;
 }
 
-const PACKAGES = [
-    { id: 'standard', credits: 10, price: 10, name: "Standard Pack", popular: false },
-    { id: 'pro', credits: 50, price: 45, name: "Pro Pack", popular: true, savings: "Save 10%" },
-    { id: 'enterprise', credits: 100, price: 80, name: "Power User", popular: false, savings: "Save 20%" },
-];
-
 export function CreditTopUpDialog({ open, onOpenChange, onSuccess }: CreditTopUpDialogProps) {
     const [loading, setLoading] = useState(false);
-    const [selectedPackage, setSelectedPackage] = useState(PACKAGES[0]);
+    const [selectedPackage, setSelectedPackage] = useState<CreditPackage>(CREDIT_PACKAGES.standard);
 
     const handlePurchase = async () => {
         setLoading(true);
         try {
-            // Mock Purchase
-            const res = await fetch('/api/credits', {
+            const res = await fetch('/api/payments/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: selectedPackage.credits,
-                    referenceId: `purchase-${Date.now()}` // Mock distinct ID
+                    packageId: selectedPackage.id
                 })
             });
 
-            if (!res.ok) throw new Error("Purchase failed");
+            const data = await res.json();
 
-            onSuccess();
-            onOpenChange(false);
+            if (data.error) throw new Error(data.error);
+            if (!data.url) throw new Error("No checkout URL returned");
+
+            // Redirect to Stripe
+            window.location.href = data.url;
+
         } catch (error) {
             console.error(error);
-            alert("Failed to purchase credits. Please try again.");
-        } finally {
+            alert("Failed to initiate purchase. Please try again.");
             setLoading(false);
         }
     };
@@ -55,11 +51,16 @@ export function CreditTopUpDialog({ open, onOpenChange, onSuccess }: CreditTopUp
                     </DialogTitle>
                     <DialogDescription>
                         Select a credit package to run advanced AI analyses.
+                        {selectedPackage.promo?.bannerText && (
+                            <div className="mt-2 bg-amber-50 text-amber-800 text-xs px-2 py-1.5 rounded-md border border-amber-200">
+                                <strong>Note:</strong> {selectedPackage.promo.bannerText}
+                            </div>
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-3 py-4">
-                    {PACKAGES.map((pack) => (
+                    {Object.values(CREDIT_PACKAGES).map((pack) => (
                         <div
                             key={pack.id}
                             onClick={() => setSelectedPackage(pack)}
@@ -73,6 +74,11 @@ export function CreditTopUpDialog({ open, onOpenChange, onSuccess }: CreditTopUp
                             {pack.popular && (
                                 <div className="absolute -top-2 right-4 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                                     Popular
+                                </div>
+                            )}
+                            {pack.promo?.badge && (
+                                <div className="absolute -top-2 right-4 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                                    {pack.promo.badge}
                                 </div>
                             )}
                             <div className="flex items-center gap-3">

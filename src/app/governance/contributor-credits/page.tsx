@@ -5,7 +5,7 @@ import { ArrowLeft, BookOpen, Scale, GitPullRequest, Eye, Globe, Shield } from "
 
 export const metadata = {
     title: "Contributor Credit Policy | instantTEA",
-    description: "Policy on earning usage credits through substantive contributions to Assemblage-AI.",
+    description: "Policy on earning usage credits through substantive contributions to InstantTEA.",
 };
 
 export default function ContributorCreditPolicyPage() {
@@ -18,7 +18,7 @@ export default function ContributorCreditPolicyPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
                     </Link>
                     <div className="border-b border-slate-800 pb-8">
-                        <h1 className="text-4xl font-extrabold text-white mb-2">Assemblage-AI Contributor Credit Policy</h1>
+                        <h1 className="text-4xl font-extrabold text-white mb-2">InstantTEA Contributor Credit Policy</h1>
                         <p className="text-slate-400 text-lg">Version 1.0 • Effective: Upon publication</p>
                     </div>
                 </div>
@@ -29,7 +29,7 @@ export default function ContributorCreditPolicyPage() {
                         <span className="text-emerald-500">1.</span> Purpose
                     </h2>
                     <p className="text-slate-400 leading-relaxed">
-                        This policy defines how users may earn <strong>usage credits</strong> through substantive contributions to the critical, interpretive, and technical development of Assemblage-AI. The policy exists to:
+                        This policy defines how users may earn <strong>usage credits</strong> through substantive contributions to the critical, interpretive, and technical development of InstantTEA. The policy exists to:
                     </p>
                     <ul className="list-disc pl-6 text-slate-400 space-y-2">
                         <li>Recognize <strong>intellectual and critical labor</strong> as infrastructural work</li>
@@ -50,7 +50,7 @@ export default function ContributorCreditPolicyPage() {
                         <span className="text-emerald-500">2.</span> Principle of Alignment
                     </h2>
                     <p className="text-slate-400 leading-relaxed">
-                        Assemblage-AI treats critique as a <strong>constitutive component</strong> of the system rather than external feedback. Accordingly:
+                        InstantTEA treats critique as a <strong>constitutive component</strong> of the system rather than external feedback. Accordingly:
                     </p>
                     <div className="grid sm:grid-cols-3 gap-4">
                         <Card className="bg-slate-900 border-slate-800">
@@ -133,22 +133,22 @@ export default function ContributorCreditPolicyPage() {
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Minor</td>
                                     <td className="px-6 py-4">Clarifications, small corrections, targeted suggestions</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">5–10</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">50–100</td>
                                 </tr>
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Moderate</td>
                                     <td className="px-6 py-4">Well-argued critique, documented bias, useful review</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">10–20</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">200–500</td>
                                 </tr>
                                 <tr className="hover:bg-slate-900/80 transition-colors">
                                     <td className="px-6 py-4 font-medium text-white">Substantial</td>
                                     <td className="px-6 py-4">Deep theoretical intervention, major fix, validated redesign</td>
-                                    <td className="px-6 py-4 text-emerald-400 font-mono">20+</td>
+                                    <td className="px-6 py-4 text-emerald-400 font-mono">1000+</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p className="text-xs text-slate-500 italic">Final credit determination is made by the Assemblage-AI governance team.</p>
+                    <p className="text-xs text-slate-500 italic">Final credit determination is made by the InstantTEA governance team.</p>
                 </section>
 
                 {/* 5-10 Remaining Sections (Grouped for brevity) */}
@@ -156,7 +156,7 @@ export default function ContributorCreditPolicyPage() {
                     <section className="space-y-3">
                         <h3 className="text-xl font-bold text-white">5. Review Process</h3>
                         <ol className="list-decimal pl-5 space-y-2 text-slate-400 text-sm">
-                            <li>Submit via designated channels (GitHub/Forms).</li>
+                            <li>Submit via designated channels (click contribute button on GitHub).</li>
                             <li>Reviewed for relevance, specificity, and good faith.</li>
                             <li>Accepted contributions logged and credits issued.</li>
                         </ol>
@@ -207,7 +207,7 @@ export default function ContributorCreditPolicyPage() {
                         </Link>
                         <Link href="https://docs.google.com/forms/d/e/1FAIpQLSccam2irWeAwu8PA07b9IcH7pFiHzBY6_6828rZ4gCqbX7r5g/viewform" target="_blank">
                             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20">
-                                Submit Contribution Form
+                                Contribute
                             </Button>
                         </Link>
                     </div>
@@ -218,7 +218,7 @@ export default function ContributorCreditPolicyPage() {
     );
 }
 
-function CategoryCard({ title, icon, description, function: func }: { title: string, icon: any, description: string, function: string }) {
+function CategoryCard({ title, icon, description, function: func }: { title: string, icon: React.ReactNode, description: string, function: string }) {
     return (
         <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors">
             <CardHeader className="pb-2">

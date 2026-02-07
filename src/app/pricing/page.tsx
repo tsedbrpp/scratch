@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Sidebar } from "@/components/Sidebar";
+import { CREDIT_PACKAGES } from "@/config/pricing";
+import { cn } from "@/lib/utils";
 
 export default function PricingPage() {
     return (
@@ -12,81 +14,98 @@ export default function PricingPage() {
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl mb-6">
                     Transparent Pricing for <span className="text-emerald-400">Open Science</span>
                 </h1>
-                <p className="text-lg leading-8 text-slate-300 max-w-2xl mx-auto">
+                <p className="text-lg leading-8 text-slate-300 max-w-2xl mx-auto mb-8">
                     Start for free with our provisional mapping tools. Pay only when you need deep, AI-driven analysis.
                     Discounts available for students and academic researchers.
                 </p>
+                <div className="flex justify-center gap-4">
+                    <Link href="/why-credits">
+                        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800">
+                            Why Credits?
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="flex-1 py-12 px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl">
                     {/* Pricing Tiers */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+                        {Object.values(CREDIT_PACKAGES).map((pack) => (
+                            <div key={pack.id} className={cn(
+                                "rounded-3xl p-8 ring-1 bg-white flex flex-col justify-between transition-transform duration-300 relative overflow-hidden",
+                                pack.popular ? "ring-indigo-200 shadow-xl hover:scale-105" : "ring-slate-200 shadow-sm",
+                                pack.id === 'institution' ? "bg-slate-50 ring-gray-200" : "bg-white"
+                            )}>
+                                {pack.popular && (
+                                    <div className="absolute top-0 right-0 -mr-2 -mt-2 w-24 h-24 bg-gradient-to-br from-emerald-400 to-green-500 blur-2xl opacity-20"></div>
+                                )}
+                                <div>
+                                    <h3 className="text-xl font-bold tracking-tight text-slate-900">{pack.name}</h3>
+                                    <p className="mt-4 text-sm leading-6 text-slate-500">{pack.description}</p>
 
-                        {/* Tier 1: Starter */}
-                        <div className="rounded-3xl p-8 ring-1 ring-slate-200 bg-white shadow-xl flex flex-col justify-between hover:scale-105 transition-transform duration-300 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 -mr-2 -mt-2 w-24 h-24 bg-gradient-to-br from-emerald-400 to-green-500 blur-2xl opacity-20"></div>
-                            <div>
-                                <h3 className="text-xl font-bold tracking-tight text-slate-900">Starter</h3>
-                                <p className="mt-4 text-sm leading-6 text-slate-500">Perfect for exploring the tool and small assignments.</p>
-                                <p className="mt-6 flex items-baseline gap-x-1">
-                                    <span className="text-4xl font-bold tracking-tight text-slate-900">Free</span>
-                                    <span className="text-sm font-semibold leading-6 text-slate-600">/ forever</span>
-                                </p>
-                                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-slate-600">
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-emerald-600" /> 5 Free Credits on Signup</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-emerald-600" /> 1 Document Upload</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-emerald-600" /> Basic Assemblage Map</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-emerald-600" /> Access to Community Support</li>
-                                </ul>
+                                    {/* Price Display */}
+                                    <p className="mt-6 flex items-baseline gap-x-1">
+                                        {pack.id === 'institution' ? (
+                                            <span className="text-4xl font-bold tracking-tight text-slate-900">Contact Us</span>
+                                        ) : pack.price === 0 ? (
+                                            <>
+                                                <span className="text-4xl font-bold tracking-tight text-slate-900">Free</span>
+                                                <span className="text-sm font-semibold leading-6 text-slate-600">/ forever</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="text-4xl font-bold tracking-tight text-slate-900">${pack.price}</span>
+                                                <span className="text-sm font-semibold leading-6 text-slate-600">/ {pack.credits} credits</span>
+                                            </>
+                                        )}
+                                    </p>
+
+                                    {/* Promo Badge */}
+                                    {pack.promo?.badge && (
+                                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-amber-100 text-amber-800">
+                                            {pack.promo.badge}
+                                        </div>
+                                    )}
+
+                                    {/* Promo Banner Text */}
+                                    {pack.promo?.bannerText && (
+                                        <div className="mt-4 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                                            {pack.promo.bannerText}
+                                        </div>
+                                    )}
+
+                                    {/* Features List */}
+                                    <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-slate-600">
+                                        {pack.features.map((feature, index) => (
+                                            <li key={index} className="flex gap-x-3">
+                                                <Check className={cn(
+                                                    "h-6 w-5 flex-none",
+                                                    pack.id === 'institution' ? "text-slate-600" :
+                                                        pack.id === 'starter' ? "text-emerald-600" : "text-blue-600"
+                                                )} />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* Call to Action */}
+                                {pack.id === 'starter' ? (
+                                    <Link href="/sign-up" className="mt-8 block w-full rounded-md bg-emerald-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-emerald-500">
+                                        Get Started
+                                    </Link>
+                                ) : pack.id === 'institution' ? (
+                                    <Link href="/contact" className="mt-8 block w-full rounded-md bg-slate-800 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-slate-700">
+                                        Contact Sales
+                                    </Link>
+                                ) : (
+                                    <Link href="/settings/billing" className="mt-8 block w-full rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-inset ring-blue-200 hover:ring-blue-300">
+                                        Buy Credits
+                                    </Link>
+                                )}
                             </div>
-                            <Link href="/sign-up" className="mt-8 block w-full rounded-md bg-emerald-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
-                                Get Started
-                            </Link>
-                        </div>
-
-                        {/* Tier 2: Researcher (Pay as you go) */}
-                        <div className="rounded-3xl p-8 ring-1 ring-slate-200 bg-white shadow-sm flex flex-col justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold tracking-tight text-slate-900">Researcher</h3>
-                                <p className="mt-4 text-sm leading-6 text-slate-500">Flexible credits for deep dives and dissertations.</p>
-                                <p className="mt-6 flex items-baseline gap-x-1">
-                                    <span className="text-4xl font-bold tracking-tight text-slate-900">$0.50</span>
-                                    <span className="text-sm font-semibold leading-6 text-slate-600">/ credit</span>
-                                </p>
-                                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-slate-600">
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-blue-600" /> Pay-as-you-go (No subscription)</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-blue-600" /> Deep AI Analysis (GPT-5.1)</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-blue-600" /> Unlimited Projects</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-blue-600" /> High-Res PDF Exports</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-blue-600" /> Comparative Synthesis</li>
-                                </ul>
-                            </div>
-                            <Link href="/settings/billing" className="mt-8 block w-full rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-inset ring-blue-200 hover:ring-blue-300">
-                                Buy Credits
-                            </Link>
-                        </div>
-
-                        {/* Tier 3: Institution */}
-                        <div className="rounded-3xl p-8 ring-1 ring-gray-200 bg-slate-50 flex flex-col justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold tracking-tight text-slate-900">Institution</h3>
-                                <p className="mt-4 text-sm leading-6 text-slate-500">For labs, departments, and research groups.</p>
-                                <p className="mt-6 flex items-baseline gap-x-1">
-                                    <span className="text-4xl font-bold tracking-tight text-slate-900">Contact Us</span>
-                                </p>
-                                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-slate-600">
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-slate-600" /> Volume Discounts</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-slate-600" /> Centralized Billing</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-slate-600" /> Dedicated Training</li>
-                                    <li className="flex gap-x-3"><Check className="h-6 w-5 flex-none text-slate-600" /> Priority Support</li>
-                                </ul>
-                            </div>
-                            <Link href="/contact" className="mt-8 block w-full rounded-md bg-slate-800 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-slate-700">
-                                Contact Sales
-                            </Link>
-                        </div>
-
+                        ))}
                     </div>
 
                     {/* Academic Grants Section */}
@@ -94,7 +113,7 @@ export default function PricingPage() {
                         <h2 className="text-2xl font-bold text-amber-900 mb-4">🎓 Academic Grants Available</h2>
                         <p className="text-amber-800 mb-6 max-w-2xl mx-auto">
                             We are committed to supporting open research. If you are a student or academic researcher with limited funding,
-                            please verify your <strong>.edu</strong> email address to apply for our research grant program.
+                            please verify your <strong>.edu</strong> email address to apply for our research grant program (500 Free Credits).
                         </p>
                         <Button variant="outline" className="border-amber-600 text-amber-700 hover:bg-amber-100">
                             Apply for Grant

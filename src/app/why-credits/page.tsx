@@ -5,7 +5,7 @@ import { ArrowLeft, Server, Database, Cpu, Scale, ShieldCheck } from "lucide-rea
 
 export const metadata = {
     title: "Why Credits? | instantTEA",
-    description: "Understanding the cost-allocation mechanism behind Assemblage-AI research infrastructure.",
+    description: "Understanding the cost-allocation mechanism behind InstantTEA research infrastructure.",
 };
 
 export default function WhyCreditsPage() {
@@ -18,10 +18,10 @@ export default function WhyCreditsPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
                     </Link>
                     <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">
-                        Why Assemblage-AI Uses a Credit System
+                        Why InstantTEA Uses a Credit System
                     </h1>
                     <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                        Assemblage-AI operates as a <strong>computational research infrastructure</strong>, not a static software tool.
+                        InstantTEA operates as a <strong>computational research infrastructure</strong>, not a static software tool.
                         Each analysis triggers real, marginal costs across multiple layers of the system.
                         Credits ensure sustainability, fairness, and transparency.
                     </p>
@@ -63,7 +63,7 @@ export default function WhyCreditsPage() {
                         </CardHeader>
                         <CardContent className="text-slate-400 space-y-2">
                             <p>
-                                Assemblage-AI maintains structured analytic artifacts, versioned interpretations,
+                                InstantTEA maintains structured analytic artifacts, versioned interpretations,
                                 and research histories.
                             </p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -124,7 +124,7 @@ export default function WhyCreditsPage() {
                         </CardHeader>
                         <CardContent className="text-slate-400 grid md:grid-cols-2 gap-6">
                             <div>
-                                <p className="mb-2">Assemblage-AI is designed to support:</p>
+                                <p className="mb-2">InstantTEA is designed to support:</p>
                                 <ul className="list-disc pl-5 text-sm space-y-1">
                                     <li>Interpretive rigor</li>
                                     <li>Reflexive auditability</li>
@@ -148,7 +148,7 @@ export default function WhyCreditsPage() {
                     <h2 className="text-2xl font-bold text-white mb-4">In Short</h2>
                     <p className="text-lg text-slate-300 mb-6">
                         Credits are not a paywall; they are a <strong>cost-allocation mechanism</strong>.
-                        They ensure that Assemblage-AI remains economically sustainable, fair, and capable of supporting
+                        They ensure that InstantTEA remains economically sustainable, fair, and capable of supporting
                         serious, computationally intensive interpretive work. <Link href="/governance/contributor-credits" className="text-emerald-400 hover:underline">Learn how to earn credits via contribution.</Link>
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">

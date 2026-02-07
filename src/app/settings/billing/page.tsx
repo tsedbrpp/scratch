@@ -9,7 +9,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { DataExportSection } from "@/components/settings/DataExportSection";
-import { TransactionHistory } from "@/components/TransactionHistory";
+import { TransactionHistory, Transaction } from "@/components/TransactionHistory";
+import { CREDIT_PACKAGES } from "@/config/pricing";
+import { cn } from "@/lib/utils";
 
 export default function BillingPage() {
     const { userId, isLoaded, isSignedIn } = useAuth();
@@ -17,7 +19,7 @@ export default function BillingPage() {
     const [credits, setCredits] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<Transaction[]>([]);
 
     const fetchCredits = async () => {
         try {
@@ -89,7 +91,7 @@ export default function BillingPage() {
         setTimeout(() => alert("Payment successful! Updating balance..."), 500);
     };
 
-    const handlePurchase = async () => {
+    const handlePurchase = async (packageId: string) => {
         if (!isSignedIn) {
             router.push('/sign-up');
             return;
@@ -111,8 +113,7 @@ export default function BillingPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: 10, // $10.00
-                    credits: 10
+                    packageId: packageId
                 })
             });
 
@@ -126,7 +127,7 @@ export default function BillingPage() {
 
         } catch (error: unknown) {
             console.error("Purchase Flow Error:", error);
-            alert(`Failed to initiate purchase: ${error.message}`);
+            alert(`Failed to initiate purchase: ${(error as Error).message}`);
             setLoading(false);
         }
         // Note: Loading state stays true until redirect or error
@@ -147,7 +148,7 @@ export default function BillingPage() {
                     </h3>
                     <p className="text-indigo-700 mt-1 max-w-xl">
                         Are you a student or academic researcher? We support open science!
-                        Email us from your <strong>.edu</strong> or institutional address to receive <span className="font-bold underline">50 Free Credits</span> for your work.
+                        Email us from your <strong>.edu</strong> or institutional address to receive <span className="font-bold underline">500 Free Credits</span> for your work.
                     </p>
                 </div>
                 <a href="mailto:support@instanttea.com?subject=Academic Grant Request" className="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
@@ -183,9 +184,12 @@ export default function BillingPage() {
                                 <h4 className="font-semibold text-slate-900">What is a Credit?</h4>
                                 <p className="text-sm text-slate-600">
                                     <strong>1 Credit = 1 Document Analysis</strong>.
-                                    Looking at a document through a single lens (e.g., "Legitimacy" or "Cultural Framing") costs 1 credit.
+                                    Looking at a document through a single lens (e.g., &quot;Legitimacy&quot; or &quot;Cultural Framing&quot;) costs 1 credit.
                                     Complex synthesis tasks may cost more.
                                 </p>
+                                <Link href="/why-credits" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    Learn more about credits &rarr;
+                                </Link>
                             </div>
                         </div>
                     </CardContent>
@@ -195,63 +199,107 @@ export default function BillingPage() {
                 <div className="md:col-span-2 space-y-6">
                     <h2 className="text-xl font-semibold text-slate-900">Purchase Credits</h2>
 
-                    <Card className="border-2 border-indigo-100 ring-2 ring-indigo-50 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                            POPULAR
-                        </div>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5 text-indigo-600" />
-                                Standard Pack
-                            </CardTitle>
-                            <CardDescription>
-                                Perfect for standard research projects.
-                                <Link href="/why-credits" className="ml-1 text-indigo-600 hover:text-indigo-700 underline decoration-indigo-300 underline-offset-2">
-                                    Why credits?
-                                </Link>
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex justify-between items-baseline mb-4">
-                                <span className="text-3xl font-bold text-slate-900">$10</span>
-                                <span className="text-slate-500">one-time payment</span>
-                            </div>
-                            <ul className="space-y-2 text-sm text-slate-600 mb-6">
-                                <li className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-green-500" />
-                                    10 Analysis Credits
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-green-500" />
-                                    Access to all lenses
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-green-500" />
-                                    Export to PDF
-                                </li>
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            {isSignedIn ? (
-                                <Button
-                                    onClick={handlePurchase}
-                                    disabled={loading}
-                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                                >
-                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Purchase Credits
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={() => router.push('/sign-up')}
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                                >
-                                    <LogIn className="mr-2 h-4 w-4" />
-                                    Sign Up to Purchase
-                                </Button>
-                            )}
-                        </CardFooter>
-                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {Object.values(CREDIT_PACKAGES).map((pack) => (
+                            <Card key={pack.id} className={cn(
+                                "border-2 relative overflow-hidden transition-all hover:border-indigo-300",
+                                pack.popular ? "border-indigo-500 ring-4 ring-indigo-50/50" : "border-slate-200",
+                                pack.id === 'institution' ? "bg-slate-50 border-slate-200" : "bg-white",
+                                pack.id === 'starter' ? "opacity-75 bg-slate-50" : "" // Visual cue for unavailable
+                            )}>
+                                {pack.popular && (
+                                    <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                                        POPULAR
+                                    </div>
+                                )}
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <CreditCard className="h-5 w-5 text-indigo-600" />
+                                        {pack.name}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {pack.description}
+                                        {pack.promo?.badge && (
+                                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                                {pack.promo.badge}
+                                            </span>
+                                        )}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex justify-between items-baseline mb-4">
+                                        {pack.id === 'institution' ? (
+                                            <span className="text-3xl font-bold text-slate-900">Contact Us</span>
+                                        ) : pack.price === 0 ? (
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-bold text-slate-900">Free</span>
+                                                <span className="text-xs text-slate-500">forever</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-3xl font-bold text-slate-900">${pack.price}</span>
+                                        )}
+
+                                        {pack.id !== 'institution' && pack.id !== 'starter' && (
+                                            <div className="text-right">
+                                                <span className="text-slate-500 block text-xs">one-time payment</span>
+                                                {pack.savings && (
+                                                    <span className="text-green-600 text-xs font-bold">{pack.savings}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {pack.promo?.bannerText && (
+                                        <div className="mb-4 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                                            {pack.promo.bannerText}
+                                        </div>
+                                    )}
+
+                                    <ul className="space-y-2 text-sm text-slate-600 mb-6">
+                                        {pack.features.map((feature, i) => (
+                                            <li key={i} className="flex items-center gap-2">
+                                                <Check className={cn(
+                                                    "h-4 w-4",
+                                                    pack.id === 'institution' ? "text-slate-500" : "text-green-500"
+                                                )} />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </CardContent>
+                                <CardFooter>
+                                    {pack.id === 'institution' ? (
+                                        <Button
+                                            onClick={() => router.push('/contact')}
+                                            className="w-full bg-slate-800 hover:bg-slate-700 text-white"
+                                        >
+                                            Contact Sales
+                                        </Button>
+                                    ) : isSignedIn ? (
+                                        <Button
+                                            onClick={() => handlePurchase(pack.id)}
+                                            disabled={loading || pack.id === 'starter'}
+                                            className={cn(
+                                                "w-full",
+                                                pack.popular ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+                                            )}
+                                        >
+                                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            {pack.id === 'starter' ? "New Users Only" : `Buy ${pack.credits} Credits`}
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            onClick={() => router.push('/sign-up')}
+                                            className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                                        >
+                                            <LogIn className="mr-2 h-4 w-4" />
+                                            Sign Up to Purchase
+                                        </Button>
+                                    )}
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
 
 
 
