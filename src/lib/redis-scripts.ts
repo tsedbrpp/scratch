@@ -8,10 +8,10 @@ import { redis } from './redis';
 const DEDUCT_CREDITS_SCRIPT = `
     local current_credits = redis.call("GET", KEYS[1])
     
-    -- Lazy Init: If key is missing, assume new user and give 5 free credits
+    -- Lazy Init: If key is missing, assume new user and give 100 free credits
     if not current_credits then
-        redis.call("SET", KEYS[1], 5)
-        current_credits = 5
+        redis.call("SET", KEYS[1], 100)
+        current_credits = 100
     end
 
     if tonumber(current_credits) < tonumber(ARGV[1]) then
@@ -85,8 +85,8 @@ export async function addCredits(userId: string, amount: number, source: string,
 
 export async function getCredits(userId: string): Promise<number> {
     const credits = await redis.get(`credits:${userId}`);
-    // Return 5 for new users (virtual balance until materialized by usage)
-    return credits ? parseInt(credits, 10) : 5;
+    // Return 100 for new users (virtual balance until materialized by usage)
+    return credits ? parseInt(credits, 10) : 100;
 }
 
 export async function getTransactions(userId: string, limit: number = 50): Promise<any[]> {

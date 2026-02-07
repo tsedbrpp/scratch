@@ -19,10 +19,10 @@ export default async function ReferralsPage() {
                             <Gift className="w-8 h-8" />
                         </div>
                         <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-4">
-                            Give 5, Get 5
+                            Give 100, Get 5
                         </h1>
                         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                            Invite your colleagues to InstantTea. They get <span className="font-bold text-indigo-600">5 free credits</span> instantly,
+                            Invite your colleagues to InstantTea. They get <span className="font-bold text-indigo-600">100 free credits</span> instantly,
                             and you get <span className="font-bold text-indigo-600">5 credits</span> when they use your code.
                         </p>
                     </div>
