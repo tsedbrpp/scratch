@@ -23,8 +23,12 @@ export function HeroSection() {
 
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56 text-center">
                 <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-                    <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-400/20 bg-emerald-400/10 hover:ring-emerald-400/30 transition-all">
-                        <span className="mr-1">🍵</span> Instant Insight. Steeped in Theory.
+                    <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-400/20 bg-emerald-400/10 hover:ring-emerald-400/30 transition-all flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                        <span className="flex items-center gap-1"><span className="text-lg">🍵</span> Instant Insight. Steeped in Theory.</span>
+                        <span className="hidden sm:inline w-px h-4 bg-emerald-400/20"></span>
+                        <a href="mailto:demo@instanttea.com?subject=Schedule%2030-min%20Demo" className="font-semibold text-emerald-300 hover:text-emerald-200">
+                            Book a 30-min Demo <span aria-hidden="true">&rarr;</span>
+                        </a>
                     </div>
                 </div>
                 {/* Replaced Text Title with Branding Image */}
