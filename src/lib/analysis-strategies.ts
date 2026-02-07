@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PromptRegistry } from '@/lib/prompts/registry';
 
-type StrategyResult = { systemPrompt: string; userContent: string };
+type StrategyResult = { systemPrompt: string; userContent: string; promptId?: string };
 
 const getLensInstruction = (lensType: string) => {
     switch (lensType) {
@@ -78,7 +78,8 @@ CRITICAL GRAPH INSTRUCTIONS:
 2. The title of Source B is: "${sourceB.title}". You MUST create a node with id="${sourceB.title}" (Type: 'policy').
 3. You MUST generate a MINIMUM of 15 nodes in the 'assemblage_network'.
 4. Connect all other concepts back to these two central policy nodes.
-5. VIOLATION CHECK: You MUST start your JSON with "node_generation_step": ["1...", "2...", ... "20..."]. If you skip this step or generate fewer than 15 nodes, the analysis is invalid.`
+5. VIOLATION CHECK: You MUST start your JSON with "node_generation_step": ["1...", "2...", ... "20..."]. If you skip this step or generate fewer than 15 nodes, the analysis is invalid.`,
+            promptId: 'comparison_framework'
         };
     },
 
@@ -89,7 +90,8 @@ CRITICAL GRAPH INSTRUCTIONS:
 TEXT CONTENT:
 ${text}
 
-Please map the ecosystem impacts of this text according to the system prompt instructions.`
+Please map the ecosystem impacts of this text according to the system prompt instructions.`,
+        promptId: 'ecosystem_analysis'
     }),
 
     resistance: async (userId, { sourceType, text }) => ({
@@ -209,7 +211,8 @@ Please identify cultural holes in this text.`
         userContent: `TEXT CONTENT:
 ${text}
 
-Please extract the assemblage from this text.`
+Please extract the assemblage from this text.`,
+        promptId: 'assemblage_extraction_v3'
     }),
 
     resistance_synthesis: async (userId, { documents }) => ({
@@ -350,6 +353,7 @@ SOURCE TYPE: ${sourceType || 'Policy Document'}
 TEXT CONTENT:
 ${text}
 
-Please analyze this text using the Decolonial Situatedness Framework (DSF) as described in the system prompt.`
+Please analyze this text using the Decolonial Situatedness Framework (DSF) as described in the system prompt.`,
+        promptId: 'dsf_lens'
     })
 };

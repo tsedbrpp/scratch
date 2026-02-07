@@ -47,3 +47,40 @@ export interface GovernanceSystemState {
     genesisTimestamp: number; // The start of the governance timeline
     developerVetoCount: number; // Track usage of limited veto power
 }
+
+export type ProposalType = 'config_change' | 'feature_request' | 'epistemic_negation';
+
+export type ProposalStatus = 'active' | 'passed' | 'rejected' | 'vetoed' | 'implemented';
+
+export interface Vote {
+    userId: string;
+    vote: 'for' | 'against' | 'abstain';
+    rationale?: string;
+    timestamp: number;
+}
+
+export interface GovernanceProposal {
+    id: string;
+    type: ProposalType;
+    title: string;
+    description: string;
+    proposerId: string;
+    createdAt: number;
+    expiresAt: number;
+    status: ProposalStatus;
+
+    // Vote Counts
+    votesFor: number;
+    votesAgainst: number;
+    votesAbstain: number;
+
+    // Vote History
+    voteHistory?: Vote[];
+
+    // Contextual Data for Epistemic Negation
+    targetAnalysisId?: string;
+    targetPromptId?: string;
+    targetSourceId?: string;
+    targetSourceTitle?: string;
+    negationReason?: string;
+}

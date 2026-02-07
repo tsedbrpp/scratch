@@ -1,20 +1,16 @@
 import React, { useState } from "react";
-import { Sparkles, Eye } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import dynamic from 'next/dynamic';
 import { AnalysisResult } from "@/types";
 import { AccountabilitySection } from "@/components/policy/analysis/AccountabilitySection";
 import { EcosystemActor } from "@/types/ecosystem";
-import { PromptDialog } from "@/components/transparency/PromptDialog";
-import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { Button } from "@/components/ui/button";
 import { InterpretationLensSelector } from "@/components/policy/analysis/InterpretationLensSelector";
 import { DEFAULT_PERSPECTIVE_A, DEFAULT_PERSPECTIVE_B } from "@/lib/perspectives";
 import { useCredits } from "@/hooks/useCredits";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
-import { TransparencyPanel } from "@/components/analysis/TransparencyPanel";
-import { TransparencyService } from "@/services/transparency-service";
-import { AlertTriangle } from "lucide-react";
+import { AIAuditPanel } from "@/components/analysis/AIAuditPanel";
 
 // Lazy load heavy compass
 const GovernanceCompass = dynamic(() => import('@/components/policy/GovernanceCompass').then(mod => mod.GovernanceCompass), {
@@ -45,7 +41,6 @@ export function OverviewDashboard({
 }: OverviewDashboardProps) {
 
     // [STATE] UI Controls
-    const [showTransparency, setShowTransparency] = useState(false);
     const [activeLens, setActiveLens] = useState<string>('default');
 
     // [STATE] Simulation (Perspectives)
@@ -159,40 +154,8 @@ export function OverviewDashboard({
         <div className="space-y-6 animate-in fade-in duration-500">
             <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
 
-            {/* [TRANSPARENCY] Transparency Dialog */}
-            <PromptDialog
-                open={showTransparency}
-                onOpenChange={setShowTransparency}
-                metadata={analysis.metadata}
-                provenance={analysis.provenance_chain}
-            />
-
-            {/* 1. Header Area: Transparency & Lens Selector */}
+            {/* 1. Header Area: Lens Selector */}
             <div className="space-y-4">
-
-                {/* Transparency Banner */}
-                {analysis.metadata && (
-                    <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
-                        <div className="flex-1">
-                            <h4 className="text-sm font-semibold text-indigo-900 mb-1">AI Transparency</h4>
-                            <p className="text-xs text-indigo-700">View the exact prompt and reasoning used for this analysis</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {analysis.confidence && (
-                                <ConfidenceBadge confidence={analysis.confidence} />
-                            )}
-                            <Button
-                                onClick={() => setShowTransparency(true)}
-                                variant="outline"
-                                size="sm"
-                                className="bg-white hover:bg-indigo-50 border-indigo-300"
-                            >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Show Prompt
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Interpretation Lens Selector */}
                 <InterpretationLensSelector
@@ -280,54 +243,11 @@ export function OverviewDashboard({
             </div>
 
             {/* Algorithmic Transparency - Phase 2 (Global Section) */}
-            <div className="pt-8 border-t border-slate-200 mt-8 space-y-6">
-                <div className="flex items-center gap-2 px-1 text-indigo-900/60 transition-colors hover:text-indigo-900">
-                    <Sparkles className="h-4 w-4" />
-                    <h4 className="text-sm font-bold uppercase tracking-wider">Algorithmic Transparency & Methodology</h4>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4 mt-2">
-                    <TransparencyPanel
-                        metadata={TransparencyService.getEpistemicAsymmetryTransparency()}
-                        score={analysis.governance_scores?.epistemic_asymmetry || analysis.governance_scores?.coloniality || 0}
-                    />
-                    <TransparencyPanel
-                        metadata={TransparencyService.getPowerConcentrationTransparency()}
-                        score={analysis.governance_scores?.power_concentration || analysis.governance_scores?.centralization || 0}
-                    />
-                </div>
-
-                {/* Overall Design Rationale & Caveats */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 transition-all hover:bg-slate-100/50">
-                    <div className="flex items-center gap-2 mb-4">
-                        <AlertTriangle className="h-5 w-5 text-amber-600" />
-                        <h4 className="text-lg font-bold text-slate-800 leading-none">Scoring Rationale & Structural Limitations</h4>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1">Key Design Decisions</h5>
-                            <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
-                                {TransparencyService.generateTransparencyReport({}).design_decisions.map((decision, i) => (
-                                    <li key={i}>{decision}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="space-y-3">
-                            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-1">Platform Limitations</h5>
-                            <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
-                                {TransparencyService.generateTransparencyReport({}).overall_caveats.map((caveat, i) => (
-                                    <li key={i}>{caveat}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                    <div className="mt-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400 uppercase tracking-widest flex justify-between items-center font-bold">
-                        <span>Transparency System v2.0 (Metric Kernel Upgrade)</span>
-                        <span>Design Positionality: Western Critical Theory / Assemblage Theory / Bridging CSS</span>
-                    </div>
-                </div>
-            </div>
+            <AIAuditPanel
+                analysis={analysis}
+                sourceId={sourceId}
+                sourceTitle={sourceTitle}
+            />
         </div>
     );
 }

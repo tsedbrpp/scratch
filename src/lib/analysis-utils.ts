@@ -10,12 +10,15 @@ export interface VerifiedQuote {
 }
 
 // Normalize text for comparison
-function normalize(text: string): string {
+function normalize(text: string | null | undefined): string {
+    if (!text) return "";
     return text.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 // Check if a quote exists in source text with fuzzy matching
-export function checkFuzzyMatch(quote: string, source: string): { verified: boolean; index: number } {
+export function checkFuzzyMatch(quote: string, source: string | null | undefined): { verified: boolean; index: number } {
+    if (!source || !quote) return { verified: false, index: -1 };
+
     const normalizedQuote = normalize(quote);
     const normalizedSource = normalize(source);
 

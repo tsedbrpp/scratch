@@ -35,6 +35,7 @@ import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { TransparencyPanel } from "@/components/analysis/TransparencyPanel";
 import { TransparencyService } from "@/services/transparency-service";
+import { AIAuditPanel } from "@/components/analysis/AIAuditPanel";
 
 interface AnalysisResultsProps {
     analysis: NonNullable<AnalysisResult>;
@@ -675,54 +676,13 @@ export function AnalysisResults({ analysis, sourceTitle, sourceId, onUpdate, onA
             </Tabs>
 
             {/* Algorithmic Transparency - Phase 2 (Global Section) */}
-            <div className="pt-8 border-t border-slate-200 mt-8 space-y-6">
-                <div className="flex items-center gap-2 px-1">
-                    <Sparkles className="h-4 w-4 text-indigo-500" />
-                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Algorithmic Transparency & Methodology</h4>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                    <TransparencyPanel
-                        metadata={TransparencyService.getEpistemicAsymmetryTransparency()}
-                        score={effectiveAnalysis.governance_scores?.epistemic_asymmetry || effectiveAnalysis.governance_scores?.coloniality || 0}
-                    />
-                    <TransparencyPanel
-                        metadata={TransparencyService.getPowerConcentrationTransparency()}
-                        score={effectiveAnalysis.governance_scores?.power_concentration || effectiveAnalysis.governance_scores?.centralization || 0}
-                    />
-                </div>
-
-                {/* Overall Design Rationale & Caveats */}
-                <div className="bg-amber-900/5 border border-amber-500/20 rounded-xl p-6 transition-all hover:bg-amber-900/[0.07]">
-                    <div className="flex items-center gap-2 mb-4">
-                        <AlertTriangle className="h-5 w-5 text-amber-600" />
-                        <h4 className="text-lg font-bold text-amber-900 leading-none">Scoring Rationale & Structural Limitations</h4>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <h5 className="text-xs font-bold text-amber-800 uppercase tracking-widest border-b border-amber-200 pb-1">Key Design Decisions</h5>
-                            <ul className="text-sm text-slate-700 space-y-2 list-disc pl-4">
-                                {TransparencyService.generateTransparencyReport({}).design_decisions.map((decision, i) => (
-                                    <li key={i}>{decision}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="space-y-3">
-                            <h5 className="text-xs font-bold text-amber-800 uppercase tracking-widest border-b border-amber-200 pb-1">Platform Limitations</h5>
-                            <ul className="text-sm text-slate-700 space-y-2 list-disc pl-4">
-                                {TransparencyService.generateTransparencyReport({}).overall_caveats.map((caveat, i) => (
-                                    <li key={i}>{caveat}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                    <div className="mt-6 pt-4 border-t border-amber-200/50 text-[10px] text-amber-700/60 uppercase tracking-widest flex justify-between items-center font-bold">
-                        <span>Transparency Version 1.0</span>
-                        <span>Design Positionality: Western Critical Theory</span>
-                    </div>
-                </div>
-            </div>
+            <AIAuditPanel
+                analysis={effectiveAnalysis}
+                sourceId={sourceId}
+                sourceTitle={sourceTitle}
+                onFlagResult={(reason: string) => console.log("Flagged:", reason)}
+                onForkPrompt={async (_newContent: string) => console.log("Fork requested")}
+            />
         </div >
     );
 }

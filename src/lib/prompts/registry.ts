@@ -28,6 +28,9 @@ export interface PromptDefinition {
     description: string;
     category: 'Analysis' | 'Extraction' | 'Simulation' | 'Critique';
     defaultValue: string;
+    version: string;
+    lastUpdated: string;
+    changelog?: string[];
     outputSchema?: {
         format: 'json' | 'text';
         requiredKeys?: string[];
@@ -41,6 +44,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Analyzes missing voices, silent actors, and structural voids in the ecosystem.',
         category: 'Analysis',
         defaultValue: ABSENCE_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative', 'missing_voices', 'structural_voids', 'blindspot_intensity', 'socio_technical_components', 'policy_mobilities', 'stabilization_mechanisms']
@@ -52,6 +58,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Extracts actors, mechanisms, and relations from raw text using Assemblage Theory.',
         category: 'Extraction',
         defaultValue: ASSEMBLAGE_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['assemblage', 'actors', 'relations']
@@ -63,6 +72,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Synthesizes findings across multiple analytic lenses (N-way comparison).',
         category: 'Analysis',
         defaultValue: COMPARATIVE_SYNTHESIS_PROMPT,
+        version: '2.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: { format: 'json' }
     },
     'comparison_framework': {
@@ -71,6 +83,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Compares two governance frameworks using the Decolonial Situatedness Framework.',
         category: 'Analysis',
         defaultValue: COMPARISON_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: { format: 'json' }
     },
     'critique_panel': {
@@ -79,6 +94,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Simulates a 3-person academic review panel (Decolonial, Actor-Network, Legal) to critique an analysis.',
         category: 'Critique',
         defaultValue: CRITIQUE_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['blind_spots', 'over_interpretation', 'legitimacy_correction']
@@ -89,14 +107,20 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Cultural Framing Lens',
         description: 'Analyzes implicit cultural assumptions, metaphors, and state-market imaginaries.',
         category: 'Analysis',
-        defaultValue: CULTURAL_FRAMING_PROMPT
+        defaultValue: CULTURAL_FRAMING_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'dsf_lens': {
         id: 'dsf_lens',
         name: 'Decolonial Situatedness Framework (DSF)',
         description: 'Core lens for analyzing power, coloniality, and situatedness in assemblages.',
         category: 'Analysis',
-        defaultValue: DSF_SYSTEM_PROMPT
+        defaultValue: DSF_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'micro_fascism_risk': {
         id: 'micro_fascism_risk',
@@ -104,6 +128,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Generates the diagnostic narrative for the Risk Index card.',
         category: 'Analysis',
         defaultValue: MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: { format: 'text' }
     },
     'liberatory_capacity': {
@@ -112,6 +139,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Generates the diagnostic narrative for the Liberatory Capacity Index (LGCI).',
         category: 'Analysis',
         defaultValue: LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: { format: 'text' }
     },
     'ecosystem_analysis': {
@@ -119,35 +149,50 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Ecosystem Impact Mapping',
         description: 'Maps policy mechanisms to second and third-order impacts on ecosystem actors.',
         category: 'Analysis',
-        defaultValue: ECOSYSTEM_SYSTEM_PROMPT
+        defaultValue: ECOSYSTEM_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'institutional_logics': {
         id: 'institutional_logics',
         name: 'Institutional Logics Lens',
         description: 'Analyzes competing organizing principles (Market, State, Professional, Community).',
         category: 'Analysis',
-        defaultValue: INSTITUTIONAL_LOGICS_PROMPT
+        defaultValue: INSTITUTIONAL_LOGICS_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'legitimacy_analysis': {
         id: 'legitimacy_analysis',
         name: 'Legitimacy (Orders of Worth)',
         description: 'Analyzes moral justifications using Boltanski & Thévenot’s Orders of Worth.',
         category: 'Analysis',
-        defaultValue: LEGITIMACY_PROMPT
+        defaultValue: LEGITIMACY_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'ontology_extraction': {
         id: 'ontology_extraction',
         name: 'Ontology Extraction',
         description: 'Extracts a structured Concept Map (nodes & links) from text.',
         category: 'Extraction',
-        defaultValue: ONTOLOGY_SYSTEM_PROMPT
+        defaultValue: ONTOLOGY_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'ontology_comparison': {
         id: 'ontology_comparison',
         name: 'Ontology Comparison',
         description: 'Compares two different ontology maps.',
         category: 'Analysis',
-        defaultValue: ONTOLOGY_COMPARISON_SYSTEM_PROMPT
+        defaultValue: ONTOLOGY_COMPARISON_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
 
     'resistance_analysis': {
@@ -155,7 +200,10 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Resistance Analysis',
         description: 'Detects micro-resistance strategies (Gambiarra, Obfuscation, Refusal) in text.',
         category: 'Analysis',
-        defaultValue: RESISTANCE_SYSTEM_PROMPT
+        defaultValue: RESISTANCE_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
 
     'resistance_synthesis': {
@@ -163,14 +211,20 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Resistance Synthesis',
         description: 'Synthesizes patterns from multiple resistance traces.',
         category: 'Analysis',
-        defaultValue: RESISTANCE_SYNTHESIS_PROMPT
+        defaultValue: RESISTANCE_SYNTHESIS_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'stress_test': {
         id: 'stress_test',
         name: 'Adversarial Stress Test',
         description: 'Red-teams a policy by reframing it through an opposing ideological lens.',
         category: 'Critique',
-        defaultValue: STRESS_TEST_SYSTEM_PROMPT
+        defaultValue: STRESS_TEST_SYSTEM_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
 
     'theme_extraction': {
@@ -179,6 +233,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Extracts emic themes from policy documents.',
         category: 'Extraction',
         defaultValue: THEME_EXTRACTION_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['theme', 'quote']
@@ -190,6 +247,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Generates theoretical bridges for structural holes.',
         category: 'Analysis',
         defaultValue: BRIDGING_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['bridgingConcepts', 'opportunity', 'policyImplication']
@@ -200,28 +260,40 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Lens: Institutional Logics',
         description: 'Lens addition for analyzing institutional logics.',
         category: 'Analysis',
-        defaultValue: LENS_PROMPTS['institutional_logics']
+        defaultValue: LENS_PROMPTS['institutional_logics'],
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'cultural_lens_critical_data_studies': {
         id: 'cultural_lens_critical_data_studies',
         name: 'Lens: Critical Data Studies',
         description: 'Lens addition for critical data studies.',
         category: 'Analysis',
-        defaultValue: LENS_PROMPTS['critical_data_studies']
+        defaultValue: LENS_PROMPTS['critical_data_studies'],
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'cultural_lens_actor_network_theory': {
         id: 'cultural_lens_actor_network_theory',
         name: 'Lens: Actor-Network Theory',
         description: 'Lens addition for ANT.',
         category: 'Analysis',
-        defaultValue: LENS_PROMPTS['actor_network_theory']
+        defaultValue: LENS_PROMPTS['actor_network_theory'],
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'cultural_lens_dsf_lens': {
         id: 'cultural_lens_dsf_lens',
         name: 'Lens: DSF (Short)',
         description: 'Lens addition for Decolonial Situatedness Framework.',
         category: 'Analysis',
-        defaultValue: LENS_PROMPTS['dsf_lens']
+        defaultValue: LENS_PROMPTS['dsf_lens'],
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'key_term_extraction': {
         id: 'key_term_extraction',
@@ -229,6 +301,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Extracts searchable terms from policy documents.',
         category: 'Extraction',
         defaultValue: KEY_TERM_EXTRACTION_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: []
@@ -239,7 +314,10 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         name: 'Subject Identification',
         description: 'Identifies the policy/entity name from text.',
         category: 'Extraction',
-        defaultValue: SUBJECT_IDENTIFICATION_PROMPT
+        defaultValue: SUBJECT_IDENTIFICATION_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry']
     },
     'resistance_curation': {
         id: 'resistance_curation',
@@ -247,6 +325,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Classifies search results into resistance typologies.',
         category: 'Analysis',
         defaultValue: RESISTANCE_CURATION_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['items']
@@ -259,6 +340,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Explains the political significance of Hull Stability and Porosity.',
         category: 'Analysis',
         defaultValue: ASSEMBLAGE_EXPLANATION_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative', 'hulls']
@@ -270,6 +354,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Generates a descriptive methodological trace of the actor-network.',
         category: 'Analysis',
         defaultValue: ANT_TRACE_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative']
@@ -281,6 +368,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Interprets mechanisms of territorialization and coding.',
         category: 'Analysis',
         defaultValue: ASSEMBLAGE_REALIST_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative', 'trajectory_analysis']
@@ -292,6 +382,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Synthesizes ANT trace and Assemblage mechanisms with theoretical reflexivity.',
         category: 'Analysis',
         defaultValue: HYBRID_REFLEXIVE_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative']
@@ -303,6 +396,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Extracts key search terms from policy insights for finding online discussions.',
         category: 'Extraction',
         defaultValue: `Given this policy insight, extract 3-5 key search terms or phrases that would be most effective for finding related discussions on Reddit. Focus on concrete topics, issues, or controversies that people would actually discuss online.\n\nReturn ONLY a JSON array of search terms, without any markdown formatting or explanation. Example format:\n["algorithmic bias", "AI regulation", "facial recognition"]`,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: []
@@ -314,6 +410,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Simulates how an assemblage evolves under specific scenario conditions.',
         category: 'Simulation',
         defaultValue: `You are analyzing the trajectory of an algorithmic assemblage under specific conditions.\n\nGiven a set of actors and a scenario, predict how the assemblage will evolve. Consider:\n- How territorialization and deterritorialization forces shift\n- Which actors gain or lose influence\n- What new connections or disconnections emerge\n- How coding mechanisms change\n\nReturn your analysis as JSON with:\n- narrative: Overall trajectory description\n- deltas: Array of changes with source_id, target_id, change_type, and description\n- stabilization_mechanisms: What keeps the assemblage coherent\n- lines_of_flight: Potential escape routes or mutations`,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['narrative', 'deltas']
@@ -325,6 +424,9 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         description: 'Analyzes resistance artifacts through assemblage theory and critical discourse analysis.',
         category: 'Analysis',
         defaultValue: RESISTANCE_DISCOURSE_ANALYSIS_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-06',
+        changelog: ['Initial version tracked in registry'],
         outputSchema: {
             format: 'json',
             requiredKeys: ['frames', 'rhetorical_strategies', 'reconfiguration']

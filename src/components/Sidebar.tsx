@@ -23,7 +23,8 @@ import {
     LogIn,
     UserPlus,
     Gift,
-    Settings
+    Settings,
+    Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -156,6 +157,12 @@ const NAV_GROUPS: NavGroup[] = [
                 icon: Scan,
                 description: "Examine positionality and analytical lens.",
                 advancedOnly: true // [PD]
+            },
+            {
+                name: "Meta-Governance",
+                href: "/governance/dashboard",
+                icon: Activity,
+                description: "Monitor and vote on governance proposals."
             }
         ]
     },

@@ -135,4 +135,107 @@ export class GovernanceService {
             deliberationsJoined: 0
         };
     }
+
+    /**
+     * Governance Proposal Creation
+     */
+    public async createEpistemicNegationProposal(userId: string, analysisId: string, promptId: string, reason: string, sourceId?: string, sourceTitle?: string): Promise<import('@/types/governance').GovernanceProposal> {
+        return this.createProposal(userId, {
+            type: 'epistemic_negation',
+            title: sourceTitle ? `Veto Analysis: ${sourceTitle}` : `Veto Analysis ${analysisId.substring(0, 8)}`,
+            description: reason,
+            targetAnalysisId: analysisId,
+            targetPromptId: promptId,
+            targetSourceId: sourceId,
+            targetSourceTitle: sourceTitle,
+            negationReason: reason
+        });
+    }
+
+    /**
+     * Governance Proposal Retrieval
+     */
+    public async getProposals(): Promise<import('@/types/governance').GovernanceProposal[]> {
+        try {
+            const response = await fetch('/api/governance/proposals');
+            if (!response.ok) throw new Error('Failed to fetch proposals');
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to get proposals', error);
+            return [];
+        }
+    }
+
+    /**
+     * Cast a vote on a proposal
+     */
+    public async castVote(proposalId: string, voteType: 'for' | 'against' | 'abstain', rationale?: string): Promise<import('@/types/governance').GovernanceProposal | null> {
+        try {
+            const response = await fetch('/api/governance/vote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    proposalId,
+                    voteType,
+                    rationale,
+                    userId: 'current_user' // In a real app this comes from session
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to vote');
+            const data = await response.json();
+            return data.proposal;
+        } catch (error) {
+            console.error('Failed to cast vote', error);
+            return null;
+        }
+    }
+
+    /**
+     * Delete a proposal (Owner Only)
+     */
+    public async deleteProposal(proposalId: string): Promise<boolean> {
+        try {
+            const response = await fetch(`/api/governance/proposals?id=${proposalId}`, {
+                method: 'DELETE',
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Failed to delete proposal', error);
+            return false;
+        }
+    }
+
+    private async createProposal(userId: string, data: Partial<import('@/types/governance').GovernanceProposal>): Promise<import('@/types/governance').GovernanceProposal> {
+        // Mock ID generation
+        const id = `prop_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+        const proposal: import('@/types/governance').GovernanceProposal = {
+            id,
+            type: data.type || 'feature_request',
+            title: data.title || 'Untitled Proposal',
+            description: data.description || '',
+            proposerId: userId,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 Days
+            status: 'active',
+            votesFor: 0,
+            votesAgainst: 0,
+            votesAbstain: 0,
+            ...data
+        };
+
+        try {
+            await fetch('/api/governance/proposals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(proposal)
+            });
+            logger.governance(`[PROPOSAL CREATED] ${proposal.type} by ${userId}: ${proposal.title}`);
+        } catch (error) {
+            console.error('Failed to persist proposal', error);
+        }
+
+        return proposal;
+    }
 }

@@ -1,6 +1,7 @@
 import { PromptRegistry } from '@/lib/prompts/registry';
-import { strategies } from './analysis-strategies';
+import { logAICall, AICallLog } from '@/lib/ai-call-logger';
 import crypto from 'crypto';
+import { strategies } from './analysis-strategies';
 import OpenAI from 'openai';
 import { StorageService } from '@/lib/storage-service';
 import { verifyQuotes, checkFuzzyMatch } from '@/lib/analysis-utils';
@@ -13,6 +14,7 @@ import { logger } from './logger';
 export interface AnalysisConfig {
     systemPrompt: string;
     userContent: string;
+    promptId?: string;
 }
 
 export async function getAnalysisConfig(
@@ -167,6 +169,20 @@ export async function performAnalysis(
     // 1. Initialize Chain
     let chain = createProvenanceChain();
 
+    // Resolve prompt details for logging
+    const effectivePromptId = config.promptId || 'unknown_prompt';
+    const promptDef = PromptRegistry.getDefinition(effectivePromptId);
+    const promptVersion = promptDef ? promptDef.version : 'unknown';
+
+    const metadata = capturePromptMetadata(
+        systemPrompt + "\n\n" + userContent,
+        modelUsed,
+        0.2, // Default temperature
+        undefined,
+        effectivePromptId,
+        promptVersion
+    );
+
     // 2. Add Prompt Construction Step
     chain = addProvenanceStep(
         chain,
@@ -174,13 +190,6 @@ export async function performAnalysis(
         { analysisMode, positionality },
         { systemPrompt, userContent },
         "system"
-    );
-
-    const metadata = capturePromptMetadata(
-        systemPrompt + '\n\n' + userContent,
-        modelUsed,
-        0.7, // Default temperature for analysis
-        16384
     );
 
     // 3. Add AI Analysis Step
@@ -191,6 +200,34 @@ export async function performAnalysis(
         { raw_response: responseText.substring(0, 1000) + "..." }, // Truncate for storage
         "openai"
     );
+
+    // [AUDIT] Log the AI Call
+    const aiLog: AICallLog = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        userId,
+        analysisMode,
+        promptId: effectivePromptId,
+        promptVersion: promptVersion,
+        model: modelUsed,
+        temperature: 0.2,
+        maxTokens: 16384,
+        systemPromptHash: crypto.createHash('sha256').update(systemPrompt).digest('hex'),
+        systemPromptPreview: systemPrompt.substring(0, 500),
+        userContentPreview: userContent.substring(0, 500),
+        rawResponsePreview: responseText.substring(0, 1000),
+        tokenUsage: completion.usage ? {
+            prompt: completion.usage.prompt_tokens,
+            completion: completion.usage.completion_tokens,
+            total: completion.usage.total_tokens
+        } : undefined,
+        latencyMs: Date.now() - aiStartTime, // Measure actual latency
+        finishReason: completion.choices[0].finish_reason,
+        parseSuccess: true
+    };
+
+    // Fire and forget logging
+    logAICall(aiLog).catch(err => console.error("Failed to log AI call", err));
 
     // [TRANSPARENCY] Add metadata and chain to analysis result
     if (analysis && typeof analysis === 'object') {

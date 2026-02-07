@@ -129,7 +129,8 @@ OUTPUT FORMAT (STRICT)
     "description": "A brief description of emergent behavior",
     "properties": {
       "stability": "High/Medium/Low",
-      "generativity": "High/Medium/Low"
+      "generativity": "High/Medium/Low",
+      "dominant_logic": "Market | State | Professional | Community | Hybrid"
     },
     // CRITICAL ANALYSIS FIELDS
     "narrative": "A concise critical summary that explicitly addresses institutional friction, the agency of non-human actors (infrastructure/standards), and gaps between policy text and enforcement reality.",

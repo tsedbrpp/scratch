@@ -17,7 +17,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v37-scope-fix'; // Incremented to fix missing territorial scope graph
+const PROMPT_VERSION = 'v38-audit-metadata'; // Incremented to ensure audit metadata is captured
 
 /**
  * Determines the user ID to use for cache operations.
@@ -257,6 +257,7 @@ export async function POST(request: NextRequest) {
         if (openai) {
           // Generate Narrative via LLM
           const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
+            text: "ANT Trace Analysis Wrapper", // Dummy text to satisfy interface
             analysisMode: 'ant_trace',
             actors: tracedActors,
             links: associations
@@ -296,6 +297,7 @@ export async function POST(request: NextRequest) {
         if (openai) {
           // Generate Narrative via LLM
           const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
+            text: "Assemblage Realist Analysis Wrapper",
             analysisMode: 'assemblage_realist',
             traced_actors: tracedActors,
             detected_mechanisms: mechanisms,
@@ -336,6 +338,7 @@ export async function POST(request: NextRequest) {
         if (openai) {
           // Generate Narrative via LLM
           const { analysis } = await performAnalysis(openai, contextId, { // Use contextId
+            text: "Hybrid Reflexive Analysis Wrapper",
             analysisMode: 'hybrid_reflexive',
             actors: tracedActors, // [NEW] Pass full actor objects for visual usage
             links: associations,  // [NEW] Pass full links for visual usage

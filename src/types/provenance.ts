@@ -16,6 +16,8 @@ export interface PromptMetadata {
     temperature: number;
     max_tokens?: number;
     timestamp: string;
+    prompt_id?: string;
+    prompt_version?: string;
 }
 
 /**
@@ -41,10 +43,23 @@ export interface ProvenanceStep {
 }
 
 /**
+ * A user rejection of an AI result (Sartrean Rupture)
+ */
+export interface RejectionStep {
+    step_id: string;
+    timestamp: string;
+    user_id: string;
+    justification: string;  // Mandatory free-text
+    prompt_version_rejected: string;
+    signature_hash: string; // Hash of user_id + timestamp for integrity
+}
+
+/**
  * Complete provenance chain showing how an insight was derived
  */
 export interface ProvenanceChain {
     insight_id: string;
     steps: ProvenanceStep[];
+    rejections?: RejectionStep[];
     created_at: string;
 }

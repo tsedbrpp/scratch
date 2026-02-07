@@ -143,6 +143,11 @@ function fixAssemblageExtractionV3(analysis: any): any {
                 analysis[key] = analysis.assemblage[key];
             }
         });
+
+        // [NEW] Hoist dominant_logic from properties
+        if (analysis.assemblage.properties && analysis.assemblage.properties.dominant_logic) {
+            analysis.dominant_logic = analysis.assemblage.properties.dominant_logic;
+        }
     }
 
     return analysis;

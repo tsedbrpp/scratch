@@ -128,6 +128,7 @@ export interface AssemblageAnalysis {
     };
     // [NEW] Governance Status
     escalation_status?: EscalationStatus;
+    dominant_logic?: string; // [NEW] Hoisted for Recurring Patterns
 }
 
 export interface AiAbsenceAnalysis {

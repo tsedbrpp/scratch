@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { toast } from 'sonner';
+import { useAuth } from '@clerk/nextjs';
 
 export interface TeamMember {
     userId: string;
     email: string;
-    role: 'OWNER' | 'EDITOR';
+    role: 'OWNER' | 'EDITOR' | 'VOTER';
     joinedAt: number;
     name?: string;
 }
@@ -21,12 +22,16 @@ export interface TeamDetails {
 }
 
 export const useTeam = () => {
+    const { userId } = useAuth();
     const { currentWorkspaceId, workspaceType } = useWorkspace();
     const [teamDetails, setTeamDetails] = useState<TeamDetails | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const isTeamWorkspace = workspaceType === 'TEAM';
+
+    // Derived Role
+    const currentUserRole = teamDetails?.members.find(m => m.userId === userId)?.role;
 
     // Fetch team details and members
     const fetchTeamDetails = async () => {
@@ -62,7 +67,7 @@ export const useTeam = () => {
     };
 
     // Invite member
-    const inviteMember = async (email: string, role: 'OWNER' | 'EDITOR' = 'EDITOR') => {
+    const inviteMember = async (email: string, role: 'OWNER' | 'EDITOR' | 'VOTER' = 'EDITOR') => {
         if (!currentWorkspaceId) return { success: false, error: 'No team selected' };
 
         try {
@@ -119,6 +124,7 @@ export const useTeam = () => {
 
     return {
         teamDetails,
+        currentUserRole,
         isLoading,
         error,
         isTeamWorkspace,

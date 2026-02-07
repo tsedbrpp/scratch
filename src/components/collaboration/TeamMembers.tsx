@@ -20,7 +20,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface TeamMembersProps {
     members: TeamMember[];
-    currentUserRole?: 'OWNER' | 'EDITOR';
+    currentUserRole?: 'OWNER' | 'EDITOR' | 'VOTER';
     onRemoveMember: (userId: string) => Promise<{ success: boolean; error?: string }>;
 }
 

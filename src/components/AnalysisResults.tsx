@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Eye, Target, Lightbulb } from "lucide-react";
 import { TransparencyPanel } from "./analysis/TransparencyPanel";
 import { TransparencyService } from "@/services/transparency-service";
+import { AIAuditPanel } from "./analysis/AIAuditPanel";
+import { AnalysisResult as SharedAnalysisResult } from "@/types";
 
-interface AnalysisResult {
+// Extend the shared type with DSF-specific fields used in this component
+interface AnalysisResult extends SharedAnalysisResult {
     situated_teleology?: string;
     normative_attractors?: string;
     blind_spots?: string;
-    key_insight?: string;
-    raw_response?: string;
 }
 
 interface AnalysisResultsProps {
@@ -98,6 +99,12 @@ export function AnalysisResults({ analysis, sourceTitle }: AnalysisResultsProps)
                         metadata={TransparencyService.getEpistemicAsymmetryTransparency()}
                     />
                 </div>
+
+                <AIAuditPanel
+                    analysis={analysis}
+                    onFlagResult={(reason) => console.log('Flagged:', reason)}
+                    onForkPrompt={async (newContent) => console.log('Forking:', newContent)}
+                />
             </CardContent>
         </Card>
     );

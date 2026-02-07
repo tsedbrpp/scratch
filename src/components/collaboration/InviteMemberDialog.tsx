@@ -31,7 +31,7 @@ interface InviteMemberDialogProps {
 export const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ open, onOpenChange }) => {
     const { inviteMember } = useTeam();
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState<'OWNER' | 'EDITOR'>('EDITOR');
+    const [role, setRole] = useState<'OWNER' | 'EDITOR' | 'VOTER'>('EDITOR');
     const [isCreating, setIsCreating] = useState(false);
     const [inviteLink, setInviteLink] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
@@ -117,19 +117,20 @@ export const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ open, on
                             <Label htmlFor="role" className="text-zinc-200">
                                 Role
                             </Label>
-                            <Select value={role} onValueChange={(v) => setRole(v as 'OWNER' | 'EDITOR')}>
+                            <Select value={role} onValueChange={(v) => setRole(v as 'OWNER' | 'EDITOR' | 'VOTER')}>
                                 <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-800 border-zinc-600">
+                                    <SelectItem value="VOTER">Voter - Can view and vote</SelectItem>
                                     <SelectItem value="EDITOR">Editor - Can view and edit</SelectItem>
                                     <SelectItem value="OWNER">Owner - Full admin access</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-zinc-400">
-                                {role === 'OWNER'
-                                    ? 'Owners can invite members, manage settings, and delete the team.'
-                                    : 'Editors can view and edit team content but cannot manage members.'}
+                                {role === 'OWNER' && 'Owners can invite members, manage settings, and delete the team.'}
+                                {role === 'EDITOR' && 'Editors can view and edit team content but cannot manage members.'}
+                                {role === 'VOTER' && 'Voters can view content and participate in governance voting.'}
                             </p>
                         </div>
 

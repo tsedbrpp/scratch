@@ -8,6 +8,7 @@ import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { useTeam } from "@/hooks/useTeam";
 import { ReportData, LensType } from "@/types/report";
 import {
     ResistanceSynthesisResult,
@@ -56,6 +57,7 @@ export default function PolicyDocumentsPage() {
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
     const { isReadOnly } = useDemoMode();
     const { hasCredits } = useCredits();
+    const { currentUserRole } = useTeam();
 
     // Data for Full Report Aggregation
     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
@@ -128,6 +130,10 @@ export default function PolicyDocumentsPage() {
     const handleFiles = async (files: File[]) => {
         if (isReadOnly) {
             alert('Document uploads are disabled in Demo Mode.');
+            return;
+        }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot upload documents.');
             return;
         }
 
@@ -212,6 +218,10 @@ export default function PolicyDocumentsPage() {
             alert('Adding content from URL is disabled in Demo Mode.');
             return;
         }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot add content.');
+            return;
+        }
 
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
@@ -252,6 +262,10 @@ export default function PolicyDocumentsPage() {
             alert('Adding documents is disabled in Demo Mode.');
             return;
         }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot add documents.');
+            return;
+        }
         const source: Source = {
             id: Date.now().toString(),
             title,
@@ -275,6 +289,10 @@ export default function PolicyDocumentsPage() {
     const handleAnalyze = async (sourceId: string, mode: AnalysisMode) => {
         if (isReadOnly) {
             alert('Analysis is disabled in Demo Mode.');
+            return;
+        }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot run new analysis.');
             return;
         }
 
@@ -370,6 +388,10 @@ export default function PolicyDocumentsPage() {
             alert('Trace search is disabled in Demo Mode.');
             return;
         }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot search for traces.');
+            return;
+        }
 
         if (!source.extractedText) {
             alert('Please upload a PDF or add text first before finding traces.');
@@ -439,6 +461,10 @@ export default function PolicyDocumentsPage() {
     const handleDelete = async (sourceId: string) => {
         if (isReadOnly) {
             alert('Deleting documents is disabled in Demo Mode.');
+            return;
+        }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot delete documents.');
             return;
         }
         if (confirm('Are you sure you want to delete this source?')) {
@@ -581,6 +607,10 @@ export default function PolicyDocumentsPage() {
         if (!hasCredits) {
             alert("⚠️ You have no credits remaining.\n\nTheoretical synthesis requires credits for AI analysis. Please add credits to continue.");
             setShowTopUp(true);
+            return;
+        }
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis. You cannot generate theory.');
             return;
         }
 

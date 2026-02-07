@@ -1,4 +1,4 @@
-import { PromptMetadata, ProvenanceChain, ProvenanceStep } from "@/types/provenance";
+import { PromptMetadata, ProvenanceChain, ProvenanceStep, RejectionStep } from "@/types/provenance";
 import crypto from 'crypto';
 
 /**
@@ -9,14 +9,18 @@ export function capturePromptMetadata(
     prompt: string,
     modelVersion: string = "gpt-4-turbo-2024-04-09",
     temperature: number = 0.3,
-    maxTokens?: number
+    maxTokens?: number,
+    promptId?: string,
+    promptVersion?: string
 ): PromptMetadata {
     return {
         prompt_used: prompt,
         model_version: modelVersion,
         temperature,
         max_tokens: maxTokens,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        prompt_id: promptId,
+        prompt_version: promptVersion
     };
 }
 
@@ -155,5 +159,29 @@ export function addProvenanceStep(
     return {
         ...chain,
         steps: [...chain.steps, step]
+    };
+}
+
+/**
+ * Adds a user rejection to the provenance chain (Sartrean Rupture)
+ */
+export function addRejectionStep(
+    chain: ProvenanceChain,
+    userId: string,
+    justification: string,
+    promptVersion: string
+): ProvenanceChain {
+    const rejection: RejectionStep = {
+        step_id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        user_id: userId,
+        justification,
+        prompt_version_rejected: promptVersion,
+        signature_hash: crypto.createHash('sha256').update(userId + new Date().toISOString()).digest('hex')
+    };
+
+    return {
+        ...chain,
+        rejections: [...(chain.rejections || []), rejection]
     };
 }

@@ -18,6 +18,7 @@ import { analyzeDocument, AnalysisMode } from "@/services/analysis";
 import { AnalysisResult } from "@/types";
 import { useEscalation } from "@/hooks/useEscalation";
 import { ResolutionDrawer } from "@/components/governance/ResolutionDrawer";
+import { useTeam } from "@/hooks/useTeam";
 
 function AnalysisPageContent() {
     const params = useParams();
@@ -25,6 +26,9 @@ function AnalysisPageContent() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const sourceId = params.id as string;
+
+    // [New] Role Check
+    const { currentUserRole } = useTeam();
 
     // We reuse the global sources state for now
     const { sources, isLoading: isSourcesLoading, updateSource } = useSources();
@@ -62,6 +66,11 @@ function AnalysisPageContent() {
     const handleAnalyze = async (mode: AnalysisMode) => {
         if (!source || isAnalyzing) return;
 
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis.');
+            return;
+        }
+
         setIsAnalyzing(true);
         console.log(`Starting analysis: Mode=${mode}, SourceID=${source.id}`);
         try {
@@ -87,6 +96,11 @@ function AnalysisPageContent() {
 
     const handleRunCritique = async () => {
         if (!source || isCritiqueLoading) return;
+
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only for analysis.');
+            return;
+        }
 
         setIsCritiqueLoading(true);
         try {
@@ -121,6 +135,10 @@ function AnalysisPageContent() {
 
     const handleUpdateAnalysis = async (updates: Partial<AnalysisResult>) => {
         if (!source) return;
+        if (currentUserRole === 'VOTER') {
+            console.warn("Blocked update attempt by VOTER role");
+            return;
+        }
         const updatedAnalysis = { ...source.analysis, ...updates };
         await updateSource(source.id, { analysis: updatedAnalysis });
         // Trigger re-evaluation when analysis updates
@@ -130,6 +148,12 @@ function AnalysisPageContent() {
     // [NEW] Handle Reassembly Action
     const handleReassembly = async (action: import("@/types/escalation").ReassemblyAction) => {
         if (!source) return;
+
+        if (currentUserRole === 'VOTER') {
+            alert('Voter role is read-only. You cannot resolve escalations manually.');
+            return;
+        }
+
         // 1. Add action to escalation hook state
         escalation.addReassemblyAction(action);
 
@@ -227,31 +251,33 @@ function AnalysisPageContent() {
 
                     <div className="flex items-center gap-2">
                         {/* [DEV TOOL] Simulate Uncertainty */}
-                        <Button
-                            variant="default"
-                            size="sm"
-                            className="bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 shadow-lg"
-                            onClick={() => {
-                                // Correctly update hook state so subsequent actions work
-                                escalation.setManualStatus({
-                                    level: 'MEDIUM',
-                                    status: 'DETECTED',
-                                    reasons: ['MANUAL_TRIGGER'],
-                                    rationale: `Pattern Sentinel reported high epistemic uncertainty.\n\nAmbiguity Context:\nPossible Hidden Normativity: The phrase presents a specific governance model as a factual description without examining alternative models.\nEvidence: "This policy constructs AI governance as a centralized, technocratic consumer-protection regime"`,
-                                    timestamp: Date.now(),
-                                    configuration: {
-                                        recurrence_count: 1,
-                                        corpusSize: 10
-                                    },
-                                    actions: [],
-                                    printed_limitations: []
-                                });
-                                setIsDrawerOpen(true);
-                            }}
-                        >
-                            <Sparkles className="mr-2 h-3 w-3" />
-                            Test: Uncertainty
-                        </Button>
+                        {currentUserRole !== 'VOTER' && (
+                            <Button
+                                variant="default"
+                                size="sm"
+                                className="bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 shadow-lg"
+                                onClick={() => {
+                                    // Correctly update hook state so subsequent actions work
+                                    escalation.setManualStatus({
+                                        level: 'MEDIUM',
+                                        status: 'DETECTED',
+                                        reasons: ['MANUAL_TRIGGER'],
+                                        rationale: `Pattern Sentinel reported high epistemic uncertainty.\n\nAmbiguity Context:\nPossible Hidden Normativity: The phrase presents a specific governance model as a factual description without examining alternative models.\nEvidence: "This policy constructs AI governance as a centralized, technocratic consumer-protection regime"`,
+                                        timestamp: Date.now(),
+                                        configuration: {
+                                            recurrence_count: 1,
+                                            corpusSize: 10
+                                        },
+                                        actions: [],
+                                        printed_limitations: []
+                                    });
+                                    setIsDrawerOpen(true);
+                                }}
+                            >
+                                <Sparkles className="mr-2 h-3 w-3" />
+                                Test: Uncertainty
+                            </Button>
+                        )}
 
                         {activeSection === 'reflexivity' && (
                             <Button
@@ -379,17 +405,16 @@ function AnalysisPageContent() {
                         )}
                     </div>
                 </main>
-            </div >
+            </div>
 
             {/* [NEW] Resolution Drawer */}
-            < ResolutionDrawer
+            <ResolutionDrawer
                 isOpen={isDrawerOpen}
-                onClose={() => setIsDrawerOpen(false)
-                }
+                onClose={() => setIsDrawerOpen(false)}
                 status={escalation.status}
                 onReassemblyAction={handleReassembly}
             />
-        </div >
+        </div>
     );
 }
 
