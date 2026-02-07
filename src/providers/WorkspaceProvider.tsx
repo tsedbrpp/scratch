@@ -56,15 +56,24 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // 1. Initialize Workspace ID (Personal by default)
     useEffect(() => {
-        if (isLoaded && userId && !currentWorkspaceId) {
-            // Restore from localStorage if possible
-            const saved = localStorage.getItem('last_workspace_id');
-            if (saved) {
-                // Optimistically set the saved ID (Team or Personal)
-                setCurrentWorkspaceId(saved);
-            } else {
-                // Default to Personal IMMEDIATELY if no saved state
-                setCurrentWorkspaceId(userId);
+        if (isLoaded) {
+            // 1. Authenticated User
+            if (userId && !currentWorkspaceId) {
+                // Restore from localStorage if possible
+                const saved = localStorage.getItem('last_workspace_id');
+                if (saved) {
+                    setCurrentWorkspaceId(saved);
+                } else {
+                    setCurrentWorkspaceId(userId);
+                }
+            }
+            // 2. Demo Mode Fallback (Signed Out)
+            else if (!userId && !currentWorkspaceId && process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+                const demoId = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                if (demoId) {
+                    // console.log('[Workspace] Defaulting to Demo Workspace:', demoId);
+                    setCurrentWorkspaceId(demoId);
+                }
             }
         }
     }, [isLoaded, userId, currentWorkspaceId]);

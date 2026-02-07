@@ -24,11 +24,25 @@ export async function evaluateEscalationWithAI(
     }
 
     try {
+        // [FIX] Add Auth Headers for Demo Mode/Workspace Context
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // 1. Workspace Context
+        const workspaceId = typeof localStorage !== 'undefined' ? localStorage.getItem('last_workspace_id') : null;
+        if (workspaceId) {
+            headers['x-workspace-id'] = workspaceId;
+        }
+
+        // 2. Demo Mode Context
+        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+        }
+
         const response = await fetch('/api/analyze', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
                 analysisMode: 'escalation_evaluation',
                 existingAnalysis: analysis,
