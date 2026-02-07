@@ -16,17 +16,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://instanttea.com"),
-  title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
-  description: "Rapidly translate complex socio-technical systems into provisional snapshots. The premier research tool for Actor-Network Theory (ANT), Assemblage Theory, and AI Governance analysis.",
-  keywords: ["AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
+  title: "InstantTea | Easy Team Tool for Mapping Policy and Governance",
+  description: "InstantTea is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast. Create clear maps in seconds.",
+  keywords: ["Team Collaboration", "Policy Mapping", "Governance Tools", "AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Instant TEA | Actor-Network Theory (ANT) & Assemblage Mapping Tool",
-    description: "Rapidly translate complex socio-technical systems into provisional snapshots.",
+    title: "InstantTea | Easy Team Tool for Mapping Policy and Governance",
+    description: "InstantTea is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast.",
     url: "https://instanttea.com",
-    siteName: "Instant TEA",
+    siteName: "InstantTea",
     locale: "en_US",
     type: "website",
   },

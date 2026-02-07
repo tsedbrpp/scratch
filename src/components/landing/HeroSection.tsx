@@ -35,20 +35,59 @@ export function HeroSection() {
                 </div>
 
                 <div className="mt-6 space-y-8">
-                    <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-4">
-                        <h3 className="text-2xl font-bold text-white mb-2 text-center">What is instantTEA?</h3>
+                    <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-6">
+                        <h2 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h2>
                         <p>
-                            <strong>Instant TEA</strong> rapidly maps complex socio-technical systems using <strong>Actor-Network Theory (ANT) and Assemblage Theory</strong>.
-                            It generates provisional, situational snapshots of policy and governance assemblages—tracing actors and connections in seconds, not weeks.
+                            InstantTea is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast.
                         </p>
                         <p>
-                            Unlike tools that imply finality, Instant TEA embraces ephemerality. It delivers quick, transparent insights into dynamic systems like global policy and governance, inviting deeper interpretation without the black box.
+                            Instead of taking weeks to figure out connections between people, organizations, rules, and tech, your team can create clear maps in seconds with InstantTea.
+                        </p>
+                        <p>
+                            It uses smart ideas (Actor-Network Theory and Assemblage Theory) behind the scenes—you don’t need to know them. You just get honest, up-to-date views of changing situations.
+                        </p>
+
+                        <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 shadow-xl my-8">
+                            <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Love InstantTea</h3>
+                            <ul className="space-y-4">
+                                <li className="flex gap-4 items-start">
+                                    <span className="text-emerald-400 mt-1">✨</span>
+                                    <div>
+                                        <span className="text-emerald-300 font-bold block mb-1">Work together live</span>
+                                        <span className="text-slate-300">Everyone can edit the same map, add notes, and talk about it at the same time.</span>
+                                    </div>
+                                </li>
+                                <li className="flex gap-4 items-start">
+                                    <span className="text-emerald-400 mt-1">👁️</span>
+                                    <div>
+                                        <span className="text-emerald-300 font-bold block mb-1">Nothing hidden</span>
+                                        <span className="text-slate-300">You see exactly how the map is made, so you can trust it.</span>
+                                    </div>
+                                </li>
+                                <li className="flex gap-4 items-start">
+                                    <span className="text-emerald-400 mt-1">⚡</span>
+                                    <div>
+                                        <span className="text-emerald-300 font-bold block mb-1">Super fast</span>
+                                        <span className="text-slate-300">Get useful insights in seconds, not weeks, and spend more time planning.</span>
+                                    </div>
+                                </li>
+                                <li className="flex gap-4 items-start">
+                                    <span className="text-emerald-400 mt-1">🔄</span>
+                                    <div>
+                                        <span className="text-emerald-300 font-bold block mb-1">Built for change</span>
+                                        <span className="text-slate-300">Things shift quickly in policy. InstantTea gives temporary views that spark team discussions.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <p className="font-medium text-emerald-100 text-center text-xl max-w-2xl mx-auto">
+                            Perfect for mapping rules, stakeholders, or new tech setups. InstantTea helps teams make smarter decisions together.
+                        </p>
+                        <p className="text-center font-bold text-white text-lg mt-4">
+                            Start using InstantTea today and make complex policy work simpler for your team!
                         </p>
                     </div>
-
-                    <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 italic text-xl text-slate-300 bg-slate-800/50 rounded-r-lg max-w-2xl mx-auto my-8">
-                        &quot;instantTEA provides fast translations of complex assemblages—while making explicit that these translations are provisional, situated, and incomplete.&quot;
-                    </blockquote>
                 </div>
                 <div className="mt-10 flex flex-col items-center justify-center gap-6">
                     <div className="flex flex-wrap justify-center gap-4">
