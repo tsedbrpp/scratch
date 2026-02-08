@@ -73,7 +73,7 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">No Actors Mapped Yet</h3>
                 <p className="text-slate-500 max-w-md mb-6">
-                    This policy document hasn't been analyzed yet. Go to the <strong>Visual Assemblage</strong> tab and use the <strong>Materialize</strong> or <strong>Simulation</strong> tools to populate the map.
+                    This policy document hasn&apos;t been analyzed yet. Go to the <strong>Visual Assemblage</strong> tab and use the <strong>Materialize</strong> or <strong>Simulation</strong> tools to populate the map.
                 </p>
                 <div className="text-xs text-slate-400">
                     Once actors are created, they will appear on this epistemic plane based on their territorialization and resistance scores.
@@ -122,7 +122,7 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                                     </div>
                                     <div className="mb-2">
                                         <span className="text-blue-600 font-bold block">The Strata (Q2)</span>
-                                        <p>High Influence / Low Resistance. Stable, sedimented institutions. "Black boxes" that are unquestioned and widely adopted.</p>
+                                        <p>High Influence / Low Resistance. Stable, sedimented institutions. &quot;Black boxes&quot; that are unquestioned and widely adopted.</p>
                                     </div>
                                     <div className="mb-2">
                                         <span className="text-emerald-600 font-bold block">Lines of Flight (Q3)</span>
@@ -181,8 +181,8 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
                             fill="#8884d8"
                             onClick={(node) => onSelectActor(node.payload.id)}
                             className="cursor-pointer"
-                            shape={(props: any) => {
-                                const { cx, cy, fill, payload } = props;
+                            shape={(props: unknown) => {
+                                const { cx, cy, fill, payload } = props as { cx: number; cy: number; fill: string; payload: { y: number } };
                                 const isLineOfFlight = payload.y > 7; // High deterritorialization (Lowered threshold for visibility)
                                 return (
                                     <g className="cursor-pointer">
@@ -215,6 +215,7 @@ export function AssemblageCompass({ actors, onSelectActor, selectedActorId }: As
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;

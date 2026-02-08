@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { AnalysisResult } from "@/types";
-import { Activity, Info, Maximize2, Minimize2 } from "lucide-react";
+import { Activity, Maximize2, Minimize2 } from "lucide-react";
 import { DynamicsCard } from "@/components/policy/analysis/DynamicsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { EcosystemActor } from "@/types/ecosystem";

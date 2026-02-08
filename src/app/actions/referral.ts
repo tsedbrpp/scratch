@@ -86,8 +86,6 @@ export async function redeemReferralCode(prevState: ReferralState, formData: For
 
         // 4. Transactional Update
         // We give credits to BOTH users.
-        const ownerCreditKey = `credits:user:${ownerId}`;
-        const userCreditKey = `credits:user:${userId}`;
         const usageKey = `referral:code:${code}:usage`;
 
         // Using a pipeline to ensure atomicity is harder across keys if using cluster, 

@@ -32,10 +32,12 @@ export function HeroSection() {
                     </div>
                 </div>
                 {/* Replaced Text Title with Branding Image */}
-                <div className="flex justify-center mb-6">
-                    <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-purple-500 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                        instantTEA
-                    </h1>
+                <div className="flex justify-center mb-8">
+                    <img
+                        src="/instanttea-logo.png"
+                        alt="InstantTea"
+                        className="h-48 md:h-64 w-auto object-contain animate-in fade-in zoom-in duration-1000 drop-shadow-2xl"
+                    />
                 </div>
 
                 <div className="mt-6 space-y-8">

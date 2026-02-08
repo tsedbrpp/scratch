@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,12 @@ export default function CulturalAnalysisPage() {
     const { isReadOnly } = useDemoMode();
     const [selectedSources, setSelectedSources] = useServerStorage<string[]>("cultural_selected_sources", []);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
+    // [NEW] Dynamic persistence key based on selected sources
+    const selectionKey = useMemo(() => {
+        return selectedSources.length > 0 ? selectedSources.slice().sort().join('-') : 'empty';
+    }, [selectedSources]);
+
+    const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>(`cultural_analysis_${selectionKey}`, null);
     const [selectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
     const [forceRefresh, setForceRefresh] = useState(false);
 

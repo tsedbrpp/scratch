@@ -55,7 +55,7 @@ export function AssemblageSankey({ data, height = 500 }: AssemblageSankeyProps) 
             if (uniqueLinksMap.has(key)) {
                 uniqueLinksMap.get(key)!.value += 1;
             } else {
-                // @ts-ignore
+                // @ts-expect-error - Cloning object with spread
                 uniqueLinksMap.set(key, { ...link });
             }
         });

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { BookOpen, X, ChevronRight, Database, GitGraph, FileText, Share2 } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, X, Database, GitGraph, FileText, Share2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

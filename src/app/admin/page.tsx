@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, RefreshCw, ShieldAlert, RotateCcw, Settings, Coins, History, Plus, Minus } from "lucide-react";
 
 interface UserRateLimit {
@@ -20,6 +20,13 @@ interface UserRateLimit {
     ttl: number;
 }
 
+interface Transaction {
+    id: string;
+    type: string;
+    amount: number;
+    createdAt: string;
+}
+
 export default function AdminPage() {
     const [users, setUsers] = useState<UserRateLimit[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +37,7 @@ export default function AdminPage() {
 
     // Credit Management State
     const [creditUser, setCreditUser] = useState<UserRateLimit | null>(null);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<Transaction[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [adjustAmount, setAdjustAmount] = useState("");
 
@@ -320,7 +327,7 @@ export default function AdminPage() {
                                     <div className="text-sm text-slate-400 text-center p-8">No transactions yet</div>
                                 ) : (
                                     <div className="divide-y">
-                                        {history.map((tx: any) => (
+                                        {history.map((tx) => (
                                             <div key={tx.id} className="flex justify-between items-center p-3 hover:bg-slate-50">
                                                 <div className="flex-1">
                                                     <div className="font-medium text-sm text-slate-700">{tx.type}</div>

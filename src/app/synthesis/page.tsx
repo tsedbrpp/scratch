@@ -108,61 +108,52 @@ export default function SynthesisPage() {
     const updateSelection = async (newA: Source | null, newB: Source | null) => {
         setSourceA(newA);
         setSourceB(newB);
+        setComparisonResult(null); // Reset while loading
 
         if (newA && newB) {
-            const cacheKey = `${newA.id}:${newB.id}`;
-            const reverseKey = `${newB.id}:${newA.id}`;
+            const cacheKey = `synthesis:${newA.id}:${newB.id}`;
+            const reverseKey = `synthesis:${newB.id}:${newA.id}`;
 
-            // Check client-side session cache first
-            if (runCache[cacheKey]) {
-                setComparisonResult(runCache[cacheKey]);
-                return;
-            } else if (runCache[reverseKey]) {
-                setComparisonResult(runCache[reverseKey]);
-                return;
-            }
-
-            // If not in session cache, check Redis cache via API
+            setIsComparing(true);
             try {
+                // 1. Try reading from Server Storage (Permanent)
+                // We use the raw fetch here because useServerStorage hook is for component state, 
+                // but we need to fetch *specific* keys based on selection.
                 const headers: HeadersInit = { 'Content-Type': 'application/json' };
                 if (isReadOnly && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
                     headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                } else if (localStorage.getItem('x-workspace-id')) {
+                    headers['x-workspace-id'] = localStorage.getItem('x-workspace-id') || '';
                 }
 
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        analysisMode: 'comparison',
-                        sourceA: {
-                            title: newA.title,
-                            text: newA.extractedText?.substring(0, 15000) || ''
-                        },
-                        sourceB: {
-                            title: newB.title,
-                            text: newB.extractedText?.substring(0, 15000) || ''
-                        },
-                        checkCacheOnly: true // [NEW] Flag to only check cache, not run analysis
-                    })
-                });
+                // Try fetching direct forward key
+                let response = await fetch(`/api/storage?key=${encodeURIComponent(cacheKey)}`, { headers });
 
-                const data = await response.json();
-                if (data.success && data.analysis && data.fromCache) {
-                    setComparisonResult(data.analysis);
-                    // Also update session cache
-                    setRunCache(prev => ({
-                        ...prev,
-                        [cacheKey]: data.analysis
-                    }));
-                } else {
-                    setComparisonResult(null);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.value) {
+                        setComparisonResult(data.value);
+                        setIsComparing(false);
+                        return;
+                    }
                 }
-            } catch (error) {
-                console.error('Error checking cache:', error);
-                setComparisonResult(null);
+
+                // Try fetching reverse key
+                response = await fetch(`/api/storage?key=${encodeURIComponent(reverseKey)}`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.value) {
+                        setComparisonResult(data.value);
+                        setIsComparing(false);
+                        return;
+                    }
+                }
+
+            } catch (err) {
+                console.error("Failed to load persisted synthesis:", err);
+            } finally {
+                setIsComparing(false);
             }
-        } else {
-            setComparisonResult(null);
         }
     };
 
@@ -291,11 +282,29 @@ export default function SynthesisPage() {
             const data = await response.json();
             if (data.success && data.analysis) {
                 setComparisonResult(data.analysis);
-                // [NEW] Update Session Cache
-                setRunCache(prev => ({
-                    ...prev,
-                    [`${sourceA.id}:${sourceB.id}`]: data.analysis
-                }));
+
+                // [NEW] Persist to Server Storage (Permanent)
+                try {
+                    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                    if (isReadOnly && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                        headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                    } else if (localStorage.getItem('x-workspace-id')) {
+                        headers['x-workspace-id'] = localStorage.getItem('x-workspace-id') || '';
+                    }
+
+                    const cacheKey = `synthesis:${sourceA.id}:${sourceB.id}`;
+                    await fetch('/api/storage', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            key: cacheKey,
+                            value: data.analysis
+                        })
+                    });
+                } catch (err) {
+                    console.error("Failed to persist synthesis results:", err);
+                }
+
             } else {
                 if (isReadOnly && !data.fromCache) {
                     alert("No cached analysis found for this comparison. Sign in to run new analyses.");
@@ -305,10 +314,11 @@ export default function SynthesisPage() {
             }
         } catch (error: unknown) {
             console.error("Comparison error:", error);
-            if (error.name === 'AbortError') {
+            const err = error as Error;
+            if (err.name === 'AbortError') {
                 alert("Analysis timed out (60s limit). The documents may be too large or the AI service is busy. Please try again.");
             } else {
-                alert("Failed to generate comparison. " + (error.message || ""));
+                alert("Failed to generate comparison. " + (err.message || ""));
             }
         } finally {
             setIsComparing(false);

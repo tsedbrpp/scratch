@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
+import { useServerStorage } from "@/hooks/useServerStorage"; // [NEW] Persistence
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,18 +37,20 @@ export default function ComparisonPage() {
     // Filter for policy documents (non-traces)
     const policyDocs = useMemo(() => sources.filter(s => s.type !== "Trace"), [sources]);
 
-    const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+    const [selectedDocs, setSelectedDocs] = useServerStorage<string[]>("comparison_selected_docs_v2", []);
     const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis" | "drift">("cultural");
     const [activeLens, setActiveLens] = useState<InterpretationLens>("assemblage");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
-    const [synthesisResults, setSynthesisResults, isStorageLoading] = useLocalStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v3", {});
+
+    // [NEW] Dynamic Persistence for Synthesis Results
+    const docKey = useMemo(() => selectedDocs.slice().sort().join('-'), [selectedDocs]);
+    const [synthesisResults, setSynthesisResults, isSynthesisLoading] = useServerStorage<Record<string, ComparativeSynthesis>>(`comparison_synthesis_${docKey}`, {});
     const [synthesisError, setSynthesisError] = useState<string | null>(null);
     const [forceRefresh, setForceRefresh] = useState(false);
     // [TRANSPARENCY] State
     const [showTransparency, setShowTransparency] = useState(false);
 
-    // Drift Analysis State
-    const [driftResults, setDriftResults] = useLocalStorage<Record<string, DriftAnalysisResult> | null>("comparison_drift_results_v1", null);
+    const [driftResults, setDriftResults, isDriftLoading] = useServerStorage<Record<string, DriftAnalysisResult> | null>(`comparison_drift_${docKey}`, null);
     const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
     const [analyzingSourceId, setAnalyzingSourceId] = useState<string | null>(null);
     const [isDeepAnalyzing, setIsDeepAnalyzing] = useState<Record<string, boolean>>({});
@@ -66,13 +69,13 @@ export default function ComparisonPage() {
 
     useEffect(() => {
         // Wait for both sources and storage to load
-        if (isLoading || isStorageLoading) return;
+        if (isLoading || isSynthesisLoading || isDriftLoading) return;
 
         // Auto-select first two docs
         if (policyDocs.length >= 2 && selectedDocs.length === 0) {
             setSelectedDocs([policyDocs[0].id, policyDocs[1].id]);
         }
-    }, [isLoading, isStorageLoading, selectedDocs.length, policyDocs]);
+    }, [isLoading, isSynthesisLoading, isDriftLoading, selectedDocs.length, policyDocs]);
 
     const selectedSources = selectedDocs
         .map(id => policyDocs.find(s => s.id === id))
@@ -223,12 +226,13 @@ export default function ComparisonPage() {
 
         } catch (error: unknown) {
             console.error("Deep analysis failed:", error);
-            if (error.message?.includes("Insufficient Credits")) {
+            const err = error as Error;
+            if (err.message?.includes("Insufficient Credits")) {
                 if (confirm("Insufficient Credits. Would you like to top up now?")) {
                     window.location.href = "/settings/billing";
                 }
             } else {
-                alert(`Failed to complete deep analysis: ${error.message || "Unknown error"}`);
+                alert(`Failed to complete deep analysis: ${err.message || "Unknown error"}`);
             }
         } finally {
             setIsDeepAnalyzing(prev => ({ ...prev, [sourceId]: false }));
@@ -884,8 +888,16 @@ export default function ComparisonPage() {
                         <div className="space-y-6">
                             <BridgingFramework
                                 initialMode="guide"
-                                policyText={sources.find(s => s.id === selectedDocs[0])?.extractedText || ""}
-                                technicalText={sources.find(s => s.id === selectedDocs[1])?.extractedText || ""}
+                                policyText={(() => {
+                                    const text = sources.find(s => s.id === selectedDocs[0])?.extractedText || "";
+                                    console.log(`[DRIFT DEBUG] Policy Source (${selectedDocs[0]}):`, text.substring(0, 100) + "...");
+                                    return text;
+                                })()}
+                                technicalText={(() => {
+                                    const text = sources.find(s => s.id === selectedDocs[1])?.extractedText || "";
+                                    console.log(`[DRIFT DEBUG] Tech Source (${selectedDocs[1]}):`, text.substring(0, 100) + "...");
+                                    return text;
+                                })()}
                                 onAnalysisComplete={setDriftResults} // [NEW] Capture results
                                 initialResults={driftResults || undefined} // Restore from local storage
                             />

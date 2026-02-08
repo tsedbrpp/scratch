@@ -8,7 +8,6 @@ import { CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import {
     calculateEpistemicCoverageScore,
     groupBlindSpotsBySeverity,
-    sortBlindSpotsBySeverity,
     detectOverallTier
 } from '@/utils/blindSpotHelpers';
 
@@ -213,8 +212,8 @@ export function BlindSpotDashboard({ critique, onReAnalyze, onMarkAddressed }: B
                         </p>
                         <div className="pt-4 border-t border-emerald-100 flex flex-col items-center gap-2">
                             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Theoretical Note</span>
-                            <p className="text-[10px] text-emerald-600 leading-tight italic max-w-xs">
-                                "The absence of a blind spot is often the biggest blind spot of all." — Epistemic Humility Protocol
+                            <p className="text-sm text-slate-600 font-medium italic text-center">
+                                &quot;The absence of a blind spot is often the biggest blind spot of all.&quot; — Epistemic Humility Protocol
                             </p>
                         </div>
                     </div>

@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { OntologyNode, OntologyLink } from '@/types/ontology';
 import { getColorForCategory } from '@/lib/ontology-utils';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ZoomIn, ZoomOut, Maximize, Minimize, Network } from 'lucide-react';
+import { RefreshCw, Maximize, Minimize, Network } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface OntologyMapProps {
@@ -115,11 +115,11 @@ export function OntologyMap({
 
         // Nodes
         const node = container.append("g")
-            .selectAll("g")
+            .selectAll<SVGGElement, D3Node>("g")
             .data(d3Nodes)
             .join("g")
             .attr("cursor", "pointer")
-            .call(d3.drag<any, any>()
+            .call(d3.drag<SVGGElement, D3Node>()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended)
@@ -178,18 +178,18 @@ export function OntologyMap({
         svg.call(zoom);
 
         // Drag functions
-        function dragstarted(event: any, d: D3Node) {
+        function dragstarted(event: d3.D3DragEvent<SVGGElement, D3Node, D3Node>, d: D3Node) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
 
-        function dragged(event: any, d: D3Node) {
+        function dragged(event: d3.D3DragEvent<SVGGElement, D3Node, D3Node>, d: D3Node) {
             d.fx = event.x;
             d.fy = event.y;
         }
 
-        function dragended(event: any, d: D3Node) {
+        function dragended(event: d3.D3DragEvent<SVGGElement, D3Node, D3Node>, d: D3Node) {
             if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;

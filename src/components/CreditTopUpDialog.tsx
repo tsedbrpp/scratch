@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CreditCard, Coins, Check } from "lucide-react";
+import { Loader2, CreditCard, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CREDIT_PACKAGES, CreditPackage } from "@/config/pricing";
 
 interface CreditTopUpDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess: () => void;
+    onSuccess?: () => void;
 }
 
-export function CreditTopUpDialog({ open, onOpenChange, onSuccess }: CreditTopUpDialogProps) {
+export function CreditTopUpDialog({ open, onOpenChange }: CreditTopUpDialogProps) {
     const [loading, setLoading] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState<CreditPackage>(CREDIT_PACKAGES.standard);
 

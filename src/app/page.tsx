@@ -11,6 +11,7 @@ import { Community } from "@/components/landing/Community";
 import { TrustEthics } from "@/components/landing/TrustEthics";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { ContactSection } from "@/components/landing/ContactSection";
+import { PricingSection } from "@/components/landing/PricingSection";
 
 
 // This is a Server Component now
@@ -25,6 +26,7 @@ function LandingPage() {
       <Methodology />
       <Visualization />
       <Community />
+      <PricingSection />
       <TrustEthics />
       <ContactSection />
       <LandingFooter />

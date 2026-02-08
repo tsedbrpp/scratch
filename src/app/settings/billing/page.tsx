@@ -231,10 +231,7 @@ export default function BillingPage() {
                                         {pack.id === 'institution' ? (
                                             <span className="text-3xl font-bold text-slate-900">Contact Us</span>
                                         ) : pack.price === 0 ? (
-                                            <div className="flex flex-col">
-                                                <span className="text-3xl font-bold text-slate-900">Free</span>
-                                                <span className="text-xs text-slate-500">forever</span>
-                                            </div>
+                                            <span className="text-3xl font-bold text-slate-900">Free Trial</span>
                                         ) : (
                                             <span className="text-3xl font-bold text-slate-900">${pack.price}</span>
                                         )}

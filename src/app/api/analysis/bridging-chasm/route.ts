@@ -83,27 +83,47 @@ export async function POST(request: NextRequest) {
 }
 
 async function extractRhetoric(openai: OpenAI, text: string) {
-    const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
-        messages: [
-            { role: "system", content: "Extract key ethical claims, promises, and values from this policy document. Return as a bulleted list." },
-            { role: "user", content: text.substring(0, 15000) } // Truncate to safe limit
-        ],
-        max_completion_tokens: 500
-    });
-    return response.choices[0].message.content || "";
+    console.log(`[DRIFT API] Extracting rhetoric from ${text.length} chars...`);
+    try {
+        const response = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o",
+            messages: [
+                { role: "system", content: "Summarize the key purpose, ethical claims, and promises of this document. If it is technical, summarize its safety goals. Return a concise text summary." },
+                { role: "user", content: text.substring(0, 50000) }
+            ],
+            max_completion_tokens: 1000
+        });
+        const result = response.choices[0].message.content || "";
+        if (result.length < 50) throw new Error("Extraction result too short");
+
+        console.log(`[DRIFT API] Rhetoric extracted (${result.length} chars)`);
+        return result;
+    } catch (err) {
+        console.warn(`[DRIFT API] Rhetoric extraction failed or empty. Using raw text fallback. Error: ${(err as Error).message}`);
+        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 5000);
+    }
 }
 
 async function extractReality(openai: OpenAI, text: string) {
-    const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
-        messages: [
-            { role: "system", content: "Extract technical mechanisms, implementation details, and architectural decisions from this technical document. Return as a bulleted list." },
-            { role: "user", content: text.substring(0, 15000) }
-        ],
-        max_completion_tokens: 500
-    });
-    return response.choices[0].message.content || "";
+    console.log(`[DRIFT API] Extracting reality from ${text.length} chars...`);
+    try {
+        const response = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o",
+            messages: [
+                { role: "system", content: "Summarize the technical implementation, architecture, and enforcement mechanisms described in this document. Return a concise text summary." },
+                { role: "user", content: text.substring(0, 50000) }
+            ],
+            max_completion_tokens: 1000
+        });
+        const result = response.choices[0].message.content || "";
+        if (result.length < 50) throw new Error("Extraction result too short");
+
+        console.log(`[DRIFT API] Reality extracted (${result.length} chars)`);
+        return result;
+    } catch (err) {
+        console.warn(`[DRIFT API] Reality extraction failed or empty. Using raw text fallback. Error: ${(err as Error).message}`);
+        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 5000);
+    }
 }
 
 async function traceDimension(openai: OpenAI, dimensionId: string, rhetoric: string, reality: string) {

@@ -53,7 +53,7 @@ function AnalysisPageContent() {
         if (section && section !== activeSection) {
             setActiveSection(section);
         }
-    }, [searchParams]);
+    }, [searchParams, activeSection]);
 
     // Update URL when section changes
     const handleSectionChange = (section: AnalysisSection) => {
@@ -168,7 +168,7 @@ function AnalysisPageContent() {
             };
 
             // Cast to any to avoid type check issues if types are not perfectly synced yet
-            await handleUpdateAnalysis({ escalation_status: updatedStatus } as any);
+            await handleUpdateAnalysis({ escalation_status: updatedStatus });
         }
     };
 
@@ -301,7 +301,7 @@ function AnalysisPageContent() {
                                 className={!source.analysis.verified_quotes ? "bg-indigo-600 text-white hover:bg-indigo-700" : ""}
                             >
                                 {isAnalyzing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Zap className="mr-2 h-3 w-3" />}
-                                {activeSection === 'stress' ? "Run Stress Test" : (source.analysis.verified_quotes ? "Re-Run Audit" : "Run Verification")}
+                                {activeSection === 'stress' ? "Run Stress Test" : (source.analysis.verified_quotes ? "Re-Run Audit" : "Run &quot;Devil&apos;s Advocate&quot; Protocol")}
                             </Button>
                         )}
 

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Source } from '@/types';
 import { useSources } from '@/hooks/useSources';
+import { useServerStorage } from '@/hooks/useServerStorage'; // [NEW] Persistence
 import { FrameworkRadar } from '@/components/governance/FrameworkRadar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -73,16 +74,24 @@ const RiskBox = ({ source, colorLogic }: { source?: Source | null, colorLogic: (
 
 export default function ResourceOrchestrationPage() {
     const { sources, isLoading } = useSources();
-    const [leftSourceId, setLeftSourceId] = useState<string | null>(null);
-    const [rightSourceId, setRightSourceId] = useState<string | null>(null);
 
-    // Initialize state with first available sources
+    // [NEW] Persistent Selection
+    const [leftSourceId, setLeftSourceId] = useServerStorage<string | null>("governance_left_source_v2", null);
+    const [rightSourceId, setRightSourceId] = useServerStorage<string | null>("governance_right_source_v2", null);
+
+    // [NEW] Filter for Policy Documents Only
+    const policySources = useMemo(() => {
+        return sources.filter(s => s.type === 'PDF' || s.type === 'Text');
+    }, [sources]);
+
+    // Initialize state with first available policy sources
     useMemo(() => {
-        if (!isLoading && sources.length > 0) {
-            if (!leftSourceId) setLeftSourceId(sources[0].id);
-            if (!rightSourceId && sources.length > 1) setRightSourceId(sources[1].id);
+        if (!isLoading && policySources.length > 0) {
+            // Only auto-select if nothing is selected (persistence check)
+            if (!leftSourceId) setLeftSourceId(policySources[0].id);
+            if (!rightSourceId && policySources.length > 1) setRightSourceId(policySources[1].id);
         }
-    }, [isLoading, sources, leftSourceId, rightSourceId]);
+    }, [isLoading, policySources, leftSourceId, rightSourceId, setLeftSourceId, setRightSourceId]);
 
     const leftSource = useMemo(() => sources.find(s => s.id === leftSourceId), [sources, leftSourceId]);
     const rightSource = useMemo(() => sources.find(s => s.id === rightSourceId), [sources, rightSourceId]);
@@ -134,7 +143,7 @@ export default function ResourceOrchestrationPage() {
                                     <SelectValue placeholder="Select Source 1" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {sources.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
+                                    {policySources.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
                                 </SelectContent>
                             </Select>
 
@@ -144,7 +153,7 @@ export default function ResourceOrchestrationPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    {sources.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
+                                    {policySources.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

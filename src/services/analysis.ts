@@ -77,7 +77,19 @@ export const synthesizeComparison = async (documents: Source[], lens: string = "
             headers: headers,
             body: JSON.stringify({
                 analysisMode: 'comparative_synthesis',
-                documents,
+                // [FIX] Strict sanitization to prevent token overflow. Only pass essential fields.
+                documents: documents.map(d => ({
+                    id: d.id,
+                    title: d.title,
+                    description: d.description,
+                    type: d.type,
+                    jurisdiction: d.jurisdiction,
+                    publicationDate: d.publicationDate,
+                    extractedText: d.extractedText?.substring(0, 30000) || '', // Reduced to 30k to be safe
+                    analysis: d.analysis ? {
+                        escalation_status: d.analysis.escalation_status
+                    } : undefined
+                })),
                 lens,
                 force,
                 driftAnalysis // [NEW] Pass drift analysis to backend

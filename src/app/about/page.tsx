@@ -32,7 +32,7 @@ export default function AboutPage() {
                             <BookOpen className="h-6 w-6" /> Our Mission
                         </h3>
                         <p>
-                            We aim to provide researchers, activists, and policymakers with the tools to decompose complex legal texts and regulatory frameworks. By visualizing the "assemblages"—the mix of actors, laws, technologies, and ideologies—we reveal where power truly lies.
+                            We aim to provide researchers, activists, and policymakers with the tools to decompose complex legal texts and regulatory frameworks. By visualizing the &quot;assemblages&quot;—the mix of actors, laws, technologies, and ideologies—we reveal where power truly lies.
                         </p>
                     </div>
                     <div className="prose prose-lg prose-slate text-slate-600">
@@ -40,7 +40,7 @@ export default function AboutPage() {
                             <GitBranch className="h-6 w-6" /> Our Origin
                         </h3>
                         <p>
-                            Born from academic research into "Decolonial Situatedness in Global AI Governance," this project specifically examines the tensions between Western regulatory models (like the EU AI Act) and the unique realities of the Global South (e.g., Brazil's PL 2338).
+                            Born from academic research into &quot;Decolonial Situatedness in Global AI Governance,&quot; this project specifically examines the tensions between Western regulatory models (like the EU AI Act) and the unique realities of the Global South (e.g., Brazil&apos;s PL 2338).
                         </p>
                     </div>
                 </div>

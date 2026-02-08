@@ -343,8 +343,20 @@ export function BridgingFramework({ initialMode = 'guide', policyText, technical
                 )}
 
                 {error && (
-                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 rounded-md text-sm text-red-800 dark:text-red-200">
+                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 rounded-md text-sm text-red-800 dark:text-red-200 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
                         Error: {error}
+                    </div>
+                )}
+
+                {/* [DEBUG] Warning if text is suspiciously short */}
+                {((policyText && policyText.length < 100) || (technicalText && technicalText.length < 100)) && (
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-sm text-amber-800 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span>
+                            <strong>Warning:</strong> Input text is extremely short ({policyText?.length || 0} / {technicalText?.length || 0} chars).
+                            Analysis may fail or produce hallucinated results. Ensure selected documents have extracted text.
+                        </span>
                     </div>
                 )}
             </div>
@@ -439,16 +451,16 @@ export function BridgingFramework({ initialMode = 'guide', policyText, technical
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
                                                 <div className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-1">Rhetoric (Promise)</div>
-                                                <p className="text-xs italic text-blue-900 dark:text-blue-100">&quot;{selectedResult.evidence.rhetoric}&quot;</p>
+                                                <p className="text-xs italic text-blue-900 dark:text-blue-100">&quot;{selectedResult.evidence?.rhetoric || "No rhetoric extracted"}&quot;</p>
                                             </div>
                                             <div className="bg-violet-50 dark:bg-violet-900/20 p-3 rounded border border-violet-100 dark:border-violet-800">
                                                 <div className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-1">Reality (Technical)</div>
-                                                <p className="text-xs italic text-violet-900 dark:text-violet-100">&quot;{selectedResult.evidence.reality}&quot;</p>
+                                                <p className="text-xs italic text-violet-900 dark:text-violet-100">&quot;{selectedResult.evidence?.reality || "No reality extracted"}&quot;</p>
                                             </div>
                                         </div>
 
                                         <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-800">
-                                            <p className="text-xs text-slate-500 font-mono">Reasoning: {selectedResult.evidence.reasoning}</p>
+                                            <p className="text-xs text-slate-500 font-mono">Reasoning: {selectedResult.evidence?.reasoning || "No reasoning provided"}</p>
                                         </div>
                                     </div>
                                 )}

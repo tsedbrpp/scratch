@@ -1,7 +1,7 @@
 import React from "react";
 import {
     LayoutDashboard, GitBranch, Layers, ShieldAlert, BadgeCheck,
-    Activity, Scale, Zap, LucideIcon, BookOpen, ChevronRight
+    Activity, Scale, Zap, LucideIcon, BookOpen
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ export function AnalysisSidebar({
     isAnalyzing,
     onEscalationClick
 }: AnalysisSidebarProps) {
-    const { mode, toggleMode, isAdvanced } = useViewMode();
+    const { toggleMode, isAdvanced } = useViewMode();
 
     return (
         <nav className={cn("w-64 flex flex-col h-full bg-white border-r border-slate-200 py-6 pr-3", className)}>

@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources"; // Import hook
 import { EcosystemActor } from "@/types/ecosystem";
-import { Source } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, Activity, Upload, Scale, Zap, Coins, Plus, Network } from "lucide-react";
+import { FileText, Search, Activity, Upload, Coins, Plus, Network } from "lucide-react";
 import Link from "next/link";
 import { GalaxyGraph } from "@/components/landing/GalaxyGraph";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
@@ -155,7 +154,7 @@ export function Dashboard() {
                             </div>
                             <h4 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 mb-2">Trace an Actor</h4>
                             <p className="text-sm text-slate-500 leading-relaxed">
-                                Don't have a doc? Start with an actor (e.g., "AI Act") and let the system trace associations via the web.
+                                Don&apos;t have a doc? Start with an actor (e.g., &quot;AI Act&quot;) and let the system trace associations via the web.
                             </p>
                             <div className="mt-auto pt-4 flex items-center text-xs font-semibold text-blue-600 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
                                 Launch Discovery &rarr;

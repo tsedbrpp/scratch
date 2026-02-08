@@ -385,11 +385,13 @@ export function Sidebar() {
 
     // Close mobile menu when path changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMobileOpen(false);
     }, [pathname]);
 
     // Handle hydration mismatch
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
         // Recover collapsed state from local storage if desired, but for now just default
         const savedCollapsed = localStorage.getItem("sidebar-collapsed");

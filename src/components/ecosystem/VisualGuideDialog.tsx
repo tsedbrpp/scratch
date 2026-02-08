@@ -2,8 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, Hexagon, Diamond, Triangle, Square, Circle, Zap, Activity } from 'lucide-react';
-import { SWISS_COLORS } from '@/lib/ecosystem-utils';
+import { HelpCircle, Hexagon, Diamond, Triangle, Square, Circle, Zap } from 'lucide-react';
 
 export function VisualGuideDialog() {
     return (
@@ -33,7 +32,7 @@ export function VisualGuideDialog() {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-sm text-slate-900">Material / Infrastructure</h4>
-                                    <p className="text-xs text-slate-600 mt-1">Stable, foundational elements like Cloud Platforms, Datasets, or Hardware. They provide the "ground" for the network.</p>
+                                    <p className="text-xs text-slate-600 mt-1">Stable, foundational elements like Cloud Platforms, Datasets, or Hardware. They provide the &quot;ground&quot; for the network.</p>
                                 </div>
                             </div>
 
@@ -118,7 +117,7 @@ export function VisualGuideDialog() {
                                     Hot Spot (Structural Friction)
                                 </h4>
                                 <p className="text-xs text-red-800 mt-1 leading-relaxed">
-                                    A pulsing red glow indicates a <strong>Hot Spot</strong>. These are sites where the actor's instability ("Deterritorialization") conflicts with its role—for example, a biased algorithm or a centralized infrastructure point. It signals high ethical risk or friction.
+                                    A pulsing red glow indicates a <strong>Hot Spot</strong>. These are sites where the actor&apos;s instability (&quot;Deterritorialization&quot;) conflicts with its role—for example, a biased algorithm or a centralized infrastructure point. It signals high ethical risk or friction.
                                 </p>
                             </div>
                         </div>

@@ -111,7 +111,7 @@ export function AIAuditPanel({ analysis, sourceId, sourceTitle, onFlagResult, on
 
                         {showThinking && provenance_chain && (
                             <div className="space-y-4 pt-2">
-                                {provenance_chain.steps.map((step, i) => (
+                                {provenance_chain.steps.map((step) => (
                                     <div key={step.step_id} className="relative pl-6 border-l border-slate-300">
                                         <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-indigo-100 border-2 border-indigo-500" />
                                         <div className="text-xs text-slate-500 mb-1 flex justify-between">
@@ -146,8 +146,8 @@ export function AIAuditPanel({ analysis, sourceId, sourceTitle, onFlagResult, on
                                             <div className="font-bold text-slate-800 mb-1">Sartrean Negation</div>
                                             <div className="text-slate-600 leading-relaxed">
                                                 This is not a bug report. It is a <span className="italic">philosophical refusal</span>.
-                                                By flagging, you assert that you reject the AI's generated reality as incomplete or invalid,
-                                                preventing it from becoming "petrified" truth.
+                                                By flagging, you assert that you reject the AI&apos;s generated reality as incomplete or invalid,
+                                                preventing it from becoming &quot;petrified&quot; truth.
                                             </div>
                                             <div className="absolute -bottom-1 right-2 w-2 h-2 bg-white border-b border-r border-slate-200 transform rotate-45"></div>
                                         </div>
