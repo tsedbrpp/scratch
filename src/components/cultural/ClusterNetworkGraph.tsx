@@ -160,7 +160,7 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                     <div className="w-6 h-0.5 bg-slate-400" />
                     <span className="text-slate-600">Shared themes</span>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Click node to view details</div>
+                <div className="text-[10px] text-slate-500 mt-1 italic">Hover for name, click to view</div>
             </div>
         </div>
     );
