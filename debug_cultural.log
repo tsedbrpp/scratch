@@ -52,3 +52,6 @@ Stack: SyntaxError: Expected property name or '}' in JSON at position 1
 [DEBUG] Request received. Env Key First 5 chars: sk-pr
 [START] Analyzing 2 sources with lens: default
 [SUCCESS] Completed in 13246 ms
+[DEBUG] Request received. Env Key First 5 chars: sk-pr
+[START] Analyzing 2 sources with lens: actor_network_theory
+[SUCCESS] Completed in 10957 ms

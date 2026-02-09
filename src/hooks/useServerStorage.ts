@@ -24,6 +24,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         // But for now, we'll fetch.
 
         const fetchValue = async () => {
+            console.log(`[useServerStorage] Fetching key: "${key}" for workspace: ${currentWorkspaceId || 'default'}`);
             try {
                 // Fix: Must match auth-helper logic (check enable flag, fallback to 'demo-user')
                 const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
@@ -32,6 +33,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log(`[useServerStorage] Fetched "${key}":`, data.value ? 'HAS DATA' : 'NULL/EMPTY');
                     if (isMounted) {
                         setStoredValue(data.value ?? initialValue);
                     }
@@ -67,12 +69,19 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             // Allow value to be a function so we have same API as useState
             setStoredValue((prevValue) => {
                 const valueToStore = value instanceof Function ? value(prevValue) : value;
+                console.log(`[useServerStorage] Saving key: "${key}" for workspace: ${currentWorkspaceId || 'default'}`, valueToStore ? 'HAS DATA' : 'NULL/EMPTY');
 
                 // Save to server
                 fetch('/api/storage', {
                     method: 'POST',
                     headers: getHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ key, value: valueToStore }),
+                }).then(res => {
+                    if (res.ok) {
+                        console.log(`[useServerStorage] Successfully saved "${key}"`);
+                    } else {
+                        console.error(`[useServerStorage] Failed to save "${key}": ${res.status}`);
+                    }
                 }).catch(err => console.error(`Failed to save storage key "${key}":`, err));
 
                 return valueToStore;

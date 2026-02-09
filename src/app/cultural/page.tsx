@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 import { CulturalAnalysisResult } from "@/types/cultural";
 import { MultiLensAnalysis } from "@/components/reflexivity/MultiLensAnalysis";
 import { exportSummaryToCSV, exportDetailedMatrixToCSV } from "@/lib/export-utils";
+import { ClusterNetworkGraph } from "@/components/cultural/ClusterNetworkGraph";
 
 export default function CulturalAnalysisPage() {
     const { sources, isLoading, refresh } = useSources();
@@ -27,6 +28,13 @@ export default function CulturalAnalysisPage() {
     const [culturalAnalysis, setCulturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>(`cultural_analysis_${selectionKey}`, null);
     const [selectedLensId] = useServerStorage<string>("cultural_lens_id", "default");
     const [forceRefresh, setForceRefresh] = useState(false);
+
+    // Debug logging for key changes
+    useEffect(() => {
+        console.log('[CULTURAL] Selection key changed to:', selectionKey);
+        console.log('[CULTURAL] Selected sources:', selectedSources);
+    }, [selectionKey, selectedSources]);
+
 
     // Helper function to determine actual document type from both type field and title
 
@@ -121,7 +129,11 @@ export default function CulturalAnalysisPage() {
 
             if (data.success && data.analysis) {
                 console.log('Analysis successful, setting results');
+                console.log('[CULTURAL] About to save analysis with key:', `cultural_analysis_${selectionKey}`);
+                console.log('[CULTURAL] Analysis data:', data.analysis);
                 setCulturalAnalysis(data.analysis);
+                console.log('[CULTURAL] setCulturalAnalysis called');
+
 
                 // Log the methodological action
                 try {
@@ -341,6 +353,26 @@ export default function CulturalAnalysisPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Network Visualization */}
+                    {culturalAnalysis.clusters.length >= 2 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Cluster Relationships</CardTitle>
+                                <CardDescription>
+                                    Visual map showing how discourse clusters relate through shared themes
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ClusterNetworkGraph
+                                    clusters={culturalAnalysis.clusters}
+                                    onClusterClick={(clusterId) => {
+                                        const element = document.getElementById(`cluster-${clusterId}`);
+                                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }}
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
 
 
                     {/* Cluster Summary */}
@@ -358,6 +390,7 @@ export default function CulturalAnalysisPage() {
                                     .map((cluster) => (
                                         <div
                                             key={cluster.id}
+                                            id={`cluster-${cluster.id}`}
                                             className="p-4 bg-blue-50 border border-blue-200 rounded-lg"
                                         >
                                             <TooltipProvider delayDuration={0}>

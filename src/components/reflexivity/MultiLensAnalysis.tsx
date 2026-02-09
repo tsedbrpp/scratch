@@ -150,7 +150,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                         text,
                         lens.id as AnalysisMode,
                         'Policy Document', // Default source type
-                        true // Force refresh to ensure fresh comparison
+                        false // Allow caching - don't force refresh
                     );
                     newResults[lens.id] = result;
                     setResults({ ...newResults });
