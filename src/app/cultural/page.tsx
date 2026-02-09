@@ -477,33 +477,43 @@ export default function CulturalAnalysisPage() {
 
                                                     {
                                                         cluster.quotes && cluster.quotes.length > 0 && (
-                                                            <details className={`
-                                                                mt-auto pt-3 border-t 
-                                                                ${isDominant ? "border-blue-200" : "border-slate-100"}
-                                                            `}>
-                                                                <summary className="text-xs font-medium text-blue-700 cursor-pointer hover:text-blue-900 select-none flex items-center gap-1 transition-colors">
-                                                                    <span className="flex items-center gap-1">
-                                                                        Show Evidence ({cluster.quotes.length})
-                                                                    </span>
-                                                                </summary>
-                                                                <div className="mt-3 space-y-3">
-                                                                    {cluster.quotes.slice(0, 3).map((quote, i) => (
-                                                                        <div key={i} className="relative pl-3 border-l-2 border-blue-300">
-                                                                            <p className="text-xs text-slate-700 italic leading-relaxed">
-                                                                                &quot;{quote.text}&quot;
-                                                                            </p>
-                                                                            <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                                                                                — {quote.source}
-                                                                            </p>
-                                                                        </div>
-                                                                    ))}
-                                                                    {cluster.quotes.length > 3 && (
-                                                                        <p className="text-xs text-blue-500 pl-3 pt-1">
-                                                                            + {cluster.quotes.length - 3} more citations...
-                                                                        </p>
-                                                                    )}
+                                                            <div className={`mt-auto pt-3 border-t ${isDominant ? "border-blue-200" : "border-slate-100"}`}>
+                                                                {/* Primary Quote - Always Visible */}
+                                                                <div className="relative pl-3 border-l-2 border-blue-400 mb-2">
+                                                                    <p className="text-xs text-slate-700 italic leading-relaxed">
+                                                                        &quot;{cluster.quotes[0].text}&quot;
+                                                                    </p>
+                                                                    <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                                                                        — {cluster.quotes[0].source}
+                                                                    </p>
                                                                 </div>
-                                                            </details>
+
+                                                                {/* Secondary Quotes - Collapsible */}
+                                                                {cluster.quotes.length > 1 && (
+                                                                    <details className="group/details">
+                                                                        <summary className="text-[10px] font-medium text-blue-600 cursor-pointer hover:text-blue-800 select-none flex items-center gap-1 transition-colors w-fit">
+                                                                            <span className="group-open/details:hidden">
+                                                                                + View {cluster.quotes.length - 1} more quote{cluster.quotes.length - 1 !== 1 ? 's' : ''}
+                                                                            </span>
+                                                                            <span className="hidden group-open/details:inline">
+                                                                                Hide extra quotes
+                                                                            </span>
+                                                                        </summary>
+                                                                        <div className="mt-2 space-y-3 pl-1">
+                                                                            {cluster.quotes.slice(1).map((quote, i) => (
+                                                                                <div key={i} className="relative pl-3 border-l-2 border-blue-200">
+                                                                                    <p className="text-xs text-slate-600 italic leading-relaxed">
+                                                                                        &quot;{quote.text}&quot;
+                                                                                    </p>
+                                                                                    <p className="text-[10px] text-slate-400 mt-1">
+                                                                                        — {quote.source}
+                                                                                    </p>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </details>
+                                                                )}
+                                                            </div>
                                                         )
                                                     }
                                                 </div>
