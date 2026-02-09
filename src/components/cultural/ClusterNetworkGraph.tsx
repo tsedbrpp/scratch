@@ -139,7 +139,7 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                                     x={node.x}
                                     y={node.y + r + 15}
                                     textAnchor="middle"
-                                    className="text-xs font-semibold fill-slate-700 pointer-events-none"
+                                    className="text-xs font-semibold fill-slate-700 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                     {node.label.length > 20 ? node.label.substring(0, 20) + '...' : node.label}
                                 </text>
