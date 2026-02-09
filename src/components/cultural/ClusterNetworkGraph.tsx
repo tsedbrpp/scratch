@@ -142,21 +142,38 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                     })}
                 </g>
 
-                {/* Render hover labels on top layer - always visible and above everything */}
+                {/* Render hover labels on top layer - smart positioning to avoid edges */}
                 <g className="labels" pointerEvents="none">
                     {layoutNodes.map((node) => {
                         const r = 15 + (node.size / maxSize) * 35;
 
                         if (hoveredNode !== node.id) return null;
 
+                        // Smart positioning constants
+                        const labelWidth = 180;
+                        const labelHeight = 40;
+                        const padding = 12;
+
+                        // Position below by default, above if too close to bottom
+                        const showAbove = node.y + r + labelHeight + padding > 400;
+                        const labelY = showAbove ? node.y - r - labelHeight - 10 : node.y + r + 10;
+
+                        // Center horizontally, but adjust if too close to edges
+                        let labelX = node.x - labelWidth / 2;
+                        if (labelX < padding) labelX = padding;
+                        if (labelX + labelWidth > 600 - padding) labelX = 600 - labelWidth - padding;
+
+                        const textY = labelY + labelHeight / 2 - 3;
+                        const subtextY = textY + 15;
+
                         return (
                             <g key={`label-${node.id}`}>
                                 {/* Label background */}
                                 <rect
-                                    x={node.x - 90}
-                                    y={node.y + r + 10}
-                                    width={180}
-                                    height={40}
+                                    x={labelX}
+                                    y={labelY}
+                                    width={labelWidth}
+                                    height={labelHeight}
                                     fill="white"
                                     stroke={node.color}
                                     strokeWidth={2.5}
@@ -165,8 +182,8 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                                 />
                                 {/* Cluster name */}
                                 <text
-                                    x={node.x}
-                                    y={node.y + r + 25}
+                                    x={labelX + labelWidth / 2}
+                                    y={textY}
                                     textAnchor="middle"
                                     className="text-sm font-bold fill-slate-800"
                                 >
@@ -174,8 +191,8 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                                 </text>
                                 {/* Size info */}
                                 <text
-                                    x={node.x}
-                                    y={node.y + r + 40}
+                                    x={labelX + labelWidth / 2}
+                                    y={subtextY}
                                     textAnchor="middle"
                                     className="text-xs fill-slate-500 font-medium"
                                 >
