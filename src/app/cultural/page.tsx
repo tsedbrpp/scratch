@@ -343,6 +343,38 @@ export default function CulturalAnalysisPage() {
                         </Card>
                     )}
 
+                    {/* Discourse Landscape Metrics */}
+                    <Card className="bg-gradient-to-br from-amber-50 to-blue-50 border-slate-200">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base text-slate-800">Discourse Landscape Overview</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white/60 p-3 rounded-lg border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Clusters</p>
+                                    <p className="text-2xl font-bold text-slate-800">{culturalAnalysis.clusters.length}</p>
+                                </div>
+                                <div className="bg-white/60 p-3 rounded-lg border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Largest Field</p>
+                                    <p className="text-lg font-bold text-blue-700 truncate" title={culturalAnalysis.clusters.reduce((max, c) => c.size > max.size ? c : max, culturalAnalysis.clusters[0]).name}>
+                                        {culturalAnalysis.clusters.reduce((max, c) => c.size > max.size ? c : max, culturalAnalysis.clusters[0]).name}
+                                    </p>
+                                </div>
+                                <div className="bg-white/60 p-3 rounded-lg border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Avg Themes</p>
+                                    <p className="text-2xl font-bold text-slate-800">
+                                        {Math.round(culturalAnalysis.clusters.reduce((acc, c) => acc + c.size, 0) / culturalAnalysis.clusters.length)}
+                                    </p>
+                                </div>
+                                <div className="bg-white/60 p-3 rounded-lg border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Source Coverage</p>
+                                    <p className="text-2xl font-bold text-emerald-700">
+                                        {Math.round((new Set(culturalAnalysis.clusters.flatMap(c => c.sources)).size / selectedSources.length) * 100)}%
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Methodology Explanation */}
                     <Card className="bg-blue-50 border-blue-200">
