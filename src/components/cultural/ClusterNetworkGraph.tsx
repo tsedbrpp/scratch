@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DiscourseCluster } from '@/types/cultural';
 
 interface ClusterNetworkGraphProps {
@@ -7,6 +7,8 @@ interface ClusterNetworkGraphProps {
 }
 
 export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetworkGraphProps) {
+    const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+
     // Calculate cluster relationships based on shared themes
     const { nodes, edges } = useMemo(() => {
         const nodes = clusters.map((cluster, idx) => ({
@@ -23,7 +25,7 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
         // Calculate shared themes between clusters
         for (let i = 0; i < clusters.length; i++) {
             for (let j = i + 1; j < clusters.length; j++) {
-                const shared = clusters[i].themes.filter(theme =>
+                const shared = clusters[i].themes.filter((theme: string) =>
                     clusters[j].themes.includes(theme)
                 ).length;
 
@@ -100,7 +102,9 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                             <g
                                 key={node.id}
                                 onClick={() => onClusterClick?.(node.id)}
-                                className="cursor-pointer group"
+                                onMouseEnter={() => setHoveredNode(node.id)}
+                                onMouseLeave={() => setHoveredNode(null)}
+                                className="cursor-pointer"
                             >
                                 {/* Node circle */}
                                 <circle
@@ -108,40 +112,74 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                                     cy={node.y}
                                     r={r}
                                     fill={node.color}
-                                    opacity={0.7}
-                                    className="transition-all group-hover:opacity-95 group-hover:stroke-slate-900"
+                                    opacity={hoveredNode === node.id ? 1 : 0.7}
+                                    className="transition-all"
                                     strokeWidth={2}
-                                    stroke="white"
+                                    stroke={hoveredNode === node.id ? "#1e293b" : "white"}
                                 />
 
                                 {/* Size badge */}
                                 <circle
                                     cx={node.x + r * 0.6}
                                     cy={node.y - r * 0.6}
-                                    r={8}
+                                    r={10}
                                     fill="white"
-                                    stroke={node.color}
+                                    stroke={hoveredNode === node.id ? "#1e293b" : node.color}
                                     strokeWidth={2}
-                                    className="group-hover:stroke-slate-900"
+                                    className="transition-colors"
                                 />
                                 <text
                                     x={node.x + r * 0.6}
                                     y={node.y - r * 0.6}
                                     textAnchor="middle"
                                     dominantBaseline="central"
-                                    className="text-[10px] font-bold fill-slate-700 pointer-events-none"
+                                    className="text-[11px] font-bold fill-slate-700 pointer-events-none"
                                 >
                                     {node.size}
                                 </text>
+                            </g>
+                        );
+                    })}
+                </g>
 
-                                {/* Label */}
+                {/* Render hover labels on top layer - always visible and above everything */}
+                <g className="labels" pointerEvents="none">
+                    {layoutNodes.map((node) => {
+                        const r = 15 + (node.size / maxSize) * 35;
+
+                        if (hoveredNode !== node.id) return null;
+
+                        return (
+                            <g key={`label-${node.id}`}>
+                                {/* Label background */}
+                                <rect
+                                    x={node.x - 75}
+                                    y={node.y + r + 10}
+                                    width={150}
+                                    height={36}
+                                    fill="white"
+                                    stroke={node.color}
+                                    strokeWidth={2.5}
+                                    rx={6}
+                                    filter="drop-shadow(0 4px 12px rgba(0,0,0,0.25))"
+                                />
+                                {/* Cluster name */}
                                 <text
                                     x={node.x}
-                                    y={node.y + r + 15}
+                                    y={node.y + r + 24}
                                     textAnchor="middle"
-                                    className="text-xs font-semibold fill-slate-700 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="text-sm font-bold fill-slate-800"
                                 >
-                                    {node.label.length > 20 ? node.label.substring(0, 20) + '...' : node.label}
+                                    {node.label.length > 24 ? node.label.substring(0, 24) + '...' : node.label}
+                                </text>
+                                {/* Size info */}
+                                <text
+                                    x={node.x}
+                                    y={node.y + r + 38}
+                                    textAnchor="middle"
+                                    className="text-xs fill-slate-500 font-medium"
+                                >
+                                    {node.size} themes
                                 </text>
                             </g>
                         );
