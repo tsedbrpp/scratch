@@ -80,7 +80,9 @@ export function AnalysisResults({ analysis, sourceTitle }: AnalysisResultsProps)
                             </Badge>
                         </div>
                         <p className="text-sm text-slate-700 leading-relaxed pl-6">
-                            {analysis.blind_spots}
+                            {typeof analysis.blind_spots === 'string'
+                                ? analysis.blind_spots
+                                : (analysis.blind_spots as any)?.title || (analysis.blind_spots as any)?.description || JSON.stringify(analysis.blind_spots)}
                         </p>
                     </div>
                 )}
