@@ -380,7 +380,7 @@ export default function CulturalAnalysisPage() {
                         <CardHeader>
                             <CardTitle>Discourse Clusters</CardTitle>
                             <CardDescription>
-                                {culturalAnalysis.clusters.length} clusters identified from {selectedSources.length} sources (sorted by size)
+                                {culturalAnalysis.clusters.length} clusters identified from {[...new Set(selectedSources)].length} sources (sorted by size)
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
