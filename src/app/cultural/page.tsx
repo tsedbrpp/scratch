@@ -269,7 +269,7 @@ export default function CulturalAnalysisPage() {
 
                             <div className="flex items-center justify-between pt-4 border-t">
                                 <div className="text-sm text-slate-600 flex items-center gap-4">
-                                    <span>{selectedSources.length} source{selectedSources.length !== 1 ? 's' : ''} selected</span>
+                                    <span>{[...new Set(selectedSources)].length} source{[...new Set(selectedSources)].length !== 1 ? 's' : ''} selected</span>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
