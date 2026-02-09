@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Play, GitCompare, Maximize2, Minimize2, FileText, VolumeX, Sparkles } from 'lucide-react';
+import { Maximize2, Minimize2, FileText, VolumeX, Sparkles } from 'lucide-react';
 import { analyzeDocument, AnalysisMode } from '@/services/analysis';
 import { AnalysisResult, LegitimacyAnalysis, Source } from '@/types';
 import dynamic from 'next/dynamic';
@@ -16,7 +16,16 @@ const SpectralRadar = dynamic(() => import('./SpectralRadar').then(mod => mod.Sp
 import { SystemCritiqueSection } from '@/components/common/SystemCritiqueSection';
 import { EvidenceLineageModal } from '@/components/reflexivity/EvidenceLineageModal';
 import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
-import { RefreshCw, Wand2 } from 'lucide-react'; // Added Wand2, RefreshCw
+import { Wand2 } from 'lucide-react'; // Added Wand2
+import { LegitimacyVisualizer } from './LegitimacyVisualizer';
+import { LogicsVisualizer } from './LogicsVisualizer';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ConceptNetworkGraph } from './ConceptNetworkGraph';
 
 interface MultiLensAnalysisProps {
     initialText?: string;
@@ -98,6 +107,8 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
         }
     };
 
+    const [forceRefresh, setForceRefresh] = useState(false);
+
     const handleAnalyze = async () => {
         if (!text.trim()) return;
         if (isReadOnly) { // [NEW]
@@ -124,7 +135,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
             cultural: 'pending',
             logics: 'pending',
             legitimacy: 'pending',
-            message: 'Initializing Entanglement...'
+            message: forceRefresh ? 'Forcing Re-Analysis...' : 'Initializing Entanglement...'
         });
 
         try {
@@ -150,7 +161,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                         text,
                         lens.id as AnalysisMode,
                         'Policy Document', // Default source type
-                        false // Allow caching - don't force refresh
+                        forceRefresh // Use the state variable
                     );
                     newResults[lens.id] = result;
                     setResults({ ...newResults });
@@ -218,7 +229,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <GitCompare className="h-5 w-5 text-indigo-600" />
+                        <Wand2 className="h-5 w-5 text-indigo-600" />
                         Comparative Lens Analysis
                     </CardTitle>
                     <CardDescription>
@@ -276,17 +287,29 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
 
                             {/* Overlay Action */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[1px] group-hover:bg-white/20 transition-all z-10">
-                                <Button
-                                    onClick={handleAnalyze}
-                                    disabled={!text.trim() || isReadOnly}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg animate-in zoom-in-95 duration-300 scale-110"
-                                >
-                                    <Wand2 className="mr-2 h-4 w-4" />
-                                    Initiate Entanglement
-                                </Button>
-                                <p className="text-xs text-slate-500 mt-3 font-medium bg-white/50 px-2 py-1 rounded">
-                                    Click to trace the artifact through 4 critical dimensions
-                                </p>
+                                <div className="flex flex-col items-center gap-3">
+                                    <Button
+                                        onClick={handleAnalyze}
+                                        disabled={!text.trim() || isReadOnly}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg animate-in zoom-in-95 duration-300 scale-110"
+                                    >
+                                        <Wand2 className="mr-2 h-4 w-4" />
+                                        Initiate Entanglement
+                                    </Button>
+
+                                    <div className="flex items-center space-x-2 bg-white/80 px-3 py-1.5 rounded-full shadow-sm backdrop-blur-sm border border-indigo-100 animate-in fade-in zoom-in duration-500 delay-100">
+                                        <input
+                                            type="checkbox"
+                                            id="force-refresh-chk"
+                                            checked={forceRefresh}
+                                            onChange={(e) => setForceRefresh(e.target.checked)}
+                                            className="h-3.5 w-3.5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        <label htmlFor="force-refresh-chk" className="text-xs font-medium text-indigo-600 cursor-pointer select-none">
+                                            Force Re-Analysis
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -306,12 +329,15 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
 
                     <div className="grid gap-6 md:grid-cols-2">
                         {LENSES.map((lens) => (
-                            <Card key={lens.id} className={`flex flex-col ${expandedLens === lens.id ? 'md:col-span-2 ring-2 ring-indigo-500' : ''}`}>
-                                <CardHeader className="pb-2">
+                            <Card key={lens.id} className={`flex flex-col transition-all duration-300 ${expandedLens === lens.id ? 'md:col-span-2 ring-2 ring-indigo-500 shadow-lg' : 'hover:shadow-md'}`}>
+                                <CardHeader className="pb-3 bg-slate-50/50 border-b border-slate-100">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-1">
-                                            <CardTitle className="text-base font-semibold text-slate-800">
+                                            <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
                                                 {lens.name}
+                                                {results[lens.id] && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Ready</span>
+                                                )}
                                             </CardTitle>
                                             <CardDescription className="text-xs">
                                                 {lens.description}
@@ -320,76 +346,165 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-6 w-6"
+                                            className="h-7 w-7"
                                             onClick={() => setExpandedLens(expandedLens === lens.id ? null : lens.id)}
                                         >
-                                            {expandedLens === lens.id ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+                                            {expandedLens === lens.id ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                                         </Button>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="flex-1 text-sm text-slate-600">
+                                <CardContent className="flex-1 text-sm text-slate-600 pt-4">
                                     {results[lens.id] ? (
-                                        <div className="space-y-3">
-                                            <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
-                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Key Insight</span>
-                                                <p className="leading-relaxed">
-                                                    {getKeyInsight(lens.id, results[lens.id])}
-                                                </p>
-                                            </div>
+                                        <div className="space-y-4">
 
-                                            {/* Legitimacy Interactive Orders */}
-                                            {lens.id === 'legitimacy' && results['legitimacy'] && (
-                                                <div className="mt-3">
-                                                    <span className="text-xs font-semibold text-slate-500 block mb-2">Orders of Worth (Click for Evidence)</span>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {Object.entries((results['legitimacy'] as unknown as LegitimacyAnalysis).orders || {})
-                                                            .filter(([, score]) => score > 0)
-                                                            .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
-                                                            .map(([order, score]) => (
-                                                                <div
-                                                                    key={order}
-                                                                    className="flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors group"
-                                                                    onClick={() => {
-                                                                        const legAnalysis = results['legitimacy'] as unknown as LegitimacyAnalysis;
-                                                                        const quotes = legAnalysis.evidence_quotes?.[order] || [];
-                                                                        setActiveEvidence({
-                                                                            title: `${order.charAt(0).toUpperCase() + order.slice(1)} Order`,
-                                                                            type: "Order of Worth",
-                                                                            quotes: quotes.map(q => ({ text: q, source: "Policy Text" }))
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <span className="font-medium text-slate-700 group-hover:text-indigo-700 capitalize">{order}</span>
-                                                                    <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full font-bold group-hover:bg-indigo-100 group-hover:text-indigo-700">{score}</span>
-                                                                </div>
-                                                            ))}
+                                            {/* --- LEGITIMACY LENS --- */}
+                                            {lens.id === 'legitimacy' && (
+                                                <>
+                                                    <div className="flex flex-col md:flex-row gap-4">
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="bg-indigo-50 border border-indigo-100 rounded-md p-3">
+                                                                <span className="text-xs font-bold text-indigo-800 uppercase tracking-wide block mb-1">Dominant Order</span>
+                                                                <p className="font-semibold text-indigo-900 leading-tight">
+                                                                    {(results['legitimacy'] as any).dominant_order || 'Undetermined'}
+                                                                </p>
+                                                            </div>
+                                                            <Accordion type="single" collapsible className="w-full">
+                                                                <AccordionItem value="justification" className="border-none">
+                                                                    <AccordionTrigger className="py-2 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:no-underline">
+                                                                        View Justification Logic
+                                                                    </AccordionTrigger>
+                                                                    <AccordionContent>
+                                                                        <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                                            {(results['legitimacy'] as any).justification_logic || 'No justification logic available.'}
+                                                                        </p>
+                                                                    </AccordionContent>
+                                                                </AccordionItem>
+                                                            </Accordion>
+                                                        </div>
+                                                        <div className="flex-1 min-h-[180px] -my-4">
+                                                            <LegitimacyVisualizer analysis={results['legitimacy'] as unknown as LegitimacyAnalysis} />
+                                                        </div>
                                                     </div>
+                                                </>
+                                            )}
+
+                                            {/* --- INSTITUTIONAL LOGICS LENS --- */}
+                                            {lens.id === 'institutional_logics' && (
+                                                <>
+                                                    <div className="flex flex-col md:flex-row gap-4">
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="bg-emerald-50 border border-emerald-100 rounded-md p-3">
+                                                                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide block mb-1">Dominant Logic</span>
+                                                                <p className="font-semibold text-emerald-900 leading-tight">
+                                                                    {results['institutional_logics']?.dominant_logic || 'Undetermined'}
+                                                                </p>
+                                                            </div>
+                                                            <Accordion type="single" collapsible className="w-full">
+                                                                <AccordionItem value="assessment" className="border-none">
+                                                                    <AccordionTrigger className="py-2 text-xs font-medium text-slate-500 hover:text-emerald-600 hover:no-underline">
+                                                                        View Overall Assessment
+                                                                    </AccordionTrigger>
+                                                                    <AccordionContent>
+                                                                        <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                                            {results['institutional_logics']?.overall_assessment || 'No assessment available.'}
+                                                                        </p>
+                                                                    </AccordionContent>
+                                                                </AccordionItem>
+                                                            </Accordion>
+                                                        </div>
+                                                        <div className="flex-1 min-h-[180px] -my-4">
+                                                            <LogicsVisualizer analysis={results['institutional_logics']!} />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* --- CULTURAL FRAMING --- */}
+                                            {lens.id === 'cultural_framing' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-amber-50 border border-amber-100 rounded-md p-3">
+                                                        <span className="text-xs font-bold text-amber-800 uppercase tracking-wide block mb-1">Dominant Cultural Logic</span>
+                                                        <p className="font-semibold text-amber-900 leading-tight">
+                                                            {results['cultural_framing']?.dominant_cultural_logic || 'Undetermined'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">The &quot;Imagined&quot; State</span>
+                                                        <p className="text-xs leading-relaxed">
+                                                            {results['cultural_framing']?.state_market_society || getKeyInsight(lens.id, results[lens.id])}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Concept Network Graph */}
+                                                    {results['cultural_framing']?.concept_map && (
+                                                        <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                                                            <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+                                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                                                    Cultural Logic Network
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400">
+                                                                    {results['cultural_framing'].concept_map.nodes.length} Nodes
+                                                                </span>
+                                                            </div>
+                                                            <div className="h-[500px] w-full relative">
+                                                                <ConceptNetworkGraph data={results['cultural_framing'].concept_map} />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 
-                                            {/* Voices Silenced Section */}
-                                            {results[lens.id]?.silenced_voices && results[lens.id]!.silenced_voices!.length > 0 && (
-                                                <div className="bg-red-50 p-3 rounded-md border border-red-100 relative overflow-hidden group">
-                                                    <div className="absolute right-0 top-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                                                        <VolumeX className="h-12 w-12 text-red-900" />
+                                            {/* --- DECOLONIAL FRAMEWORK --- */}
+                                            {lens.id === 'dsf' && (
+                                                <div className="space-y-3">
+                                                    <div className="bg-rose-50 border border-rose-100 rounded-md p-3">
+                                                        <span className="text-xs font-bold text-rose-800 uppercase tracking-wide block mb-1">Key Dynamic</span>
+                                                        <p className="font-semibold text-rose-900 leading-tight">
+                                                            {results['dsf']?.key_insight || 'Undetermined'}
+                                                        </p>
                                                     </div>
+                                                    <Accordion type="single" collapsible className="w-full">
+                                                        <AccordionItem value="praxis" className="border-none">
+                                                            <AccordionTrigger className="py-2 text-xs font-medium text-slate-500 hover:text-rose-600 hover:no-underline">
+                                                                Detailed Situated Praxis
+                                                            </AccordionTrigger>
+                                                            <AccordionContent>
+                                                                <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                                    {results['dsf']?.reflexivity_situated_praxis || 'No detail available.'}
+                                                                </p>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                </div>
+                                            )}
+
+
+                                            {/* Voices Silenced Section (Shared across all lenses) */}
+                                            {results[lens.id]?.silenced_voices && results[lens.id]!.silenced_voices!.length > 0 && (
+                                                <div className="mt-4 pt-3 border-t border-slate-100">
                                                     <span className="text-xs font-bold text-red-600 uppercase tracking-wider block mb-2 flex items-center gap-1">
                                                         <VolumeX className="h-3 w-3" /> Voices Silenced
                                                     </span>
-                                                    <ul className="space-y-1 relative z-10">
-                                                        {results[lens.id]!.silenced_voices!.map((voice, idx) => (
+                                                    <ul className="space-y-1">
+                                                        {results[lens.id]!.silenced_voices!.slice(0, expandedLens === lens.id ? undefined : 2).map((voice, idx) => (
                                                             <li key={idx} className="text-xs text-red-800 font-medium flex items-start gap-2">
                                                                 <span className="block w-1 h-1 rounded-full bg-red-400 mt-1.5 shrink-0" />
                                                                 {voice}
                                                             </li>
                                                         ))}
+                                                        {results[lens.id]!.silenced_voices!.length > 2 && expandedLens !== lens.id && (
+                                                            <li className="text-xs text-red-500 italic pl-3 cursor-pointer hover:underline" onClick={() => setExpandedLens(lens.id)}>
+                                                                + {results[lens.id]!.silenced_voices!.length - 2} more (click to expand)
+                                                            </li>
+                                                        )}
                                                     </ul>
                                                 </div>
                                             )}
 
                                             {expandedLens === lens.id && (
-                                                <div className="mt-4 space-y-2 animate-in fade-in duration-300">
-                                                    <h4 className="font-medium text-slate-900">Detailed Analysis</h4>
+                                                <div className="mt-4 space-y-2 animate-in fade-in duration-300 pt-4 border-t border-slate-100">
+                                                    <h4 className="font-medium text-slate-900">Raw Analysis Data</h4>
                                                     <pre className="whitespace-pre-wrap bg-slate-900 text-slate-50 p-4 rounded-md text-xs overflow-x-auto max-h-[300px]">
                                                         {JSON.stringify(results[lens.id], null, 2)}
                                                     </pre>
@@ -397,8 +512,11 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="h-24 flex items-center justify-center text-slate-400 italic bg-slate-50 rounded-md border border-dashed">
-                                            Waiting for analysis...
+                                        <div className="h-40 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-md border border-dashed border-slate-200">
+                                            <div className="p-3 bg-white rounded-full mb-2 shadow-sm">
+                                                <Sparkles className="h-4 w-4 text-slate-300" />
+                                            </div>
+                                            <span className="text-xs font-medium">Waiting for analysis...</span>
                                         </div>
                                     )}
                                 </CardContent>

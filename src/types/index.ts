@@ -115,6 +115,23 @@ export interface AnalysisResult {
     cultural_distinctiveness_score?: number;
     dominant_cultural_logic?: string;
     enforcement_culture?: string; // Added for Cultural Framing
+    concept_map?: {
+        nodes: { id: string; label: string; type: "Actor" | "Concept" | "Value" | "Institution" | "Risk" | "Technology"; importance: number }[];
+        edges: { source: string; target: string; relation: string; label: string }[];
+    };
+    plain_language_summary?: {
+        one_sentence_overview: string;
+        key_points: {
+            number: number;
+            heading: string;
+            paragraphs: string[];
+        }[];
+        dominant_cultural_logic: {
+            label: string;
+            explanation: string;
+        };
+        silenced_voices_detailed: string;
+    };
     // Institutional Logics fields
     logics?: {
         market?: LogicAnalysis;
