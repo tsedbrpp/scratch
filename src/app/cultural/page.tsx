@@ -35,6 +35,20 @@ export default function CulturalAnalysisPage() {
         console.log('[CULTURAL] Selected sources:', selectedSources);
     }, [selectionKey, selectedSources]);
 
+    // Cleanup effect: Remove selected sources that no longer exist in analyzedSources
+    useEffect(() => {
+        if (selectedSources.length > 0 && analyzedSources.length > 0) {
+            const validSourceIds = analyzedSources.map(s => s.id);
+            const cleanedSelection = selectedSources.filter(id => validSourceIds.includes(id));
+
+            // Only update if there are invalid IDs to remove
+            if (cleanedSelection.length !== selectedSources.length) {
+                console.log('[CULTURAL] Cleaning up invalid source IDs. Before:', selectedSources, 'After:', cleanedSelection);
+                setSelectedSources(cleanedSelection);
+            }
+        }
+    }, [analyzedSources, selectedSources, setSelectedSources]);
+
 
     // Helper function to determine actual document type from both type field and title
 
