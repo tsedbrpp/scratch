@@ -195,7 +195,9 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
             case 'dsf':
                 return result.key_insight || result.reflexivity_situated_praxis || 'No insight generated.';
             case 'cultural_framing':
-                return result.dominant_cultural_logic ? `Dominant Logic: ${result.dominant_cultural_logic}. ${result.state_market_society}` : result.key_insight || 'No cultural insight.';
+                // Handle both string and object types for dominant_cultural_logic
+                const culturalLogic = result.plain_language_summary?.dominant_cultural_logic?.label || result.dominant_cultural_logic || 'Undetermined';
+                return result.dominant_cultural_logic ? `Dominant Logic: ${culturalLogic}. ${result.state_market_society}` : result.key_insight || 'No cultural insight.';
             case 'institutional_logics':
                 if (result.dominant_logic) {
                     return `Dominant Logic: ${result.dominant_logic}. ${result.overall_assessment || ''}`;
@@ -425,7 +427,7 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                                                     <div className="bg-amber-50 border border-amber-100 rounded-md p-3">
                                                         <span className="text-xs font-bold text-amber-800 uppercase tracking-wide block mb-1">Dominant Cultural Logic</span>
                                                         <p className="font-semibold text-amber-900 leading-tight">
-                                                            {results['cultural_framing']?.dominant_cultural_logic || 'Undetermined'}
+                                                            {results['cultural_framing']?.plain_language_summary?.dominant_cultural_logic?.label || results['cultural_framing']?.dominant_cultural_logic || 'Undetermined'}
                                                         </p>
                                                     </div>
 

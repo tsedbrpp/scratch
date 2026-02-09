@@ -538,7 +538,7 @@ export default function ComparisonPage() {
                                                                     {source.title}
                                                                 </div>
                                                                 <div className="text-xs text-slate-500 mt-2 italic px-2">
-                                                                    {source.cultural_framing?.dominant_cultural_logic}
+                                                                    {source.cultural_framing?.plain_language_summary?.dominant_cultural_logic?.label || source.cultural_framing?.dominant_cultural_logic || 'No cultural logic identified'}
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
