@@ -153,10 +153,10 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                             <g key={`label-${node.id}`}>
                                 {/* Label background */}
                                 <rect
-                                    x={node.x - 75}
+                                    x={node.x - 90}
                                     y={node.y + r + 10}
-                                    width={150}
-                                    height={36}
+                                    width={180}
+                                    height={40}
                                     fill="white"
                                     stroke={node.color}
                                     strokeWidth={2.5}
@@ -166,16 +166,16 @@ export function ClusterNetworkGraph({ clusters, onClusterClick }: ClusterNetwork
                                 {/* Cluster name */}
                                 <text
                                     x={node.x}
-                                    y={node.y + r + 24}
+                                    y={node.y + r + 25}
                                     textAnchor="middle"
                                     className="text-sm font-bold fill-slate-800"
                                 >
-                                    {node.label.length > 24 ? node.label.substring(0, 24) + '...' : node.label}
+                                    {node.label.length > 30 ? node.label.substring(0, 30) + '...' : node.label}
                                 </text>
                                 {/* Size info */}
                                 <text
                                     x={node.x}
-                                    y={node.y + r + 38}
+                                    y={node.y + r + 40}
                                     textAnchor="middle"
                                     className="text-xs fill-slate-500 font-medium"
                                 >
