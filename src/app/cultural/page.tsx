@@ -395,72 +395,121 @@ export default function CulturalAnalysisPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                {[...culturalAnalysis.clusters]
-                                    .sort((a, b) => b.size - a.size)
-                                    .map((cluster) => (
-                                        <div
-                                            key={cluster.id}
-                                            id={`cluster-${cluster.id}`}
-                                            className="p-4 bg-blue-50 border border-blue-200 rounded-lg"
-                                        >
-                                            <TooltipProvider delayDuration={0}>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="flex items-center gap-2 mb-2 cursor-help group w-fit">
-                                                            <h4 className="font-semibold text-blue-900 underline decoration-dotted decoration-blue-300">
-                                                                {cluster.name}
-                                                            </h4>
-                                                            <HelpCircle className="h-3.5 w-3.5 text-blue-400 group-hover:text-blue-600 transition-colors" />
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    {cluster.description && (
-                                                        <TooltipContent className="max-w-xs bg-white shadow-xl border-blue-100 p-3">
-                                                            <p className="font-semibold text-xs text-blue-900 mb-1">Cluster Definition</p>
-                                                            <p className="text-xs text-slate-600 leading-snug">{cluster.description}</p>
-                                                        </TooltipContent>
-                                                    )}
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                            <div className="flex flex-wrap gap-1 mb-2">
-                                                {cluster.themes.filter(theme => theme !== cluster.name).map((theme, i) => (
-                                                    <Badge
-                                                        key={i}
-                                                        variant="outline"
-                                                        className="text-xs bg-white"
-                                                    >
-                                                        {theme}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                            <p className="text-xs text-slate-600">
-                                                {cluster.size} theme{cluster.size !== 1 ? 's' : ''} from {cluster.sources.length} source{cluster.sources.length !== 1 ? 's' : ''}
-                                            </p>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+                                {(() => {
+                                    // Calculate max size for relative scaling
+                                    const maxSize = Math.max(...culturalAnalysis.clusters.map(c => c.size), 1);
 
-                                            {
-                                                cluster.quotes && cluster.quotes.length > 0 && (
-                                                    <details className="mt-3 pt-2 border-t border-blue-200">
-                                                        <summary className="text-xs font-medium text-blue-700 cursor-pointer hover:text-blue-900 select-none flex items-center gap-1">
-                                                            Show Evidence ({cluster.quotes.length})
-                                                        </summary>
-                                                        <ul className="mt-2 space-y-2">
-                                                            {cluster.quotes.slice(0, 3).map((quote, i) => (
-                                                                <li key={i} className="text-xs text-slate-600 italic border-l-2 border-blue-300 pl-2">
-                                                                    &quot;{quote.text}&quot;
-                                                                    <span className="block text-[10px] text-slate-400 not-italic mt-1">— {quote.source}</span>
-                                                                </li>
-                                                            ))}
-                                                            {cluster.quotes.length > 3 && (
-                                                                <li className="text-xs text-blue-500 pl-2">
-                                                                    + {cluster.quotes.length - 3} more citations...
-                                                                </li>
-                                                            )}
-                                                        </ul>
-                                                    </details>
-                                                )
-                                            }
-                                        </div>
-                                    ))}
+                                    return [...culturalAnalysis.clusters]
+                                        .sort((a, b) => b.size - a.size)
+                                        .map((cluster) => {
+                                            // Determine visual weight
+                                            const relativeSize = cluster.size / maxSize;
+                                            const isDominant = relativeSize > 0.7;
+                                            const isMajor = relativeSize > 0.4;
+
+                                            return (
+                                                <div
+                                                    key={cluster.id}
+                                                    id={`cluster-${cluster.id}`}
+                                                    className={`
+                                                        rounded-lg transition-all duration-200
+                                                        ${isDominant
+                                                            ? "md:col-span-2 lg:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 shadow-md p-6"
+                                                            : isMajor
+                                                                ? "bg-white border border-blue-200 shadow-sm p-5"
+                                                                : "bg-slate-50 border border-slate-200 p-4 opacity-90 hover:opacity-100"
+                                                        }
+                                                    `}
+                                                >
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <TooltipProvider delayDuration={0}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <div className="flex items-center gap-2 cursor-help group w-fit">
+                                                                        <h4 className={`
+                                                                            font-bold text-slate-900 underline decoration-dotted decoration-blue-300
+                                                                            ${isDominant ? "text-xl" : isMajor ? "text-lg" : "text-base"}
+                                                                        `}>
+                                                                            {cluster.name}
+                                                                        </h4>
+                                                                        <HelpCircle className="h-4 w-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                                                    </div>
+                                                                </TooltipTrigger>
+                                                                {cluster.description && (
+                                                                    <TooltipContent className="max-w-xs bg-white shadow-xl border-blue-100 p-3">
+                                                                        <p className="font-semibold text-xs text-blue-900 mb-1">Cluster Definition</p>
+                                                                        <p className="text-xs text-slate-600 leading-snug">{cluster.description}</p>
+                                                                    </TooltipContent>
+                                                                )}
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+
+                                                        <Badge
+                                                            className={`
+                                                                ${isDominant ? "bg-blue-600 text-white hover:bg-blue-700" : isMajor ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"}
+                                                                ml-2 shrink-0
+                                                            `}
+                                                        >
+                                                            {cluster.size} themes
+                                                        </Badge>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                                        {cluster.themes.filter(theme => theme !== cluster.name).map((theme, i) => (
+                                                            <Badge
+                                                                key={i}
+                                                                variant="outline"
+                                                                className={`
+                                                                    text-xs 
+                                                                    ${isDominant ? "bg-white border-blue-200" : "bg-transparent border-slate-200"}
+                                                                `}
+                                                            >
+                                                                {theme}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+                                                        <BookOpen className="h-3 w-3" />
+                                                        <span>Found in {cluster.sources.length} source{cluster.sources.length !== 1 ? 's' : ''}</span>
+                                                    </div>
+
+                                                    {
+                                                        cluster.quotes && cluster.quotes.length > 0 && (
+                                                            <details className={`
+                                                                mt-auto pt-3 border-t 
+                                                                ${isDominant ? "border-blue-200" : "border-slate-100"}
+                                                            `}>
+                                                                <summary className="text-xs font-medium text-blue-700 cursor-pointer hover:text-blue-900 select-none flex items-center gap-1 transition-colors">
+                                                                    <span className="flex items-center gap-1">
+                                                                        Show Evidence ({cluster.quotes.length})
+                                                                    </span>
+                                                                </summary>
+                                                                <div className="mt-3 space-y-3">
+                                                                    {cluster.quotes.slice(0, 3).map((quote, i) => (
+                                                                        <div key={i} className="relative pl-3 border-l-2 border-blue-300">
+                                                                            <p className="text-xs text-slate-700 italic leading-relaxed">
+                                                                                &quot;{quote.text}&quot;
+                                                                            </p>
+                                                                            <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                                                                                — {quote.source}
+                                                                            </p>
+                                                                        </div>
+                                                                    ))}
+                                                                    {cluster.quotes.length > 3 && (
+                                                                        <p className="text-xs text-blue-500 pl-3 pt-1">
+                                                                            + {cluster.quotes.length - 3} more citations...
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </details>
+                                                        )
+                                                    }
+                                                </div>
+                                            );
+                                        });
+                                })()}
                             </div>
                         </CardContent>
                     </Card>
