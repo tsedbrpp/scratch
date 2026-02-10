@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Info, Code, Network, ArrowRight, GitCommit, Layers, Play, Loader2, AlertTriangle } from 'lucide-react';
+import { Info, Code, Network, ArrowRight, Layers, Play, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { analyzeBridgingDrift, DriftAnalysisResult, AnalysisStatus } from '@/services/bridging-analysis';
@@ -191,7 +191,7 @@ const NetworkLink = ({
     />
 );
 
-export function BridgingFramework({ initialMode = 'guide', policyText, technicalText, onAnalysisComplete, initialResults }: BridgingFrameworkProps) {
+export function BridgingFramework({ policyText, technicalText, onAnalysisComplete, initialResults }: BridgingFrameworkProps) {
     const [selectedDimensionId, setSelectedDimensionId] = useState<string | null>(null);
     const [activeGapId, setActiveGapId] = useState<string | null>(null);
     const [hoveredDimensionId, setHoveredDimensionId] = useState<string | null>(null);

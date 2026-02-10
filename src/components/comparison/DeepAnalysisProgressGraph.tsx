@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Loader2, CheckCircle2, Circle, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle2, Circle } from 'lucide-react';
 
 export type AnalysisStepStatus = 'pending' | 'analyzing' | 'done' | 'error';
 

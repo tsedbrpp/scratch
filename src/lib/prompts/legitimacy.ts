@@ -165,8 +165,17 @@ No markdown or other text.
     "fame": ["quote..."]
   },
   "dominant_order": "Market (supported by Industrial)",
-  "justification_logic": "The text primarily justifies action through efficiency and competition...",
-  "moral_vocabulary": ["efficiency", "transparency", "accountability", "innovation"],
+  "justification_logic": {
+    "score_explanation": "The Market order is consistently present but not dominant...",
+    "value_mechanisms": "Value: efficiency / Mechanism: algorithmic sorting...",
+    "evidence": "Quote illustrating the mechanism...",
+    "analysis": "Legitimacy is constructed by tying technical efficiency to market advantage."
+  },
+  "moral_vocabulary": [
+    { "term": "efficiency", "order": "industrial", "level": "micro" },
+    { "term": "fair competition", "order": "market", "level": "meso" },
+    { "term": "public interest", "order": "civic", "level": "macro" }
+  ],
   "conflict_spot": "Standardization vs. Local Custom (Industrial vs Domestic)",
   "system_critique": {
       "blind_spots": ["The framework misses the 'Security' justification present in Article 5"],

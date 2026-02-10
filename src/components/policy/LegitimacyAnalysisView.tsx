@@ -1,8 +1,9 @@
 import { LegitimacyAnalysis } from "@/types";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale } from "lucide-react";
+import { MoralVocabularyMatrix } from "./MoralVocabularyMatrix";
 
 
 interface LegitimacyAnalysisViewProps {
@@ -130,18 +131,11 @@ export function LegitimacyAnalysisView({ analysis }: LegitimacyAnalysisViewProps
 
                     <div>
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Moral Vocabulary</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {(Array.isArray(analysis.moral_vocabulary)
-                                ? analysis.moral_vocabulary
-                                : typeof analysis.moral_vocabulary === 'string'
-                                    ? (analysis.moral_vocabulary as string).split(',').map(s => s.trim())
-                                    : []
-                            ).map((term, i) => (
-                                <Badge key={i} variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                                    {renderSafe(term)}
-                                </Badge>
-                            ))}
-                        </div>
+                        {analysis.moral_vocabulary ? (
+                            <MoralVocabularyMatrix vocabulary={analysis.moral_vocabulary} />
+                        ) : (
+                            <div className="text-sm text-slate-400 italic">No moral vocabulary data available.</div>
+                        )}
                     </div>
                 </div>
             </div>

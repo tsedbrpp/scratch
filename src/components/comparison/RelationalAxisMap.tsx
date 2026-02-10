@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { SynthesisTopologyAxis, SynthesisComparisonResult } from '@/types/synthesis';
-import { Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface RelationalAxisMapProps {
     topology: SynthesisComparisonResult['topology_analysis'];
@@ -59,7 +59,7 @@ const AxisRow = ({
                             </TooltipTrigger>
                             <TooltipContent className="max-w-md p-4 bg-white dark:bg-slate-950 z-50 shadow-xl border border-slate-200 dark:border-slate-800">
                                 <p className="font-semibold mb-2 text-xs uppercase">AI Decision Rule:</p>
-                                <p className="text-sm italic">"{data.decision_rule || "No explanation provided."}"</p>
+                                <p className="text-sm italic">&quot;{data.decision_rule || "No explanation provided."}&quot;</p>
                                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                                     Confidence: {((data.confidence || 0) * 100).toFixed(0)}%
                                 </div>

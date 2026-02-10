@@ -224,8 +224,10 @@ export interface VerificationPathways {
 export interface LogicAnalysis {
     strength: number;
     champions: string[];
-    material: string;
-    discursive: string;
+    manifestation_material: string;
+    manifestation_discursive: string;
+    material: string; // Keep for backward compatibility if needed, otherwise remove
+    discursive: string; // Keep for backward compatibility if needed, otherwise remove
     key_tensions: string[];
 }
 
@@ -300,8 +302,8 @@ export interface LegitimacyAnalysis {
     };
     evidence_quotes?: Record<string, string[]>;
     dominant_order: string;
-    justification_logic: string;
-    moral_vocabulary: string[];
+    justification_logic: string | Record<string, unknown>;
+    moral_vocabulary: string[] | string | Array<{ term: string; order: string; level?: string }>;
     conflict_spot: string | {
         location: string;
         description: string;

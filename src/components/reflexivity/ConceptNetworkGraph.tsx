@@ -119,13 +119,13 @@ export const ConceptNetworkGraph: React.FC<ConceptNetworkGraphProps> = ({ data, 
 
         let hubNode: GraphNode | null = null;
         let maxConnections = 0;
-        visibleNodes.forEach(node => {
+        for (const node of visibleNodes) {
             const connections = connectionCounts.get(node.id) || 0;
             if (connections > maxConnections) {
                 maxConnections = connections;
                 hubNode = node;
             }
-        });
+        }
 
         if (hubNode) {
             hubNode.isHub = true;

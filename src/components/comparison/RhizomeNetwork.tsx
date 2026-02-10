@@ -3,9 +3,9 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Network, Maximize, Minimize } from 'lucide-react';
+import { Network, Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getActorColor, inferActorType } from '@/lib/ecosystem-utils';
+import { inferActorType } from '@/lib/ecosystem-utils';
 import * as d3 from 'd3';
 
 // Dynamic import for ForceGraph to avoid SSR issues
@@ -15,15 +15,31 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
 });
 
 interface AssemblageNetwork {
-    nodes: (string | { id: string; type: string })[];
-    edges: { from: string; to: string; type: string }[];
+    nodes: (string | { id: string; type: string; ontologicalStatus?: string })[];
+    edges: { from: string; to: string; type: string; nature?: string; transformationType?: string }[];
 }
 
 interface RhizomeNetworkProps {
     network: AssemblageNetwork;
 }
 
-// Helper functions imported from @/lib/ecosystem-utils
+export interface RhizomeNode {
+    id: string;
+    group: string;
+    ontologicalStatus?: string;
+    val: number;
+    degree: number;
+    x?: number;
+    y?: number;
+}
+
+export interface RhizomeLink {
+    source: string | RhizomeNode;
+    target: string | RhizomeNode;
+    name: string;
+    nature: string;
+    transformationType?: string;
+}
 
 // Extended Palette from User Model
 const RHIZOME_COLORS = {
@@ -75,6 +91,7 @@ const LEGEND_ITEMS = [
 ];
 
 export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const graphRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
@@ -153,37 +170,39 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
         }
     }, []);
 
+    // ANT Mode Toggle
+    const [antMode, setAntMode] = useState(false);
+
     // Transform data for ForceGraph
     const graphData = useMemo(() => {
         if (!network || !network.nodes || network.nodes.length === 0) return { nodes: [], links: [] };
 
-        // Handle both string[] (Old) and object[] (New)
-        // Check first element type
-        const isObjectNodes = typeof network.nodes[0] === 'object';
-
-        let nodes = network.nodes.map((n: any) => {
+        let nodes: RhizomeNode[] = network.nodes.map((n) => {
             const id = typeof n === 'string' ? n : n.id;
             const type = typeof n === 'string' ? inferActorType(n) : (n.type || inferActorType(n.id));
+            const status = typeof n !== 'string' ? n.ontologicalStatus : undefined;
 
             return {
                 id,
                 group: type,
-                val: 3, // Small fixed radius
+                ontologicalStatus: status, // [NEW] Pass through
+                val: type === 'Controversy' ? 5 : 3, // Larger for Controversy
                 degree: 0 // Will calculate below
             };
         });
 
         // Create a map of existing nodes for quick lookup
-        const nodeMap = new Map(nodes.map((n: any) => [n.id, n]));
+        const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
         // Ensure all edge targets exist
         network.edges.forEach(e => {
             [e.from, e.to].forEach(nodeId => {
                 if (!nodeMap.has(nodeId)) {
                     // Create implicit node if missing
-                    const newNode = {
+                    const newNode: RhizomeNode = {
                         id: nodeId,
                         group: inferActorType(nodeId),
+                        ontologicalStatus: undefined, // Fixes type mismatch with mapped nodes
                         val: 2, // Slightly smaller for implicit nodes
                         degree: 0
                     };
@@ -195,11 +214,11 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
 
         // Filter Nodes if active
         if (filterColor) {
-            nodes = nodes.filter((n: any) => getRhizomeColor(n.group) === filterColor);
+            nodes = nodes.filter((n) => getRhizomeColor(n.group) === filterColor);
         }
 
         // Re-build map for filtered nodes to ensure we don't have dangling links
-        const filteredNodeMap = new Set(nodes.map((n: any) => n.id));
+        const filteredNodeMap = new Set(nodes.map((n) => n.id));
 
         // Use Set for unique links (sometimes LLM duplicates)
         const uniqueLinks = new Set();
@@ -211,22 +230,24 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
             if (uniqueLinks.has(key)) return false;
             uniqueLinks.add(key);
             return true;
-        }).map(e => ({
+        }).map((e) => ({
             source: e.from,
             target: e.to,
-            name: e.type
+            name: e.type,
+            nature: e.nature || 'intermediary', // [NEW] ANT Prop
+            transformationType: e.transformationType
         }));
 
         // Calculate Degree for Radial Layout
         // Need to calculate degree based on visible links
-        const finalNodeMap = new Map(nodes.map((n: any) => [n.id, n]));
+        const finalNodeMap = new Map(nodes.map((n) => [n.id, n]));
         links.forEach(link => {
-            if (finalNodeMap.has(link.source)) finalNodeMap.get(link.source)!.degree++;
-            if (finalNodeMap.has(link.target)) finalNodeMap.get(link.target)!.degree++;
+            if (finalNodeMap.has(link.source as string)) finalNodeMap.get(link.source as string)!.degree++;
+            if (finalNodeMap.has(link.target as string)) finalNodeMap.get(link.target as string)!.degree++;
         });
 
         return { nodes, links };
-    }, [network, filterColor]);
+    }, [network, filterColor, antMode]); // Added antMode to force re-evaluation of data/props
 
     // Apply Radial Forces
     useEffect(() => {
@@ -238,13 +259,14 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
             fg.d3Force('link').distance(70); // Tighter links
 
             // Radial Force: Pull high-degree nodes to center (0), others to radius (150)
-            const maxDegree = Math.max(...graphData.nodes.map((n: any) => n.degree)) || 1;
+            const maxDegree = Math.max(...graphData.nodes.map((n) => n.degree)) || 1;
 
-            fg.d3Force('radial', d3.forceRadial((node: any) => {
+            fg.d3Force('radial', d3.forceRadial((node: unknown) => {
+                const rNode = node as RhizomeNode;
                 // If it's a hub (high degree), pull to center. Else push out.
                 // Simple strict threshold: Top 20% degree = center?
                 // Or continuous: radius = (1 - degree/maxDegree) * 200
-                const relativeDegree = node.degree / maxDegree;
+                const relativeDegree = rNode.degree / maxDegree;
                 if (relativeDegree === 1) return 0; // Center the absolute Hub
                 return (1 - relativeDegree) * 200; // Hubs closer, leaves further
             }, 0, 0).strength(0.8));
@@ -254,24 +276,37 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
         }
     }, [graphData]); // Re-run when data changes
 
-    const handleNodeClick = (node: any) => {
-        setHighlightNodes(new Set([node.id]));
+    // Reheat on ANT Mode toggle to ensure visual transition
+    useEffect(() => {
+        if (graphRef.current) {
+            graphRef.current.d3ReheatSimulation();
+        }
+    }, [antMode]);
+
+    const handleNodeClick = (node: unknown) => {
+        const rNode = node as RhizomeNode;
+        setHighlightNodes(new Set([rNode.id]));
         // Find neighbors
         const neighbors = new Set<string>();
         const links = new Set<string>();
-        graphData.links.forEach((link: any) => {
-            if (link.source.id === node.id || link.target.id === node.id) {
-                neighbors.add(link.source.id);
-                neighbors.add(link.target.id);
-                links.add(link.source.id + "-" + link.target.id); // Or reference usage
+        graphData.links.forEach((link: RhizomeLink) => {
+            const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+            const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+
+            if (sourceId === rNode.id || targetId === rNode.id) {
+                neighbors.add(sourceId);
+                neighbors.add(targetId);
+                links.add(sourceId + "-" + targetId); // Or reference usage
             }
         });
-        setHighlightNodes(new Set([node.id, ...Array.from(neighbors)]));
+        setHighlightNodes(new Set([rNode.id, ...Array.from(neighbors)]));
         setHighlightLinks(links);
 
         // Center view on node
-        graphRef.current?.centerAt(node.x, node.y, 1000);
-        graphRef.current?.zoom(4, 1000); // Slight zoom in
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (graphRef.current as any)?.centerAt(rNode.x, rNode.y, 1000);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (graphRef.current as any)?.zoom(4, 1000); // Slight zoom in
     };
 
     const resetView = () => {
@@ -323,7 +358,18 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
                         Traced ancestry and inter-referential citations. Interact to explore.
                     </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    {/* ANT Lens Toggle */}
+                    <div className="flex items-center gap-2 mr-2 bg-white px-2 py-1 rounded border border-indigo-100">
+                        <span className={`text-[10px] font-bold ${antMode ? 'text-indigo-600' : 'text-slate-400'}`}>ANT LENS</span>
+                        <div
+                            className={`w-8 h-4 rounded-full p-0.5 cursor-pointer transition-colors ${antMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                            onClick={() => setAntMode(!antMode)}
+                        >
+                            <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${antMode ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    </div>
+
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-400 hover:text-indigo-700" onClick={resetView} title="Reset View">
                         <Maximize className="h-4 w-4" />
                     </Button>
@@ -370,6 +416,20 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
                                         </div>
                                     );
                                 })}
+                                {/* ANT Legend Addition */}
+                                {antMode && (
+                                    <>
+                                        <div className="border-t border-slate-100 my-1 pt-1"></div>
+                                        <div className="flex items-center gap-2 p-1">
+                                            <span className="w-8 border-b-2 border-dashed border-red-400"></span>
+                                            <span className="text-slate-600">Mediator (Active)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-1">
+                                            <span className="w-8 border-b border-slate-400"></span>
+                                            <span className="text-slate-600">Intermediary</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -382,7 +442,7 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
                             // Interaction
                             onNodeClick={handleNodeClick}
                             onBackgroundClick={handleBackgroundClick}
-                            onNodeHover={(node: any) => setHoverNode(node ? node.id : null)}
+                            onNodeHover={(node: unknown) => setHoverNode(node ? (node as RhizomeNode).id : null)}
 
                             // Physics (Rhizomatic -> Radial)
                             d3VelocityDecay={0.3} // Low friction to allow radial sorting
@@ -392,39 +452,94 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
 
                             // Rendering
                             nodeLabel="id"
-                            nodeColor={(node: any) => {
-                                if (highlightNodes.size > 0 && !highlightNodes.has(node.id)) return '#e2e8f0'; // Gray out non-highlighted
+                            nodeColor={(node: unknown) => {
+                                const rNode = node as RhizomeNode;
+                                if (highlightNodes.size > 0 && !highlightNodes.has(rNode.id)) return '#e2e8f0'; // Gray out non-highlighted
+
+                                // ANT Controversy Highlight
+                                if (antMode && rNode.group === 'Controversy') return '#f97316'; // Orange
+
                                 // Use customized palette if matched, else fallback to standard color
-                                return getRhizomeColor(node.group);
+                                return getRhizomeColor(rNode.group);
                             }}
                             nodeRelSize={4} // Radius ~= 7px
 
                             // Link Styling
-                            linkColor={(link: any) => {
+                            linkColor={(link: unknown) => {
+                                const rLink = link as RhizomeLink;
+                                const sourceId = typeof rLink.source === 'string' ? rLink.source : rLink.source.id;
+                                const targetId = typeof rLink.target === 'string' ? rLink.target : rLink.target.id;
+
                                 if (highlightNodes.size > 0) {
                                     // Check if connected to highlighted node
-                                    const isConnected = highlightNodes.has((link.source as any).id) && highlightNodes.has((link.target as any).id);
+                                    const isConnected = highlightNodes.has(sourceId) && highlightNodes.has(targetId);
                                     return isConnected ? '#475569' : '#f1f5f9';
                                 }
+
+                                // ANT Mode Styling
+                                if (antMode) {
+                                    return rLink.nature === 'mediator' ? '#f87171' : '#cbd5e1'; // Red vs Slate-300
+                                }
+
                                 return "#94a3b8"; // Slate-400
                             }}
-                            linkWidth={(link: any) => highlightLinks.has(link.source.id + "-" + link.target.id) ? 2 : 1}
-                            linkDirectionalParticles={2}
-                            linkDirectionalParticleSpeed={0.005}
-                            linkDirectionalParticleWidth={2}
+                            linkWidth={(link: unknown) => {
+                                const rLink = link as RhizomeLink;
+                                const sourceId = typeof rLink.source === 'string' ? rLink.source : rLink.source.id;
+                                const targetId = typeof rLink.target === 'string' ? rLink.target : rLink.target.id;
+
+                                if (highlightLinks.has(sourceId + "-" + targetId)) return 3;
+                                if (antMode && rLink.nature === 'mediator') return 3;
+                                return 1.5;
+                            }}
+                            linkDirectionalParticles={antMode ? 4 : 2}
+                            linkDirectionalParticleSpeed={(link: unknown) => {
+                                const rLink = link as RhizomeLink;
+                                if (antMode && rLink.nature === 'mediator') return 0.01; // Faster for active work
+                                return 0.005;
+                            }}
+                            linkDirectionalParticleWidth={(link: unknown) => {
+                                const rLink = link as RhizomeLink;
+                                if (antMode && rLink.nature === 'mediator') return 3;
+                                return 2;
+                            }}
                             linkDirectionalArrowLength={3.5}
                             linkDirectionalArrowRelPos={1}
+                            linkLineDash={(link: unknown) => {
+                                const rLink = link as RhizomeLink;
+                                if (antMode && rLink.nature === 'mediator') return [4, 2]; // Dashed for Mediators
+                                return null;
+                            }}
 
                             // Label Rendering
                             nodeCanvasObjectMode={() => 'after'}
-                            nodeCanvasObject={(node: any, ctx, globalScale) => {
-                                const isHighlighted = highlightNodes.has(node.id);
-                                const isHovered = hoverNode === node.id;
+                            nodeCanvasObject={(node: unknown, ctx,) => {
+                                const rNode = node as RhizomeNode;
+                                const isHighlighted = highlightNodes.has(rNode.id);
+                                const isHovered = hoverNode === rNode.id;
                                 const isActive = highlightNodes.size === 0 || isHighlighted;
+
+                                // Pulse for Controversy in ANT Mode
+                                if (antMode && rNode.group === 'Controversy') {
+                                    // Draw pulsing ring
+                                    const time = Date.now();
+                                    const pulse = (Math.sin(time / 200) + 1) / 2; // 0 to 1
+                                    ctx.beginPath();
+                                    ctx.arc(rNode.x || 0, rNode.y || 0, 8 + pulse * 4, 0, 2 * Math.PI);
+                                    ctx.fillStyle = `rgba(249, 115, 22, ${0.3 - pulse * 0.1})`;
+                                    ctx.fill();
+
+                                    // Accessibility Border
+                                    ctx.beginPath();
+                                    ctx.arc(rNode.x || 0, rNode.y || 0, 6, 0, 2 * Math.PI);
+                                    ctx.strokeStyle = '#c2410c'; // Dark Orange
+                                    ctx.lineWidth = 2;
+                                    ctx.stroke();
+                                }
 
                                 if (!isActive) return;
 
-                                const label = node.id;
+                                const label = rNode.id;
                                 const fontSize = isHighlighted ? 4 : 3.5;
                                 ctx.font = `${isHighlighted ? 'bold' : ''} ${fontSize}px Sans-Serif`;
                                 ctx.textAlign = 'center';
@@ -434,10 +549,10 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
                                 ctx.lineWidth = 3; // Thicker outline
                                 ctx.strokeStyle = '#f8fafc'; // Bg color
                                 // Radius approx 7px (sqrt(3)*4)
-                                ctx.strokeText(label, node.x, node.y + 8);
+                                ctx.strokeText(label, rNode.x || 0, (rNode.y || 0) + (rNode.group === 'Controversy' ? 10 : 8));
 
                                 ctx.fillStyle = isHighlighted || isHovered ? '#0f172a' : '#475569';
-                                ctx.fillText(label, node.x, node.y + 8);
+                                ctx.fillText(label, rNode.x || 0, (rNode.y || 0) + (rNode.group === 'Controversy' ? 10 : 8));
                             }}
 
                             // Canvas Configuration

@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Network, Maximize2, Minimize2, Sparkles, Loader2, Info, ZoomIn, ZoomOut, RotateCcw, Filter } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { SynthesisComparisonResult } from '@/types/synthesis';
 import { useDemoMode } from '@/hooks/useDemoMode';
@@ -126,13 +126,10 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
         d3.select(svgRef.current).transition().duration(300).call(zoomBehavior.current.scaleBy, factor);
     };
 
-    const handleResetZoom = () => {
-        if (!svgRef.current || !zoomBehavior.current) return;
-        d3.select(svgRef.current).transition().duration(750).call(zoomBehavior.current.transform, d3.zoomIdentity);
-    };
+
 
     // [NEW] Zoom to Fit Logic
-    const zoomToFit = () => {
+    const zoomToFit = useCallback(() => {
         if (!svgRef.current || !gRef.current || !zoomBehavior.current || validData.nodes.length === 0) return;
 
         const bounds = gRef.current.getBBox();
@@ -140,14 +137,8 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
 
         const fullWidth = dimensions.width;
         const fullHeight = dimensions.height;
-        const padding = 40;
 
         const scale = 0.85 / Math.max(bounds.width / fullWidth, bounds.height / fullHeight);
-        const translate = [
-            (fullWidth - scale * (bounds.x + bounds.width / 2) * 2) / 2, // Centering X
-            (fullHeight - scale * (bounds.y + bounds.height / 2) * 2) / 2 // Centering Y
-            // Simplified: (fullWidth - bounds.width * scale) / 2 - bounds.x * scale
-        ];
 
         // Correct Centering Math
         const midX = bounds.x + bounds.width / 2;
@@ -163,7 +154,7 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
             .transition()
             .duration(750)
             .call(zoomBehavior.current.transform, transform);
-    };
+    }, [dimensions, validData]);
 
     // D3 Simulation
     useEffect(() => {
@@ -319,7 +310,7 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
         svg.call(zoom);
         zoomBehavior.current = zoom;
 
-    }, [validData, dimensions]);
+    }, [validData, dimensions, zoomToFit]);
 
     // Handle Active Filter Effect
     useEffect(() => {

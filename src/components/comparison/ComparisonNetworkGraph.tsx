@@ -64,7 +64,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
 
     // View State
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [zoomTransform, setZoomTransform] = useState<d3.ZoomTransform>(d3.zoomIdentity);
+
 
 
     // Simulation Settings State
@@ -187,7 +187,6 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
         const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
             if (gRef.current) {
                 d3.select(gRef.current).attr("transform", event.transform.toString());
-                setZoomTransform(event.transform);
             }
         };
 
@@ -266,7 +265,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
         }
 
         return { nodes: rawNodes, links: rawLinks };
-    }, [networkData, showAnalystNode]);
+    }, [networkData, showAnalystNode, dimensions]);
 
     // D3 Logic
     useEffect(() => {
@@ -419,32 +418,44 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
 
             // Visual Cascade: Brighten neighbors, dim others
             node.selectAll("circle").transition().duration(500)
-                .attr("fill", (d: any) => {
-                    const nodeType = d.type as string;
+                .attr("fill", (d: unknown) => {
+                    const node = d as Node;
+                    const nodeType = node.type;
                     const baseColor = colorScale[nodeType] || "#94a3b8";
 
-                    if (d.id === activeCenterId) return baseColor;
-                    if (neighbors.has(d.id)) {
+                    if (node.id === activeCenterId) return baseColor;
+                    if (neighbors.has(node.id)) {
                         return d3.color(baseColor)?.brighter(0.8).toString() || baseColor;
                     }
                     // Dim non-related nodes
                     return d3.color(baseColor)?.darker(1.5).toString() || "#334155";
                 })
-                .attr("opacity", (d: any) => {
-                    if (d.id === activeCenterId || neighbors.has(d.id)) return 1;
+                .attr("opacity", (d: unknown) => {
+                    const node = d as Node;
+                    if (node.id === activeCenterId || neighbors.has(node.id)) return 1;
                     return 0.3; // Fade out non-neighbors
                 });
 
             // Dynamic Labelling: Territory vs Independent
             node.select("text")
-                .text((d: any) => {
-                    if (d.id === activeCenterId) return d.label + " (Center)";
-                    if (neighbors.has(d.id)) return d.label + " (Territory)";
-                    return d.label + " (Independent)";
+                .text((d: unknown) => {
+                    const node = d as Node;
+                    if (node.id === activeCenterId) return node.label + " (Center)";
+                    if (neighbors.has(node.id)) return node.label + " (Territory)";
+                    return node.label + " (Independent)";
                 })
-                .attr("font-weight", (d: any) => neighbors.has(d.id) || d.id === activeCenterId ? "bold" : "normal")
-                .attr("fill", (d: any) => neighbors.has(d.id) || d.id === activeCenterId ? "currentColor" : "#94a3b8")
-                .attr("opacity", (d: any) => neighbors.has(d.id) || d.id === activeCenterId ? 1 : 0.7);
+                .attr("font-weight", (d: unknown) => {
+                    const node = d as Node;
+                    return neighbors.has(node.id) || node.id === activeCenterId ? "bold" : "normal";
+                })
+                .attr("fill", (d: unknown) => {
+                    const node = d as Node;
+                    return neighbors.has(node.id) || node.id === activeCenterId ? "currentColor" : "#94a3b8";
+                })
+                .attr("opacity", (d: unknown) => {
+                    const node = d as Node;
+                    return neighbors.has(node.id) || node.id === activeCenterId ? 1 : 0.7;
+                });
 
 
             // Highlight links connected to center
@@ -456,13 +467,13 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
         } else {
             // Reset visuals when no center is active
             node.selectAll("circle").transition().duration(500)
-                .attr("fill", (d: any) => colorScale[d.type] || "#94a3b8")
+                .attr("fill", (d: unknown) => colorScale[(d as Node).type] || "#94a3b8")
                 .attr("opacity", 1);
 
             // Reset Labels
             node.select("text")
-                .text((d: any) => d.label)
-                .attr("font-weight", (d: any) => d.type === 'policy' ? "bold" : "normal")
+                .text((d: unknown) => (d as Node).label)
+                .attr("font-weight", (d: unknown) => (d as Node).type === 'policy' ? "bold" : "normal")
                 .attr("fill", "currentColor")
                 .attr("opacity", 1);
 
@@ -581,7 +592,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
                                             <div>
                                                 <span className="font-semibold text-slate-900 dark:text-slate-100">Genesis & Mediation:</span>
                                                 <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
-                                                    The <strong>AI Analyst</strong> node (center) acts as a mediator. It draws "Translation Lines" to the core concepts of each law, bridging two distinct systems (e.g., Brazil's Rights vs. India's Risk) that would otherwise be disconnected.
+                                                    The <strong>AI Analyst</strong> node (center) acts as a mediator. It draws &quot;Translation Lines&quot; to the core concepts of each law, bridging two distinct systems (e.g., Brazil&apos;s Rights vs. India&apos;s Risk) that would otherwise be disconnected.
                                                 </p>
                                             </div>
                                         </div>
@@ -590,7 +601,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
                                             <div>
                                                 <span className="font-semibold text-slate-900 dark:text-slate-100">Territorialization (Stress Test):</span>
                                                 <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
-                                                    Click a node to run a "Gravity Test." This creates a magnetic pull to see which actors are firmly held in its orbit and which ones escape its influence. It visualizes the **power** of a concept to organize the network.
+                                                    Click a node to run a &quot;Gravity Test.&quot; This creates a magnetic pull to see which actors are firmly held in its orbit and which ones escape its influence. It visualizes the **power** of a concept to organize the network.
                                                 </p>
                                             </div>
                                         </div>
@@ -800,7 +811,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
                                                     Power Check (Territorialization)
                                                 </h4>
                                                 <p className="text-xs text-slate-600 mb-3">
-                                                    Turn this node into a "Magnet" to test its influence. Nodes that move towards it are part of its territory; nodes that stay still are independent.
+                                                    Turn this node into a &quot;Magnet&quot; to test its influence. Nodes that move towards it are part of its territory; nodes that stay still are independent.
                                                 </p>
                                                 <Button
                                                     className={`w-full ${activeCenterId === (selectedItem.data as Node).id ? 'bg-slate-100 text-slate-900 border border-slate-200 hover:bg-slate-200' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}

@@ -15,8 +15,12 @@ export interface EcosystemActor {
     id: string;
     sourceId: string; // [NEW] Track origin document for filtering
     name: string;
-    type: "PrivateTech" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
+    type: "PrivateTech" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject" | "Controversy" | "NonHuman";
     description: string;
+
+    // [NEW] ANT Ontology
+    ontologicalStatus?: "individual" | "collective" | "punctualized" | "black-boxed";
+
     influence: "High" | "Medium" | "Low"; // Legacy field, use metrics.territorialization instead
     url?: string;
     metrics?: {
@@ -143,6 +147,7 @@ export interface AiAbsenceAnalysis {
 export interface TranslationStage {
     id: string;
     label: string;
+    ant_label?: "Problematization" | "Interessement" | "Enrollment" | "Mobilization" | "Black Boxing"; // [NEW] ANT Terminology
     description: string;
     actors: string[];
     ontology: "social" | "regulatory" | "technical" | "market";
@@ -171,6 +176,12 @@ export interface EcosystemEdge {
     label?: string; // Optional label for visualization
     weight?: number; // Strength of connection
     flow_type?: 'power' | 'logic'; // [NEW] Differentiate types of association
-    confidence?: number; // [NEW] ANT Trace Confidence (0-1)
+
+    // [NEW] ANT Properties
+    nature?: "intermediary" | "mediator";
+    transformationType?: "amplify" | "translate" | "block" | "modify" | "create" | "dissolve";
+    confidence?: number; // ANT Trace Confidence (0-1)
+    evidence?: string[]; // Quotes defining the link
+
     description?: string; // Helper text
 }

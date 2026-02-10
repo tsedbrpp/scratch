@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeterritorializationData } from '@/types/ecosystem-simulation';
 import { useSimulationCache } from '@/hooks/useSimulationCache';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface Props {
     isExpanded: boolean;
@@ -160,6 +161,8 @@ export function DeterritorializationView({ isExpanded, nodes: inputNodes }: Prop
         inputNodes,
         isExpanded
     });
+
+    const { isReadOnly } = useDemoMode();
 
     const contestingActors = useMemo(() => inputNodes.filter(n => {
         const t = n.type.toLowerCase();
@@ -412,11 +415,12 @@ export function DeterritorializationView({ isExpanded, nodes: inputNodes }: Prop
                         )}
                         <button
                             onClick={() => fetchSimulation(!!simulationData)}
-                            disabled={isLoading}
+                            disabled={isLoading || isReadOnly}
+                            title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}
                             className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 font-medium ${!simulationData
                                 ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
                                 : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
-                                } disabled:opacity-50`}
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             {isLoading ? (
                                 <>

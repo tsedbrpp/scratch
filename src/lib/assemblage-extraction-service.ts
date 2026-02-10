@@ -56,39 +56,54 @@ export class AssemblageExtractionService {
         Goal: Identify the "Assemblage" of actors (human, non-human, institutional, technological) and their relationships.
         
         Rules:
-        1. Actors must be specific entities mentioned or implied in the text.
-        2. Assign a Type: PrivateTech (Big Tech/Startups), Policymaker, Civil Society, Academic, Infrastructure, Algorithm, Dataset, or LegalObject.
-        3. Assign Metrics (1-10 scale):
-           - Territorialization: Stability, authority, boundary enforcement.
-           - Deterritorialization: Fluidity, resistance, innovation, escaping control.
-           - Coding: How rigidly defined/categorized the actor is.
-        4. Identify Relationships (Edges) between these actors (e.g., "regulates", "funds", "opposes", "uses").
+        1. Actors: Identify specific entities.
+           - Type: PrivateTech, Policymaker, Civil Society, Academic, Infrastructure, Algorithm, Dataset, LegalObject, or Controversy.
+           - Controversy: Mark "Hot Spots" or "Matters of Concern" where consensus is breaking down as type="Controversy".
+           - Ontology: Is this actor an "individual", "collective" (group), or "punctualized" (complex network acting as one)?
+
+        2. Relationships (Edges):
+           - Nature:
+             * "Intermediary": Transports force/meaning without changing it (predictable, passive).
+             * "Mediator": Transforms, distorts, modifies, or creates what it carries (unpredictable, active work).
+           - Transformation Type: "amplify", "translate", "block", "modify", "create", "dissolve".
+           - Confidence: 0.0 - 1.0 (How certain is this link?).
+           - Evidence: Short quote supporting this classification.
+
+        3. Metrics (1-10):
+           - Territorialization: Stability, authority.
+           - Deterritorialization: Fluidity, resistance.
+           - Coding: Rigidity of identity.
 
         Output structured JSON:
         {
-            "summary": "Brief executive summary of the assemblage landscape (max 2 sentences)",
+            "summary": "Brief executive summary (max 2 sentences)",
             "actors": [
                 {
                     "name": "Entity Name",
                     "type": "See list above",
-                    "description": "What they do in this specific context",
-                    "evidence_quotes": ["Direct quote from text supporting this finding"],
+                    "ontologicalStatus": "individual" | "collective" | "punctualized",
+                    "description": "Role",
+                    "evidence_quotes": ["Quote"],
                     "metrics": { "territorialization": 5, "deterritorialization": 5, "coding": 5 }
                 }
             ],
             "relationships": [
                 {
-                    "source": "Actor Name A",
-                    "target": "Actor Name B",
-                    "type": "relation type (verb)",
-                    "description": "Context of link"
+                    "source": "Actor A",
+                    "target": "Actor B",
+                    "type": "verb (e.g. regulates, distorts)",
+                    "nature": "intermediary" | "mediator",
+                    "transformationType": "amplify" | "translate" | "block" | "modify" | "create" | "dissolve",
+                    "confidence": 0.9,
+                    "evidence": ["Quote relating to the work of mediation"],
+                    "description": "Context"
                 }
             ]
         }
 
         Text Context: ${sourceLabel}
         Text Content:
-        ${text.substring(0, 15000)} // Truncate to avoid limit
+        ${text.substring(0, 15000)}
         `;
 
         const response = await openai.chat.completions.create({
@@ -159,7 +174,13 @@ export class AssemblageExtractionService {
                     source: sourceActor.id,
                     target: targetActor.id,
                     type: r.type || "relates_to",
-                    description: r.description || "AI inferred connection"
+                    description: r.description || "AI inferred connection",
+
+                    // [NEW] ANT Properties
+                    nature: r.nature || "intermediary",
+                    transformationType: r.transformationType,
+                    confidence: r.confidence || 0.8,
+                    evidence: r.evidence ? (Array.isArray(r.evidence) ? r.evidence : [r.evidence]) : [],
                 };
             }
             return null;
@@ -174,7 +195,7 @@ export class AssemblageExtractionService {
 
 
     private static validateType(type: string): any {
-        const validTypes = ["PrivateTech", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset", "AlgorithmicAgent", "LegalObject"];
+        const validTypes = ["PrivateTech", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset", "AlgorithmicAgent", "LegalObject", "Controversy", "NonHuman"];
         const match = validTypes.find(t => t.toLowerCase() === type.toLowerCase());
         return match || "Infrastructure"; // Default fallback
     }

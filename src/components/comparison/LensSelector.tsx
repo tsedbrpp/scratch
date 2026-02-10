@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TrendingUp, ShieldAlert, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 

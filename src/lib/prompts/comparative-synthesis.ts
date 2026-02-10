@@ -9,8 +9,11 @@ STRICT REQUIREMENTS
 1.  **Trace Mutations**: How do travelling concepts (e.g., "Risk", "Safety") shift meaning as they move between contexts? Identify the *Mechanism of Translation*.
 2.  **Map the Rhizome**: Identify shared ancestors (e.g., OECD) and inter-referential citations. Treat policies as networked nodes.
 3.  **Reveal Friction & Desire**: Where do flows encounter resistance? What *political desires* (e.g., Sovereignty, Acceleration) animate these frictions?
-4.  **Analyze Stabilization**: What holds the assemblage together? Bureaucracy? Market signals? State violence?
-5.  **JSON Output (Mandatory)**: You MUST output ONLY the following JSON object.
+4.  **Assemblage Edges**: For every edge in assemblage_network, you MUST classify:
+    - nature: "intermediary" (transport without change) or "mediator" (transform, distort, modify).
+    - transformationType: "amplify", "translate", "block", "modify", "create", "dissolve".
+5.  **Analyze Stabilization**: What holds the assemblage together? Bureaucracy? Market signals? State violence?
+6.  **JSON Output (Mandatory)**: You MUST output ONLY the following JSON object.
 
 ============================================================
 OUTPUT FORMAT (STRICT)
@@ -45,8 +48,8 @@ OUTPUT FORMAT (STRICT)
       { "id": "GDPR", "type": "Law" }
     ],
     "edges": [
-       { "from": "OECD Principles", "to": "EU AI Act", "type": "Adoption" },
-       { "from": "EU AI Act", "to": "Brazil PL 2338", "type": "Reference/Adaptation" }
+       { "from": "OECD Principles", "to": "EU AI Act", "type": "Adoption", "nature": "intermediary", "transformationType": "create" },
+       { "from": "EU AI Act", "to": "Brazil PL 2338", "type": "Reference/Adaptation", "nature": "mediator", "transformationType": "modify" }
     ]
   },
   "stabilization_mechanisms": [

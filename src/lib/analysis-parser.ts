@@ -243,6 +243,13 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
             if (!analysis.assemblage_network || !Array.isArray(analysis.assemblage_network.nodes)) {
                 console.warn('[ANALYSIS FIX] Missing assemblage_network in comparative synthesis. Injecting empty structure.');
                 analysis.assemblage_network = { nodes: [], edges: [] };
+            } else {
+                // [FIX] Ensure ANT fields exist on edges
+                if (analysis.assemblage_network.edges) {
+                    analysis.assemblage_network.edges.forEach((e: any) => {
+                        if (!e.nature) e.nature = 'intermediary';
+                    });
+                }
             }
             // Ensure arrays to prevent map errors
             if (!Array.isArray(analysis.key_divergences)) analysis.key_divergences = [];

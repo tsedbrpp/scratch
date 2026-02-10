@@ -4,13 +4,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage"; // [NEW] Persistence
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, Eye } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, Eye } from "lucide-react";
 import { PromptDialog } from "@/components/transparency/PromptDialog";
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import dynamic from 'next/dynamic';
@@ -27,6 +27,11 @@ import { RhizomeNetwork } from "@/components/comparison/RhizomeNetwork";
 import { LensSelector, InterpretationLens } from "@/components/comparison/LensSelector";
 import { RebuttalPopover } from "@/components/comparison/RebuttalPopover";
 import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Copy } from "lucide-react"; // Or whatever icon needed
+import { CulturalFramingTable } from "@/components/policy/CulturalFramingTable";
+import { InstitutionalLogicsTable } from "@/components/policy/InstitutionalLogicsTable";
+import { TextParser, extractKeyTakeaway } from "@/components/ui/TextParser";
 
 export default function ComparisonPage() {
     const { sources, isLoading, updateSource } = useSources();
@@ -72,7 +77,7 @@ export default function ComparisonPage() {
         if (policyDocs.length >= 2 && selectedDocs.length === 0) {
             setSelectedDocs([policyDocs[0].id, policyDocs[1].id]);
         }
-    }, [isLoading, isSynthesisLoading, selectedDocs.length, policyDocs]);
+    }, [isLoading, isSynthesisLoading, selectedDocs.length, policyDocs, setSelectedDocs]);
 
     const selectedSources = selectedDocs
         .map(id => policyDocs.find(s => s.id === id))
@@ -92,8 +97,10 @@ export default function ComparisonPage() {
         community: "text-orange-600 bg-orange-100",
     };
 
-    const handleSynthesize = async () => {
+    const handleSynthesize = async (forceOverride?: boolean) => {
         if (selectedSources.length < 2) return;
+
+        const isForced = forceOverride === true || forceRefresh === true;
 
         // Validation: Check if all analyses are present
         const missingAnalysis = selectedSources.some(
@@ -106,8 +113,8 @@ export default function ComparisonPage() {
         }
 
         // Confirmation: Check if persistence data exists for THIS lens
-        // If forceRefresh is true, we skip confirmation because user explicitly asked for it via Clear Cache
-        if (currentResult && !forceRefresh) {
+        // If isForced is true, we skip confirmation because user explicitly asked for it via Clear Cache or forceOverride
+        if (currentResult && !isForced) {
             if (!confirm(`Existing ${activeLens} synthesis found. Do you want to re-run it? This will overwrite the current findings.`)) {
                 setActiveTab("synthesis");
                 return;
@@ -120,8 +127,8 @@ export default function ComparisonPage() {
 
         try {
             // Prepare documents for synthesis
-            // Pass forceRefresh flag
-            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh);
+            // Pass the forced flag
+            const result = await synthesizeComparison(selectedSources, activeLens, isForced);
 
             // Update the record
             setSynthesisResults(prev => {
@@ -258,7 +265,7 @@ export default function ComparisonPage() {
 
         const data = (type === 'cultural' ? source.cultural_framing :
             type === 'logics' ? source.institutional_logics :
-                source.legitimacy_analysis) as Record<string, any> | undefined;
+                source.legitimacy_analysis) as Record<string, unknown> | undefined;
 
         // Check if data exists AND has meaningful content (not just empty object)
         const hasData = data && Object.keys(data).length > 0;
@@ -285,13 +292,23 @@ export default function ComparisonPage() {
         }
 
         // [NEW] Idle State: Show the graph structure in "pending" state with the start button overlay
-        const idleProgress: Record<string, AnalysisStepStatus> = { decolonial: 'pending', cultural: 'pending', logics: 'pending', legitimacy: 'pending' };
+        const idleProgress: {
+            decolonial: AnalysisStepStatus;
+            cultural: AnalysisStepStatus;
+            logics: AnalysisStepStatus;
+            legitimacy: AnalysisStepStatus;
+        } = {
+            decolonial: 'pending',
+            cultural: 'pending',
+            logics: 'pending',
+            legitimacy: 'pending'
+        };
 
         return (
             <div className="relative min-h-[250px] bg-slate-50/50 rounded-lg border border-dashed border-slate-200 overflow-hidden group">
                 {/* Background Graph (Blurred/Faded) */}
                 <div className="absolute inset-0 opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-60 transition-all duration-500 pointer-events-none">
-                    <DeepAnalysisProgressGraph status={idleProgress as any} />
+                    <DeepAnalysisProgressGraph status={idleProgress} />
                 </div>
 
                 {/* Overlay Action */}
@@ -450,35 +467,38 @@ export default function ComparisonPage() {
                         <div className="flex-1 flex gap-2">
                             <Button
                                 variant={activeTab === "synthesis" ? "default" : "outline"}
-                                onClick={handleSynthesize}
+                                onClick={() => {
+                                    if (currentResult) {
+                                        // If results exist, just switch to the tab
+                                        setActiveTab("synthesis");
+                                    } else {
+                                        // Otherwise, run synthesis
+                                        handleSynthesize();
+                                    }
+                                }}
                                 disabled={isSynthesizing || isReadOnly}
                                 title={isReadOnly ? "Synthesis disabled in Demo Mode" : ""}
-                                className="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
-                            >
+                                className="flex-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">
                                 {isSynthesizing ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
                                     <Sparkles className="mr-2 h-4 w-4" />
                                 )}
-                                Synthesize
+                                {currentResult ? "View Synthesis" : "Synthesize"}
                             </Button>
-                            {currentResult && (
+                            {(currentResult || isSynthesizing) && (
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     onClick={() => {
-                                        if (confirm(`Clear cached synthesis for ${activeLens}?`)) {
+                                        if (confirm(`Clear cached synthesis for ${activeLens} and re-run analysis?`)) {
                                             setForceRefresh(true);
-                                            setSynthesisResults(prev => {
-                                                const next = { ...prev };
-                                                delete next[activeLens];
-                                                return next;
-                                            });
+                                            handleSynthesize(true);
                                         }
                                     }}
-                                    disabled={isReadOnly}
-                                    title={isReadOnly ? "Cache clearing disabled in Demo Mode" : "Clear Cache & Force Refresh Next Run"}
-                                    className="text-slate-400 hover:text-red-600 shrink-0"
+                                    disabled={isReadOnly || isSynthesizing}
+                                    title={isReadOnly ? "Cache clearing disabled in Demo Mode" : "Clear Cache & Re-run Synthesis"}
+                                    className={`text-slate-400 hover:text-red-600 shrink-0 ${isSynthesizing ? 'animate-spin' : ''}`}
                                 >
                                     <RefreshCw className="h-4 w-4" />
                                 </Button>
@@ -493,53 +513,37 @@ export default function ComparisonPage() {
                         </div>
                     )}
 
-                    {/* Cultural Framing Comparison */}
                     {activeTab === "cultural" && (
                         <div className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Cultural Framing Comparison</CardTitle>
-                                    <CardDescription>
-                                        How do these jurisdictions differ in their cultural assumptions about AI governance?
-                                    </CardDescription>
+                            <Card className="border-slate-200 shadow-sm">
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle>Cultural Framing Comparison</CardTitle>
+                                            <CardDescription>
+                                                Comparing the deep cultural assumptions across jurisdictions.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        {selectedSources.map((source, idx) => (
-                                            <div key={idx} className="space-y-4">
-                                                {renderAnalysisButtonOrContent(source, 'cultural', (
-                                                    <div className="space-y-8 animate-in fade-in duration-500">
-                                                        {/* Cultural Distinctiveness Scores */}
-                                                        <Card className="bg-slate-50 relative border-blue-100">
-                                                            <CardContent className="pt-6 text-center">
-                                                                <div className="text-3xl font-bold text-slate-900">
-                                                                    {((source.cultural_framing?.cultural_distinctiveness_score ?? 0) * 100).toFixed(0)}%
-                                                                </div>
-                                                                <div className="text-sm text-slate-600 mt-1 font-medium">
-                                                                    {source.title}
-                                                                </div>
-                                                                <div className="text-xs text-slate-500 mt-2 italic px-2">
-                                                                    {source.cultural_framing?.plain_language_summary?.dominant_cultural_logic?.label || source.cultural_framing?.dominant_cultural_logic || 'No cultural logic identified'}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
+                                    <Tabs defaultValue="state_market_society" className="w-full">
+                                        <div className="overflow-x-auto pb-2 mb-4">
+                                            <TabsList className="bg-slate-100/50 p-1 w-full md:w-auto flex md:inline-flex justify-start">
+                                                <TabsTrigger value="state_market_society">State-Market Relations</TabsTrigger>
+                                                <TabsTrigger value="technology_role">Technology Role</TabsTrigger>
+                                                <TabsTrigger value="rights_conception">Rights Conception</TabsTrigger>
+                                                <TabsTrigger value="historical_context">Historical Context</TabsTrigger>
+                                                <TabsTrigger value="epistemic_authority">Epistemic Authority</TabsTrigger>
+                                            </TabsList>
+                                        </div>
 
-                                                        {/* Dimension Comparison */}
-                                                        {(["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"] as const).map((dimension) => (
-                                                            <div key={dimension} className="space-y-1">
-                                                                <h4 className="font-semibold text-xs uppercase text-slate-500">
-                                                                    {dimension.replace(/_/g, " ")}
-                                                                </h4>
-                                                                <div className="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200">
-                                                                    {source.cultural_framing?.[dimension] || "Not analyzed"}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ))}
-                                            </div>
+                                        {(["state_market_society", "technology_role", "rights_conception", "historical_context", "epistemic_authority"] as const).map((dimension) => (
+                                            <TabsContent key={dimension} value={dimension} className="mt-0 focus-visible:ring-0">
+                                                <CulturalFramingTable dimension={dimension} sources={selectedSources} />
+                                            </TabsContent>
                                         ))}
-                                    </div>
+                                    </Tabs>
                                 </CardContent>
                             </Card>
                         </div>
@@ -556,65 +560,7 @@ export default function ComparisonPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        {selectedSources.map((source, idx) => (
-                                            <div key={idx}>
-                                                {renderAnalysisButtonOrContent(source, 'logics', (
-                                                    <div className="space-y-6 animate-in fade-in duration-500">
-                                                        <Card className="bg-slate-50 relative border-purple-100">
-                                                            <CardContent className="pt-6 text-center">
-                                                                <Badge className="text-lg px-4 py-2 capitalize mb-2">
-                                                                    {source.institutional_logics?.dominant_logic || "Unknown"}
-                                                                </Badge>
-                                                                <div className="text-sm font-medium text-slate-900">
-                                                                    {source.title}
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-
-                                                        {/* Logic Strengths */}
-                                                        <div className="space-y-3">
-                                                            {(["market", "state", "professional", "community"] as const).map(logic => {
-                                                                const Icon = logicIcons[logic];
-                                                                const logicData = source.institutional_logics?.logics?.[logic];
-                                                                return (
-                                                                    <div key={logic} className={`p-3 rounded border ${logicColors[logic].replace('text-', 'border-').replace('bg-', 'bg-opacity-10 ')}`}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <div className="flex items-center gap-2 font-semibold capitalize text-sm">
-                                                                                <Icon className="h-4 w-4" />
-                                                                                {logic}
-                                                                            </div>
-                                                                            <span className="text-sm font-bold">
-                                                                                {((logicData?.strength || 0) * 100).toFixed(0)}%
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                                                                            <div
-                                                                                className="bg-current h-full"
-                                                                                style={{ width: `${(logicData?.strength || 0) * 100}%` }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-
-                                                        {/* Conflicts */}
-                                                        <div>
-                                                            <h4 className="font-semibold text-xs uppercase text-slate-500 mb-2">Key Conflicts</h4>
-                                                            {source.institutional_logics?.logic_conflicts?.map((conflict, cIdx) => (
-                                                                <div key={cIdx} className="text-xs p-2 bg-amber-50 rounded border border-amber-200 mb-2">
-                                                                    <div className="font-bold text-amber-800 mb-1">{conflict.between}</div>
-                                                                    <div className="text-slate-600 mb-1">{conflict.site_of_conflict}</div>
-                                                                    <div className="text-slate-500 italic">{conflict.resolution_strategy}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <InstitutionalLogicsTable sources={selectedSources} />
                                 </CardContent>
                             </Card>
                         </div>
@@ -669,7 +615,7 @@ export default function ComparisonPage() {
                                             <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                                             <p className="font-medium text-slate-700">No {activeLens} analysis generated yet</p>
                                             <p className="text-sm mt-2 max-w-sm mx-auto">
-                                                Each interpretation lens requires a separate AI analysis. Click "Synthesize" to generate findings specifically for the <strong>{activeLens}</strong> perspective.
+                                                Each interpretation lens requires a separate AI analysis. Click &quot;Synthesize&quot; to generate findings specifically for the <strong>{activeLens}</strong> perspective.
                                             </p>
                                         </div>
                                     )}

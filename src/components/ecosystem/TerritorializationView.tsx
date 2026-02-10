@@ -7,6 +7,7 @@ import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { SimulationNode } from '@/hooks/useForceGraph';
 import { TerritorializationActor, TerritorializationData } from '@/types/ecosystem-simulation';
 import { useSimulationCache } from '@/hooks/useSimulationCache';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface Node extends d3.SimulationNodeDatum {
     id: string;
@@ -36,6 +37,8 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
         inputNodes,
         isExpanded
     });
+
+    const { isReadOnly } = useDemoMode();
 
     const [viewMode, setViewMode] = useState<'force' | 'rings'>('force');
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -408,11 +411,12 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
                             )}
                             <button
                                 onClick={() => fetchSimulation(!!simulationData)}
-                                disabled={isLoading}
+                                disabled={isLoading || isReadOnly}
+                                title={isReadOnly ? "Analysis disabled in Demo Mode" : ""}
                                 className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 font-medium ${!simulationData
                                     ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
                                     : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
-                                    } disabled:opacity-50`}
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                                 {isLoading ? (
                                     <>

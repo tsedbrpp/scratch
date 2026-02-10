@@ -8,47 +8,52 @@ const STAGES_TEMPLATE: (TranslationStage & { match_types: EcosystemActor['type']
     {
         id: "problem",
         label: "Problem Articulation",
+        ant_label: "Problematization", // [NEW]
         description: "Social demand / Rights risks",
         actors: ["Civil Society", "NGOs"],
         match_types: ["Civil Society", "Academic"],
         ontology: "social",
-        tooltip: "The 'Idea' phase. Civil society identifies a harm (e.g., 'AI bias') and transforms a vague feeling into a defined public problem."
+        tooltip: "Problematization: An actor defines a problem and establishes themselves as an 'Obligatory Passage Point' that others must negotiate with."
     },
     {
         id: "regulation",
         label: "Regulatory Translation",
+        ant_label: "Interessement", // [NEW]
         description: "High-Risk Categories",
         actors: ["Policymakers", "EU Parliament"],
         match_types: ["Policymaker", "LegalObject"],
         ontology: "regulatory",
-        tooltip: "The problem gets turned into Law. Policymakers translate 'human rights' concerns into specific legal articles and 'High-Risk Categories'."
+        tooltip: "Interessement: Actors try to lock others into place by imposing devices (laws, categories) that block alternative alliances."
     },
     {
         id: "inscription",
         label: "Technical Inscription",
+        ant_label: "Enrollment", // [NEW]
         description: "Standards & Risk Systems",
         actors: ["Standards Bodies", "Technologists"],
         match_types: ["Algorithm", "Dataset", "Infrastructure"],
         ontology: "technical",
-        tooltip: "The law gets turned into Code. Engineers and standards bodies translate legal text into metrics, thresholds, and software architectures."
+        tooltip: "Enrollment: The successful outcome of interessement. Roles are defined, accepted, and inscribed into technical systems (code, standards)."
     },
     {
         id: "delegation",
         label: "Operational Delegation",
+        ant_label: "Mobilization", // [NEW]
         description: "Compliance Artifacts",
         actors: ["Auditors", "Cloud Providers"],
         match_types: ["AlgorithmicAgent", "Infrastructure"],
         ontology: "technical",
-        tooltip: "The code gets wrapped in bureaucracy. Auditors create certifications and checklists to prove the system works, making it manageble."
+        tooltip: "Mobilization: The network is stable. Spokespersons (or devices) can now speak for the silent masses (users, data subjects) without contradiction."
     },
     {
         id: "market",
         label: "Market Outcome",
+        ant_label: "Black Boxing", // [NEW]
         description: "Barriers & Liability",
         actors: ["Startups", "Users"],
-        match_types: ["PrivateTech"],
+        match_types: ["PrivateTech", "PrivateTech"], // private tech is market
         ontology: "market",
-        tooltip: "The final reality. The 'social problem' is now fully stabilized ('black-boxed') as a normal commercial product in the economy."
+        tooltip: "Black Boxing: The complex network of alliances becomes invisible. It serves as a single, stable input/output object in the economy."
     }
 ];
 
@@ -162,7 +167,10 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start">
-                                                    <span className={`font-semibold leading-tight group-hover:text-indigo-700 ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{stage.label}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className={`font-semibold leading-tight group-hover:text-indigo-700 ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{stage.label}</span>
+                                                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest opacity-80">{stage.ant_label}</span>
+                                                    </div>
                                                     <div className="flex gap-1">
                                                         {count > 0 && (
                                                             <span className="bg-slate-100 text-slate-600 text-[9px] px-1.5 rounded-full font-mono border border-slate-200">
