@@ -46,7 +46,7 @@ const STAGES_TEMPLATE: (TranslationStage & { match_types: EcosystemActor['type']
         label: "Market Outcome",
         description: "Barriers & Liability",
         actors: ["Startups", "Users"],
-        match_types: ["Startup"],
+        match_types: ["PrivateTech"],
         ontology: "market",
         tooltip: "The final reality. The 'social problem' is now fully stabilized ('black-boxed') as a normal commercial product in the economy."
     }

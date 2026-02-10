@@ -131,6 +131,40 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
         d3.select(svgRef.current).transition().duration(750).call(zoomBehavior.current.transform, d3.zoomIdentity);
     };
 
+    // [NEW] Zoom to Fit Logic
+    const zoomToFit = () => {
+        if (!svgRef.current || !gRef.current || !zoomBehavior.current || validData.nodes.length === 0) return;
+
+        const bounds = gRef.current.getBBox();
+        if (bounds.width === 0 || bounds.height === 0) return;
+
+        const fullWidth = dimensions.width;
+        const fullHeight = dimensions.height;
+        const padding = 40;
+
+        const scale = 0.85 / Math.max(bounds.width / fullWidth, bounds.height / fullHeight);
+        const translate = [
+            (fullWidth - scale * (bounds.x + bounds.width / 2) * 2) / 2, // Centering X
+            (fullHeight - scale * (bounds.y + bounds.height / 2) * 2) / 2 // Centering Y
+            // Simplified: (fullWidth - bounds.width * scale) / 2 - bounds.x * scale
+        ];
+
+        // Correct Centering Math
+        const midX = bounds.x + bounds.width / 2;
+        const midY = bounds.y + bounds.height / 2;
+        const x = fullWidth / 2 - scale * midX;
+        const y = fullHeight / 2 - scale * midY;
+
+        const transform = d3.zoomIdentity
+            .translate(x, y)
+            .scale(scale);
+
+        d3.select(svgRef.current)
+            .transition()
+            .duration(750)
+            .call(zoomBehavior.current.transform, transform);
+    };
+
     // D3 Simulation
     useEffect(() => {
         if (!svgRef.current || !gRef.current || validData.nodes.length === 0) return;
@@ -267,6 +301,14 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
                 .attr("transform", d => `translate(${d.x},${d.y})`);
         });
 
+        // [NEW] Auto-fit on end (or after short delay)
+        simulation.on("end", () => {
+            zoomToFit();
+        });
+
+        // Also fit after initial ticks
+        setTimeout(zoomToFit, 1500);
+
         // Zoom
         const zoom = d3.zoom<SVGSVGElement, unknown>()
             .scaleExtent([0.1, 4])
@@ -332,7 +374,7 @@ export function ResonanceNetworkGraph({ data, width = 800, height = 500, sourceA
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-indigo-600" onClick={() => handleZoom(0.8)} title="Zoom Out">
                         <ZoomOut className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-indigo-600" onClick={handleResetZoom} title="Reset View">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-indigo-600" onClick={zoomToFit} title="Reset View">
                         <RotateCcw className="w-4 h-4" />
                     </Button>
                     <div className="w-px h-4 bg-slate-200 mx-1" />

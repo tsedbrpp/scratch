@@ -15,7 +15,7 @@ export interface EcosystemActor {
     id: string;
     sourceId: string; // [NEW] Track origin document for filtering
     name: string;
-    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
+    type: "PrivateTech" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
     description: string;
     influence: "High" | "Medium" | "Low"; // Legacy field, use metrics.territorialization instead
     url?: string;

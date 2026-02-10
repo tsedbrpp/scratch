@@ -13,7 +13,7 @@ export interface AssemblageProperties {
 
 export interface AssemblageActor {
     name: string;
-    type: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset";
+    type: "PrivateTech" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset";
     description: string;
     region: "Global North" | "Global South" | "International" | "Unknown";
     role_type: ComponentRole; // New DeLanda metric

@@ -1,11 +1,10 @@
 import React from "react";
 import {
     LayoutDashboard, GitBranch, Layers, ShieldAlert, BadgeCheck,
-    Activity, Scale, Zap, LucideIcon, BookOpen
+    Activity, Scale, Zap, LucideIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useViewMode } from "@/hooks/useViewMode";
 import { cn } from "@/lib/utils";
 import { HealthIndicator } from "@/components/governance/HealthIndicator";
 import { EscalationStatus } from "@/types/escalation";
@@ -81,39 +80,10 @@ export function AnalysisSidebar({
     isAnalyzing,
     onEscalationClick
 }: AnalysisSidebarProps) {
-    const { toggleMode, isAdvanced } = useViewMode();
+    // const { toggleMode, isAdvanced } = useViewMode(); // DEPRECATED
 
     return (
         <nav className={cn("w-64 flex flex-col h-full bg-white border-r border-slate-200 py-6 pr-3", className)}>
-
-            {/* Depth Filter Toggle */}
-            <div className="px-4 mb-6">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleMode}
-                    className={cn(
-                        "w-full h-9 justify-between px-3 text-[10px] font-bold uppercase tracking-tight transition-all",
-                        isAdvanced
-                            ? "bg-indigo-50 border-indigo-100 text-indigo-700"
-                            : "bg-slate-50 border-slate-100 text-slate-600"
-                    )}
-                >
-                    <div className="flex items-center gap-2">
-                        {isAdvanced ? <Activity className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
-                        <span>{isAdvanced ? "Theoretical Depth: Full" : "Theoretical Depth: Guided"}</span>
-                    </div>
-                    <div className={cn(
-                        "w-5 h-3 rounded-full relative transition-colors duration-200",
-                        isAdvanced ? "bg-indigo-500" : "bg-slate-300"
-                    )}>
-                        <div className={cn(
-                            "absolute top-0.5 w-2 h-2 bg-white rounded-full transition-transform duration-200",
-                            isAdvanced ? "translate-x-2.5" : "translate-x-0.5"
-                        )} />
-                    </div>
-                </Button>
-            </div>
 
             {/* Core Assemblage */}
             <div className="mb-2 px-4">
@@ -139,31 +109,27 @@ export function AnalysisSidebar({
                     onClick={() => onSectionChange('overview')}
                 />
 
-                {isAdvanced && (
-                    <>
-                        <NavButton
-                            icon={GitBranch}
-                            label="Mediations & Translations"
-                            sub="How Elements Enroll, Code & Connect"
-                            active={activeSection === 'tensions'}
-                            onClick={() => onSectionChange('tensions')}
-                        />
-                        <NavButton
-                            icon={Layers}
-                            label="Governance & Agency"
-                            sub="Power, Inclusion & Rights"
-                            active={activeSection === 'dimensions'}
-                            onClick={() => onSectionChange('dimensions')}
-                        />
-                        <NavButton
-                            icon={Activity}
-                            label="Assemblage Dynamics"
-                            sub="Territorialization & Deterritorialization"
-                            active={activeSection === 'assemblage_dynamics'}
-                            onClick={() => onSectionChange('assemblage_dynamics')}
-                        />
-                    </>
-                )}
+                <NavButton
+                    icon={GitBranch}
+                    label="Mediations & Translations"
+                    sub="How Elements Enroll, Code & Connect"
+                    active={activeSection === 'tensions'}
+                    onClick={() => onSectionChange('tensions')}
+                />
+                <NavButton
+                    icon={Layers}
+                    label="Governance & Agency"
+                    sub="Power, Inclusion & Rights"
+                    active={activeSection === 'dimensions'}
+                    onClick={() => onSectionChange('dimensions')}
+                />
+                <NavButton
+                    icon={Activity}
+                    label="Assemblage Dynamics"
+                    sub="Territorialization & Deterritorialization"
+                    active={activeSection === 'assemblage_dynamics'}
+                    onClick={() => onSectionChange('assemblage_dynamics')}
+                />
             </div>
 
             <div className="my-6 px-4">
@@ -177,31 +143,27 @@ export function AnalysisSidebar({
             </div>
 
             <div className="space-y-1">
-                {isAdvanced && (
-                    <>
-                        <NavButton
-                            icon={Scale}
-                            label="Legitimacy Claims"
-                            sub="Justifications & Moral Orders"
-                            active={activeSection === 'legitimacy'}
-                            onClick={() => onSectionChange('legitimacy')}
-                        />
-                        <NavButton
-                            icon={ShieldAlert}
-                            label="Reflexive Critique"
-                            sub="AI Positionality, Bias & Epistemic Limits"
-                            active={activeSection === 'reflexivity'}
-                            onClick={() => onSectionChange('reflexivity')}
-                        />
-                        <NavButton
-                            icon={Zap}
-                            label="Consistency Stress-Test"
-                            sub="Adversarial Framing"
-                            active={activeSection === 'stress'}
-                            onClick={() => onSectionChange('stress')}
-                        />
-                    </>
-                )}
+                <NavButton
+                    icon={Scale}
+                    label="Legitimacy Claims"
+                    sub="Justifications & Moral Orders"
+                    active={activeSection === 'legitimacy'}
+                    onClick={() => onSectionChange('legitimacy')}
+                />
+                <NavButton
+                    icon={ShieldAlert}
+                    label="Reflexive Critique"
+                    sub="AI Positionality, Bias & Epistemic Limits"
+                    active={activeSection === 'reflexivity'}
+                    onClick={() => onSectionChange('reflexivity')}
+                />
+                <NavButton
+                    icon={Zap}
+                    label="Consistency Stress-Test"
+                    sub="Adversarial Framing"
+                    active={activeSection === 'stress'}
+                    onClick={() => onSectionChange('stress')}
+                />
                 <NavButton
                     icon={BadgeCheck}
                     label="Traceability Audit"

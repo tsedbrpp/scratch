@@ -20,12 +20,25 @@ export function ComparisonView({ result, sources }: ComparisonViewProps) {
     const sourceC = result.sourceCId ? sources.find(s => s.id === result.sourceCId) : undefined;
 
     // Remap metrics to use actual names
+    // Helper to truncate titles
+    const truncate = (str: string, n: number) => (str.length > n ? str.slice(0, n - 1) + '...' : str);
+
+    // Remap metrics to use actual names
     const mappedMetrics = result.assemblage_metrics?.map(m => {
         let label = m.jurisdiction;
-        // Check for standard placeholder labels or ID matches
-        if ((m.jurisdiction === 'Ontology A' || m.jurisdiction === 'Source A') && sourceA) label = sourceA.title;
-        else if ((m.jurisdiction === 'Ontology B' || m.jurisdiction === 'Source B') && sourceB) label = sourceB.title;
-        else if ((m.jurisdiction === 'Ontology C' || m.jurisdiction === 'Source C') && sourceC) label = sourceC.title;
+        const upperJurisdiction = m.jurisdiction.toUpperCase();
+
+        // Check for standard placeholder labels or ID matches (Relaxed matching)
+        if ((upperJurisdiction.includes('ONTOLOGY A') || upperJurisdiction.includes('SOURCE A')) && sourceA) {
+            label = truncate(sourceA.title, 25);
+        }
+        else if ((upperJurisdiction.includes('ONTOLOGY B') || upperJurisdiction.includes('SOURCE B')) && sourceB) {
+            label = truncate(sourceB.title, 25);
+        }
+        else if ((upperJurisdiction.includes('ONTOLOGY C') || upperJurisdiction.includes('SOURCE C')) && sourceC) {
+            label = truncate(sourceC.title, 25);
+        }
+
         return { ...m, jurisdiction: label };
     });
 
@@ -81,16 +94,16 @@ export function ComparisonView({ result, sources }: ComparisonViewProps) {
 
             <div className={`grid grid-cols-1 md:gap-6 ${result.sourceCId ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                 <ConceptCard
-                    title="Unique to Source A"
+                    title={`Unique to ${sourceA ? truncate(sourceA.title, 20) : 'Source A'}`}
                     concepts={result.unique_concepts_source_a}
                 />
                 <ConceptCard
-                    title="Unique to Source B"
+                    title={`Unique to ${sourceB ? truncate(sourceB.title, 20) : 'Source B'}`}
                     concepts={result.unique_concepts_source_b}
                 />
                 {result.sourceCId && (
                     <ConceptCard
-                        title="Unique to Source C"
+                        title={`Unique to ${sourceC ? truncate(sourceC.title, 20) : 'Source C'}`}
                         concepts={result.unique_concepts_source_c || []}
                         emptyMessage="No unique concepts identified."
                     />

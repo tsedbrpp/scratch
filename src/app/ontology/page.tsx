@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { useDemoMode } from "@/hooks/useDemoMode"; // [NEW]
@@ -113,6 +113,12 @@ export default function OntologyPage() {
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
+
+    // [Fix] Hydration Mismatch for Radix UI
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.extractedText);
@@ -387,36 +393,40 @@ export default function OntologyPage() {
 
                     {!isComparing && (
                         <>
-                            <Select value={selectedSourceId} onValueChange={setSelectedSourceId}>
-                                <SelectTrigger className="w-[280px]">
-                                    <SelectValue placeholder="Select a source to analyze" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(groupedSources).map(([type, groupSources]) => (
-                                        <SelectGroup key={type}>
-                                            <SelectLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50 pl-2 py-1">
-                                                {type} Sources
-                                            </SelectLabel>
-                                            {groupSources.map((source) => {
-                                                const dotColor =
-                                                    source.type === 'PDF' ? 'bg-red-500' :
-                                                        source.type === 'Web' ? 'bg-sky-500' :
-                                                            source.type === 'Word' ? 'bg-blue-600' :
-                                                                source.type === 'Trace' ? 'bg-amber-500' :
-                                                                    'bg-slate-400';
-                                                return (
-                                                    <SelectItem key={source.id} value={source.id}>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`h-2 w-2 rounded-full ${dotColor}`} />
-                                                            <span className="truncate max-w-[200px]" title={source.title}>{source.title}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                );
-                                            })}
-                                        </SelectGroup>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {isMounted ? (
+                                <Select value={selectedSourceId} onValueChange={setSelectedSourceId}>
+                                    <SelectTrigger className="w-[280px]">
+                                        <SelectValue placeholder="Select a source to analyze" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(groupedSources).map(([type, groupSources]) => (
+                                            <SelectGroup key={type}>
+                                                <SelectLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50 pl-2 py-1">
+                                                    {type} Sources
+                                                </SelectLabel>
+                                                {groupSources.map((source) => {
+                                                    const dotColor =
+                                                        source.type === 'PDF' ? 'bg-red-500' :
+                                                            source.type === 'Web' ? 'bg-sky-500' :
+                                                                source.type === 'Word' ? 'bg-blue-600' :
+                                                                    source.type === 'Trace' ? 'bg-amber-500' :
+                                                                        'bg-slate-400';
+                                                    return (
+                                                        <SelectItem key={source.id} value={source.id}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`h-2 w-2 rounded-full ${dotColor}`} />
+                                                                <span className="truncate max-w-[200px]" title={source.title}>{source.title}</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectGroup>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="w-[280px] h-10 bg-slate-100 rounded-md animate-pulse" />
+                            )}
                             <Button
                                 onClick={handleGenerateOntology}
                                 disabled={!selectedSourceId || isAnalyzing || (isReadOnly && analyzedSources.find(s => s.id === selectedSourceId) && !ontologyMaps?.[selectedSourceId])}

@@ -75,7 +75,7 @@ const ResistanceMatrix = ({ matrix }: { matrix?: Array<{ name: string, x: number
     if (!matrix) return <div className="p-8 text-center text-slate-400 italic">No matrix data available. Regenerate analysis.</div>;
 
     return (
-        <div className="w-full relative bg-white rounded-lg border border-slate-200 p-6 flex flex-col gap-4 min-h-[500px]">
+        <div className="w-full h-full relative bg-white rounded-lg border border-slate-200 p-6 flex flex-col gap-4 min-h-0 overflow-hidden">
             <div className="text-center">
                 <h4 className="text-sm font-bold text-slate-700">Strategic Positioning</h4>
                 <p className="text-xs text-slate-500 mt-1">Actors plotted by co-optation risk vs. transformative potential</p>
@@ -435,8 +435,8 @@ export function DeterritorializationView({ isExpanded, nodes: inputNodes }: Prop
 
                 <div className="flex-1 bg-slate-50 rounded-lg overflow-hidden border border-slate-200 relative min-h-0">
                     <TabsContent value="flows" className="h-full w-full m-0 p-0 relative">
-                        <div ref={containerRef} className="w-full h-full min-h-[600px]">
-                            <svg ref={svgRef} className="w-full h-full min-h-[600px] block" />
+                        <div ref={containerRef} className="w-full h-full min-h-0">
+                            <svg ref={svgRef} className="w-full h-full min-h-0 block" />
                             {tooltip && containerEl && (
                                 <div
                                     className="absolute bg-white shadow-xl border border-slate-200 rounded-lg p-3 z-20 w-64 pointer-events-none"

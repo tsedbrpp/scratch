@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, GitGraph, Eye } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, PlayCircle, Network, Eye } from "lucide-react";
 import { PromptDialog } from "@/components/transparency/PromptDialog";
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import dynamic from 'next/dynamic';
@@ -20,14 +20,12 @@ const LegitimacyAnalysisView = dynamic(() => import('@/components/policy/Legitim
 });
 import { synthesizeComparison, analyzeDocument } from "@/services/analysis";
 import { DeepAnalysisProgressGraph, AnalysisStepStatus } from "@/components/comparison/DeepAnalysisProgressGraph";
-import { DriftAnalysisResult } from "@/services/bridging-analysis";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
 import { MutationTable } from "@/components/comparison/MutationTable";
 import { StabilizationCard } from "@/components/comparison/StabilizationCard";
 import { RhizomeNetwork } from "@/components/comparison/RhizomeNetwork";
 import { LensSelector, InterpretationLens } from "@/components/comparison/LensSelector";
 import { RebuttalPopover } from "@/components/comparison/RebuttalPopover";
-import { BridgingFramework } from '@/components/comparison/BridgingFramework';
 import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 
 export default function ComparisonPage() {
@@ -38,7 +36,7 @@ export default function ComparisonPage() {
     const policyDocs = useMemo(() => sources.filter(s => s.type !== "Trace"), [sources]);
 
     const [selectedDocs, setSelectedDocs] = useServerStorage<string[]>("comparison_selected_docs_v2", []);
-    const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis" | "drift">("cultural");
+    const [activeTab, setActiveTab] = useState<"cultural" | "logics" | "legitimacy" | "synthesis">("cultural");
     const [activeLens, setActiveLens] = useState<InterpretationLens>("assemblage");
     const [isSynthesizing, setIsSynthesizing] = useState(false);
 
@@ -50,7 +48,6 @@ export default function ComparisonPage() {
     // [TRANSPARENCY] State
     const [showTransparency, setShowTransparency] = useState(false);
 
-    const [driftResults, setDriftResults, isDriftLoading] = useServerStorage<Record<string, DriftAnalysisResult> | null>(`comparison_drift_${docKey}`, null);
     const [isPositionalityOpen, setIsPositionalityOpen] = useState(false);
     const [analyzingSourceId, setAnalyzingSourceId] = useState<string | null>(null);
     const [isDeepAnalyzing, setIsDeepAnalyzing] = useState<Record<string, boolean>>({});
@@ -69,13 +66,13 @@ export default function ComparisonPage() {
 
     useEffect(() => {
         // Wait for both sources and storage to load
-        if (isLoading || isSynthesisLoading || isDriftLoading) return;
+        if (isLoading || isSynthesisLoading) return;
 
         // Auto-select first two docs
         if (policyDocs.length >= 2 && selectedDocs.length === 0) {
             setSelectedDocs([policyDocs[0].id, policyDocs[1].id]);
         }
-    }, [isLoading, isSynthesisLoading, isDriftLoading, selectedDocs.length, policyDocs]);
+    }, [isLoading, isSynthesisLoading, selectedDocs.length, policyDocs]);
 
     const selectedSources = selectedDocs
         .map(id => policyDocs.find(s => s.id === id))
@@ -123,8 +120,8 @@ export default function ComparisonPage() {
 
         try {
             // Prepare documents for synthesis
-            // Pass forceRefresh flag and drift results if available
-            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh, driftResults);
+            // Pass forceRefresh flag
+            const result = await synthesizeComparison(selectedSources, activeLens, forceRefresh);
 
             // Update the record
             setSynthesisResults(prev => {
@@ -372,15 +369,6 @@ export default function ComparisonPage() {
                             The moral justifications used to defend or critique a system (based on Boltanski & Thévenot&apos;s Orders of Worth).
                         </p>
                     </div>
-                    <div>
-                        <div className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
-                            <GitGraph className="h-4 w-4 text-indigo-600" />
-                            Drift Analysis
-                        </div>
-                        <p className="text-slate-600">
-                            Tracing the implementation gap between policy rhetoric and technical reality, and how these gaps widen over time.
-                        </p>
-                    </div>
                 </CardContent>
             </Card>
 
@@ -458,14 +446,7 @@ export default function ComparisonPage() {
                             <Scale className="mr-2 h-4 w-4" />
                             Legitimacy
                         </Button>
-                        <Button
-                            variant={activeTab === "drift" ? "default" : "outline"}
-                            onClick={() => setActiveTab("drift")}
-                            className="flex-1"
-                        >
-                            <GitGraph className="mr-2 h-4 w-4" />
-                            Drift Analysis
-                        </Button>
+
                         <div className="flex-1 flex gap-2">
                             <Button
                                 variant={activeTab === "synthesis" ? "default" : "outline"}
@@ -757,9 +738,7 @@ export default function ComparisonPage() {
                                             {/* Network & Stabilization Row */}
                                             <div className="grid lg:grid-cols-3 gap-6 min-h-[400px]">
                                                 <div className="lg:col-span-2 h-full">
-                                                    {currentResult.assemblage_network && (
-                                                        <RhizomeNetwork network={currentResult.assemblage_network} />
-                                                    )}
+                                                    <RhizomeNetwork network={currentResult.assemblage_network!} />
                                                 </div>
                                                 <div className="h-full">
                                                     {currentResult.stabilization_mechanisms && (
@@ -881,26 +860,6 @@ export default function ComparisonPage() {
                                     )}
                                 </CardContent>
                             </Card>
-                        </div>
-                    )}
-                    {/* Drift Analysis Tab */}
-                    {activeTab === "drift" && (
-                        <div className="space-y-6">
-                            <BridgingFramework
-                                initialMode="guide"
-                                policyText={(() => {
-                                    const text = sources.find(s => s.id === selectedDocs[0])?.extractedText || "";
-                                    console.log(`[DRIFT DEBUG] Policy Source (${selectedDocs[0]}):`, text.substring(0, 100) + "...");
-                                    return text;
-                                })()}
-                                technicalText={(() => {
-                                    const text = sources.find(s => s.id === selectedDocs[1])?.extractedText || "";
-                                    console.log(`[DRIFT DEBUG] Tech Source (${selectedDocs[1]}):`, text.substring(0, 100) + "...");
-                                    return text;
-                                })()}
-                                onAnalysisComplete={setDriftResults} // [NEW] Capture results
-                                initialResults={driftResults || undefined} // Restore from local storage
-                            />
                         </div>
                     )}
                 </>

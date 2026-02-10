@@ -65,7 +65,7 @@ export const analyzeDocument = async (
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage", force: boolean = false, driftAnalysis?: any): Promise<AnalysisResult> => {
+export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage", force: boolean = false): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
@@ -91,8 +91,7 @@ export const synthesizeComparison = async (documents: Source[], lens: string = "
                     } : undefined
                 })),
                 lens,
-                force,
-                driftAnalysis // [NEW] Pass drift analysis to backend
+                force
             })
         });
 

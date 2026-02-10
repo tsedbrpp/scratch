@@ -88,19 +88,19 @@ async function extractRhetoric(openai: OpenAI, text: string) {
         const response = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o",
             messages: [
-                { role: "system", content: "Summarize the key purpose, ethical claims, and promises of this document. If it is technical, summarize its safety goals. Return a concise text summary." },
+                { role: "system", content: "You are an expert policy analyst. Extract and summarize the core ethical promises, safety claims, and societal values asserted in this document. Focus on what it *claims* it will achieve. Return a clear text summary." },
                 { role: "user", content: text.substring(0, 50000) }
             ],
-            max_completion_tokens: 1000
+            max_completion_tokens: 2000
         });
         const result = response.choices[0].message.content || "";
-        if (result.length < 50) throw new Error("Extraction result too short");
+        if (result.length < 20) throw new Error("Extraction result too short"); // Loosened from 50
 
         console.log(`[DRIFT API] Rhetoric extracted (${result.length} chars)`);
         return result;
     } catch (err) {
-        console.warn(`[DRIFT API] Rhetoric extraction failed or empty. Using raw text fallback. Error: ${(err as Error).message}`);
-        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 5000);
+        console.warn(`[DRIFT API] Rhetoric extraction failed. Using raw text fallback. Error: ${(err as Error).message}`);
+        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 4000); // Reduced to ensure fit
     }
 }
 
@@ -110,61 +110,89 @@ async function extractReality(openai: OpenAI, text: string) {
         const response = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o",
             messages: [
-                { role: "system", content: "Summarize the technical implementation, architecture, and enforcement mechanisms described in this document. Return a concise text summary." },
+                { role: "system", content: "You are an expert technical auditor. Extract and summarize the actual technical implementation details, architectural decisions, and enforcement mechanisms described. Focus on *how* it works concretely. Return a clear text summary." },
                 { role: "user", content: text.substring(0, 50000) }
             ],
-            max_completion_tokens: 1000
+            max_completion_tokens: 2000
         });
         const result = response.choices[0].message.content || "";
-        if (result.length < 50) throw new Error("Extraction result too short");
+        if (result.length < 20) throw new Error("Extraction result too short");
 
         console.log(`[DRIFT API] Reality extracted (${result.length} chars)`);
         return result;
     } catch (err) {
-        console.warn(`[DRIFT API] Reality extraction failed or empty. Using raw text fallback. Error: ${(err as Error).message}`);
-        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 5000);
+        console.warn(`[DRIFT API] Reality extraction failed. Using raw text fallback. Error: ${(err as Error).message}`);
+        return "Raw Document Excerpt (Extraction Failed):\n" + text.substring(0, 4000);
     }
 }
 
 async function traceDimension(openai: OpenAI, dimensionId: string, rhetoric: string, reality: string) {
     const dimensionPrompts: Record<string, string> = {
-        doc_analysis: "Analyze the gap between the document's high-level ethical promises and its specific definitions.",
-        tech_analysis: "Analyze the gap between the policy's requirements and the actual technical architecture/code.",
-        implementation: "Analyze how the system is deployed vs how it was described.",
-        outcome: "Analyze the difference between intended impacts and observable real-world complications.",
-        enforcement: "Analyze the gap between promised accountability and actual recourse mechanisms.",
-        timeline: "Analyze how the system's purpose or function has drifted over time."
+        doc_analysis: "Analyze the gap between the document's high-level ethical promises and its specific definitions/details.",
+        tech_analysis: "Analyze the gap between the policy's requirements and the actual technical architecture/code implementation.",
+        implementation: "Analyze how the system is deployed in practice vs how it was ideally described.",
+        outcome: "Analyze the difference between intended positive impacts and observable real-world complications/harms.",
+        enforcement: "Analyze the gap between promised accountability mechanisms and actual recourse/penalties.",
+        timeline: "Analyze how the system's purpose or function has drifted or expanded over time (function creep)."
     };
 
     const prompt = dimensionPrompts[dimensionId] || "Analyze the gap.";
+    console.log(`[DRIFT API] Tracing ${dimensionId}...`);
 
-    const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o",
-        messages: [
-            {
-                role: "system", content: `You are an expert impartial auditor tracing the "drift" between policy rhetoric and technical reality. 
+    try {
+        const response = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o",
+            messages: [
+                {
+                    role: "system", content: `You are an expert impartial auditor tracing the "drift" between valid Policy Rhetoric and Technical Reality.
       
       Task: ${prompt}
       
+      Instructions:
+      1. Compare the "Rhetoric" (claims) vs "Reality" (implementation).
+      2. If "Raw Document Excerpt" is provided, do your best to analyze the raw text directly.
+      3. Identify concrete contradictions or gaps.
+      4. Assign a Drift Score (0.0 = aligned, 1.0 = total failure).
+      
       Return JSON:
       {
-        "driftScore": number (0.0 to 1.0, where 1.0 is total disconnect),
-        "summary": "Short qualitative description of the gap",
+        "driftScore": number,
+        "summary": "Short qualitative description of the gap (max 2 sentences)",
         "evidence": {
-           "rhetoric": "Quote or summary of the promise",
-           "reality": "Quote or summary of the mechanism",
-           "reasoning": "Why this is a gap"
+           "rhetoric": "Quote or specific claim from the text",
+           "reality": "Quote or specific mechanism from the text",
+           "reasoning": "Why this represents a drift or gap"
         }
       }` },
-            { role: "user", content: `Rhetoric:\n${rhetoric}\n\nReality:\n${reality}` }
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 500
-    });
+                { role: "user", content: `Rhetoric Source:\n${rhetoric}\n\nReality Source:\n${reality}` }
+            ],
+            response_format: { type: "json_object" },
+            max_completion_tokens: 1000
+        });
 
-    const content = JSON.parse(response.choices[0].message.content || "{}");
-    return {
-        dimensionId,
-        ...content
-    };
+        const rawContent = response.choices[0].message.content || "{}";
+        console.log(`[DRIFT API] Response for ${dimensionId}:`, rawContent.substring(0, 100) + "...");
+
+        const content = JSON.parse(rawContent);
+
+        // Validate and sanitise
+        return {
+            dimensionId,
+            driftScore: typeof content.driftScore === 'number' ? content.driftScore : parseFloat(content.driftScore) || 0,
+            summary: content.summary || "No summary found.",
+            evidence: {
+                rhetoric: content.evidence?.rhetoric || "No rhetoric extracted.",
+                reality: content.evidence?.reality || "No reality extracted.",
+                reasoning: content.evidence?.reasoning || "No reasoning provided."
+            }
+        };
+    } catch (e) {
+        console.error(`[DRIFT API] Failed to parse/generate dimension ${dimensionId}:`, e);
+        return {
+            dimensionId,
+            driftScore: 0,
+            summary: "Analysis generation failed.",
+            evidence: { rhetoric: "Error", reality: "Error", reasoning: "AI Error: " + (e as Error).message }
+        };
+    }
 }

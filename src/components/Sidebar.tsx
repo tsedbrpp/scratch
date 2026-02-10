@@ -32,8 +32,6 @@ import { UserButton, useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useDemoMode } from "@/hooks/useDemoMode";
 
-import { useViewMode } from "@/hooks/useViewMode"; // [PD]
-import { ViewModeToggle } from "@/components/ui/view-mode-toggle"; // [PD]
 import { WorkspaceSelector } from "@/components/collaboration/WorkspaceSelector"; // [Collab]
 import { useWorkspace } from "@/providers/WorkspaceProvider"; // [Collab]
 
@@ -202,7 +200,6 @@ const NAV_GROUPS: NavGroup[] = [
 function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { pathname: string; isMounted: boolean; isCollapsed: boolean; toggleCollapse?: () => void }) {
     const { isReadOnly } = useDemoMode();
     const { isSignedIn } = useAuth();
-    const { isGuided } = useViewMode(); // [PD]
     const { workspaceType } = useWorkspace(); // [Collab]
     const isTeamWorkspace = workspaceType === 'TEAM';
 
@@ -230,19 +227,17 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                 </Link>
             </div>
 
-            {/* [PD] View Toggle & Workspace */}
+            {/* [PD] Workspace Selector */}
             {!isCollapsed && (
                 <div className="px-3 pt-3 space-y-2">
                     <WorkspaceSelector />
-                    <ViewModeToggle className="bg-slate-900 border-slate-800" />
                 </div>
             )}
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-3 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 {NAV_GROUPS.map((group, groupIndex) => {
-                    // [PD] Filter Items based on View Mode and Workspace Type
+                    // Filter Items based on Workspace Type
                     const visibleItems = group.items.filter(item => {
-                        if (isGuided && item.advancedOnly) return false;
                         if (item.teamOnly && !isTeamWorkspace) return false;
                         return true;
                     });

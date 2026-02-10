@@ -6,7 +6,7 @@ export const SWISS_COLORS = {
     // Categorical Palette (Sophisticated/Muted)
     policymaker: "#2563EB", // Strong Blue
     civilsociety: "#D97706", // Amber/Gold
-    startup: "#7C3AED", // Vivid Purple
+    privatetech: "#7C3AED", // Vivid Purple
     academic: "#059669", // Emerald Green
     infrastructure: "#475569", // Slate
     algorithm: "#DC2626", // Red
@@ -15,8 +15,9 @@ export const SWISS_COLORS = {
 };
 
 export const getActorColor = (type: string) => {
-    const key = type.toLowerCase().replace(" ", "") as keyof typeof SWISS_COLORS;
-    return SWISS_COLORS[key] || SWISS_COLORS.default;
+    let key = type.toLowerCase().replace(/\s/g, "");
+    if (key === 'startup') key = 'privatetech';
+    return SWISS_COLORS[key as keyof typeof SWISS_COLORS] || SWISS_COLORS.default;
 };
 
 export type ActorShape = "circle" | "rect" | "triangle" | "square" | "hexagon" | "diamond";
@@ -32,7 +33,7 @@ export const getActorShape = (actor: EcosystemActor): ActorShape => {
     // Type-based Fallbacks
     if (t.includes('infrastructure') || t.includes('dataset')) return 'hexagon';
     if (t.includes('algorithm') || t.includes('model') || t.includes('algorithmic')) return 'triangle';
-    if (t.includes('startup') || t.includes('company')) return 'square';
+    if (t.includes('privatetech') || t.includes('startup') || t.includes('company')) return 'square';
     if (t.includes('legal') || t.includes('law')) return 'rect';
     if (t.includes('bias') || t.includes('inequity') || t.includes('risk')) return 'diamond';
 
@@ -71,7 +72,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
 
             if (role.includes("government") || role.includes("state") || role.includes("ministry")) normalizedType = "Policymaker";
             else if (role.includes("academic") || role.includes("research") || role.includes("expert")) normalizedType = "Academic";
-            else if (role.includes("startup") || role.includes("business") || role.includes("private")) normalizedType = "Startup";
+            else if (role.includes("startup") || role.includes("business") || role.includes("private") || role.includes("tech")) normalizedType = "PrivateTech";
             else if (role.includes("infra") || role.includes("platform")) normalizedType = "Infrastructure";
             else if (role.includes("data") || role.includes("set")) normalizedType = "Dataset";
             else if (role.includes("algo") || role.includes("ai")) normalizedType = "Algorithm";
@@ -80,6 +81,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
 
             baseActors.push({
                 id: `ghost-${absent.name.replace(/\s+/g, '-')}`,
+                sourceId: 'absence_analysis',
                 name: absent.name,
                 type: normalizedType as EcosystemActor['type'],
                 description: absent.reason || "Structurally absent actor",
@@ -97,6 +99,7 @@ export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: Assem
         // This ensures users get visual feedback that absence analysis was performed
         baseActors.push({
             id: 'ghost-structural-absence',
+            sourceId: 'absence_analysis',
             name: 'Structural Absences Detected',
             type: 'Civil Society',
             description: absenceAnalysis.narrative || 'Analysis identified systemic gaps in representation',
@@ -116,7 +119,7 @@ export const inferActorType = (name: string): EcosystemActor['type'] => {
     const n = name.toLowerCase();
     if (n.includes("ministry") || n.includes("agency") || n.includes("commission") || n.includes("eu ")) return "Policymaker";
     if (n.includes("university") || n.includes("institute") || n.includes("lab")) return "Academic";
-    if (n.includes("corp") || n.includes("inc") || n.includes("ltd") || n.includes("startup")) return "Startup";
+    if (n.includes("corp") || n.includes("inc") || n.includes("ltd") || n.includes("startup") || n.includes("google") || n.includes("amazon") || n.includes("microsoft")) return "PrivateTech";
     if (n.includes("foundation") || n.includes("ngo") || n.includes("association") || n.includes("union")) return "Civil Society";
     if (n.includes("platform") || n.includes("cloud") || n.includes("server") || n.includes("api")) return "Infrastructure";
     if (n.includes("algorithm") || n.includes("model") || n.includes("ai ") || n.includes("risk score") || n.includes("classifier")) return "Algorithm";
@@ -143,7 +146,7 @@ export const getBiasIntensity = (actor: EcosystemActor): number => {
     }
 
     const isAlgorithm = actor.type === 'Algorithm' || actor.type === 'AlgorithmicAgent' || actor.type === 'Dataset';
-    const isCapitalist = actor.type === 'Startup' || actor.id.toLowerCase().includes('profit');
+    const isCapitalist = actor.type === 'PrivateTech' || actor.id.toLowerCase().includes('profit');
     const isInfra = actor.type === 'Infrastructure';
 
     // Relaxed thresholds to ensure visibility on real data

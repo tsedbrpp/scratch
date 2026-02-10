@@ -110,18 +110,18 @@ export class AssemblageMechanismService {
         }
 
         // Innovation capacity
-        const startups = actors.filter(a => a.type === "Startup");
+        const privateTech = actors.filter(a => a.type === "PrivateTech");
         const infrastructure = actors.filter(a => a.type === "Infrastructure");
 
-        if (startups.length > 0 && infrastructure.length > 0) {
+        if (privateTech.length > 0 && infrastructure.length > 0) {
             capacities.push({
                 name: "Innovation Capacity",
                 description: "Ability to develop and deploy new technological solutions",
-                enabled_by: [...startups.map(s => s.id), ...infrastructure.map(i => i.id)],
+                enabled_by: [...privateTech.map(s => s.id), ...infrastructure.map(i => i.id)],
                 blocked_by: [],
                 actual: true,
                 potential: true,
-                evidence: `${startups.length} startup(s) with ${infrastructure.length} infrastructure actor(s)`
+                evidence: `${privateTech.length} private tech actor(s) with ${infrastructure.length} infrastructure actor(s)`
             });
         }
 

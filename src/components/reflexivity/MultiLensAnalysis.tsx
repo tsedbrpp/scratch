@@ -376,9 +376,31 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                                                                         View Justification Logic
                                                                     </AccordionTrigger>
                                                                     <AccordionContent>
-                                                                        <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
-                                                                            {(results['legitimacy'] as any).justification_logic || 'No justification logic available.'}
-                                                                        </p>
+                                                                        <div className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                                                                            {(() => {
+                                                                                const logic = (results['legitimacy'] as any).justification_logic;
+                                                                                if (!logic) return 'No justification logic available.';
+                                                                                if (typeof logic === 'string') return logic;
+                                                                                if (typeof logic === 'object') {
+                                                                                    // If it's the specific breakdown by order
+                                                                                    if ('market' in logic || 'civic' in logic) {
+                                                                                        return (
+                                                                                            <div className="space-y-2">
+                                                                                                {Object.entries(logic).map(([key, value]) => (
+                                                                                                    <div key={key} className="flex flex-col gap-1 border-b border-slate-200 last:border-0 pb-2 last:pb-0">
+                                                                                                        <span className="font-semibold capitalize text-indigo-700">{key}</span>
+                                                                                                        <span className="text-slate-600">{String(value)}</span>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        );
+                                                                                    }
+                                                                                    // Fallback for other objects
+                                                                                    return JSON.stringify(logic, null, 2);
+                                                                                }
+                                                                                return String(logic);
+                                                                            })()}
+                                                                        </div>
                                                                     </AccordionContent>
                                                                 </AccordionItem>
                                                             </Accordion>

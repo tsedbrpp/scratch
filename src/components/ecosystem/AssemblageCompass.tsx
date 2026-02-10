@@ -227,7 +227,7 @@ const CustomTooltip = ({ active, payload }: any) => {
                 <p className="font-bold text-sm text-slate-900 mb-1">{data.name}</p>
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {data.type}
+                        {data.type === 'PrivateTech' ? 'Private Tech' : data.type}
                     </span>
                     {isLineOfFlight && (
                         <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 animate-pulse">
@@ -264,7 +264,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 function getColorByType(type: string) {
     switch (type) {
         case 'Policymaker': return '#4f46e5'; // Indigo
-        case 'Startup': return '#0ea5e9'; // Sky
+        case 'PrivateTech': return '#0ea5e9'; // Sky
         case 'Civil Society': return '#ea580c'; // Orange
         case 'Academic': return '#8b5cf6'; // Violet
         case 'Infrastructure': return '#64748b'; // Slate

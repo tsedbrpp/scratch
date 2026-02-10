@@ -62,7 +62,7 @@ export function VisualGuideDialog() {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-sm text-slate-900">Market / Commercial</h4>
-                                    <p className="text-xs text-slate-600 mt-1">Startups, Corporations, or for-profit entities. The square represents established economic structures.</p>
+                                    <p className="text-xs text-slate-600 mt-1">Private Tech, Big Tech, or Startups. The square represents established economic structures or commercial ventures.</p>
                                 </div>
                             </div>
 

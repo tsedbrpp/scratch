@@ -57,7 +57,7 @@ export class AssemblageExtractionService {
         
         Rules:
         1. Actors must be specific entities mentioned or implied in the text.
-        2. Assign a Type: Startup, Policymaker, Civil Society, Academic, Infrastructure, Algorithm, Dataset, or LegalObject.
+        2. Assign a Type: PrivateTech (Big Tech/Startups), Policymaker, Civil Society, Academic, Infrastructure, Algorithm, Dataset, or LegalObject.
         3. Assign Metrics (1-10 scale):
            - Territorialization: Stability, authority, boundary enforcement.
            - Deterritorialization: Fluidity, resistance, innovation, escaping control.
@@ -104,7 +104,7 @@ export class AssemblageExtractionService {
         const content = response.choices[0].message.content;
         if (!content) throw new Error("No extracted content from AI");
 
-         
+
         const result = JSON.parse(content) as any;
 
         // Map to internal types
@@ -172,9 +172,9 @@ export class AssemblageExtractionService {
         };
     }
 
-     
+
     private static validateType(type: string): any {
-        const validTypes = ["Startup", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset", "AlgorithmicAgent", "LegalObject"];
+        const validTypes = ["PrivateTech", "Policymaker", "Civil Society", "Academic", "Infrastructure", "Algorithm", "Dataset", "AlgorithmicAgent", "LegalObject"];
         const match = validTypes.find(t => t.toLowerCase() === type.toLowerCase());
         return match || "Infrastructure"; // Default fallback
     }

@@ -369,7 +369,7 @@ export function CodingView({ isExpanded, nodes }: Props) {
                         </ScrollArea>
                     </DialogContent>
                 </Dialog>
-                <div ref={containerRef} className="flex-1 bg-slate-50 rounded-lg overflow-hidden border border-slate-200 relative min-h-[500px]">
+                <div ref={containerRef} className="flex-1 bg-slate-50 rounded-lg overflow-hidden border border-slate-200 relative min-h-0">
                     <svg ref={svgRef} className="w-full h-full block" />
                 </div>
             </div>

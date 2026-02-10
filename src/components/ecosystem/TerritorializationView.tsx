@@ -109,6 +109,8 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
 
         let simulation: d3.Simulation<Node, undefined>;
 
+        const fgGroup = svg.append("g").attr("class", "fg-layer");
+
         const dragBehavior = d3.drag<SVGGElement, Node>()
             .on("start", (event: d3.D3DragEvent<SVGGElement, Node, Node>) => {
                 if (!event.active && viewMode === 'force') simulation.alphaTarget(0.3).restart();
@@ -145,7 +147,7 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
                 d3.select(event.sourceEvent.target).attr("stroke", "#fff").attr("stroke-width", 1.5);
             });
 
-        const nodeGroup = svg.append("g")
+        const nodeGroup = fgGroup.append("g")
             .selectAll<SVGGElement, Node>("g")
             .data(simulationNodes)
             .join("g")
@@ -175,7 +177,9 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
             .attr("class", "transition-colors duration-500 cursor-grab active:cursor-grabbing shadow-sm");
 
         if (viewMode === 'force') {
-            svg.append("circle")
+            const bgGroup = svg.insert("g", ".fg-layer").attr("class", "bg-layer").attr("pointer-events", "none");
+
+            bgGroup.append("circle")
                 .attr("cx", width * 0.33)
                 .attr("cy", height / 2)
                 .attr("r", Math.min(width, height) * 0.3)
@@ -183,14 +187,14 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
                 .attr("opacity", 0.05)
                 .attr("class", "stabilization-field");
 
-            svg.append("text")
+            bgGroup.append("text")
                 .attr("x", width * 0.33)
                 .attr("y", height / 2 - Math.min(width, height) * 0.3 - 10)
                 .attr("text-anchor", "middle")
                 .attr("class", "text-[10px] font-bold text-indigo-500 uppercase tracking-widest")
                 .text("Stabilization Field (Core)");
 
-            svg.append("text")
+            bgGroup.append("text")
                 .attr("x", width * 0.66)
                 .attr("y", height / 2 - Math.min(width, height) * 0.3 - 10)
                 .attr("text-anchor", "middle")
@@ -240,8 +244,10 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
                 { label: "Resistant", color: "text-amber-500", hex: "#f59e0b" }
             ];
 
+            const bgGroup = svg.insert("g", ".fg-layer").attr("class", "bg-layer").attr("pointer-events", "none");
+
             ringRadii.forEach((r, i) => {
-                svg.append("circle")
+                bgGroup.append("circle")
                     .attr("cx", centerX)
                     .attr("cy", centerY)
                     .attr("r", r)
@@ -251,7 +257,7 @@ export function TerritorializationView({ isExpanded, nodes: inputNodes }: { isEx
                     .attr("stroke-width", 1)
                     .attr("stroke-dasharray", i === ringRadii.length - 1 ? "none" : "4,4");
 
-                svg.append("text")
+                bgGroup.append("text")
                     .attr("x", centerX)
                     .attr("y", centerY - r - 6)
                     .attr("text-anchor", "middle")

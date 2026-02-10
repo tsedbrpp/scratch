@@ -759,7 +759,7 @@ function EcosystemContent() {
                                         console.log("Export Saved:", exportData);
                                         router.push("/synthesis");
                                     } else {
-                                        alert("No assemblage analysis found. Please run 'Trace Inscriptions' or create a configuration first.");
+                                        alert("Analysis incomplete. Please go to the 'Analysis' tab in the right sidebar and generate insights before saving.");
                                     }
                                 }}
                             >

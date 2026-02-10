@@ -4,7 +4,7 @@ import { inferActorType } from '@/lib/ecosystem-utils';
 export interface ApiActor {
     id?: string;
     name: string;
-    type?: "Startup" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
+    type?: "PrivateTech" | "Policymaker" | "Civil Society" | "Academic" | "Infrastructure" | "Algorithm" | "Dataset" | "AlgorithmicAgent" | "LegalObject";
     description?: string;
     metrics?: {
         territorialization?: string | number;

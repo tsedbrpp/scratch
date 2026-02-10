@@ -257,6 +257,7 @@ export function EcosystemMap({
             result = result.filter(a => {
                 const actorType = (a.id.startsWith('blackbox-') ? 'Infrastructure' : a.type).toLowerCase().replace(/\s/g, '');
                 if (a.isHidden) return true;
+                if (uniqueKey === 'privatetech' && actorType.includes('startup')) return true;
                 return actorType.includes(uniqueKey);
             });
         }
@@ -325,7 +326,7 @@ export function EcosystemMap({
             case 'regulation': return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law'].some(k => t.includes(k));
             case 'inscription': return ['standard', 'algorithm', 'technologist', 'expert', 'scientist'].some(k => t.includes(k));
             case 'delegation': return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal'].some(k => t.includes(k));
-            case 'market': return ['startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
+            case 'market': return ['privatetech', 'startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
             default: return true;
         }
     };
@@ -1146,7 +1147,9 @@ export function EcosystemMap({
                                 >
                                     <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" style={{ backgroundColor: color }} />
                                     <span className={`capitalize ${isActive ? 'text-indigo-700 font-medium' : 'text-slate-600'}`}>
-                                        {key.replace("civilsociety", "Civil Society")}
+                                        {key === 'civilsociety' ? 'Civil Society' :
+                                            key === 'privatetech' ? 'Private Tech / Startup' :
+                                                key}
                                     </span>
                                 </div>
                             );

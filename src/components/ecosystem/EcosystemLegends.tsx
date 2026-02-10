@@ -44,7 +44,7 @@ export const ViewTypeLegend = React.memo(() => (
             {Object.entries(SWISS_COLORS).filter(([k]) => k !== 'default').map(([key, color]) => (
                 <LegendRow
                     key={key}
-                    label={key === 'civilsociety' ? 'Civil Society' : key}
+                    label={key === 'civilsociety' ? 'Civil Society' : key === 'privatetech' ? 'Private Tech / Startup' : key}
                     color={color}
                 />
             ))}

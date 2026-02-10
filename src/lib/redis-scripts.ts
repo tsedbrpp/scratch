@@ -24,11 +24,46 @@ const DEDUCT_CREDITS_SCRIPT = `
     return new_balance
 `;
 
+// [Refactor] Added Transaction Interface
+export interface Transaction {
+    id: string;
+    userId: string;
+    amount: number;
+    type: 'USAGE' | 'PURCHASE' | 'BONUS' | 'REFUND';
+    source: string;
+    referenceId: string;
+    createdAt: string;
+}
+
+// Atomic script: Add credits, respecting the "New User = 100" rule
+// KEYS[1] = credits:{userId}
+// KEYS[2] = transactions:{userId}
+// ARGV[1] = amount (positive integer)
+// ARGV[2] = transaction JSON string
+// ARGV[3] = default/initial balance for new users (e.g., 100)
+const ADD_CREDITS_SCRIPT = `
+    local current_credits = redis.call("GET", KEYS[1])
+    
+    -- Lazy Init: If key is missing, assume new user -> start at 100 (promotional)
+    if not current_credits then
+        current_credits = tonumber(ARGV[3])
+    else
+        current_credits = tonumber(current_credits)
+    end
+
+    local new_balance = current_credits + tonumber(ARGV[1])
+    
+    redis.call("SET", KEYS[1], new_balance)
+    redis.call("LPUSH", KEYS[2], ARGV[2])
+    
+    return new_balance
+`;
+
 export async function deductCredits(userId: string, amount: number, source: string, referenceId: string) {
     const creditKey = `credits:${userId}`;
     const txKey = `transactions:${userId}`;
 
-    const transaction = JSON.stringify({
+    const transaction: Transaction = {
         id: crypto.randomUUID(),
         userId,
         amount: -amount,
@@ -36,10 +71,15 @@ export async function deductCredits(userId: string, amount: number, source: stri
         source,
         referenceId,
         createdAt: new Date().toISOString()
-    });
+    };
 
-    const result = await redis.eval(DEDUCT_CREDITS_SCRIPT, 2, creditKey, txKey, amount, transaction);
-    return result as number; // Returns new balance or -1 if insufficient
+    // Note: DEDUCT script (defined above/earlier) handles the lazy-init 100 logic too
+    // We should probably unify the script or logic, but for now we trust the existing DEDUCT_CREDITS_SCRIPT
+    // which was: "if not current_credits then redis.call('SET', KEYS[1], 100)..."
+    // That is consistent.
+
+    const result = await redis.eval(DEDUCT_CREDITS_SCRIPT, 2, creditKey, txKey, amount, JSON.stringify(transaction));
+    return result as number;
 }
 
 export async function addCredits(userId: string, amount: number, source: string, referenceId: string, type: 'PURCHASE' | 'BONUS' | 'REFUND' = 'PURCHASE') {
@@ -53,43 +93,33 @@ export async function addCredits(userId: string, amount: number, source: string,
         return { success: true, message: 'Already processed' };
     }
 
-    const transaction = JSON.stringify({
+    const transaction: Transaction = {
         id: crypto.randomUUID(),
         userId,
-        amount: amount, // Positive for addition
+        amount: amount,
         type,
         source,
         referenceId,
         createdAt: new Date().toISOString()
-    });
+    };
 
-    // Pipeline the updates
-    const pipeline = redis.pipeline();
-    pipeline.incrby(creditKey, amount); // If key missing, INCRBY creates it at 0 then adds amount. 
-    // Logic gap: if I add 10 to a new user, they get 0+10=10. 
-    // They missed their free 5! 
-    // Fix: Check exist in addCredits too? 
-    // Actually, if they PAY, maybe we don't care about the free 5? 
-    // Or we should be generous. 
-    // Let's stick to simple for now. If they pay, they get what they paid for.
-    // Wait, if they assume they have 5, then buy 10, they expect 15.
-    // If I do nothing here, they get 10. 
-    // Small edge case. I'll leave addCredits as is for now to minimize complexity risk, 
-    // as "New User" usually means "Sign up then try", not "Sign up then immediately pay".
-    pipeline.lpush(txKey, transaction);
-    pipeline.set(idempotencyKey, '1', 'EX', 86400); // 24h idempotency
+    // Use atomic script instead of pipeline to ensure "read-modify-write" safety for the lazy init
+    await redis.eval(ADD_CREDITS_SCRIPT, 2, creditKey, txKey, amount, JSON.stringify(transaction), 100);
 
-    await pipeline.exec();
+    // Idempotency doesn't need to be in the same atomic block strictly, but good practice.
+    // For simplicity, setting it after success is acceptable for "at least once" or "exactly once" approximation.
+    // Ideally put inside Lua, but we'll stick to simple separate call for idempotency to avoid huge scripts.
+    await redis.set(idempotencyKey, '1', 'EX', 86400);
+
     return { success: true };
 }
 
 export async function getCredits(userId: string): Promise<number> {
     const credits = await redis.get(`credits:${userId}`);
-    // Return 100 for new users (virtual balance until materialized by usage)
     return credits ? parseInt(credits, 10) : 100;
 }
 
-export async function getTransactions(userId: string, limit: number = 50): Promise<any[]> {
+export async function getTransactions(userId: string, limit: number = 50): Promise<Transaction[]> {
     const logs = await redis.lrange(`transactions:${userId}`, 0, limit - 1);
-    return logs.map(log => JSON.parse(log));
+    return logs.map(log => JSON.parse(log) as Transaction);
 }

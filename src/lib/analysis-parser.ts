@@ -237,6 +237,19 @@ export function parseAnalysisResponse(responseText: string, analysisMode: string
             if (!Array.isArray(analysis.hulls)) analysis.hulls = [];
         }
 
+        // [FIX] Comparative Synthesis Fixer
+        if (analysisMode === 'comparative_synthesis') {
+            // Ensure assemblage_network exists to prevent UI blank state
+            if (!analysis.assemblage_network || !Array.isArray(analysis.assemblage_network.nodes)) {
+                console.warn('[ANALYSIS FIX] Missing assemblage_network in comparative synthesis. Injecting empty structure.');
+                analysis.assemblage_network = { nodes: [], edges: [] };
+            }
+            // Ensure arrays to prevent map errors
+            if (!Array.isArray(analysis.key_divergences)) analysis.key_divergences = [];
+            if (!Array.isArray(analysis.concept_mutations)) analysis.concept_mutations = [];
+            if (!Array.isArray(analysis.stabilization_mechanisms)) analysis.stabilization_mechanisms = [];
+        }
+
         // Generic fallback for key_insight
         if (analysis && typeof analysis === 'object' && !Array.isArray(analysis)) {
             if (!analysis.key_insight || analysis.key_insight.trim() === '') {

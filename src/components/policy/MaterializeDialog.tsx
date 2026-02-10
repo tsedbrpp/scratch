@@ -55,6 +55,7 @@ export function MaterializeDialog({
         setIsSubmitting(true);
         try {
             await onConfirm({
+                sourceId: sourceContext.sourceId,
                 name,
                 description,
                 type: mode === "constraint" ? "LegalObject" : type,
@@ -119,7 +120,7 @@ export function MaterializeDialog({
                                 <SelectItem value="Civil Society">Civil Society</SelectItem>
                                 <SelectItem value="Infrastructure">Infrastructure</SelectItem>
                                 <SelectItem value="Algorithm">Algorithm</SelectItem>
-                                <SelectItem value="Startup">Startup</SelectItem>
+                                <SelectItem value="PrivateTech">Private Tech / Startup</SelectItem>
                                 <SelectItem value="Academic">Academic</SelectItem>
                                 <SelectItem value="Dataset">Dataset</SelectItem>
                                 <SelectItem value="AlgorithmicAgent">Algorithmic Agent (AI)</SelectItem>

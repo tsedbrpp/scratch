@@ -38,7 +38,12 @@ OUTPUT FORMAT (STRICT)
     }
   ],
   "assemblage_network": {
-    "nodes": ["EU AI Act", "Brazil PL 2338", "OECD Principles", "GDPR"],
+    "nodes": [
+      { "id": "EU AI Act", "type": "Policy" },
+      { "id": "Brazil PL 2338", "type": "Policy" },
+      { "id": "OECD Principles", "type": "Institution" },
+      { "id": "GDPR", "type": "Law" }
+    ],
     "edges": [
        { "from": "OECD Principles", "to": "EU AI Act", "type": "Adoption" },
        { "from": "EU AI Act", "to": "Brazil PL 2338", "type": "Reference/Adaptation" }

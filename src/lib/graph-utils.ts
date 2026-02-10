@@ -1,13 +1,13 @@
 import { EcosystemActor } from "@/types/ecosystem";
 
 export function getLinkDetails(sourceType: string, targetType: string): { label: string, description: string, flow_type: 'power' | 'logic' } {
-    if (sourceType === "Policymaker" && targetType === "Startup") return { label: "Regulates", description: "Imposes legal boundaries.", flow_type: 'power' };
+    if (sourceType === "Policymaker" && targetType === "PrivateTech") return { label: "Regulates", description: "Imposes legal boundaries.", flow_type: 'power' };
     if (sourceType === "Policymaker" && targetType === "Civil Society") return { label: "Excludes", description: "Social marginalization.", flow_type: 'power' };
     if (sourceType === "Information" && targetType === "Policymaker") return { label: "Informs", description: "Epistemic basis.", flow_type: 'logic' };
 
-    if (sourceType === "Startup" && targetType === "Academic") return { label: "Enables", description: "Tools for research.", flow_type: 'logic' };
-    if (sourceType === "Infrastructure" && targetType === "Startup") return { label: "Enables", description: "Computational substrate.", flow_type: 'power' };
-    if (sourceType === "Startup" && targetType === "Algorithm") return { label: "Delegates", description: "Authority to code.", flow_type: 'power' };
+    if (sourceType === "PrivateTech" && targetType === "Academic") return { label: "Enables", description: "Tools for research.", flow_type: 'logic' };
+    if (sourceType === "Infrastructure" && targetType === "PrivateTech") return { label: "Enables", description: "Computational substrate.", flow_type: 'power' };
+    if (sourceType === "PrivateTech" && targetType === "Algorithm") return { label: "Delegates", description: "Authority to code.", flow_type: 'power' };
 
     if (sourceType === "Algorithm" && targetType === "Dataset") return { label: "Extracts", description: "Mines patterns.", flow_type: 'power' };
     if (sourceType === "Infrastructure" && targetType === "Dataset") return { label: "Extracts", description: "Accumulates data capital.", flow_type: 'power' };
@@ -38,28 +38,24 @@ export function generateEdges(actors: EcosystemActor[]) {
 
             const shouldConnect = (
                 isTypePair("Policymaker", "Civil Society") ||
-                isTypePair("Startup", "Academic") ||
-                isTypePair("Policymaker", "Startup") ||
+                isTypePair("PrivateTech", "Academic") ||
+                isTypePair("Policymaker", "PrivateTech") ||
                 isTypePair("Civil Society", "Academic") ||
-                isTypePair("Infrastructure", "Startup") ||
+                isTypePair("Infrastructure", "PrivateTech") ||
                 isTypePair("Infrastructure", "Policymaker") ||
                 isTypePair("Infrastructure", "Academic") ||
-
-                // Algorithm connections
-                isTypePair("Startup", "Algorithm") ||
+                isTypePair("PrivateTech", "Algorithm") ||
                 isTypePair("Academic", "Algorithm") ||
                 isTypePair("Algorithm", "Dataset") ||
                 isTypePair("Policymaker", "Algorithm") ||
                 isTypePair("Infrastructure", "Algorithm") ||
                 isTypePair("Infrastructure", "Dataset") ||
-
-                // Algorithmic Agent (Broader Scope)
                 isTypePair("AlgorithmicAgent", "Dataset") ||
                 isTypePair("AlgorithmicAgent", "Infrastructure") ||
-                isTypePair("AlgorithmicAgent", "Policymaker") || // Regulation
-                isTypePair("AlgorithmicAgent", "Civil Society") || // Impact/Audit
-                isTypePair("AlgorithmicAgent", "Startup") || // Deployment
-                isTypePair("AlgorithmicAgent", "Academic") || // Study
+                isTypePair("AlgorithmicAgent", "Policymaker") ||
+                isTypePair("AlgorithmicAgent", "Civil Society") ||
+                isTypePair("AlgorithmicAgent", "PrivateTech") ||
+                isTypePair("AlgorithmicAgent", "Academic") ||
 
                 isTypePair("LegalObject", "Policymaker") ||
                 isTypePair("LegalObject", "Civil Society") ||

@@ -83,7 +83,7 @@ export function applyScenario(
                 narrative = "Unchecked extraction intensifies.";
             }
             // Rule 3: Corporate-to-Algorithm ("Delegates") strengthens (technocratic control)
-            else if (source.type === "Startup" && target.type === "Algorithm" && label === "Delegates") {
+            else if (source.type === "PrivateTech" && target.type === "Algorithm" && label === "Delegates") {
                 multiplier = 1.3;
                 narrative = "Reliance on automated decision-making grows in vacuum of law.";
             }
@@ -99,7 +99,7 @@ export function applyScenario(
             }
 
             // Rule 2: Policymaker -> Startup ("Regulates") weakens ("Safe Harbor")
-            if (source.type === "Policymaker" && target.type === "Startup" && label === "Regulates") {
+            if (source.type === "Policymaker" && target.type === "PrivateTech" && label === "Regulates") {
                 multiplier = 0.7;
                 narrative = "Regulation softened by 'Safe Harbor' compliance.";
             }

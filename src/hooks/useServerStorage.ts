@@ -6,7 +6,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
     const [storedValue, setStoredValue] = useState<T>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
 
-    const getHeaders = (base: HeadersInit = {}) => {
+    const getHeaders = useCallback((base: HeadersInit = {}) => {
         const headers = { ...base } as Record<string, string>;
         if (currentWorkspaceId) {
             headers['x-workspace-id'] = currentWorkspaceId;
@@ -15,7 +15,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
         return headers;
-    };
+    }, [currentWorkspaceId]);
 
     // Fetch initial value from server
     useEffect(() => {
@@ -60,7 +60,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         return () => {
             isMounted = false;
         };
-    }, [key, currentWorkspaceId]);
+    }, [key, currentWorkspaceId, getHeaders]);
 
     // Return a wrapped version of useState's setter function that ...
     // ... persists the new value to the server.
@@ -89,7 +89,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         } catch (error) {
             console.error(`Error setting value for key "${key}":`, error);
         }
-    }, [key, currentWorkspaceId]);
+    }, [key, currentWorkspaceId, getHeaders]);
 
 
     return [storedValue, setValue, isLoading];
