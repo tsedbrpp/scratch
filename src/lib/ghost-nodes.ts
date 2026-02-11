@@ -321,24 +321,39 @@ Return ONLY a JSON object with this structure:
 {
   "institutionalLogics": {
     "market": {
-      "strength": 0.0-1.0,
-      "champions": ["Actor names"],
-      "material": "Material practices",
-      "discursive": "Discourse patterns"
+      "strength": 0.8,
+      "champions": ["Big Tech Companies", "Private Sector"],
+      "material": "Profit-driven data center expansion",
+      "discursive": "Efficiency and innovation rhetoric"
     },
-    "state": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
-    "professional": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
-    "community": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" }
+    "state": {
+      "strength": 0.5,
+      "champions": ["Federal Agencies", "State Governments"],
+      "material": "Regulatory oversight mechanisms",
+      "discursive": "Public interest protection"
+    },
+    "professional": {
+      "strength": 0.3,
+      "champions": [],
+      "material": "",
+      "discursive": ""
+    },
+    "community": {
+      "strength": 0.1,
+      "champions": [],
+      "material": "",
+      "discursive": ""
+    }
   },
   "absentActors": [
     {
-      "name": "Actor name (e.g., Indigenous Communities)",
-      "reason": "SPECIFIC explanation of why this actor is absent in THIS document's context. Reference the document's focus, scope, or framing. Be concrete and analytical, not generic.",
+      "name": "Indigenous Communities",
+      "reason": "The document focuses exclusively on technical infrastructure and industry compliance without addressing Indigenous land rights or traditional knowledge systems.",
       "potentialConnections": [
         {
-          "targetActor": "Name of existing actor in the network",
-          "relationshipType": "excluded from | silenced by | addressed but not enrolled | marginalized by",
-          "evidence": "Direct quote or paraphrase from document showing the exclusion (1-2 sentences max)"
+          "targetActor": "Local Communities",
+          "relationshipType": "excluded from",
+          "evidence": "The regulatory framework establishes industry-led processes without requiring consultation with Indigenous stakeholders."
         }
       ]
     }
@@ -368,10 +383,10 @@ For absentActors - CRITICAL REQUIREMENTS:
      ]
    }
 
-Strength assessment:
-- 0.0-0.3: Weak/absent
-- 0.3-0.6: Moderate
-- 0.6-1.0: Strong dominance`;
+Strength assessment (use decimal values between 0.0 and 1.0):
+- 0.0 to 0.3: Weak or absent logic
+- 0.3 to 0.6: Moderate presence
+- 0.6 to 1.0: Strong dominance`;
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o",
