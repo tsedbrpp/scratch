@@ -3,6 +3,42 @@
  * Adapted from Ghost Nodes mobile app for InstantTea web platform
  */
 
+/**
+ * Calculate semantic similarity between two strings using simple token overlap
+ * Returns a score between 0 and 1, where 1 means identical
+ */
+function calculateSimilarity(str1: string, str2: string): number {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  const tokenize = (s: string) => normalize(s).split(/\s+/).filter(t => t.length > 2);
+  
+  const tokens1 = new Set(tokenize(str1));
+  const tokens2 = new Set(tokenize(str2));
+  
+  if (tokens1.size === 0 || tokens2.size === 0) return 0;
+  
+  const intersection = new Set([...tokens1].filter(t => tokens2.has(t)));
+  const union = new Set([...tokens1, ...tokens2]);
+  
+  return intersection.size / union.size;
+}
+
+/**
+ * Check if a ghost node is semantically similar to any existing node
+ */
+function isDuplicateConcept(ghostLabel: string, existingNodes: Array<{label?: string}>): boolean {
+  const SIMILARITY_THRESHOLD = 0.4; // 40% token overlap = duplicate
+  
+  for (const node of existingNodes) {
+    if (!node.label) continue;
+    const similarity = calculateSimilarity(ghostLabel, node.label);
+    if (similarity >= SIMILARITY_THRESHOLD) {
+      console.log(`[GHOST_NODES] Filtering duplicate: "${ghostLabel}" matches "${node.label}" (${(similarity * 100).toFixed(0)}% similar)`);
+      return true;
+    }
+  }
+  return false;
+}
+
 export interface GhostNode {
   id: string;
   label: string;
@@ -134,7 +170,7 @@ export function detectGhostNodes(
     ];
 
     logics.forEach(({ name, logic, label, category }) => {
-      if (logic.strength < 0.3) {
+      if (logic.strength < 0.3 && !isDuplicateConcept(label, existingNodes)) {
         ghostNodes.push({
           id: `ghost-logic-${name.toLowerCase()}`,
           label,
@@ -172,7 +208,7 @@ export function detectGhostNodes(
       );
     });
 
-    if (!isPresent) {
+    if (!isPresent && !isDuplicateConcept(expectedActor, existingNodes)) {
       ghostNodes.push({
         id: `ghost-expected-${index}`,
         label: expectedActor,
@@ -309,13 +345,28 @@ Return ONLY a JSON object with this structure:
   ]
 }
 
-For absentActors:
-- Identify 3-5 actor types typically present in ${documentType} governance but ABSENT here
-- Explain WHY they're absent based on the document's actual content, framing, and scope
-- Be specific: reference the document's focus (e.g., "focuses on technical standards, not community impact")
-- For each absent actor, identify 1-3 EXISTING actors they would normally connect to
-- Extract quotes showing the exclusion (e.g., "without consulting affected communities", "industry-led process")
-- Relationship types: "excluded from" (explicit), "silenced by" (implicit), "addressed but not enrolled" (mentioned but no agency), "marginalized by" (deprioritized)
+For absentActors - CRITICAL REQUIREMENTS:
+1. Identify 3-5 actor types typically present in ${documentType} governance but ABSENT here
+2. Explain WHY they're absent based on THIS SPECIFIC document:
+   - Reference the document's actual focus, scope, or framing
+   - Mention what the document prioritizes INSTEAD of this actor
+   - Be analytical, not generic (bad: "commonly stakeholders", good: "The regulatory framework prioritizes industry compliance without addressing community consultation processes")
+3. For EACH absent actor, you MUST provide 1-3 potentialConnections:
+   - targetActor: Use the EXACT name of an actor from the existing network (check the Existing Network Analysis above)
+   - relationshipType: Choose ONE: "excluded from" | "silenced by" | "addressed but not enrolled" | "marginalized by"
+   - evidence: Extract a direct quote or paraphrase showing the exclusion (1-2 sentences max)
+4. Example of a GOOD absent actor:
+   {
+     "name": "Indigenous Communities",
+     "reason": "The document focuses exclusively on technical infrastructure standards and industry compliance mechanisms, without addressing Indigenous land rights or traditional knowledge systems in the governance structure.",
+     "potentialConnections": [
+       {
+         "targetActor": "Regulatory Authority",
+         "relationshipType": "excluded from",
+         "evidence": "The regulatory framework establishes industry-led compliance processes without requiring consultation with Indigenous stakeholders."
+       }
+     ]
+   }
 
 Strength assessment:
 - 0.0-0.3: Weak/absent
@@ -358,6 +409,8 @@ Strength assessment:
     );
 
     // Replace generic absent actor explanations with AI-generated ones
+    console.log('[GHOST_NODES] AI returned', result.absentActors?.length || 0, 'absent actors');
+    
     if (result.absentActors && Array.isArray(result.absentActors)) {
       result.absentActors.forEach(
         (
@@ -372,6 +425,12 @@ Strength assessment:
           },
           index: number,
         ) => {
+          // Check for duplicates with existing nodes
+          if (isDuplicateConcept(absentActor.name, nodesArray)) {
+            console.log(`[GHOST_NODES] Skipping AI ghost node "${absentActor.name}" - duplicate of existing node`);
+            return;
+          }
+          
           const ghostNodeIndex = ghostNodes.findIndex(
             (gn) =>
               gn.label.toLowerCase().includes(absentActor.name.toLowerCase()) ||
@@ -380,11 +439,14 @@ Strength assessment:
 
           if (ghostNodeIndex !== -1) {
             // Update existing ghost node with AI explanation and connections
+            console.log(`[GHOST_NODES] Updating ghost node "${ghostNodes[ghostNodeIndex].label}" with AI data`);
             ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
             ghostNodes[ghostNodeIndex].potentialConnections =
               absentActor.potentialConnections || [];
+            console.log(`[GHOST_NODES] Added ${absentActor.potentialConnections?.length || 0} potential connections`);
           } else {
             // Add new ghost node from AI analysis
+            console.log(`[GHOST_NODES] Adding new AI ghost node: "${absentActor.name}"`);
             ghostNodes.push({
               id: `ghost-ai-${index}`,
               label: absentActor.name,
@@ -395,6 +457,7 @@ Strength assessment:
               color: "#9333EA",
               potentialConnections: absentActor.potentialConnections || [],
             });
+            console.log(`[GHOST_NODES] Added ${absentActor.potentialConnections?.length || 0} potential connections`);
           }
         },
       );
