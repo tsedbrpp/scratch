@@ -200,7 +200,7 @@ export default function OntologyPage() {
     // Filter nodes based on ghost toggle
     const displayNodes = showGhostNodes 
         ? allNodes 
-        : allNodes.filter(n => !n.isGhost);
+        : allNodes.filter(n => !(n as OntologyNode).isGhost);
 
     // Filtered cards based on selection
     const filteredNodes = selectedNodeId
