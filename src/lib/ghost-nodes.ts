@@ -400,6 +400,7 @@ Institutional logic strength scale:
             console.log(`[GHOST_NODES]   - exclusionType: ${absentActor.exclusionType ?? 'MISSING'}`);
             console.log(`[GHOST_NODES]   - institutionalLogics: ${absentActor.institutionalLogics ? 'present' : 'MISSING'}`);
             ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
+            (ghostNodes[ghostNodeIndex] as any).whyAbsent = absentActor.reason; // New field name
             ghostNodes[ghostNodeIndex].potentialConnections =
               absentActor.potentialConnections || [];
             if (absentActor.absenceStrength !== undefined) {
@@ -423,7 +424,8 @@ Institutional logic strength scale:
               label: absentActor.name,
               category: "Expected Actor",
               description: `This actor type is notably absent from the policy network.`,
-              ghostReason: absentActor.reason,
+              ghostReason: absentActor.reason, // Legacy field
+              whyAbsent: absentActor.reason, // New field name for UI
               isGhost: true,
               color: "#9333EA",
               potentialConnections: absentActor.potentialConnections || [],
