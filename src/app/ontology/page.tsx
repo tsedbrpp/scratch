@@ -426,7 +426,7 @@ export default function OntologyPage() {
                             const isSelected = selectedNodeId === node.id;
                             const isConnectedToHover = isConnected(node.id);
                             const isDimmed = (hoveredNodeId && !isHovered && !isConnectedToHover) || (selectedNodeId && !isSelected && selectedNodeId !== null && !hoveredNodeId);
-                            const isGhost = node.isGhost || false;
+                            const isGhost = (node as OntologyNode).isGhost || false;
 
                             const opacity = isGhost ? 0.3 : (isDimmed ? 0.3 : 1);
                             const scale = isHovered || isSelected ? 1.1 : 1;
@@ -501,7 +501,7 @@ export default function OntologyPage() {
                     <Card className="border-blue-200 bg-blue-50">
                         <CardContent className="pt-6">
                             <div className="text-3xl font-bold text-blue-700">
-                                {ontologyData.nodes.filter(n => !n.isGhost).length}
+                                {ontologyData.nodes.filter(n => !(n as OntologyNode).isGhost).length}
                             </div>
                             <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
                         </CardContent>
@@ -546,12 +546,12 @@ export default function OntologyPage() {
                             const node = n as OntologyNode;
                             const colors = getColorClassForCategory(node.category);
                             return (
-                                <Card key={node.id} className={`hover:shadow-md transition-all duration-300 ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 shadow-lg' : ''} ${node.isGhost ? 'opacity-60' : ''}`}>
+                                <Card key={node.id} className={`hover:shadow-md transition-all duration-300 ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 shadow-lg' : ''} ${(node as OntologyNode).isGhost ? 'opacity-60' : ''}`}>
                                     <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
                                                 <CardTitle className="text-lg font-semibold">{node.label}</CardTitle>
-                                                {node.isGhost && (
+                                                {(node as OntologyNode).isGhost && (
                                                     <span className="text-lg">👻</span>
                                                 )}
                                             </div>
@@ -559,7 +559,7 @@ export default function OntologyPage() {
                                                 <Badge variant="secondary" className="mt-1">
                                                     {node.category}
                                                 </Badge>
-                                                {node.isGhost && (
+                                                {(node as OntologyNode).isGhost && (
                                                     <Badge className="mt-1 bg-purple-600 text-white">
                                                         Ghost Node
                                                     </Badge>
@@ -575,7 +575,7 @@ export default function OntologyPage() {
                                             {node.description || "No description available."}
                                         </p>
                                         
-                                        {node.isGhost && node.ghostReason && (
+                                        {(node as OntologyNode).isGhost && (node as OntologyNode).ghostReason && (
                                             <div className="mt-4 p-3 bg-purple-100 border-l-4 border-purple-600 rounded-r">
                                                 <div className="flex items-start gap-2">
                                                     <span className="text-purple-600 font-semibold text-sm">Why absent?</span>
@@ -600,7 +600,7 @@ export default function OntologyPage() {
                                             </div>
                                         )}
                                         
-                                        {node.quote && !node.isGhost && (
+                                        {node.quote && !(node as OntologyNode).isGhost && (
                                             <div className="mt-4 p-3 bg-slate-50 border-l-4 border-indigo-200 rounded-r text-xs italic text-slate-700">
                                                 &quot;{node.quote}&quot;
                                             </div>
