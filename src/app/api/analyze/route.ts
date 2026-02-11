@@ -610,14 +610,25 @@ export async function POST(request: NextRequest) {
 
     // --- GHOST NODE DETECTION FOR ONTOLOGY MODE ---
     if (analysisMode === 'ontology' && analysis && analysis.nodes) {
-      const { analyzeInstitutionalLogicsAndDetectGhostNodes } = await import('@/lib/ghost-nodes');
-      const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, analysis, sourceType);
-      
-      // Add ghost nodes to the analysis
-      if (ghostNodesResult.ghostNodes && ghostNodesResult.ghostNodes.length > 0) {
-        analysis.nodes = [...analysis.nodes, ...ghostNodesResult.ghostNodes];
-        analysis.institutionalLogics = ghostNodesResult.institutionalLogics;
-        analysis.ghostNodeCount = ghostNodesResult.ghostNodes.length;
+      try {
+        console.log('[API] Starting ghost node detection...');
+        const { analyzeInstitutionalLogicsAndDetectGhostNodes } = await import('@/lib/ghost-nodes');
+        const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, analysis, sourceType);
+        console.log('[API] Ghost node detection completed:', {
+          ghostNodeCount: ghostNodesResult.ghostNodes?.length || 0,
+          hasInstitutionalLogics: !!ghostNodesResult.institutionalLogics
+        });
+        
+        // Add ghost nodes to the analysis
+        if (ghostNodesResult.ghostNodes && ghostNodesResult.ghostNodes.length > 0) {
+          analysis.nodes = [...analysis.nodes, ...ghostNodesResult.ghostNodes];
+          analysis.institutionalLogics = ghostNodesResult.institutionalLogics;
+          analysis.ghostNodeCount = ghostNodesResult.ghostNodes.length;
+          console.log('[API] Added', ghostNodesResult.ghostNodes.length, 'ghost nodes to analysis');
+        }
+      } catch (error) {
+        console.error('[API] Ghost node detection failed:', error);
+        console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       }
     }
 
