@@ -89,6 +89,13 @@ export function detectGhostNodes(
   documentType: string = "policy"
 ): GhostNode[] {
   const ghostNodes: GhostNode[] = [];
+  
+  // Validate existingNodes is an array
+  if (!Array.isArray(existingNodes)) {
+    console.warn('detectGhostNodes: existingNodes is not an array', existingNodes);
+    return ghostNodes;
+  }
+  
   const existingLabels = new Set(existingNodes.map((n) => n.label.toLowerCase()));
 
   // 1. Detect weak institutional logics
@@ -312,9 +319,16 @@ Assess strength based on:
     const responseText = completion.choices[0]?.message?.content || "{}";
     const result = JSON.parse(responseText);
 
+    // Validate nodes array
+    const nodesArray = Array.isArray(existingAnalysis.nodes) 
+      ? existingAnalysis.nodes 
+      : [];
+    
+    console.log('[GHOST_NODES] Detecting ghost nodes for', nodesArray.length, 'existing nodes');
+
     // Detect ghost nodes using the institutional logics
     const ghostNodes = detectGhostNodes(
-      existingAnalysis.nodes || [],
+      nodesArray,
       result.institutionalLogics,
       documentType
     );
@@ -326,7 +340,10 @@ Assess strength based on:
   } catch (error) {
     console.error("Ghost node detection error:", error);
     // Fallback: detect ghost nodes without AI analysis
-    const ghostNodes = detectGhostNodes(existingAnalysis.nodes || [], undefined, documentType);
+    const nodesArray = Array.isArray(existingAnalysis.nodes) 
+      ? existingAnalysis.nodes 
+      : [];
+    const ghostNodes = detectGhostNodes(nodesArray, undefined, documentType);
     return { ghostNodes };
   }
 }
