@@ -192,7 +192,8 @@ export default function OntologyPage() {
                 const newMap: OntologyData = {
                     summary: data.analysis.summary,
                     nodes: processedNodes,
-                    links: data.analysis.links
+                    links: data.analysis.links,
+                    ghostNodeCount: data.analysis.ghostNodeCount || 0
                 };
 
                 // Update the maps record
