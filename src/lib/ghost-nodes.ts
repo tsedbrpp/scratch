@@ -351,6 +351,14 @@ Return ONLY a JSON object with this structure:
     {
       "name": "Indigenous Communities",
       "reason": "The document focuses exclusively on technical infrastructure and industry compliance without addressing Indigenous land rights or traditional knowledge systems.",
+      "absenceStrength": 85,
+      "exclusionType": "structurally-excluded",
+      "institutionalLogics": {
+        "market": 0.1,
+        "state": 0.2,
+        "professional": 0.1,
+        "community": 0.9
+      },
       "potentialConnections": [
         {
           "targetActor": "Local Communities",
@@ -368,7 +376,20 @@ For absentActors - CRITICAL REQUIREMENTS:
    - Reference the document's actual focus, scope, or framing
    - Mention what the document prioritizes INSTEAD of this actor
    - Be analytical, not generic (bad: "commonly stakeholders", good: "The regulatory framework prioritizes industry compliance without addressing community consultation processes")
-3. For EACH absent actor, you MUST provide 1-3 potentialConnections:
+3. For EACH absent actor, provide absenceStrength (0-100):
+   - 0-30: Weakly absent (mentioned peripherally, minor exclusion)
+   - 31-60: Moderately absent (some relevance but not enrolled)
+   - 61-85: Strongly absent (highly relevant but systematically excluded)
+   - 86-100: Critically absent (essential actor completely missing, major political consequence)
+4. For EACH absent actor, classify exclusionType:
+   - "silenced": Mentioned in document but not enrolled as active participant
+   - "marginalized": Present but with weak connections or peripheral role
+   - "structurally-excluded": Never considered due to document framing/scope
+   - "displaced": Replaced by proxy actors (e.g., "industry reps" instead of "workers")
+5. For EACH absent actor, provide institutionalLogics (0.0-1.0 for each logic):
+   - Shows which institutional logic this absent actor would champion if enrolled
+   - Example: Indigenous Communities = {community: 0.9, state: 0.2, professional: 0.1, market: 0.1}
+6. For EACH absent actor, you MUST provide 1-3 potentialConnections:
    - targetActor: Use the EXACT name of an actor from the existing network (check the Existing Network Analysis above)
    - relationshipType: Choose ONE: "excluded from" | "silenced by" | "addressed but not enrolled" | "marginalized by"
    - evidence: Extract a direct quote or paraphrase showing the exclusion (1-2 sentences max)
@@ -437,6 +458,14 @@ Strength assessment (use decimal values between 0.0 and 1.0):
           absentActor: {
             name: string;
             reason: string;
+            absenceStrength?: number;
+            exclusionType?: 'silenced' | 'marginalized' | 'structurally-excluded' | 'displaced';
+            institutionalLogics?: {
+              market: number;
+              state: number;
+              professional: number;
+              community: number;
+            };
             potentialConnections?: Array<{
               targetActor: string;
               relationshipType: string;
@@ -464,6 +493,15 @@ Strength assessment (use decimal values between 0.0 and 1.0):
             ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
             ghostNodes[ghostNodeIndex].potentialConnections =
               absentActor.potentialConnections || [];
+            if (absentActor.absenceStrength !== undefined) {
+              (ghostNodes[ghostNodeIndex] as any).absenceStrength = absentActor.absenceStrength;
+            }
+            if (absentActor.exclusionType) {
+              (ghostNodes[ghostNodeIndex] as any).exclusionType = absentActor.exclusionType;
+            }
+            if (absentActor.institutionalLogics) {
+              (ghostNodes[ghostNodeIndex] as any).institutionalLogics = absentActor.institutionalLogics;
+            }
             console.log(`[GHOST_NODES] Added ${absentActor.potentialConnections?.length || 0} potential connections`);
           } else {
             // Add new ghost node from AI analysis
@@ -477,7 +515,10 @@ Strength assessment (use decimal values between 0.0 and 1.0):
               isGhost: true,
               color: "#9333EA",
               potentialConnections: absentActor.potentialConnections || [],
-            });
+              ...(absentActor.absenceStrength !== undefined && { absenceStrength: absentActor.absenceStrength }),
+              ...(absentActor.exclusionType && { exclusionType: absentActor.exclusionType }),
+              ...(absentActor.institutionalLogics && { institutionalLogics: absentActor.institutionalLogics }),
+            } as any);
             console.log(`[GHOST_NODES] Added ${absentActor.potentialConnections?.length || 0} potential connections`);
           }
         },

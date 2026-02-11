@@ -64,7 +64,37 @@ export function ConceptDetailsModal({ selectedNode, isOpen, onClose, isStatic = 
 
                     {selectedNode.isGhost && selectedNode.whyAbsent && (
                         <div>
-                            <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-2">👻 Why Absent?</h4>
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wider">👻 Why Absent?</h4>
+                                <div className="flex gap-2">
+                                    {selectedNode.exclusionType && (
+                                        <Badge 
+                                            variant="outline" 
+                                            className={`text-xs ${
+                                                selectedNode.exclusionType === 'silenced' ? 'bg-orange-50 border-orange-300 text-orange-700' :
+                                                selectedNode.exclusionType === 'marginalized' ? 'bg-yellow-50 border-yellow-300 text-yellow-700' :
+                                                selectedNode.exclusionType === 'structurally-excluded' ? 'bg-red-50 border-red-300 text-red-700' :
+                                                'bg-purple-50 border-purple-300 text-purple-700'
+                                            }`}
+                                        >
+                                            {selectedNode.exclusionType.replace('-', ' ')}
+                                        </Badge>
+                                    )}
+                                    {selectedNode.absenceStrength !== undefined && (
+                                        <Badge 
+                                            variant="outline" 
+                                            className={`text-xs ${
+                                                selectedNode.absenceStrength >= 86 ? 'bg-red-50 border-red-400 text-red-700 font-bold' :
+                                                selectedNode.absenceStrength >= 61 ? 'bg-orange-50 border-orange-300 text-orange-700' :
+                                                selectedNode.absenceStrength >= 31 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' :
+                                                'bg-slate-50 border-slate-300 text-slate-700'
+                                            }`}
+                                        >
+                                            Strength: {selectedNode.absenceStrength}/100
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
                             <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded-r">
                                 <p className="text-slate-700">
                                     {selectedNode.whyAbsent}

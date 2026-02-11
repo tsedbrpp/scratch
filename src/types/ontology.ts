@@ -9,13 +9,22 @@ export interface OntologyNode {
   color?: string;
   // Ghost node fields
   isGhost?: boolean;
-  ghostReason?: string;
-  strength?: number;
+  whyAbsent?: string; // AI-generated explanation of why this actor is absent
+  absenceStrength?: number; // 0-100 score indicating how "strongly absent" this actor is
+  exclusionType?: 'silenced' | 'marginalized' | 'structurally-excluded' | 'displaced'; // Mechanism of exclusion
+  ghostReason?: string; // Legacy field
+  strength?: number; // Legacy field
   potentialConnections?: Array<{
     targetActor: string;
     relationshipType: string;
     evidence: string;
   }>;
+  institutionalLogics?: {
+    market: number;
+    state: number;
+    professional: number;
+    community: number;
+  };
 }
 
 export interface OntologyLink {

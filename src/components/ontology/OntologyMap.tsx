@@ -221,16 +221,45 @@ export function OntologyMap({
 
     node
       .append("circle")
-      .attr("r", (d) => (d.id === selectedNodeId ? 45 : 35))
+      .attr("r", (d) => {
+        if (d.id === selectedNodeId) return 45;
+        // Scale ghost node size based on absence strength
+        if (d.isGhost && d.absenceStrength) {
+          // Strength 0-100 maps to radius 30-50
+          return 30 + (d.absenceStrength / 100) * 20;
+        }
+        return 35;
+      })
       .attr("fill", (d) => d.color || getColorForCategory(d.category))
       .attr("stroke", (d) => {
         if (d.isGhost) return "#9333ea"; // Purple for ghost nodes
         return d.id === selectedNodeId ? "#4f46e5" : "#fff";
       })
-      .attr("stroke-width", (d) => (d.id === selectedNodeId ? 3 : 2))
+      .attr("stroke-width", (d) => {
+        if (d.id === selectedNodeId) return 3;
+        // Thicker stroke for stronger absences
+        if (d.isGhost && d.absenceStrength) {
+          return 2 + (d.absenceStrength / 100) * 2; // 2-4px
+        }
+        return 2;
+      })
       .attr("stroke-dasharray", (d) => (d.isGhost ? "5,5" : "0"))
-      .attr("opacity", (d) => (d.isGhost ? 0.3 : 1))
-      .attr("class", "transition-all duration-300 shadow-sm");
+      .attr("opacity", (d) => {
+        if (!d.isGhost) return 1;
+        // Higher opacity for stronger absences (0.3-0.6)
+        if (d.absenceStrength) {
+          return 0.3 + (d.absenceStrength / 100) * 0.3;
+        }
+        return 0.3;
+      })
+      .attr("class", "transition-all duration-300 shadow-sm")
+      .style("filter", (d) => {
+        // Add glow effect for critically absent actors (strength > 85)
+        if (d.isGhost && d.absenceStrength && d.absenceStrength > 85) {
+          return "drop-shadow(0 0 8px rgba(147, 51, 234, 0.6))";
+        }
+        return "none";
+      });
 
     // Node Label (ForeignObject for wrapping text)
     node
