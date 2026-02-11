@@ -142,86 +142,14 @@ export function detectGhostNodes(
     return ghostNodes;
   }
 
-  // 1. Detect weak institutional logics
-  if (institutionalLogics) {
-    const logics = [
-      {
-        name: "Market",
-        logic: institutionalLogics.market,
-        label: "Market Actors",
-        category: "Market Logic",
-      },
-      {
-        name: "State",
-        logic: institutionalLogics.state,
-        label: "State Actors",
-        category: "State Logic",
-      },
-      {
-        name: "Professional",
-        logic: institutionalLogics.professional,
-        label: "Professional Expertise",
-        category: "Professional Logic",
-      },
-      {
-        name: "Community",
-        logic: institutionalLogics.community,
-        label: "Community Voice",
-        category: "Community Logic",
-      },
-    ];
+  // 1. Logic-based ghost nodes disabled - AI generates all ghost nodes now
+  // (Previously detected weak institutional logics, but these lacked rich AI-generated data)
+  // if (institutionalLogics) { ... }
 
-    logics.forEach(({ name, logic, label, category }) => {
-      if (logic.strength < 0.3 && !isDuplicateConcept(label, existingNodes)) {
-        ghostNodes.push({
-          id: `ghost-logic-${name.toLowerCase()}`,
-          label,
-          category,
-          description: `${name} institutional logic is weak or absent in this governance structure.`,
-          ghostReason: `This logic has a strength of ${logic.strength.toFixed(
-            2,
-          )}, indicating minimal ${name.toLowerCase()} influence in the policy network. ${
-            logic.champions.length === 0
-              ? "No clear champions identified."
-              : `Champions: ${logic.champions.join(", ")}`
-          }`,
-          isGhost: true,
-          strength: logic.strength,
-          color: getCategoryColor(category),
-        });
-      }
-    });
-  }
-
-  // 2. Detect missing expected actors
-  const expectedActors =
-    EXPECTED_ACTORS[documentType] || EXPECTED_ACTORS["default"];
-
-  expectedActors.forEach((expectedActor, index) => {
-    const normalizedExpected = expectedActor.toLowerCase();
-    const isPresent = existingNodes.some((node) => {
-      if (!node || !node.label) return false;
-      const label = node.label.toLowerCase();
-      return (
-        label.includes(normalizedExpected) ||
-        normalizedExpected.includes(label) ||
-        (normalizedExpected.includes("civil") && label.includes("ngo")) ||
-        (normalizedExpected.includes("citizens") && label.includes("public"))
-      );
-    });
-
-    if (!isPresent && !isDuplicateConcept(expectedActor, existingNodes)) {
-      ghostNodes.push({
-        id: `ghost-expected-${index}`,
-        label: expectedActor,
-        category: "Expected Actor",
-        description: `This actor type is typically present in ${documentType} documents but appears to be absent or marginalized.`,
-        ghostReason: `${expectedActor} are commonly stakeholders in ${documentType} governance but are not explicitly mentioned or represented in this network. This absence may indicate exclusion, marginalization, or implicit representation.`,
-        isGhost: true,
-        color: "#9333EA",
-      });
-    }
-  });
+  // 2. Expected actor detection disabled - AI generates all ghost nodes now
+  // (Previously used EXPECTED_ACTORS list, but these lacked context-specific reasoning)
+  // const expectedActors = EXPECTED_ACTORS[documentType] || EXPECTED_ACTORS["default"];
+  // expectedActors.forEach(...);
 
   return ghostNodes;
 }
