@@ -4,6 +4,8 @@ import { executeGoogleSearch } from '@/lib/search-service';
 import { EcosystemActor, EcosystemEdge } from '@/types/ecosystem';
 import { v4 as uuidv4 } from 'uuid';
 
+import { ANT_CORE_DEFINITIONS } from '@/lib/prompts';
+
 export class AssemblageExtractionService {
     /**
      * Discovers actors by searching the web for a topic, aggregating results, 
@@ -61,13 +63,7 @@ export class AssemblageExtractionService {
            - Controversy: Mark "Hot Spots" or "Matters of Concern" where consensus is breaking down as type="Controversy".
            - Ontology: Is this actor an "individual", "collective" (group), or "punctualized" (complex network acting as one)?
 
-        2. Relationships (Edges):
-           - Nature:
-             * "Intermediary": Transports force/meaning without changing it (predictable, passive).
-             * "Mediator": Transforms, distorts, modifies, or creates what it carries (unpredictable, active work).
-           - Transformation Type: "amplify", "translate", "block", "modify", "create", "dissolve".
-           - Confidence: 0.0 - 1.0 (How certain is this link?).
-           - Evidence: Short quote supporting this classification.
+        ${ANT_CORE_DEFINITIONS}
 
         3. Metrics (1-10):
            - Territorialization: Stability, authority.

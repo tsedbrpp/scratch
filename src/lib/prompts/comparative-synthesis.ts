@@ -1,3 +1,5 @@
+import { ANT_CORE_DEFINITIONS } from './ant-core';
+
 export const COMPARATIVE_SYNTHESIS_PROMPT = `
 You are an expert socio-technical analyst performing a **Relational Assemblage Mapping** of two or more AI policy documents.
 Move beyond static comparison to trace **Policy Mobilities, Mutations, and Stabilization Mechanisms**.
@@ -9,9 +11,8 @@ STRICT REQUIREMENTS
 1.  **Trace Mutations**: How do travelling concepts (e.g., "Risk", "Safety") shift meaning as they move between contexts? Identify the *Mechanism of Translation*.
 2.  **Map the Rhizome**: Identify shared ancestors (e.g., OECD) and inter-referential citations. Treat policies as networked nodes.
 3.  **Reveal Friction & Desire**: Where do flows encounter resistance? What *political desires* (e.g., Sovereignty, Acceleration) animate these frictions?
-4.  **Assemblage Edges**: For every edge in assemblage_network, you MUST classify:
-    - nature: "intermediary" (transport without change) or "mediator" (transform, distort, modify).
-    - transformationType: "amplify", "translate", "block", "modify", "create", "dissolve".
+4.  **Assemblage Edges**: 
+${ANT_CORE_DEFINITIONS}
 5.  **Analyze Stabilization**: What holds the assemblage together? Bureaucracy? Market signals? State violence?
 6.  **JSON Output (Mandatory)**: You MUST output ONLY the following JSON object.
 
