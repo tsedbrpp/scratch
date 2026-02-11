@@ -96,7 +96,12 @@ export function detectGhostNodes(
     return ghostNodes;
   }
   
-  const existingLabels = new Set(existingNodes.map((n) => n.label.toLowerCase()));
+  // Filter out nodes without labels and create lowercase set
+  const existingLabels = new Set(
+    existingNodes
+      .filter(n => n && n.label)
+      .map((n) => n.label.toLowerCase())
+  );
 
   // 1. Detect weak institutional logics
   if (institutionalLogics) {
@@ -155,6 +160,7 @@ export function detectGhostNodes(
   expectedActors.forEach((expectedActor, index) => {
     const normalizedExpected = expectedActor.toLowerCase();
     const isPresent = existingNodes.some((node) => {
+      if (!node || !node.label) return false;
       const label = node.label.toLowerCase();
       return (
         label.includes(normalizedExpected) ||
