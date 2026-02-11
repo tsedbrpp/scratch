@@ -89,24 +89,20 @@ const EXPECTED_ACTORS: Record<string, string[]> = {
  * Detect ghost nodes based on institutional logics analysis
  */
 export function detectGhostNodes(
-  existingNodes: any[],
+  existingNodes: Array<{ label?: string; id?: string }>,
   institutionalLogics?: InstitutionalLogics,
-  documentType: string = "policy"
+  documentType: string = "policy",
 ): GhostNode[] {
   const ghostNodes: GhostNode[] = [];
-  
+
   // Validate existingNodes is an array
   if (!Array.isArray(existingNodes)) {
-    console.warn('detectGhostNodes: existingNodes is not an array', existingNodes);
+    console.warn(
+      "detectGhostNodes: existingNodes is not an array",
+      existingNodes,
+    );
     return ghostNodes;
   }
-  
-  // Filter out nodes without labels and create lowercase set
-  const existingLabels = new Set(
-    existingNodes
-      .filter(n => n && n.label)
-      .map((n) => n.label.toLowerCase())
-  );
 
   // 1. Detect weak institutional logics
   if (institutionalLogics) {
@@ -145,7 +141,7 @@ export function detectGhostNodes(
           category,
           description: `${name} institutional logic is weak or absent in this governance structure.`,
           ghostReason: `This logic has a strength of ${logic.strength.toFixed(
-            2
+            2,
           )}, indicating minimal ${name.toLowerCase()} influence in the policy network. ${
             logic.champions.length === 0
               ? "No clear champions identified."
@@ -160,7 +156,8 @@ export function detectGhostNodes(
   }
 
   // 2. Detect missing expected actors
-  const expectedActors = EXPECTED_ACTORS[documentType] || EXPECTED_ACTORS["default"];
+  const expectedActors =
+    EXPECTED_ACTORS[documentType] || EXPECTED_ACTORS["default"];
 
   expectedActors.forEach((expectedActor, index) => {
     const normalizedExpected = expectedActor.toLowerCase();
@@ -197,9 +194,11 @@ export function detectGhostNodes(
 export function getCategoryColor(category: string): string {
   const lower = category.toLowerCase();
 
-  if (lower.includes("actor") || lower.includes("stakeholder")) return "#3B82F6"; // Blue
+  if (lower.includes("actor") || lower.includes("stakeholder"))
+    return "#3B82F6"; // Blue
   if (lower.includes("concept") || lower.includes("core")) return "#DC2626"; // Red
-  if (lower.includes("mechanism") || lower.includes("process")) return "#9333EA"; // Purple
+  if (lower.includes("mechanism") || lower.includes("process"))
+    return "#9333EA"; // Purple
   if (lower.includes("value") || lower.includes("principle")) return "#EA580C"; // Orange
   if (lower.includes("state")) return "#2563EB"; // Dark Blue
   if (lower.includes("market")) return "#16A34A"; // Green
@@ -263,11 +262,15 @@ Focus on:
  * Analyze institutional logics using AI and detect ghost nodes
  */
 export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   openai: any,
   text: string,
-  existingAnalysis: any,
-  documentType: string = "policy"
-): Promise<{ ghostNodes: GhostNode[]; institutionalLogics?: InstitutionalLogics }> {
+  existingAnalysis: { nodes?: Array<{ label?: string; id?: string }> },
+  documentType: string = "policy",
+): Promise<{
+  ghostNodes: GhostNode[];
+  institutionalLogics?: InstitutionalLogics;
+}> {
   try {
     // Call OpenAI to analyze institutional logics and ghost nodes
     const prompt = `Analyze the following policy document to identify institutional logics and ABSENT/MARGINALIZED actors.
@@ -337,45 +340,64 @@ Strength assessment:
     const result = JSON.parse(responseText);
 
     // Validate nodes array
-    const nodesArray = Array.isArray(existingAnalysis.nodes) 
-      ? existingAnalysis.nodes 
+    const nodesArray = Array.isArray(existingAnalysis.nodes)
+      ? existingAnalysis.nodes
       : [];
-    
-    console.log('[GHOST_NODES] Detecting ghost nodes for', nodesArray.length, 'existing nodes');
+
+    console.log(
+      "[GHOST_NODES] Detecting ghost nodes for",
+      nodesArray.length,
+      "existing nodes",
+    );
 
     // Detect ghost nodes using the institutional logics
-    let ghostNodes = detectGhostNodes(
+    const ghostNodes = detectGhostNodes(
       nodesArray,
       result.institutionalLogics,
-      documentType
+      documentType,
     );
-    
+
     // Replace generic absent actor explanations with AI-generated ones
     if (result.absentActors && Array.isArray(result.absentActors)) {
-      result.absentActors.forEach((absentActor: any, index: number) => {
-        const ghostNodeIndex = ghostNodes.findIndex(gn => 
-          gn.label.toLowerCase().includes(absentActor.name.toLowerCase()) ||
-          absentActor.name.toLowerCase().includes(gn.label.toLowerCase())
-        );
-        
-        if (ghostNodeIndex !== -1) {
-          // Update existing ghost node with AI explanation and connections
-          ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
-          ghostNodes[ghostNodeIndex].potentialConnections = absentActor.potentialConnections || [];
-        } else {
-          // Add new ghost node from AI analysis
-          ghostNodes.push({
-            id: `ghost-ai-${index}`,
-            label: absentActor.name,
-            category: "Expected Actor",
-            description: `This actor type is notably absent from the policy network.`,
-            ghostReason: absentActor.reason,
-            isGhost: true,
-            color: "#9333EA",
-            potentialConnections: absentActor.potentialConnections || [],
-          });
-        }
-      });
+      result.absentActors.forEach(
+        (
+          absentActor: {
+            name: string;
+            reason: string;
+            potentialConnections?: Array<{
+              targetActor: string;
+              relationshipType: string;
+              evidence: string;
+            }>;
+          },
+          index: number,
+        ) => {
+          const ghostNodeIndex = ghostNodes.findIndex(
+            (gn) =>
+              gn.label.toLowerCase().includes(absentActor.name.toLowerCase()) ||
+              absentActor.name.toLowerCase().includes(gn.label.toLowerCase()),
+          );
+
+          if (ghostNodeIndex !== -1) {
+            // Update existing ghost node with AI explanation and connections
+            ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
+            ghostNodes[ghostNodeIndex].potentialConnections =
+              absentActor.potentialConnections || [];
+          } else {
+            // Add new ghost node from AI analysis
+            ghostNodes.push({
+              id: `ghost-ai-${index}`,
+              label: absentActor.name,
+              category: "Expected Actor",
+              description: `This actor type is notably absent from the policy network.`,
+              ghostReason: absentActor.reason,
+              isGhost: true,
+              color: "#9333EA",
+              potentialConnections: absentActor.potentialConnections || [],
+            });
+          }
+        },
+      );
     }
 
     return {
@@ -385,8 +407,8 @@ Strength assessment:
   } catch (error) {
     console.error("Ghost node detection error:", error);
     // Fallback: detect ghost nodes without AI analysis
-    const nodesArray = Array.isArray(existingAnalysis.nodes) 
-      ? existingAnalysis.nodes 
+    const nodesArray = Array.isArray(existingAnalysis.nodes)
+      ? existingAnalysis.nodes
       : [];
     const ghostNodes = detectGhostNodes(nodesArray, undefined, documentType);
     return { ghostNodes };
