@@ -388,7 +388,10 @@ Strength assessment:
     });
 
     const responseText = completion.choices[0]?.message?.content || "{}";
+    console.log('[GHOST_NODES] AI raw response:', responseText.substring(0, 500));
     const result = JSON.parse(responseText);
+    console.log('[GHOST_NODES] Parsed result keys:', Object.keys(result));
+    console.log('[GHOST_NODES] absentActors count:', result.absentActors?.length || 0);
 
     // Validate nodes array
     const nodesArray = Array.isArray(existingAnalysis.nodes)
@@ -468,7 +471,8 @@ Strength assessment:
       institutionalLogics: result.institutionalLogics,
     };
   } catch (error) {
-    console.error("Ghost node detection error:", error);
+    console.error("[GHOST_NODES] Ghost node detection error:", error);
+    console.error("[GHOST_NODES] Error details:", JSON.stringify(error, null, 2));
     // Fallback: detect ghost nodes without AI analysis
     const nodesArray = Array.isArray(existingAnalysis.nodes)
       ? existingAnalysis.nodes
