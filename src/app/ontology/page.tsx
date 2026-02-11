@@ -109,6 +109,8 @@ export default function OntologyPage() {
     // Interactivity State
     const [selectedNodeId, setSelectedNodeId] = useServerStorage<string | null>("ontology_selected_node_id", null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    type ViewMode = 'all' | 'ghost-network' | 'hide-ghosts';
+    const [viewMode, setViewMode] = useState<ViewMode>('all');
 
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
@@ -190,7 +192,8 @@ export default function OntologyPage() {
                 const newMap: OntologyData = {
                     summary: data.analysis.summary,
                     nodes: processedNodes,
-                    links: data.analysis.links
+                    links: data.analysis.links,
+                    ghostNodeCount: data.analysis.ghostNodeCount || 0
                 };
 
                 // Update the maps record
@@ -341,8 +344,34 @@ export default function OntologyPage() {
     };
 
     // Filtering Logic
+    // Filter nodes based on category and view mode
     const displayNodes = currentOntologyData
-        ? currentOntologyData.nodes.filter(n => !selectedCategory || n.category === selectedCategory)
+        ? currentOntologyData.nodes.filter(n => {
+            const categoryMatch = !selectedCategory || n.category === selectedCategory;
+            
+            // View mode filtering
+            let viewMatch = true;
+            if (viewMode === 'hide-ghosts') {
+                viewMatch = !n.isGhost;
+            } else if (viewMode === 'ghost-network') {
+                // Show ghost nodes + actors they connect to
+                if (n.isGhost) {
+                    viewMatch = true;
+                } else {
+                    // Check if this real node is connected to any ghost node
+                    const connectedToGhost = currentOntologyData.nodes.some(ghostNode => {
+                        if (!ghostNode.isGhost) return false;
+                        return ghostNode.potentialConnections?.some(pc => 
+                            pc.targetActor === n.label || n.label.includes(pc.targetActor) || pc.targetActor.includes(n.label)
+                        );
+                    });
+                    viewMatch = connectedToGhost;
+                }
+            }
+            // viewMode === 'all' shows everything
+            
+            return categoryMatch && viewMatch;
+          })
         : STATIC_CONCEPTS;
 
     const displayLinks = currentOntologyData
@@ -469,8 +498,78 @@ export default function OntologyPage() {
                         </Card>
                     )}
 
+                    {/* Ghost Node Statistics */}
+                    {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                        <div className="grid grid-cols-3 gap-4">
+                            <Card className="border-blue-200 bg-blue-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-blue-700">
+                                        {currentOntologyData.nodes.filter(n => !n.isGhost).length}
+                                    </div>
+                                    <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-purple-200 bg-purple-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-purple-700">
+                                        {currentOntologyData.ghostNodeCount}
+                                    </div>
+                                    <div className="text-sm text-purple-600 mt-1">Ghost Nodes</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-gray-200 bg-gray-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-gray-700">
+                                        {currentOntologyData.links.length}
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-1">Connections</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-4">
+                            {/* Ghost Node Toggle */}
+                            {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="text-sm font-medium text-slate-700">View Mode</div>
+                                    <Select value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+                                        <SelectTrigger className="w-[280px] bg-purple-50 border-purple-300">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                <div className="flex items-center gap-2">
+                                                    <span>🌐</span>
+                                                    <div>
+                                                        <div className="font-medium">All Actors</div>
+                                                        <div className="text-xs text-slate-500">Show complete network</div>
+                                                    </div>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="ghost-network">
+                                                <div className="flex items-center gap-2">
+                                                    <span>👻</span>
+                                                    <div>
+                                                        <div className="font-medium">Ghost Network Only ({currentOntologyData.ghostNodeCount})</div>
+                                                        <div className="text-xs text-slate-500">Absent actors + their connections</div>
+                                                    </div>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="hide-ghosts">
+                                                <div className="flex items-center gap-2">
+                                                    <span>👤</span>
+                                                    <div>
+                                                        <div className="font-medium">Hide Ghost Nodes</div>
+                                                        <div className="text-xs text-slate-500">Only present actors</div>
+                                                    </div>
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                             <OntologyMap
                                 nodes={displayNodes}
                                 links={displayLinks}
