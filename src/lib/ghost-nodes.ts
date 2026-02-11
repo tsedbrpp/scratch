@@ -12,6 +12,11 @@ export interface GhostNode {
   isGhost: true;
   strength?: number;
   color?: string;
+  potentialConnections?: Array<{
+    targetActor: string;
+    relationshipType: string;
+    evidence: string;
+  }>;
 }
 
 export interface InstitutionalLogics {
@@ -289,7 +294,14 @@ Return ONLY a JSON object with this structure:
   "absentActors": [
     {
       "name": "Actor name (e.g., Indigenous Communities)",
-      "reason": "SPECIFIC explanation of why this actor is absent in THIS document's context. Reference the document's focus, scope, or framing. Be concrete and analytical, not generic."
+      "reason": "SPECIFIC explanation of why this actor is absent in THIS document's context. Reference the document's focus, scope, or framing. Be concrete and analytical, not generic.",
+      "potentialConnections": [
+        {
+          "targetActor": "Name of existing actor in the network",
+          "relationshipType": "excluded from | silenced by | addressed but not enrolled | marginalized by",
+          "evidence": "Direct quote or paraphrase from document showing the exclusion (1-2 sentences max)"
+        }
+      ]
     }
   ]
 }
@@ -298,7 +310,9 @@ For absentActors:
 - Identify 3-5 actor types typically present in ${documentType} governance but ABSENT here
 - Explain WHY they're absent based on the document's actual content, framing, and scope
 - Be specific: reference the document's focus (e.g., "focuses on technical standards, not community impact")
-- Avoid generic statements like "commonly stakeholders" - explain the SPECIFIC exclusion
+- For each absent actor, identify 1-3 EXISTING actors they would normally connect to
+- Extract quotes showing the exclusion (e.g., "without consulting affected communities", "industry-led process")
+- Relationship types: "excluded from" (explicit), "silenced by" (implicit), "addressed but not enrolled" (mentioned but no agency), "marginalized by" (deprioritized)
 
 Strength assessment:
 - 0.0-0.3: Weak/absent
@@ -345,8 +359,9 @@ Strength assessment:
         );
         
         if (ghostNodeIndex !== -1) {
-          // Update existing ghost node with AI explanation
+          // Update existing ghost node with AI explanation and connections
           ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
+          ghostNodes[ghostNodeIndex].potentialConnections = absentActor.potentialConnections || [];
         } else {
           // Add new ghost node from AI analysis
           ghostNodes.push({
@@ -357,6 +372,7 @@ Strength assessment:
             ghostReason: absentActor.reason,
             isGhost: true,
             color: "#9333EA",
+            potentialConnections: absentActor.potentialConnections || [],
           });
         }
       });

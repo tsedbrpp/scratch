@@ -11,6 +11,11 @@ export interface OntologyNode {
     isGhost?: boolean;
     ghostReason?: string;
     strength?: number;
+    potentialConnections?: Array<{
+        targetActor: string;
+        relationshipType: string;
+        evidence: string;
+    }>;
 }
 
 export interface OntologyLink {

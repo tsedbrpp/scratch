@@ -59,12 +59,56 @@ export function OntologyMap({
         const width = svgRef.current.clientWidth;
         const height = svgRef.current.clientHeight;
 
+        // Calculate potential connections early (needed for custom force)
+        const potentialLinks: Array<{source: D3Node, target: D3Node, relationshipType: string, evidence: string}> = [];
+        d3Nodes.forEach(node => {
+            if (node.isGhost && node.potentialConnections) {
+                node.potentialConnections.forEach(conn => {
+                    const targetNode = d3Nodes.find(n => 
+                        n.label.toLowerCase().includes(conn.targetActor.toLowerCase()) ||
+                        conn.targetActor.toLowerCase().includes(n.label.toLowerCase())
+                    );
+                    if (targetNode) {
+                        potentialLinks.push({
+                            source: node,
+                            target: targetNode,
+                            relationshipType: conn.relationshipType,
+                            evidence: conn.evidence
+                        });
+                    }
+                });
+            }
+        });
+
+        // Custom force to attract ghost nodes toward their potential connections
+        const ghostAttractionForce = (alpha: number) => {
+            potentialLinks.forEach(link => {
+                const source = link.source;
+                const target = link.target;
+                if (!source.x || !source.y || !target.x || !target.y) return;
+                
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance === 0) return;
+                
+                // Weak attractive force (strength 0.05) to gently pull ghost nodes closer
+                const strength = 0.05 * alpha;
+                const force = strength / distance;
+                
+                source.vx! += dx * force;
+                source.vy! += dy * force;
+            });
+        };
+
         // Force Simulation
         const simulation = d3.forceSimulation<D3Node>(d3Nodes)
             .force("link", d3.forceLink<D3Node, D3Link>(d3Links).id(d => d.id).distance(100))
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collide", d3.forceCollide().radius(50).iterations(2));
+            .force("collide", d3.forceCollide().radius(50).iterations(2))
+            .force("ghostAttraction", ghostAttractionForce);
 
         // SVG Elements Selection
         const svg = d3.select(svgRef.current);
@@ -112,6 +156,35 @@ export function OntologyMap({
             .style("pointer-events", "none")
             .style("text-shadow", "0 0 4px white");
 
+        // Potential Connections (dotted lines from ghost nodes) - already calculated above
+        const potentialLink = container.append("g")
+            .selectAll("g")
+            .data(potentialLinks)
+            .join("g");
+
+        const potentialLinkPath = potentialLink.append("path")
+            .attr("stroke", "#94a3b8")
+            .attr("stroke-width", 1.5)
+            .attr("stroke-dasharray", "4,4")
+            .attr("fill", "none")
+            .attr("opacity", 0.35)
+            .style("pointer-events", "all")
+            .style("cursor", "help");
+
+        const potentialLinkText = potentialLink.append("text")
+            .text(d => d.relationshipType)
+            .attr("font-size", "9px")
+            .attr("fill", "#64748b")
+            .attr("text-anchor", "middle")
+            .attr("dy", -5)
+            .attr("opacity", 0.6)
+            .style("pointer-events", "none")
+            .style("font-style", "italic")
+            .style("text-shadow", "0 0 4px white");
+
+        // Tooltip for potential connections
+        potentialLinkPath.append("title")
+            .text(d => `${d.relationshipType}\n\nEvidence: ${d.evidence}`);
 
         // Nodes
         const node = container.append("g")
@@ -169,6 +242,15 @@ export function OntologyMap({
             linkText
                 .attr("x", d => ((d.source as D3Node).x! + (d.target as D3Node).x!) / 2)
                 .attr("y", d => ((d.source as D3Node).y! + (d.target as D3Node).y!) / 2);
+
+            // Update potential connection positions
+            potentialLinkPath.attr("d", d => {
+                return `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`;
+            });
+
+            potentialLinkText
+                .attr("x", d => (d.source.x! + d.target.x!) / 2)
+                .attr("y", d => (d.source.y! + d.target.y!) / 2);
 
             node.attr("transform", d => `translate(${d.x},${d.y})`);
         });
