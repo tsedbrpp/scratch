@@ -264,11 +264,11 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
   documentType: string = "policy"
 ): Promise<{ ghostNodes: GhostNode[]; institutionalLogics?: InstitutionalLogics }> {
   try {
-    // Call OpenAI to analyze institutional logics
-    const prompt = `Analyze the following policy document and identify the strength of different institutional logics.
+    // Call OpenAI to analyze institutional logics and ghost nodes
+    const prompt = `Analyze the following policy document to identify institutional logics and ABSENT/MARGINALIZED actors.
 
 Document Text:
-${text.substring(0, 2000)}
+${text.substring(0, 3000)}
 
 Existing Network Analysis:
 ${JSON.stringify(existingAnalysis, null, 2).substring(0, 1000)}
@@ -278,34 +278,31 @@ Return ONLY a JSON object with this structure:
   "institutionalLogics": {
     "market": {
       "strength": 0.0-1.0,
-      "champions": ["Actor names who embody this logic"],
-      "material": "Material practices (e.g., contracts, pricing)",
-      "discursive": "Discourse patterns (e.g., efficiency, competition)"
+      "champions": ["Actor names"],
+      "material": "Material practices",
+      "discursive": "Discourse patterns"
     },
-    "state": {
-      "strength": 0.0-1.0,
-      "champions": [],
-      "material": "Material practices (e.g., regulation, enforcement)",
-      "discursive": "Discourse patterns (e.g., public interest, sovereignty)"
-    },
-    "professional": {
-      "strength": 0.0-1.0,
-      "champions": [],
-      "material": "Material practices (e.g., expertise, credentials)",
-      "discursive": "Discourse patterns (e.g., best practices, standards)"
-    },
-    "community": {
-      "strength": 0.0-1.0,
-      "champions": [],
-      "material": "Material practices (e.g., participation, solidarity)",
-      "discursive": "Discourse patterns (e.g., collective voice, local knowledge)"
+    "state": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
+    "professional": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
+    "community": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" }
+  },
+  "absentActors": [
+    {
+      "name": "Actor name (e.g., Indigenous Communities)",
+      "reason": "SPECIFIC explanation of why this actor is absent in THIS document's context. Reference the document's focus, scope, or framing. Be concrete and analytical, not generic."
     }
-  }
+  ]
 }
 
-Assess strength based on:
-- 0.0-0.3: Weak or absent
-- 0.3-0.6: Moderate presence
+For absentActors:
+- Identify 3-5 actor types typically present in ${documentType} governance but ABSENT here
+- Explain WHY they're absent based on the document's actual content, framing, and scope
+- Be specific: reference the document's focus (e.g., "focuses on technical standards, not community impact")
+- Avoid generic statements like "commonly stakeholders" - explain the SPECIFIC exclusion
+
+Strength assessment:
+- 0.0-0.3: Weak/absent
+- 0.3-0.6: Moderate
 - 0.6-1.0: Strong dominance`;
 
     const completion = await openai.chat.completions.create({
@@ -333,11 +330,37 @@ Assess strength based on:
     console.log('[GHOST_NODES] Detecting ghost nodes for', nodesArray.length, 'existing nodes');
 
     // Detect ghost nodes using the institutional logics
-    const ghostNodes = detectGhostNodes(
+    let ghostNodes = detectGhostNodes(
       nodesArray,
       result.institutionalLogics,
       documentType
     );
+    
+    // Replace generic absent actor explanations with AI-generated ones
+    if (result.absentActors && Array.isArray(result.absentActors)) {
+      result.absentActors.forEach((absentActor: any, index: number) => {
+        const ghostNodeIndex = ghostNodes.findIndex(gn => 
+          gn.label.toLowerCase().includes(absentActor.name.toLowerCase()) ||
+          absentActor.name.toLowerCase().includes(gn.label.toLowerCase())
+        );
+        
+        if (ghostNodeIndex !== -1) {
+          // Update existing ghost node with AI explanation
+          ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
+        } else {
+          // Add new ghost node from AI analysis
+          ghostNodes.push({
+            id: `ghost-ai-${index}`,
+            label: absentActor.name,
+            category: "Expected Actor",
+            description: `This actor type is notably absent from the policy network.`,
+            ghostReason: absentActor.reason,
+            isGhost: true,
+            color: "#9333EA",
+          });
+        }
+      });
+    }
 
     return {
       ghostNodes,
