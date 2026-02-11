@@ -25,14 +25,16 @@ function calculateSimilarity(str1: string, str2: string): number {
 /**
  * Check if a ghost node is semantically similar to any existing node
  */
-function isDuplicateConcept(ghostLabel: string, existingNodes: Array<{label?: string}>): boolean {
+function isDuplicateConcept(ghostLabel: string, existingNodes: Array<{label?: string; id?: string}>): boolean {
   const SIMILARITY_THRESHOLD = 0.4; // 40% token overlap = duplicate
   
   for (const node of existingNodes) {
-    if (!node.label) continue;
-    const similarity = calculateSimilarity(ghostLabel, node.label);
+    // Check both label and id fields
+    const nodeText = node.label || node.id;
+    if (!nodeText) continue;
+    const similarity = calculateSimilarity(ghostLabel, nodeText);
     if (similarity >= SIMILARITY_THRESHOLD) {
-      console.log(`[GHOST_NODES] Filtering duplicate: "${ghostLabel}" matches "${node.label}" (${(similarity * 100).toFixed(0)}% similar)`);
+      console.log(`[GHOST_NODES] Filtering duplicate: "${ghostLabel}" matches "${nodeText}" (${(similarity * 100).toFixed(0)}% similar)`);
       return true;
     }
   }
@@ -443,9 +445,10 @@ Strength assessment (use decimal values between 0.0 and 1.0):
           },
           index: number,
         ) => {
-          // Check for duplicates with existing nodes
-          if (isDuplicateConcept(absentActor.name, nodesArray)) {
-            console.log(`[GHOST_NODES] Skipping AI ghost node "${absentActor.name}" - duplicate of existing node`);
+          // Check for duplicates with existing nodes AND already-added ghost nodes
+          const allNodes = [...nodesArray, ...ghostNodes.map(gn => ({ label: gn.label, id: gn.id }))];
+          if (isDuplicateConcept(absentActor.name, allNodes)) {
+            console.log(`[GHOST_NODES] Filtering duplicate: "${absentActor.name}" matches existing node or ghost`);
             return;
           }
           
