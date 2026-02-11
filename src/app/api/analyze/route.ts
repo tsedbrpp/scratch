@@ -610,8 +610,8 @@ export async function POST(request: NextRequest) {
 
     // --- GHOST NODE DETECTION FOR ONTOLOGY MODE ---
     if (analysisMode === 'ontology' && analysis && analysis.nodes) {
-      const { detectGhostNodes } = await import('@/lib/ghost-nodes');
-      const ghostNodesResult = await detectGhostNodes(openai, text, analysis);
+      const { analyzeInstitutionalLogicsAndDetectGhostNodes } = await import('@/lib/ghost-nodes');
+      const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, analysis, sourceType);
       
       // Add ghost nodes to the analysis
       if (ghostNodesResult.ghostNodes && ghostNodesResult.ghostNodes.length > 0) {

@@ -240,3 +240,93 @@ Focus on:
 - Which logics dominate vs which are weak
 - Power asymmetries and exclusions`;
 }
+
+/**
+ * Analyze institutional logics using AI and detect ghost nodes
+ */
+export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
+  openai: any,
+  text: string,
+  existingAnalysis: any,
+  documentType: string = "policy"
+): Promise<{ ghostNodes: GhostNode[]; institutionalLogics?: InstitutionalLogics }> {
+  try {
+    // Call OpenAI to analyze institutional logics
+    const prompt = `Analyze the following policy document and identify the strength of different institutional logics.
+
+Document Text:
+${text.substring(0, 2000)}
+
+Existing Network Analysis:
+${JSON.stringify(existingAnalysis, null, 2).substring(0, 1000)}
+
+Return ONLY a JSON object with this structure:
+{
+  "institutionalLogics": {
+    "market": {
+      "strength": 0.0-1.0,
+      "champions": ["Actor names who embody this logic"],
+      "material": "Material practices (e.g., contracts, pricing)",
+      "discursive": "Discourse patterns (e.g., efficiency, competition)"
+    },
+    "state": {
+      "strength": 0.0-1.0,
+      "champions": [],
+      "material": "Material practices (e.g., regulation, enforcement)",
+      "discursive": "Discourse patterns (e.g., public interest, sovereignty)"
+    },
+    "professional": {
+      "strength": 0.0-1.0,
+      "champions": [],
+      "material": "Material practices (e.g., expertise, credentials)",
+      "discursive": "Discourse patterns (e.g., best practices, standards)"
+    },
+    "community": {
+      "strength": 0.0-1.0,
+      "champions": [],
+      "material": "Material practices (e.g., participation, solidarity)",
+      "discursive": "Discourse patterns (e.g., collective voice, local knowledge)"
+    }
+  }
+}
+
+Assess strength based on:
+- 0.0-0.3: Weak or absent
+- 0.3-0.6: Moderate presence
+- 0.6-1.0: Strong dominance`;
+
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert in institutional theory and policy analysis. Analyze documents to identify institutional logics.",
+        },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 2000,
+    });
+
+    const responseText = completion.choices[0]?.message?.content || "{}";
+    const result = JSON.parse(responseText);
+
+    // Detect ghost nodes using the institutional logics
+    const ghostNodes = detectGhostNodes(
+      existingAnalysis.nodes || [],
+      result.institutionalLogics,
+      documentType
+    );
+
+    return {
+      ghostNodes,
+      institutionalLogics: result.institutionalLogics,
+    };
+  } catch (error) {
+    console.error("Ghost node detection error:", error);
+    // Fallback: detect ghost nodes without AI analysis
+    const ghostNodes = detectGhostNodes(existingAnalysis.nodes || [], undefined, documentType);
+    return { ghostNodes };
+  }
+}
