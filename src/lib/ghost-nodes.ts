@@ -370,46 +370,20 @@ Return ONLY a JSON object with this structure:
   ]
 }
 
-For absentActors - CRITICAL REQUIREMENTS:
-1. Identify 3-5 actor types typically present in ${documentType} governance but ABSENT here
-2. Explain WHY they're absent based on THIS SPECIFIC document:
-   - Reference the document's actual focus, scope, or framing
-   - Mention what the document prioritizes INSTEAD of this actor
-   - Be analytical, not generic (bad: "commonly stakeholders", good: "The regulatory framework prioritizes industry compliance without addressing community consultation processes")
-3. For EACH absent actor, provide absenceStrength (0-100):
-   - 0-30: Weakly absent (mentioned peripherally, minor exclusion)
-   - 31-60: Moderately absent (some relevance but not enrolled)
-   - 61-85: Strongly absent (highly relevant but systematically excluded)
-   - 86-100: Critically absent (essential actor completely missing, major political consequence)
-4. For EACH absent actor, classify exclusionType:
-   - "silenced": Mentioned in document but not enrolled as active participant
-   - "marginalized": Present but with weak connections or peripheral role
-   - "structurally-excluded": Never considered due to document framing/scope
-   - "displaced": Replaced by proxy actors (e.g., "industry reps" instead of "workers")
-5. For EACH absent actor, provide institutionalLogics (0.0-1.0 for each logic):
-   - Shows which institutional logic this absent actor would champion if enrolled
-   - Example: Indigenous Communities = {community: 0.9, state: 0.2, professional: 0.1, market: 0.1}
-6. For EACH absent actor, you MUST provide 1-3 potentialConnections:
-   - targetActor: Use the EXACT name of an actor from the existing network (check the Existing Network Analysis above)
-   - relationshipType: Choose ONE: "excluded from" | "silenced by" | "addressed but not enrolled" | "marginalized by"
-   - evidence: Extract a direct quote or paraphrase showing the exclusion (1-2 sentences max)
-4. Example of a GOOD absent actor:
-   {
-     "name": "Indigenous Communities",
-     "reason": "The document focuses exclusively on technical infrastructure standards and industry compliance mechanisms, without addressing Indigenous land rights or traditional knowledge systems in the governance structure.",
-     "potentialConnections": [
-       {
-         "targetActor": "Regulatory Authority",
-         "relationshipType": "excluded from",
-         "evidence": "The regulatory framework establishes industry-led compliance processes without requiring consultation with Indigenous stakeholders."
-       }
-     ]
-   }
+REQUIREMENTS for absentActors array:
+1. Identify 3-5 actor types typically present in ${documentType} but ABSENT from this document
+2. For EACH absent actor provide ALL fields:
+   - name: Actor type name
+   - reason: WHY absent (reference document's specific focus/framing)
+   - absenceStrength: Score 0-100 (30=weak, 60=moderate, 85=strong, 100=critical)
+   - exclusionType: "silenced" | "marginalized" | "structurally-excluded" | "displaced"
+   - institutionalLogics: {market: 0.0-1.0, state: 0.0-1.0, professional: 0.0-1.0, community: 0.0-1.0}
+   - potentialConnections: Array of 1-3 connections with targetActor (use EXACT names from existing network), relationshipType, evidence
 
-Strength assessment (use decimal values between 0.0 and 1.0):
-- 0.0 to 0.3: Weak or absent logic
-- 0.3 to 0.6: Moderate presence
-- 0.6 to 1.0: Strong dominance`;
+Institutional logic strength scale:
+- 0.0-0.3: Weak/absent
+- 0.3-0.6: Moderate
+- 0.6-1.0: Strong`;
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o",
@@ -417,12 +391,12 @@ Strength assessment (use decimal values between 0.0 and 1.0):
         {
           role: "system",
           content:
-            "You are an expert in institutional theory and policy analysis. Analyze documents to identify institutional logics.",
+            "You are an expert in Actor-Network Theory and policy analysis. Return valid JSON with institutionalLogics and absentActors arrays. Always include ALL required fields for each absent actor.",
         },
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 2000,
+      max_completion_tokens: 3000,
     });
 
     const responseText = completion.choices[0]?.message?.content || "{}";
