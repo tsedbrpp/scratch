@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { detectGhostNodes, getCategoryColor } from '@/lib/ghost-nodes';
 
 // DSF Lens System Prompt
 const DSF_SYSTEM_PROMPT = `You are an expert qualitative researcher acting as an 'Analytical Lens'. 
@@ -203,14 +204,14 @@ Provide your output in JSON format as an array of objects:
 
 // Ontology System Prompt
 const ONTOLOGY_SYSTEM_PROMPT = `You are an expert qualitative researcher and systems thinker.
-Your task is to extract a "Concept Map" (Ontology) of the **Algorithmic Assemblage** described in the text.
-
+Your task is to extract a "Concept Map" (Ontology) of the **Algorithmic Assemblage** described in the text, with special attention to ABSENT or MARGINALIZED voices.
 
 Identify key concepts (nodes) and the relationships (edges) between them.
 Focus on:
 1. **Core Concepts**: The central ideas or objects in the text.
 2. **Mechanisms**: How these concepts interact or influence each other.
 3. **Power Dynamics**: Relationships of control, resistance, or hierarchy.
+4. **Institutional Logics**: Assess the strength (0-1 scale) of Market, State, Professional, and Community logics.
 
 Provide your analysis in JSON format with this structure:
 {
@@ -220,9 +221,16 @@ Provide your analysis in JSON format with this structure:
     ],
     "links": [
         { "source": "source_concept_id", "target": "target_concept_id", "relation": "verb_phrase", "description": "Context of the relationship" }
-    ]
+    ],
+    "institutionalLogics": {
+        "market": { "strength": 0.0-1.0, "champions": ["Actor names"], "material": "Material practices", "discursive": "Discourse patterns" },
+        "state": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
+        "professional": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" },
+        "community": { "strength": 0.0-1.0, "champions": [], "material": "", "discursive": "" }
+    }
 }
 
+Focus on who has voice vs who is silent, which logics dominate vs which are weak.
 Limit to 10-15 most important nodes and their connections to keep the visualization readable.`;
 
 // Cultural Holes System Prompt
@@ -312,7 +320,7 @@ Please generate 3 synthetic resistance traces based on this policy.`;
 TEXT CONTENT:
 ${text}
 
-Please extract the ontology / concept map from this text.`;
+Please extract the ontology / concept map from this text, including institutional logics analysis.`;
     } else if (analysisMode === 'cultural_framing') {
       systemPrompt = CULTURAL_FRAMING_PROMPT;
       userContent = `SOURCE TYPE: ${sourceType || 'Policy Document'}
@@ -362,6 +370,27 @@ Please analyze this text according to the system prompt instructions.`;
     let analysis;
     try {
       analysis = JSON.parse(responseText);
+      
+      // Add ghost node detection for ontology mode
+      if (analysisMode === 'ontology' && analysis.nodes) {
+        // Add colors to existing nodes
+        const nodes = (analysis.nodes || []).map((node: any) => ({
+          ...node,
+          color: getCategoryColor(node.category),
+          isGhost: false
+        }));
+        
+        // Detect ghost nodes
+        const ghostNodes = detectGhostNodes(
+          nodes,
+          analysis.institutionalLogics,
+          sourceType?.toLowerCase() || 'policy'
+        );
+        
+        // Combine visible and ghost nodes
+        analysis.nodes = [...nodes, ...ghostNodes];
+        analysis.ghostNodeCount = ghostNodes.length;
+      }
     } catch {
       // If not JSON, structure it manually
       if (analysisMode === 'resistance') {

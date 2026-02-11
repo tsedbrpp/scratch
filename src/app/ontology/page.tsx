@@ -18,6 +18,10 @@ interface OntologyNode {
     x?: number;
     y?: number;
     color?: string;
+    // Ghost node fields
+    isGhost?: boolean;
+    ghostReason?: string;
+    strength?: number;
 }
 
 interface OntologyLink {
@@ -30,6 +34,8 @@ interface OntologyData {
     summary?: string;
     nodes: OntologyNode[];
     links: OntologyLink[];
+    institutionalLogics?: any;
+    ghostNodeCount?: number;
 }
 
 // Static Data (Fallback)
@@ -120,6 +126,7 @@ export default function OntologyPage() {
     // Interactivity State
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const [showGhostNodes, setShowGhostNodes] = useState(true);
 
     // Filter sources that have text available for analysis
     const analyzedSources = sources.filter(s => s.extractedText);
@@ -151,7 +158,9 @@ export default function OntologyPage() {
                 setOntologyData({
                     summary: data.analysis.summary,
                     nodes: processedNodes,
-                    links: data.analysis.links
+                    links: data.analysis.links,
+                    institutionalLogics: data.analysis.institutionalLogics,
+                    ghostNodeCount: data.analysis.ghostNodeCount
                 });
             } else {
                 alert("Analysis failed: " + (data.error || "Unknown error"));
@@ -185,8 +194,13 @@ export default function OntologyPage() {
     };
 
     // Use static data if no dynamic data is generated
-    const displayNodes = ontologyData ? ontologyData.nodes : STATIC_NETWORK_NODES;
+    const allNodes = ontologyData ? ontologyData.nodes : STATIC_NETWORK_NODES;
     const displayLinks = ontologyData ? ontologyData.links : STATIC_NETWORK_LINKS;
+    
+    // Filter nodes based on ghost toggle
+    const displayNodes = showGhostNodes 
+        ? allNodes 
+        : allNodes.filter(n => !n.isGhost);
 
     // Filtered cards based on selection
     const filteredNodes = selectedNodeId
@@ -298,11 +312,34 @@ export default function OntologyPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>{ontologyData ? "Extracted Concept Map" : "Concept Network (Example)"}</CardTitle>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                                <CardTitle>{ontologyData ? "Extracted Concept Map" : "Concept Network (Example)"}</CardTitle>
+                                {/* Ghost Node Toggle */}
+                                {ontologyData && ontologyData.ghostNodeCount && ontologyData.ghostNodeCount > 0 && (
+                                    <Button
+                                        variant={showGhostNodes ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setShowGhostNodes(!showGhostNodes)}
+                                        className={showGhostNodes ? "bg-purple-600 hover:bg-purple-700" : ""}
+                                    >
+                                        <span className="mr-2">👻</span>
+                                        {showGhostNodes ? 'Hide' : 'Show'} Ghost Nodes ({ontologyData.ghostNodeCount})
+                                    </Button>
+                                )}
+                            </div>
                             <CardDescription>
                                 {ontologyData
-                                    ? "Interactive map. Hover to see connections, click to filter details."
+                                    ? (
+                                        <>
+                                            Interactive map. Hover to see connections, click to filter details.
+                                            {ontologyData.ghostNodeCount && ontologyData.ghostNodeCount > 0 && (
+                                                <span className="text-purple-600 font-medium ml-2">
+                                                    • {ontologyData.ghostNodeCount} absent actor{ontologyData.ghostNodeCount > 1 ? 's' : ''} detected
+                                                </span>
+                                            )}
+                                        </>
+                                    )
                                     : "Static example. Hover to see connections, click to filter details."}
                             </CardDescription>
                         </div>
@@ -389,11 +426,12 @@ export default function OntologyPage() {
                             const isSelected = selectedNodeId === node.id;
                             const isConnectedToHover = isConnected(node.id);
                             const isDimmed = (hoveredNodeId && !isHovered && !isConnectedToHover) || (selectedNodeId && !isSelected && selectedNodeId !== null && !hoveredNodeId);
+                            const isGhost = node.isGhost || false;
 
-                            const opacity = isDimmed ? 0.3 : 1;
+                            const opacity = isGhost ? 0.3 : (isDimmed ? 0.3 : 1);
                             const scale = isHovered || isSelected ? 1.1 : 1;
-                            const strokeWidth = isSelected ? 3 : (isHovered ? 2 : 0);
-                            const strokeColor = isSelected ? "#0f172a" : node.color;
+                            const strokeWidth = isGhost ? 2 : (isSelected ? 3 : (isHovered ? 2 : 0));
+                            const strokeColor = isGhost ? "#9333EA" : (isSelected ? "#0f172a" : node.color);
 
                             const tx = node.x || 0;
                             const ty = node.y || 0;
@@ -414,8 +452,19 @@ export default function OntologyPage() {
                                         fill="white"
                                         stroke={strokeColor}
                                         strokeWidth={strokeWidth}
+                                        strokeDasharray={isGhost ? "5,5" : "0"}
                                         filter={isHovered || isSelected ? "url(#glow)" : ""}
                                     />
+                                    {isGhost && (
+                                        <text
+                                            x={node.x}
+                                            y={(node.y || 0) - 45}
+                                            textAnchor="middle"
+                                            fontSize="20"
+                                        >
+                                            👻
+                                        </text>
+                                    )}
                                     <circle
                                         cx={node.x}
                                         cy={node.y}
@@ -446,6 +495,38 @@ export default function OntologyPage() {
                 </CardContent>
             </Card>
 
+            {/* Statistics */}
+            {ontologyData && (
+                <div className="grid grid-cols-3 gap-4">
+                    <Card className="border-blue-200 bg-blue-50">
+                        <CardContent className="pt-6">
+                            <div className="text-3xl font-bold text-blue-700">
+                                {ontologyData.nodes.filter(n => !n.isGhost).length}
+                            </div>
+                            <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="border-purple-200 bg-purple-50">
+                        <CardContent className="pt-6">
+                            <div className="text-3xl font-bold text-purple-700">
+                                {ontologyData.ghostNodeCount || 0}
+                            </div>
+                            <div className="text-sm text-purple-600 mt-1">Ghost Nodes</div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="border-slate-200 bg-slate-50">
+                        <CardContent className="pt-6">
+                            <div className="text-3xl font-bold text-slate-700">
+                                {ontologyData.links.length}
+                            </div>
+                            <div className="text-sm text-slate-600 mt-1">Connections</div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {/* Concept Cards */}
             <div id="concept-cards" className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -465,13 +546,25 @@ export default function OntologyPage() {
                             const node = n as OntologyNode;
                             const colors = getColorClassForCategory(node.category);
                             return (
-                                <Card key={node.id} className={`hover:shadow-md transition-all duration-300 ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 shadow-lg' : ''}`}>
+                                <Card key={node.id} className={`hover:shadow-md transition-all duration-300 ${selectedNodeId === node.id ? 'ring-2 ring-indigo-500 shadow-lg' : ''} ${node.isGhost ? 'opacity-60' : ''}`}>
                                     <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                                         <div className="space-y-1">
-                                            <CardTitle className="text-lg font-semibold">{node.label}</CardTitle>
-                                            <Badge variant="secondary" className="mt-1">
-                                                {node.category}
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <CardTitle className="text-lg font-semibold">{node.label}</CardTitle>
+                                                {node.isGhost && (
+                                                    <span className="text-lg">👻</span>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Badge variant="secondary" className="mt-1">
+                                                    {node.category}
+                                                </Badge>
+                                                {node.isGhost && (
+                                                    <Badge className="mt-1 bg-purple-600 text-white">
+                                                        Ghost Node
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className={`rounded-full p-2 ${colors.bg}`}>
                                             <Brain className={`h-5 w-5 ${colors.text}`} />
@@ -481,7 +574,33 @@ export default function OntologyPage() {
                                         <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                                             {node.description || "No description available."}
                                         </p>
-                                        {node.quote && (
+                                        
+                                        {node.isGhost && node.ghostReason && (
+                                            <div className="mt-4 p-3 bg-purple-100 border-l-4 border-purple-600 rounded-r">
+                                                <div className="flex items-start gap-2">
+                                                    <span className="text-purple-600 font-semibold text-sm">Why absent?</span>
+                                                </div>
+                                                <p className="text-sm text-slate-700 mt-1">
+                                                    {node.ghostReason}
+                                                </p>
+                                            </div>
+                                        )}
+                                        
+                                        {node.strength !== undefined && (
+                                            <div className="mt-3">
+                                                <div className="text-xs text-slate-600 mb-1">
+                                                    Logic Strength: {node.strength.toFixed(2)}
+                                                </div>
+                                                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-purple-600 rounded-full"
+                                                        style={{ width: `${(1 - node.strength) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {node.quote && !node.isGhost && (
                                             <div className="mt-4 p-3 bg-slate-50 border-l-4 border-indigo-200 rounded-r text-xs italic text-slate-700">
                                                 &quot;{node.quote}&quot;
                                             </div>
