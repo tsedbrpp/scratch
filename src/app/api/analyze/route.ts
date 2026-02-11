@@ -608,6 +608,19 @@ export async function POST(request: NextRequest) {
     }
     const { analysis, usage } = await performAnalysis(openai, contextId, requestData); // Use ContextId
 
+    // --- GHOST NODE DETECTION FOR ONTOLOGY MODE ---
+    if (analysisMode === 'ontology' && analysis && analysis.nodes) {
+      const { detectGhostNodes } = await import('@/lib/ghost-nodes');
+      const ghostNodesResult = await detectGhostNodes(openai, text, analysis);
+      
+      // Add ghost nodes to the analysis
+      if (ghostNodesResult.ghostNodes && ghostNodesResult.ghostNodes.length > 0) {
+        analysis.nodes = [...analysis.nodes, ...ghostNodesResult.ghostNodes];
+        analysis.institutionalLogics = ghostNodesResult.institutionalLogics;
+        analysis.ghostNodeCount = ghostNodesResult.ghostNodes.length;
+      }
+    }
+
     // ---------------------
     // Cache the result
     try {

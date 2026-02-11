@@ -128,8 +128,13 @@ export function OntologyMap({
         node.append("circle")
             .attr("r", d => d.id === selectedNodeId ? 45 : 35)
             .attr("fill", d => d.color || getColorForCategory(d.category))
-            .attr("stroke", d => d.id === selectedNodeId ? "#4f46e5" : "#fff")
+            .attr("stroke", d => {
+                if (d.isGhost) return "#9333ea"; // Purple for ghost nodes
+                return d.id === selectedNodeId ? "#4f46e5" : "#fff";
+            })
             .attr("stroke-width", d => d.id === selectedNodeId ? 3 : 2)
+            .attr("stroke-dasharray", d => d.isGhost ? "5,5" : "0")
+            .attr("opacity", d => d.isGhost ? 0.3 : 1)
             .attr("class", "transition-all duration-300 shadow-sm");
 
         // Node Label (ForeignObject for wrapping text)

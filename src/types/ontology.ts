@@ -7,6 +7,10 @@ export interface OntologyNode {
     x?: number;
     y?: number;
     color?: string;
+    // Ghost node fields
+    isGhost?: boolean;
+    ghostReason?: string;
+    strength?: number;
 }
 
 export interface OntologyLink {
@@ -19,6 +23,8 @@ export interface OntologyData {
     summary?: string;
     nodes: OntologyNode[];
     links: OntologyLink[];
+    institutionalLogics?: any;
+    ghostNodeCount?: number;
 }
 
 export interface ComparisonResult {

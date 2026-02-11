@@ -27,17 +27,32 @@ export function ConceptList({ nodes, selectedNodeId, onSelectNode }: ConceptList
                         >
                             <CardContent className="p-4">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-semibold text-slate-900">{node.label}</h4>
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
-                                        {node.category}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-semibold text-slate-900">{node.label}</h4>
+                                        {node.isGhost && <span className="text-sm">👻</span>}
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                            {node.category}
+                                        </Badge>
+                                        {node.isGhost && (
+                                            <Badge className="text-[10px] px-1.5 py-0 h-5 bg-purple-600 text-white">
+                                                Ghost
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
                                 {node.description && (
                                     <p className="text-xs text-slate-600 line-clamp-2 mb-2">
                                         {node.description}
                                     </p>
                                 )}
-                                {node.quote && (
+                                {node.isGhost && node.ghostReason && (
+                                    <div className="bg-purple-50 p-2 rounded text-[10px] text-purple-700 border-l-2 border-purple-600 mb-2">
+                                        <span className="font-semibold">Why absent?</span> {node.ghostReason}
+                                    </div>
+                                )}
+                                {node.quote && !node.isGhost && (
                                     <div className="bg-slate-50 p-2 rounded text-[10px] text-slate-500 italic border-l-2 border-slate-200">
                                         &quot;{node.quote.substring(0, 80)}...&quot;
                                     </div>

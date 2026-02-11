@@ -109,6 +109,7 @@ export default function OntologyPage() {
     // Interactivity State
     const [selectedNodeId, setSelectedNodeId] = useServerStorage<string | null>("ontology_selected_node_id", null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [showGhostNodes, setShowGhostNodes] = useState<boolean>(true);
 
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
@@ -341,8 +342,13 @@ export default function OntologyPage() {
     };
 
     // Filtering Logic
+    // Filter nodes based on category and ghost toggle
     const displayNodes = currentOntologyData
-        ? currentOntologyData.nodes.filter(n => !selectedCategory || n.category === selectedCategory)
+        ? currentOntologyData.nodes.filter(n => {
+            const categoryMatch = !selectedCategory || n.category === selectedCategory;
+            const ghostMatch = showGhostNodes || !n.isGhost;
+            return categoryMatch && ghostMatch;
+          })
         : STATIC_CONCEPTS;
 
     const displayLinks = currentOntologyData
@@ -469,8 +475,50 @@ export default function OntologyPage() {
                         </Card>
                     )}
 
+                    {/* Ghost Node Statistics */}
+                    {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                        <div className="grid grid-cols-3 gap-4">
+                            <Card className="border-blue-200 bg-blue-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-blue-700">
+                                        {currentOntologyData.nodes.filter(n => !n.isGhost).length}
+                                    </div>
+                                    <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-purple-200 bg-purple-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-purple-700">
+                                        {currentOntologyData.ghostNodeCount}
+                                    </div>
+                                    <div className="text-sm text-purple-600 mt-1">Ghost Nodes</div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-gray-200 bg-gray-50">
+                                <CardContent className="pt-6">
+                                    <div className="text-3xl font-bold text-gray-700">
+                                        {currentOntologyData.links.length}
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-1">Connections</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-4">
+                            {/* Ghost Node Toggle */}
+                            {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                                <div className="flex justify-end">
+                                    <Button
+                                        onClick={() => setShowGhostNodes(!showGhostNodes)}
+                                        variant="outline"
+                                        className="bg-purple-50 border-purple-300 hover:bg-purple-100"
+                                    >
+                                        👻 {showGhostNodes ? 'Hide' : 'Show'} Ghost Nodes ({currentOntologyData.ghostNodeCount})
+                                    </Button>
+                                </div>
+                            )}
                             <OntologyMap
                                 nodes={displayNodes}
                                 links={displayLinks}
