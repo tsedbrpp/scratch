@@ -180,10 +180,10 @@ export function OntologyMap({
     const potentialLinkPath = potentialLink
       .append("path")
       .attr("stroke", "#94a3b8")
-      .attr("stroke-width", 1.5)
-      .attr("stroke-dasharray", "4,4")
+      .attr("stroke-width", 4)
+      .attr("stroke-dasharray", "6,6")
       .attr("fill", "none")
-      .attr("opacity", 0.35)
+      .attr("opacity", 0.5)
       .style("pointer-events", "all")
       .style("cursor", "help");
 

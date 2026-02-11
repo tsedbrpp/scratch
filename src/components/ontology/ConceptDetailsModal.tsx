@@ -62,6 +62,59 @@ export function ConceptDetailsModal({ selectedNode, isOpen, onClose, isStatic = 
                         </div>
                     )}
 
+                    {selectedNode.isGhost && selectedNode.whyAbsent && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-2">👻 Why Absent?</h4>
+                            <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded-r">
+                                <p className="text-slate-700">
+                                    {selectedNode.whyAbsent}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedNode.isGhost && selectedNode.potentialConnections && selectedNode.potentialConnections.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-2">Potential Connections</h4>
+                            <div className="space-y-3">
+                                {selectedNode.potentialConnections.map((conn, idx) => (
+                                    <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                        <div className="flex items-start gap-2">
+                                            <div className="flex-shrink-0 text-purple-500 font-semibold text-sm">→</div>
+                                            <div className="flex-1">
+                                                <div className="font-medium text-slate-900 mb-1">
+                                                    {conn.targetActor}
+                                                </div>
+                                                <div className="text-xs text-purple-600 italic mb-2">
+                                                    {conn.relationshipType}
+                                                </div>
+                                                <div className="text-sm text-slate-600 leading-relaxed">
+                                                    {conn.evidence}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedNode.isGhost && selectedNode.institutionalLogics && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-2">Institutional Logics</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(selectedNode.institutionalLogics).map(([logic, strength]) => (
+                                    <div key={logic} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                                        <span className="text-sm text-slate-700 capitalize">{logic}</span>
+                                        <Badge variant="outline" className="text-xs">
+                                            {Math.round(strength * 100)}%
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {isStatic && (
                         <div className="text-xs text-slate-400 mt-4">
                             * This is a static example node.
