@@ -404,6 +404,10 @@ Institutional logic strength scale:
     const result = JSON.parse(responseText);
     console.log('[GHOST_NODES] Parsed result keys:', Object.keys(result));
     console.log('[GHOST_NODES] absentActors count:', result.absentActors?.length || 0);
+    if (result.absentActors && result.absentActors.length > 0) {
+      console.log('[GHOST_NODES] First absent actor fields:', Object.keys(result.absentActors[0]));
+      console.log('[GHOST_NODES] First absent actor sample:', JSON.stringify(result.absentActors[0]).substring(0, 300));
+    }
 
     // Validate nodes array
     const nodesArray = Array.isArray(existingAnalysis.nodes)
@@ -464,6 +468,9 @@ Institutional logic strength scale:
           if (ghostNodeIndex !== -1) {
             // Update existing ghost node with AI explanation and connections
             console.log(`[GHOST_NODES] Updating ghost node "${ghostNodes[ghostNodeIndex].label}" with AI data`);
+            console.log(`[GHOST_NODES]   - absenceStrength: ${absentActor.absenceStrength ?? 'MISSING'}`);
+            console.log(`[GHOST_NODES]   - exclusionType: ${absentActor.exclusionType ?? 'MISSING'}`);
+            console.log(`[GHOST_NODES]   - institutionalLogics: ${absentActor.institutionalLogics ? 'present' : 'MISSING'}`);
             ghostNodes[ghostNodeIndex].ghostReason = absentActor.reason;
             ghostNodes[ghostNodeIndex].potentialConnections =
               absentActor.potentialConnections || [];
@@ -480,6 +487,9 @@ Institutional logic strength scale:
           } else {
             // Add new ghost node from AI analysis
             console.log(`[GHOST_NODES] Adding new AI ghost node: "${absentActor.name}"`);
+            console.log(`[GHOST_NODES]   - absenceStrength: ${absentActor.absenceStrength ?? 'MISSING'}`);
+            console.log(`[GHOST_NODES]   - exclusionType: ${absentActor.exclusionType ?? 'MISSING'}`);
+            console.log(`[GHOST_NODES]   - institutionalLogics: ${absentActor.institutionalLogics ? 'present' : 'MISSING'}`);
             ghostNodes.push({
               id: `ghost-ai-${index}`,
               label: absentActor.name,
