@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftRight, Globe2, Scale, Users, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, Eye } from "lucide-react";
+import { ArrowLeftRight, Globe2, Scale, Building, Loader2, Sparkles, AlertTriangle, RefreshCw, Wand2, Eye } from "lucide-react";
 import { PromptDialog } from "@/components/transparency/PromptDialog";
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import dynamic from 'next/dynamic';
@@ -28,10 +28,8 @@ import { LensSelector, InterpretationLens } from "@/components/comparison/LensSe
 import { RebuttalPopover } from "@/components/comparison/RebuttalPopover";
 import { Source, ComparativeSynthesis, PositionalityData } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy } from "lucide-react"; // Or whatever icon needed
 import { CulturalFramingTable } from "@/components/policy/CulturalFramingTable";
 import { InstitutionalLogicsTable } from "@/components/policy/InstitutionalLogicsTable";
-import { TextParser, extractKeyTakeaway } from "@/components/ui/TextParser";
 
 export default function ComparisonPage() {
     const { sources, isLoading, updateSource } = useSources();
@@ -83,19 +81,7 @@ export default function ComparisonPage() {
         .map(id => policyDocs.find(s => s.id === id))
         .filter(Boolean) as Source[];
 
-    const logicIcons = {
-        market: Building,
-        state: Scale,
-        professional: Users,
-        community: Users,
-    };
 
-    const logicColors = {
-        market: "text-purple-600 bg-purple-100",
-        state: "text-blue-600 bg-blue-100",
-        professional: "text-green-600 bg-green-100",
-        community: "text-orange-600 bg-orange-100",
-    };
 
     const handleSynthesize = async (forceOverride?: boolean) => {
         if (selectedSources.length < 2) return;
@@ -119,6 +105,15 @@ export default function ComparisonPage() {
                 setActiveTab("synthesis");
                 return;
             }
+        }
+
+        // When forced, clear the persisted result for this lens first so the UI shows loading state
+        if (isForced) {
+            setSynthesisResults(prev => {
+                const next = { ...prev };
+                delete next[activeLens];
+                return next;
+            });
         }
 
         setSynthesisError(null);
@@ -490,12 +485,7 @@ export default function ComparisonPage() {
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    onClick={() => {
-                                        if (confirm(`Clear cached synthesis for ${activeLens} and re-run analysis?`)) {
-                                            setForceRefresh(true);
-                                            handleSynthesize(true);
-                                        }
-                                    }}
+                                    onClick={() => handleSynthesize(true)}
                                     disabled={isReadOnly || isSynthesizing}
                                     title={isReadOnly ? "Cache clearing disabled in Demo Mode" : "Clear Cache & Re-run Synthesis"}
                                     className={`text-slate-400 hover:text-red-600 shrink-0 ${isSynthesizing ? 'animate-spin' : ''}`}

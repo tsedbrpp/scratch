@@ -26,6 +26,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ConceptNetworkGraph } from './ConceptNetworkGraph';
+import { CulturalFramingCard } from './CulturalFramingCard';
 
 interface MultiLensAnalysisProps {
     initialText?: string;
@@ -444,39 +445,8 @@ export function MultiLensAnalysis({ initialText = '', sources = [], onRefresh }:
                                             )}
 
                                             {/* --- CULTURAL FRAMING --- */}
-                                            {lens.id === 'cultural_framing' && (
-                                                <div className="space-y-3">
-                                                    <div className="bg-amber-50 border border-amber-100 rounded-md p-3">
-                                                        <span className="text-xs font-bold text-amber-800 uppercase tracking-wide block mb-1">Dominant Cultural Logic</span>
-                                                        <p className="font-semibold text-amber-900 leading-tight">
-                                                            {results['cultural_framing']?.plain_language_summary?.dominant_cultural_logic?.label || results['cultural_framing']?.dominant_cultural_logic || 'Undetermined'}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="bg-slate-50 p-3 rounded-md border border-slate-100">
-                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">The &quot;Imagined&quot; State</span>
-                                                        <p className="text-xs leading-relaxed">
-                                                            {results['cultural_framing']?.state_market_society || getKeyInsight(lens.id, results[lens.id])}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Concept Network Graph */}
-                                                    {results['cultural_framing']?.concept_map && (
-                                                        <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                                                            <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-                                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                                                    Cultural Logic Network
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-400">
-                                                                    {results['cultural_framing'].concept_map.nodes.length} Nodes
-                                                                </span>
-                                                            </div>
-                                                            <div className="h-[500px] w-full relative">
-                                                                <ConceptNetworkGraph data={results['cultural_framing'].concept_map} />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            {lens.id === 'cultural_framing' && results['cultural_framing'] && (
+                                                <CulturalFramingCard result={results['cultural_framing']} />
                                             )}
 
                                             {/* --- DECOLONIAL FRAMEWORK --- */}

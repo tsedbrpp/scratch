@@ -125,6 +125,8 @@ export interface AnalysisResult {
             number: number;
             heading: string;
             paragraphs: string[];
+            evidence?: string;
+            summary?: string;
         }[];
         dominant_cultural_logic: {
             label: string;
