@@ -28,8 +28,13 @@ interface EcosystemToolbarProps {
     actors: EcosystemActor[];
     links: any[]; // Using any[] to match usage, ideally strict type
     configurations: EcosystemConfiguration[];
-    onCreateAssemblage: (name: string, memberIds: string[]) => void;
+    onCreateAssemblage: (name: string, members: string[]) => void;
     resetZoom: () => void;
+    // [NEW] Visual Filters
+    showUnverifiedLinks?: boolean;
+    onToggleUnverified?: () => void;
+    linkClassFilter?: 'all' | 'mediator' | 'intermediary';
+    onCycleClassFilter?: () => void;
 }
 
 export const EcosystemToolbar = memo(function EcosystemToolbar({
@@ -56,7 +61,11 @@ export const EcosystemToolbar = memo(function EcosystemToolbar({
     links,
     configurations,
     onCreateAssemblage,
-    resetZoom
+    resetZoom,
+    showUnverifiedLinks,
+    onToggleUnverified,
+    linkClassFilter = 'all',
+    onCycleClassFilter
 }: EcosystemToolbarProps) {
     return (
         <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200 overflow-x-auto max-w-full pb-1">
@@ -149,6 +158,31 @@ export const EcosystemToolbar = memo(function EcosystemToolbar({
                         title="Toggle Presentation Mode: Bloom, Fog, Curved Links"
                     >
                         {isPresentationMode ? "✨ Presentation Mode" : "🔬 Research Mode"}
+                    </Button>
+                    {/* Class Filter Cycle */}
+                    {onCycleClassFilter && (
+                        <>
+                            <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                            <Button
+                                variant="ghost" size="sm"
+                                onClick={onCycleClassFilter}
+                                className={`h-7 px-2.5 text-xs font-medium shrink-0 ${linkClassFilter !== 'all' ? "bg-blue-50 text-blue-700 border border-blue-200" : "text-slate-600 hover:bg-slate-100 border border-transparent"}`}
+                                title="Filter analyzed links by classification"
+                            >
+                                {linkClassFilter === 'all' ? "All Types" :
+                                    linkClassFilter === 'mediator' ? "Mediators" :
+                                        "Intermediaries"}
+                            </Button>
+                        </>
+                    )}
+                    <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                    <Button
+                        variant="ghost" size="sm"
+                        onClick={onToggleUnverified}
+                        className={`h-7 px-2.5 text-xs font-medium shrink-0 ${showUnverifiedLinks ? "bg-amber-50 text-amber-700 border border-amber-200" : "text-slate-500 hover:text-slate-900"}`}
+                        title="Show/Hide unanalyzed relationships"
+                    >
+                        {showUnverifiedLinks ? "Show All Links" : "Filtered View"}
                     </Button>
                 </>
             )}

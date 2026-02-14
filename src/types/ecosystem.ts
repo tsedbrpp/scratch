@@ -1,6 +1,8 @@
 export type QualitativeMetric = "Strong" | "Moderate" | "Weak" | "Latent";
 
 import { EscalationStatus } from './escalation';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Relationship } from './relationship';
 
 export interface ReflexiveLogEntry {
     id: string;
@@ -133,6 +135,7 @@ export interface AssemblageAnalysis {
     // [NEW] Governance Status
     escalation_status?: EscalationStatus;
     dominant_logic?: string; // [NEW] Hoisted for Recurring Patterns
+    relationships?: import('./relationship').Relationship[]; // [NEW] Mediator Analysis Results
 }
 
 export interface AiAbsenceAnalysis {

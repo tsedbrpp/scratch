@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Loader2, Layers, Maximize2, Minimize2, X, ChevronDown, ChevronUp, GripVertical, Trash2, Lock, Wind, Scale } from 'lucide-react';
+import { Loader2, Layers, Maximize2, Minimize2, X, ChevronDown, ChevronUp, GripVertical, Trash2, Lock, Wind, Scale, Activity } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { EcosystemActor, AssemblageAnalysis, EcosystemConfiguration } from '@/types/ecosystem';
@@ -14,6 +14,9 @@ import { AssemblageMethodologyGraph, PipelineStepStatus } from './AssemblageMeth
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { calculateAssemblageMetrics } from "@/lib/ecosystem-utils";
+import { analyzeMediatorScoresBatch } from "@/services/mediatorAnalysis";
+import { generateEdges } from "@/lib/graph-utils";
+import { getMediatorClassification } from "@/types/relationship"; // [FIX] Import function
 
 interface AssemblagePanelProps {
     actors: EcosystemActor[];
@@ -443,6 +446,114 @@ export function AssemblagePanel({
     const [isEnriching, setIsEnriching] = useState(false);
     const [enrichProgress, setEnrichProgress] = useState(0);
 
+    const [isAnalyzingRelationships, setIsAnalyzingRelationships] = useState(false);
+
+    const handleAnalyzeRelationships = async () => {
+        if (!actors || actors.length === 0) return;
+
+        // Credit Check
+        if (!creditsLoading && !hasCredits) {
+            setShowTopUp(true);
+            return;
+        }
+
+        setIsAnalyzingRelationships(true);
+
+        try {
+            // 1. Identify Edges
+            const targetActors = selectedConfigs.length > 0
+                ? actors.filter(a => selectedConfigs.some(c => c.memberIds.includes(a.id)))
+                : actors;
+
+            let edges = generateEdges(targetActors);
+            if (edges.length === 0) {
+                alert("No relationships found between these actors.");
+                setIsAnalyzingRelationships(false);
+                return;
+            }
+
+            // [SMART SORT] Prioritize "Healthier" / More Powerful links
+            // Sort by combined dynamic power of actors
+            edges = edges.sort((a, b) => {
+                const getPower = (actor: EcosystemActor) => (actor.metrics?.dynamic_power || 0);
+                const scoreA = getPower(a.source) + getPower(a.target);
+                const scoreB = getPower(b.source) + getPower(b.target);
+                return scoreB - scoreA; // Descending
+            });
+
+            // 2. Prepare Inputs
+            // TODO: Get real context from a "context" prop or similar if available, otherwise generic.
+            const context = analyzedText || "Policy Ecosystem Analysis";
+
+            const inputs = edges.map(edge => ({
+                sourceActor: edge.source.name,
+                targetActor: edge.target.name,
+                relationshipType: edge.label,
+                empiricalTraces: [edge.description], // Use existing description as trace for now
+                documentContext: context
+            }));
+
+
+            // [SPEED] Full Processing with gpt-4o-mini (Limited to 50 per user request)
+            const inputsToProcess = inputs.slice(0, 50);
+
+            const results = await analyzeMediatorScoresBatch(inputsToProcess);
+
+            // 4. Map Results to Relationship Objects
+            const relationships: import('@/types/relationship').Relationship[] = results.map((res, i) => {
+                const edge = edges[i];
+                return {
+                    id: `${edge.source.id}-${edge.target.id}`,
+                    source: edge.source.id,
+                    target: edge.target.id,
+                    type: edge.label,
+                    mediatorScore: res.mediatorScore,
+                    classification: getMediatorClassification(res.mediatorScore),
+                    dimensions: res.dimensions,
+                    empiricalTraces: [res.interpretation], // User interpretation as the trace
+                    metadata: {
+                        analyzedAt: new Date().toISOString(),
+                        aiModel: 'gpt-4o',
+                        confidence: 'medium'
+                    }
+                };
+            });
+
+            // 5. Save Results
+            const effectiveAnalysis = (selectedConfigs.length === 1 ? selectedConfigs[0].analysisData : null) || savedAnalysis || {};
+
+            // Merge with existing relationships if any
+            const existingRelationships = effectiveAnalysis.relationships || [];
+            // Create map for easy merge
+            const mergedMap = new Map(existingRelationships.map((r: any) => [r.id, r]));
+            relationships.forEach(r => mergedMap.set(r.id, r));
+
+            const finalRelationships = Array.from(mergedMap.values());
+
+            const updatedAnalysis = {
+                ...effectiveAnalysis,
+                relationships: finalRelationships
+            };
+
+            if (onSaveAnalysis) onSaveAnalysis(updatedAnalysis);
+
+            if (selectedConfigs.length === 1 && onUpdateConfig) {
+                onUpdateConfig({
+                    ...selectedConfigs[0],
+                    analysisData: updatedAnalysis
+                });
+            }
+
+            alert(`Analysis Complete: ${relationships.length} relationships classified.`);
+
+        } catch (error) {
+            console.error("Link analysis failed", error);
+            alert("Failed to analyze relationships.");
+        } finally {
+            setIsAnalyzingRelationships(false);
+        }
+    };
+
     const handleEnrichLinks = async () => {
         if (!actors || actors.length === 0) return;
         if (!onUpdateActors) return;
@@ -625,24 +736,43 @@ export function AssemblagePanel({
                             </label>
 
                             {/* Comprehensive Component Analysis */}
-                            <Button
-                                size="sm"
-                                onClick={handleDeepScan}
-                                disabled={isAnalyzing}
-                                className={`w-full text-xs font-medium gap-2 transition-all ${savedAnalysis ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
-                            >
-                                {isAnalyzing ? (
-                                    <>
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Layers className="h-3 w-3" />
-                                        Run Analysis
-                                    </>
-                                )}
-                            </Button>
+                            <div className="flex gap-1 w-full">
+                                <Button
+                                    size="sm"
+                                    onClick={handleDeepScan}
+                                    disabled={isAnalyzing}
+                                    className={`flex-1 text-xs font-medium gap-2 transition-all ${savedAnalysis ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                                >
+                                    {isAnalyzing ? (
+                                        <>
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Layers className="h-3 w-3" />
+                                            Deep Scan
+                                        </>
+                                    )}
+                                </Button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={handleAnalyzeRelationships}
+                                                disabled={isAnalyzingRelationships}
+                                                className="px-3 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 flex items-center gap-2"
+                                            >
+                                                {isAnalyzingRelationships ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
+                                                Analyze Links
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Analyze Mediator/Intermediary Roles</TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                         </div>
                     </div>
                 </div>

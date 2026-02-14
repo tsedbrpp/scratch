@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import * as d3 from 'd3';
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis, AiAbsenceAnalysis, AssemblageExplanation } from '@/types/ecosystem';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
@@ -132,6 +132,18 @@ export function EcosystemMap({
     const [showSolidEdges, setShowSolidEdges] = useState(true);
     const [showGhostEdges, setShowGhostEdges] = useState(true);
     const [activeTypeFilter, setActiveTypeFilter] = useState<string | null>(null);
+
+    // [NEW] Safe Exploration Toggle
+    const [showUnverifiedLinks, setShowUnverifiedLinks] = useState(false);
+    const [linkClassFilter, setLinkClassFilter] = useState<'all' | 'mediator' | 'intermediary'>('all');
+
+    const handleCycleClassFilter = useCallback(() => {
+        setLinkClassFilter(prev => {
+            if (prev === 'all') return 'mediator';
+            if (prev === 'mediator') return 'intermediary';
+            return 'all';
+        });
+    }, []);
 
     const mergedActors = useMemo(() => {
         return mergeGhostNodes(actors, absenceAnalysis || null);
@@ -270,21 +282,40 @@ export function EcosystemMap({
         configurations.forEach(config => {
             if (collapsedAssemblages.has(config.id)) config.memberIds.forEach(mId => memberToBlackBoxMap.set(mId, `blackbox-${config.id}`));
         });
+
+        // [NEW] Get Active Analysis for Link Enrichment
+        const activeAnalysis = (selectedConfigIds && selectedConfigIds.length === 1
+            ? configurations.find(c => c.id === selectedConfigIds[0])?.analysisData
+            : absenceAnalysis) as AssemblageAnalysis | undefined;
+
+        const relationshipMap = new Map(activeAnalysis?.relationships?.map(r => [r.id, r]));
+
         let processedLinks = rawEdges.map(e => {
             let sourceId = e.source.id;
             let targetId = e.target.id;
             if (memberToBlackBoxMap.has(sourceId)) sourceId = memberToBlackBoxMap.get(sourceId)!;
             if (memberToBlackBoxMap.has(targetId)) targetId = memberToBlackBoxMap.get(targetId)!;
+
+            // [NEW] Attach Analysis
+            // ID construction must match AssemblagePanel: `${source.id}-${target.id}`
+            // Note: generateEdges always puts source/target in a deterministic order? 
+            // Actually generateEdges iterates array order. We should check both directions or ensure stable key.
+            // For now assuming the generateEdges order is consistent enough or we check both.
+            const relKey = `${e.source.id}-${e.target.id}`;
+            const relKeyRev = `${e.target.id}-${e.source.id}`;
+            const analysis = relationshipMap.get(relKey) || relationshipMap.get(relKeyRev);
+
             return {
                 source: sourceId, target: targetId, type: e.label, description: e.description,
-                flow_type: e.flow_type, originalSource: e.source.id, originalTarget: e.target.id
+                flow_type: e.flow_type, originalSource: e.source.id, originalTarget: e.target.id,
+                analysis // [NEW] Pass to 3D View
             };
         });
         const validActorIds = new Set(hydratedActors.map(a => a.id));
         processedLinks = processedLinks.filter(l => validActorIds.has(l.source) && validActorIds.has(l.target));
         processedLinks = processedLinks.filter(l => l.source !== l.target);
         return processedLinks;
-    }, [filteredActors, hydratedActors, collapsedAssemblages, configurations]);
+    }, [filteredActors, hydratedActors, collapsedAssemblages, configurations, selectedConfigIds, absenceAnalysis]);
 
     const handleCreateAssemblage = React.useCallback((name: string, members: string[]) => {
         const newConfig: EcosystemConfiguration = {
@@ -637,6 +668,10 @@ export function EcosystemMap({
                         configurations={configurations}
                         onCreateAssemblage={handleCreateAssemblage}
                         resetZoom={resetZoom}
+                        showUnverifiedLinks={showUnverifiedLinks}
+                        onToggleUnverified={() => setShowUnverifiedLinks(p => !p)}
+                        linkClassFilter={linkClassFilter}
+                        onCycleClassFilter={handleCycleClassFilter}
                     />
                 </CardHeader>
 
@@ -649,6 +684,7 @@ export function EcosystemMap({
                         <div className="relative w-full h-full">
                             <EcosystemMap3D
                                 actors={hydratedActors}
+                                links={links} // [NEW] Pass pre-calculated links
                                 configurations={configurations}
                                 selectedForGrouping={selectedForGrouping}
                                 onToggleSelection={onToggleSelection}
@@ -661,6 +697,8 @@ export function EcosystemMap({
                                 tracedId={tracedActorId}
                                 isPresentationMode={isPresentationMode}
                                 selectedActorId={selectedActorId}
+                                showUnverifiedLinks={showUnverifiedLinks}
+                                linkClassFilter={linkClassFilter}
                             />
                             {/* HUD Overlays (Draggable Left) */}
                             <div

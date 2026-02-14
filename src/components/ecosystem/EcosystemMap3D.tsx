@@ -9,6 +9,9 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { computeNodeViz, computeLinkViz, NodeViz, LinkViz } from '@/lib/viz-contract';
 import { OverlayDetails } from './OverlayDetails';
 import { generateEdges } from '@/lib/graph-utils';
+import { createLinkGeometry, updateLinkPosition, createNodeObject, GraphNode, GraphLink, NodeUserData, animateLinkParticles } from './GraphVisuals';
+import { RelationshipDetail } from './RelationshipDetail';
+import { Relationship } from '@/types/relationship';
 
 // Dynamically import ForceGraph3D because it uses window/WEBGL which is client-side only
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), {
@@ -16,8 +19,10 @@ const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), {
     loading: () => <div className="flex items-center justify-center h-full text-slate-400">Loading 3D Engine...</div>
 });
 
+
 interface EcosystemMap3DProps {
     actors: EcosystemActor[];
+    links?: GraphLink[]; // [NEW] Typed Links
     configurations: EcosystemConfiguration[];
     selectedForGrouping: string[];
     onToggleSelection: (actorId: string) => void;
@@ -30,117 +35,128 @@ interface EcosystemMap3DProps {
     tracedId?: string | null;
     isPresentationMode?: boolean; // [NEW] Presentation Mode Toggle
     selectedActorId?: string | null; // [NEW] Synced Selection
+    showUnverifiedLinks?: boolean;
+    linkClassFilter?: 'all' | 'mediator' | 'intermediary';
 }
 
-// --- Types ---
-interface GraphNode {
-    id: string;
-    name: string;
-    type: string;
-    val: number;
-    color: string;
-    isConfiguration: boolean;
-    x?: number;
-    y?: number;
-    z?: number;
-    actor?: EcosystemActor;
-    viz?: NodeViz; // [NEW] Visual Contract Data
-}
 
-interface GraphLink {
-    source: string | GraphNode;
-    target: string | GraphNode;
-    type: string;
-    viz?: LinkViz; // [NEW] Visual Contract Data
-}
 
-// --- Helper: Create Text Sprite for Labels ---
-const createTextSprite = (text: string, color: string, fontSize: number = 24) => {
-    if (typeof document === 'undefined') return new THREE.Mesh();
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) return new THREE.Mesh();
-
-    const font = `Bold ${fontSize}px Inter, sans-serif`;
-    context.font = font;
-    const metrics = context.measureText(text);
-    const textWidth = metrics.width;
-
-    canvas.width = textWidth + 20;
-    canvas.height = fontSize + 20;
-
-    context.font = font;
-    context.font = font;
-    context.globalAlpha = 0.65; // [FIX] Semi-transparent background to reduce bloom glare
-    context.fillStyle = color;
-    context.beginPath();
-    context.roundRect(0, 0, canvas.width, canvas.height, 10);
-    context.fill();
-    context.globalAlpha = 1.0; // Reset alpha for text
-
-    context.fillStyle = 'white';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(text, canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-    const sprite = new THREE.Sprite(material);
-
-    sprite.scale.set(textWidth / 4, (fontSize + 10) / 4, 1);
-    return sprite;
-};
-
-interface NodeUserData {
-    isJitterTarget?: boolean;
-    jitterMagnitude?: number;
-    heat?: number;
-    baseColor?: string;
-}
-
-export function EcosystemMap3D({
+export const EcosystemMap3D = ({
     actors,
+    links: externalLinks,
     configurations,
     selectedForGrouping,
     onToggleSelection,
+    onToggleCollapse,
     width,
     height,
     isStratumMode,
     reduceMotion = false,
-    onToggleCollapse,
     tracedId,
     isPresentationMode = false,
-    selectedActorId
-}: EcosystemMap3DProps) {
+    selectedActorId,
+    showUnverifiedLinks = false,
+    linkClassFilter = 'all'
+}: EcosystemMap3DProps) => {
     const fgRef = useRef<any>(null);
-    const lastClickRef = useRef<{ id: string, time: number } | null>(null); // [NEW] Double Click Tracking
+    const lastClickRef = useRef<{ id: string, time: number } | null>(null);
     const [graphData, setGraphData] = useState<{ nodes: GraphNode[], links: GraphLink[] }>({ nodes: [], links: [] });
-    // const [selectedLink, setSelectedLink] = useState<GraphLink | null>(null); // [REMOVED] Favor Node Overlay
-
-    // [NEW] Overlay State
+    const [selectedLink, setSelectedLink] = useState<Relationship | null>(null);
     const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
     const [isOverlayPinned, setIsOverlayPinned] = useState(false);
+    const [performanceMode, setPerformanceMode] = useState(false);
+    const frameTimes = useRef<number[]>([]);
+    const lastFrameTime = useRef<number>(Date.now());
 
-    // [NEW] Derived Neighbors for Overlay
+    // 1. Unified Links Memo
+    const links = useMemo(() => {
+        // [FIX] Always enrich, even if links are passed from parent
+        const baseEdges = externalLinks || generateEdges(actors);
+
+        // [NEW] Enrich with Analysis Data from Configurations
+        const analysisMap = new Map<string, any>();
+
+        configurations.forEach(config => {
+            if (config.analysisData && config.analysisData.relationships) {
+                config.analysisData.relationships.forEach((rel: any) => {
+                    // Store strict and reverse keys to ensure matching
+                    analysisMap.set(`${rel.source}-${rel.target}`, rel);
+                    analysisMap.set(`${rel.target}-${rel.source}`, rel);
+                });
+            }
+        });
+
+        // [FILTER] If analysis exists, ONLY show analyzed links (Mediators/Intermediaries)
+        // If no analysis (size 0), show all theoretical links (Logic)
+        const hasAnalysis = analysisMap.size > 0;
+
+        const output = baseEdges
+            .map(edge => {
+                const sId = typeof edge.source === 'object' ? (edge.source as any).id : edge.source;
+                const tId = typeof edge.target === 'object' ? (edge.target as any).id : edge.target;
+                const analysis = analysisMap.get(`${sId}-${tId}`);
+
+                if (analysis) {
+                    return { ...edge, analysis };
+                }
+                return edge;
+            })
+            .filter(edge => {
+                const edgeAnalysis = (edge as any).analysis;
+                const isAnalyzed = !!edgeAnalysis;
+
+                // 1. Explicit Classification Filter (High Priority)
+                if (linkClassFilter !== 'all') {
+                    if (!isAnalyzed) return false; // Hide unanalyzed when filtering specific types
+                    const score = edgeAnalysis.mediatorScore;
+                    if (linkClassFilter === 'mediator') return score >= 0.5;
+                    if (linkClassFilter === 'intermediary') return score < 0.5;
+                }
+
+                // 2. Default View ("All Types")
+                // If no analysis exists contextually (neither global nor local), show logical links.
+                if (!hasAnalysis && !isAnalyzed) return true;
+
+                // 3. Unverified Visibility (in presence of analysis)
+                if (!isAnalyzed) {
+                    return showUnverifiedLinks;
+                }
+
+                return true;
+            });
+
+
+        return output;
+    }, [actors, externalLinks, configurations, showUnverifiedLinks, linkClassFilter]);
+
+    // 2. Neighbors Memo
+    // 2. Neighbors Memo
     const nodeNeighbors = useMemo(() => {
         if (!selectedNode) return [];
         return graphData.links
-            .filter(l => (typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id || (typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id)
-            .map(l => {
-                const isSource = (typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id;
+            .filter(link => {
+                const l = link as GraphLink;
+                const sId = typeof l.source === 'object' ? (l.source as GraphNode).id : l.source as string;
+                const tId = typeof l.target === 'object' ? (l.target as GraphNode).id : l.target as string;
+                return sId === selectedNode.id || tId === selectedNode.id;
+            })
+            .map(link => {
+                const l = link as GraphLink;
+                const sId = typeof l.source === 'object' ? (l.source as GraphNode).id : l.source as string;
+                const isSource = sId === selectedNode.id;
                 const other = isSource ? l.target : l.source;
-                const otherNode = typeof other === 'object' ? other : graphData.nodes.find(n => n.id === other);
+                const otherNode = typeof other === 'object' ? other as GraphNode : graphData.nodes.find(n => n.id === other);
                 return {
-                    name: otherNode ? (otherNode as GraphNode).name : 'Unknown',
-                    type: otherNode ? (otherNode as GraphNode).type : 'Unknown',
-                    relation: l.type // Or flow type description
+                    name: otherNode ? otherNode.name : 'Unknown',
+                    type: otherNode ? otherNode.type : 'Unknown',
+                    relation: l.type
                 };
             })
-            .slice(0, 5); // Top 5
+            .slice(0, 5);
     }, [selectedNode, graphData]);
 
-    // [NEW] Sync internal selection with prop
+    // 3. Sync Selections
     useEffect(() => {
         if (selectedActorId) {
             const node = graphData.nodes.find(n => n.id === selectedActorId);
@@ -153,8 +169,9 @@ export function EcosystemMap3D({
         }
     }, [selectedActorId, graphData.nodes]);
 
+    // 4. Data Mapping Effect
     useEffect(() => {
-        // Defines vertical levels
+
         const getZLevel = (type: string) => {
             const t = type.toLowerCase();
             if (t.includes('legal') || t.includes('law')) return 150;
@@ -162,10 +179,9 @@ export function EcosystemMap3D({
             if (t.includes('civil') || t.includes('academic')) return 20;
             if (t.includes('startup') || t.includes('private')) return -40;
             if (t.includes('algorithm') || t.includes('agent')) return -80;
-            return 0; // Infrastructure/Default
+            return 0;
         };
 
-        // 1. Map Actors -> GraphNodes with Viz Contract
         const nodes: GraphNode[] = actors.map(actor => {
             const viz = computeNodeViz(actor);
             const baseNode: GraphNode = {
@@ -173,298 +189,67 @@ export function EcosystemMap3D({
                 name: actor.name,
                 type: actor.type,
                 val: selectedForGrouping.includes(actor.id) ? 20 : 10,
-                color: viz.color, // Use base color from contract
+                color: viz.color,
                 isConfiguration: false,
                 actor: actor,
-                viz: viz // Attach full viz payload
+                viz: viz
             };
 
             if (isStratumMode) {
-                (baseNode as any).fz = getZLevel(actor.type);
-                (baseNode as any).z = getZLevel(actor.type);
+                // Remove 'as any' since interface now supports fz/z
+                baseNode.fz = getZLevel(actor.type);
+                baseNode.z = getZLevel(actor.type);
             }
 
             return baseNode;
         });
 
-        // 2. Generate Links with Viz Contract
-        const links: GraphLink[] = [];
-        const addedLinks = new Set<string>();
+        const gLinks: GraphLink[] = links.map(link => {
+            const l = link as GraphLink; // Safe cast as we normalize it below
+            const sourceId = typeof l.source === 'string' ? l.source : (l.source as GraphNode).id;
+            const targetId = typeof l.target === 'string' ? l.target : (l.target as GraphNode).id;
 
-        console.log("Generating 3D Links. Stats:", {
-            actorCount: actors.length,
-            configCount: configurations.length,
-            hasAnalysisData: configurations.some(c => c.analysisData?.edges)
-        });
+            const viz = l.viz || computeLinkViz({
+                source: sourceId,
+                target: targetId,
+                type: l.type || "Association",
+                weight: 1.0,
+                flow_type: 'logic', // Default
+                confidence: 1.0
+            });
 
-        // A. Explicit Edges from ANT Analysis
-        configurations.forEach(config => {
-            if (config.analysisData && config.analysisData.edges) {
-                console.log(`Config ${config.name} has ${config.analysisData.edges.length} explicit edges.`);
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                config.analysisData.edges.forEach((edge: any) => {
-                    // RESOLUTION STRATEGY: Try ID first, then Name fallback
-                    let sourceId = edge.source;
-                    let targetId = edge.target;
-
-                    const sourceActor = actors.find(a => a.id === sourceId) || actors.find(a => a.name === sourceId);
-                    const targetActor = actors.find(a => a.id === targetId) || actors.find(a => a.name === targetId);
-
-                    if (!sourceActor || !targetActor) {
-                        console.warn(`Link dropped: Could not resolve actor ${edge.source} or ${edge.target}`);
-                        return;
-                    }
-
-                    // Use resolved IDs
-                    sourceId = sourceActor.id;
-                    targetId = targetActor.id;
-
-                    const linkId = `${sourceId}-${targetId}`;
-                    if (addedLinks.has(linkId)) return;
-
-                    const rawLink = {
-                        source: sourceId,
-                        target: targetId,
-                        type: edge.type || "Association",
-                        weight: 1.0,
-                        flow_type: (edge.type && ['regulates', 'funds', 'restricts', 'enforces'].some((t: string) => edge.type.toLowerCase().includes(t)) ? 'power' : 'logic') as 'power' | 'logic',
-                        confidence: 1.0
-                    };
-                    const viz = computeLinkViz(rawLink);
-
-                    links.push({
-                        source: sourceId,
-                        target: targetId,
-                        type: edge.type,
-                        viz
-                    });
-                    addedLinks.add(linkId);
-                });
-            }
-        });
-
-        // B. Heuristic Connectivity (Type-Based Defaults - "2D Logic")
-        const heuristicEdges = generateEdges(actors);
-        console.log(`Generated ${heuristicEdges.length} heuristic edges.`);
-
-        heuristicEdges.forEach(e => {
-            const linkId = `${e.source.id}-${e.target.id}`;
-            const reverseId = `${e.target.id}-${e.source.id}`;
-
-            // Skip if already linked Explicitly
-            if (addedLinks.has(linkId) || addedLinks.has(reverseId)) return;
-
-            const viz = {
-                flowType: e.flow_type || 'logic',
-                flowColor: e.flow_type === 'power' ? "#EF4444" : "#F59E0B",
-                strength: 0.5,
-                confidence: 0.6,
-                roleType: 'Mixed' as const
+            return {
+                source: sourceId,
+                target: targetId,
+                type: l.type,
+                viz,
+                analysis: l.analysis
             };
-
-            links.push({
-                source: e.source.id,
-                target: e.target.id,
-                type: e.label || "Related",
-                viz: viz as LinkViz
-            });
-            addedLinks.add(linkId);
         });
 
-        // C. Implicit Connectivity (Shared Configuration) - Lowest Priority
-        actors.forEach((source, i) => {
-            actors.forEach((target, j) => {
-                if (i >= j) return;
+        setGraphData({ nodes, links: gLinks });
+    }, [actors, links, selectedForGrouping, isStratumMode]);
 
-                // Skip if already linked
-                if (addedLinks.has(`${source.id}-${target.id}`) || addedLinks.has(`${target.id}-${source.id}`)) return;
-
-                const sharedConfig = configurations.find(c => c.memberIds.includes(source.id) && c.memberIds.includes(target.id));
-
-                if (sharedConfig) {
-                    const viz = {
-                        flowType: 'logic' as const,
-                        flowColor: sharedConfig.color,
-                        strength: 0.2,
-                        opacity: 0.2,
-                        confidence: 0.3,
-                        roleType: 'Mixed' as const
-                    };
-
-                    links.push({
-                        source: source.id,
-                        target: target.id,
-                        type: sharedConfig.name,
-                        viz
-                    });
-                }
-            });
-        });
-
-        console.log(`Generated ${links.length} total links (Explicit + Heuristic + Implicit).`);
-
-        // 3. Config Labels
-        // [REMOVED] Macro Assemblage Labels (User Request: Obscures network)
-        /*
-        configurations.forEach(config => {
-            const labelNodeId = `config-${config.id}`;
-            nodes.push({
-                id: labelNodeId,
-                name: config.name,
-                type: 'Configuration',
-                val: 5,
-                color: config.color,
-                isConfiguration: true
-            });
-            config.memberIds.forEach(memberId => {
-                if (actors.find(a => a.id === memberId)) {
-                    links.push({
-                        source: labelNodeId,
-                        target: memberId,
-                        type: "LabelTether",
-                        viz: { flowType: 'logic', flowColor: 'transparent', strength: 0, confidence: 0 } // Invisible tether
-                    });
-                }
-            });
-        });
-        */
-
-        setGraphData({ nodes, links });
-    }, [actors, configurations, selectedForGrouping, isStratumMode]);
-
-
-    // [NEW] Node Object Factory (PBR + Geometry)
-    // [NEW] Node Object Factory (PBR + Geometry + Animation Tags)
+    // 5. Node Object Factory
+    // Delegated to GraphVisuals for cleaner code
     const nodeObjectCallback = (node: any): THREE.Object3D => {
-        const n = node as GraphNode;
-        if (n.isConfiguration) return createTextSprite(n.name, n.color);
-
-        const group = new THREE.Group();
-        // If NO viz data (e.g. initial load), fallback to simple sphere
-        if (!n.viz) return new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({ color: '#ccc' }));
-
-        const viz = n.viz;
-
-        // 1. Geometry Variant based on Role Type
-        let geometry: THREE.BufferGeometry;
-        // Material = Box (Anchor), Expressive = Icosahedron (Speech bubble-ish), Mixed = Sphere
-        if (viz.roleType === 'Material') {
-            geometry = new THREE.BoxGeometry(n.val, n.val, n.val);
-        } else if (viz.roleType === 'Expressive') {
-            geometry = new THREE.IcosahedronGeometry(n.val / 1.5, 0);
-        } else {
-            geometry = new THREE.SphereGeometry(n.val / 2, 16, 16);
-        }
-
-        // 2. Material Strategy
-        // Roughness = inverse of Territorialization (Stability).
-        const roughness = 1 - (viz.territorialization * 0.8);
-
-        // Emissive = Ethical Risk Potential (formerly Bias).
-        // We only emit if risk is significant to avoid noise.
-        const materialParams: THREE.MeshStandardMaterialParameters = {
-            color: n.color,
-            roughness: roughness,
-            metalness: 0.2,
-            emissive: viz.ethicalRisk > 0.4 ? 0xff0000 : 0x000000,
-            emissiveIntensity: viz.ethicalRisk > 0.4 ? (viz.ethicalRisk * 5) : 0, // [ENHANCED] Higher intensity for bloom
-            transparent: true,
-            opacity: Math.max(0.3, viz.confidence), // Floor opacity at 0.3 for visibility
-            wireframe: viz.isGhost // Ghosts are pure wireframe
-        };
-
-        // [NEW] Missing Data -> Striped Texture
-        if (viz.hasMissingMetrics) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.fillStyle = '#ffffff'; // Fill with white (base tint)
-                ctx.fillRect(0, 0, 64, 64);
-
-                ctx.fillStyle = '#000000'; // Stripe color
-                ctx.globalAlpha = 0.3;
-                for (let i = -64; i < 128; i += 16) {
-                    ctx.beginPath();
-                    ctx.moveTo(i, 0);
-                    ctx.lineTo(i + 64, 64);
-                    ctx.lineWidth = 4;
-                    ctx.stroke();
-                }
-            }
-            const texture = new THREE.CanvasTexture(canvas);
-            materialParams.map = texture;
-            materialParams.bumpMap = texture;
-            materialParams.bumpScale = 0.5;
-            // Ensure color doesn't blend too dark
-            materialParams.color = new THREE.Color(n.color).offsetHSL(0, 0, 0.1);
-        }
-
-        const material = new THREE.MeshStandardMaterial(materialParams);
-
-        // 3. Child Mesh for Jitter (Animation Target)
-        // We attach user data here so the render loop can find it.
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.userData = {
-            isJitterTarget: true,
-            jitterMagnitude: viz.deterritorialization,
-            heat: viz.heat,
-            baseColor: n.color
-        };
-        group.add(mesh);
-
-        // 4. Provisionality Wireframe Overlay
-        // If provisional but NOT ghost (ghosts are already wireframe), add a cage.
-        if (viz.isProvisional && !viz.isGhost) {
-            const wiregeo = new THREE.WireframeGeometry(geometry);
-            const wiremat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-            const wireframe = new THREE.LineSegments(wiregeo, wiremat);
-            group.add(wireframe); // Add to group, not mesh, so it doesn't jitter independently? Or should it? 
-            // Better to add to 'mesh' if we want it to jitter WITH the node.
-            // But 'mesh' is a Mesh, not a Group. 
-            // Actually, if we add to 'group', it won't jitter if we only animate 'mesh.position'.
-            // Correct approach: Animate the GROUP position? No, that breaks physics.
-            // We should animate 'mesh' position relative to group.
-            // So if we want wireframe to move too, it must be child of 'mesh' OR we animate 'group' children?
-            // Let's make wireframe a child of 'mesh' if possible? No, mesh children are hard.
-            // Simple fix: Add wireframe to 'group', but animate 'group.children.forEach' in the loop.
-        }
-
-        // User asked for "Geometry Variants" (Box/Sphere), which we did above.
-        // Let's stick to the Geometry change as the primary indicator for now.
-
-        return group;
+        return createNodeObject(node as GraphNode);
     };
 
-    // [NEW] Performance & LOD System
-    const [performanceMode, setPerformanceMode] = useState(false);
-    // [REMOVED] presentationMode local state - now a prop
-    const frameTimes = useRef<number[]>([]);
-    const lastFrameTime = useRef<number>(Date.now());
-
-    // [NEW] Animation Loop Injection via Ref (Bypasses React Prop limitation)
+    // 6. Animation Hook
     useEffect(() => {
         let animationFrameId: number;
         let bloomPass: any = null;
 
-        // Initialize Bloom & Fog if in Presentation Mode and not Low Power
         if (isPresentationMode && !performanceMode && fgRef.current) {
-            const fg = fgRef.current as any;
+            const fg = fgRef.current;
             const scene = fg.scene();
-
-            // 1. Fog
             scene.fog = new THREE.FogExp2(0x0F172A, 0.002);
 
-            // 2. Bloom
             if (fg.postProcessingComposer) {
                 const composer = fg.postProcessingComposer();
                 // @ts-ignore
-                bloomPass = new UnrealBloomPass(undefined, 2.0, 0.5, 0.5); // [ENHANCED] Higher strength, lower threshold
-                bloomPass.threshold = 0.5; // Capture more emissive range
-                bloomPass.strength = 1.2;   // More intense glow
-                bloomPass.radius = 1.0;     // Wider diffusion
+                bloomPass = new UnrealBloomPass(undefined, 1.2, 0.5, 0.5);
                 composer.addPass(bloomPass);
             }
         }
@@ -474,128 +259,79 @@ export function EcosystemMap3D({
             const delta = now - lastFrameTime.current;
             lastFrameTime.current = now;
 
-            // 1. FPS Calculation (Rolling Average over 60 frames)
             if (delta > 0) {
                 const fps = 1000 / delta;
                 frameTimes.current.push(fps);
                 if (frameTimes.current.length > 60) frameTimes.current.shift();
-
-                // Check every 60 frames (approx 1 sec)
                 if (frameTimes.current.length === 60 && animationFrameId % 60 === 0) {
                     const avgFps = frameTimes.current.reduce((a, b) => a + b) / 60;
-                    if (avgFps < 30 && !performanceMode) {
-                        setPerformanceMode(true); // Downgrade
-                        console.warn("Performance Mode Enabled: FPS < 30");
-                    } else if (avgFps > 55 && performanceMode) {
-                        setPerformanceMode(false); // Upgrade (hysteresis)
-                        console.log("Performance Mode Disabled: FPS > 55");
-                    }
+                    if (avgFps < 30 && !performanceMode) setPerformanceMode(true);
+                    else if (avgFps > 55 && performanceMode) setPerformanceMode(false);
                 }
             }
 
-            // 2. Accessibility & Performance Gate
             if (fgRef.current) {
-                const fg = fgRef.current as any;
+                const fg = fgRef.current;
                 const scene = fg.scene ? fg.scene() : null;
+                if (scene && !reduceMotion && !performanceMode) {
+                    // [NEW] Animate Particles
+                    animateLinkParticles(scene, now);
 
-                if (scene) {
-                    // Fog Logic (Presentation Mode only)
-                    if (isPresentationMode && !performanceMode) {
-                        if (!scene.fog) scene.fog = new THREE.FogExp2(0x0F172A, 0.002);
-                    } else {
-                        if (scene.fog) scene.fog = null;
-                    }
+                    scene.traverse((object: THREE.Object3D) => {
+                        const userData = object.userData as NodeUserData;
+                        if (userData && userData.isJitterTarget) {
+                            const magnitude = (userData.jitterMagnitude || 0) * 0.5;
+                            const heat = userData.heat || 0;
+                            const freq = 0.002 + (heat * 0.01);
+                            const scaledMagnitude = magnitude + (heat * 0.1);
+                            const phase = object.id * 0.1;
 
-                    // Harmonic Oscillation
-                    if (!reduceMotion && !performanceMode) {
-                        scene.traverse((object: THREE.Object3D) => {
-                            const userData = object.userData as NodeUserData;
-                            if (userData && userData.isJitterTarget) {
-                                const magnitude = (userData.jitterMagnitude || 0) * 0.5;
-                                if (magnitude > 0.05 || (userData.heat || 0) > 0.1) {
-                                    // Deterministic Harmonic Oscillation (Breathing)
-                                    const phase = object.id * 0.1;
-                                    const heat = userData.heat || 0;
+                            object.position.x = Math.sin(now * freq + phase) * scaledMagnitude;
+                            object.position.y = Math.cos(now * freq + phase) * scaledMagnitude;
+                            object.position.z = Math.sin(now * freq * 0.8 + phase) * scaledMagnitude;
 
-                                    // Frequency maps to Heat: 0.002 (Cold) -> 0.012 (Molten)
-                                    const freq = 0.002 + (heat * 0.01);
-
-                                    // Magnitude also scales slightly with heat
-                                    const scaledMagnitude = magnitude + (heat * 0.1);
-
-                                    object.position.x = Math.sin(now * freq + phase) * scaledMagnitude;
-                                    object.position.y = Math.cos(now * freq + phase) * scaledMagnitude;
-                                    object.position.z = Math.sin(now * freq * 0.8 + phase) * scaledMagnitude;
-
-                                    // NEW: Color Temperature Shift & Pulsing Emission
-                                    if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshStandardMaterial) {
-                                        const mat = object.material;
-
-                                        // 1. Emissive Pulse (Sync with movement)
-                                        if (heat > 0.4) {
-                                            const pulse = (Math.sin(now * freq + phase) + 1) * 0.5;
-                                            mat.emissiveIntensity = heat * pulse * 2;
-                                            mat.emissive = new THREE.Color(heat > 0.8 ? 0xff3300 : 0xff9900);
-                                        }
-
-                                        // 2. Color Shift (Slow drift towards red at high heat)
-                                        if (heat > 0.6 && !performanceMode) {
-                                            const drift = Math.min(1, (heat - 0.6) * 2.5);
-                                            const baseColor = new THREE.Color(userData.baseColor || "#ffffff");
-                                            const hotColor = new THREE.Color(0xff4400); // Lava/Controversy Red
-                                            mat.color.lerpColors(baseColor, hotColor, drift);
-                                        }
-                                    }
+                            if (object instanceof THREE.Mesh && object.material instanceof THREE.MeshStandardMaterial) {
+                                const mat = object.material;
+                                if (heat > 0.4) {
+                                    const pulse = (Math.sin(now * freq + phase) + 1) * 0.5;
+                                    mat.emissiveIntensity = heat * pulse * 2;
+                                    mat.emissive = new THREE.Color(heat > 0.8 ? 0xff3300 : 0xff9900);
                                 }
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             }
-
             animationFrameId = requestAnimationFrame(animate);
         };
 
-        // Start Loop
         animate();
-
         return () => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            // Cleanup Bloom
             if (bloomPass && fgRef.current) {
-                const fg = fgRef.current as any;
-                if (fg.postProcessingComposer) {
-                    const composer = fg.postProcessingComposer();
-                    composer.removePass(bloomPass);
-                }
+                const fg = fgRef.current;
+                if (fg.postProcessingComposer) fg.postProcessingComposer().removePass(bloomPass);
             }
         };
     }, [reduceMotion, performanceMode, isPresentationMode]);
 
-    // [NEW] Oligopticon Mode: Auto-Focus on Traced Actor
+    // 7. Focus Effect
     useEffect(() => {
         if (!tracedId || !fgRef.current) return;
-
-        // Find node in current graph data
         const node = graphData.nodes.find(n => n.id === tracedId);
-
-        if (node && node.x !== undefined && node.y !== undefined && node.z !== undefined) {
-            console.log(`[Oligopticon] Focusing on actor ${tracedId}`);
+        if (node && typeof node.x === 'number' && typeof node.y === 'number' && typeof node.z === 'number') {
             const distance = 80;
             const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
-
             fgRef.current.cameraPosition(
-                { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // New Position
-                { x: node.x, y: node.y, z: node.z }, // LookAt
-                2000 // Transition ms
+                { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                { x: node.x, y: node.y, z: node.z },
+                2000
             );
         }
     }, [tracedId, graphData.nodes]);
 
-
     return (
         <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
-            {/* Performance Indicator */}
             <div className="absolute top-2 right-2 flex flex-col items-end gap-2 z-50 pointer-events-none">
                 {performanceMode && (
                     <div className="px-2 py-1 bg-yellow-900/80 text-yellow-200 text-xs rounded border border-yellow-700">
@@ -611,58 +347,46 @@ export function EcosystemMap3D({
                 graphData={graphData}
                 nodeLabel="name"
                 nodeColor="color"
-                backgroundColor="#0F172A" // Dark mode for Emissive contrast
+                backgroundColor="#0F172A"
+                linkThreeObject={(link) => createLinkGeometry(link as any)}
+                linkPositionUpdate={(obj, { start, end }, link) => {
+                    // [FIX] Valid coordinates check
+                    if (start && end && typeof start.x === 'number' && typeof end.x === 'number') {
+                        // [FIX] Pass to updater
+                        updateLinkPosition(obj, start, end, link as unknown as GraphLink);
 
-                // [NEW] Link Visuals
-                linkWidth={link => (link as GraphLink).viz?.strength ? (link as GraphLink).viz!.strength * 2 : 1}
-                linkColor={(link: any) => {
-                    const l = link as GraphLink;
-                    const c = l.viz?.flowColor || "#FFFFFF";
-                    const op = l.viz?.confidence !== undefined ? l.viz.confidence : 0.6;
-                    // Convert Hex to RGBA for Opacity
-                    if (c.startsWith('#') && c.length === 7) {
-                        const r = parseInt(c.slice(1, 3), 16);
-                        const g = parseInt(c.slice(3, 5), 16);
-                        const b = parseInt(c.slice(5, 7), 16);
-                        return `rgba(${r},${g},${b},${op})`;
+                        // [FIX] Create Link Geometry builds geometry in WORLD coordinates (start/end).
+                        // If we let ForceGraph apply default transforms (translate/rotate/scale), 
+                        // it will apply them to the Group, causing double-transformation 
+                        // (e.g. Group moved to midpoint + Geometry drawn from 0 to world coord).
+                        // Returning true tells ForceGraph we handled positioning, keeping the Group at identity.
+                        return true;
                     }
-                    return c;
+                    return false;
                 }}
-                // Presentation Mode: Curved Links. Research Mode: Straight Links.
+                linkWidth={0}
+                linkDirectionalParticles={0}
                 linkCurvature={isPresentationMode ? 0.25 : 0}
-
-                linkDirectionalParticles={link => (reduceMotion || performanceMode) ? 0 : ((link as GraphLink).viz?.flowType === 'power' ? 4 : 2)}
-                linkDirectionalParticleSpeed={link => (reduceMotion || performanceMode) ? 0 : ((link as GraphLink).viz?.flowType === 'power' ? 0.01 : 0.005)}
-                linkDirectionalParticleWidth={2}
-
                 nodeThreeObject={nodeObjectCallback}
-
                 onNodeClick={(node) => {
                     const n = node as GraphNode;
-
-                    // [NEW] Double Click Detection
                     const now = Date.now();
                     const isDouble = lastClickRef.current && lastClickRef.current.id === n.id && (now - lastClickRef.current.time < 300);
                     lastClickRef.current = { id: n.id, time: now };
 
                     if (isDouble && onToggleCollapse) {
-                        // Case A: Expand a Black Box
                         if (n.actor && n.actor.isBlackBox) {
-                            const configId = n.id.replace('blackbox-', '');
-                            onToggleCollapse(configId);
+                            onToggleCollapse(n.id.replace('blackbox-', ''));
                             return;
                         }
-                        // Case B: Collapse an Assemblage (via Config Label)
                         if (n.isConfiguration) {
-                            const configId = n.id.replace('config-', '');
-                            onToggleCollapse(configId);
+                            onToggleCollapse(n.id.replace('config-', ''));
                             return;
                         }
                     }
 
                     if (n.isConfiguration) return;
 
-                    // Camera Focus
                     const distance = 60;
                     const distRatio = 1 + distance / Math.hypot(n.x!, n.y!, n.z!);
                     fgRef.current?.cameraPosition(
@@ -672,15 +396,25 @@ export function EcosystemMap3D({
                     );
 
                     setSelectedNode(n);
-                    if (!isOverlayPinned) setIsOverlayPinned(true); // Auto-open/pin on click
+                    setSelectedLink(null);
+                    if (!isOverlayPinned) setIsOverlayPinned(true);
                     onToggleSelection(n.id);
                 }}
+                onLinkClick={(link) => {
+                    const l = link as GraphLink;
+                    if (l.analysis) {
+                        setSelectedLink(l.analysis);
+                        setSelectedNode(null);
+                    }
+                }}
                 onBackgroundClick={() => {
-                    if (!isOverlayPinned) setSelectedNode(null);
+                    if (!isOverlayPinned) {
+                        setSelectedNode(null);
+                        setSelectedLink(null);
+                    }
                 }}
             />
 
-            {/* [NEW] Interaction Overlay */}
             {selectedNode && selectedNode.actor && selectedNode.viz && (
                 <OverlayDetails
                     node={selectedNode.actor}
@@ -688,10 +422,7 @@ export function EcosystemMap3D({
                     onClose={() => {
                         setIsOverlayPinned(false);
                         setSelectedNode(null);
-                        // [NEW] Clear selection in parent if it matched
-                        if (selectedActorId === selectedNode.id) {
-                            onToggleSelection(selectedNode.id); // Toggles off
-                        }
+                        if (selectedActorId === selectedNode.id) onToggleSelection(selectedNode.id);
                     }}
                     onPin={() => setIsOverlayPinned(!isOverlayPinned)}
                     isPinned={isOverlayPinned}
@@ -699,12 +430,18 @@ export function EcosystemMap3D({
                 />
             )}
 
-            {/* Legend / Controls could go here */}
-            {!selectedNode && (
+            {selectedLink && (
+                <RelationshipDetail
+                    relationship={selectedLink}
+                    onClose={() => setSelectedLink(null)}
+                />
+            )}
+
+            {!selectedNode && !selectedLink && (
                 <div className="absolute bottom-4 left-4 text-xs text-slate-500 pointer-events-none">
-                    Click a node to inspect Assemblage Metrics.
+                    Click a node or link to inspect Assemblage Metrics.
                 </div>
             )}
         </div>
     );
-}
+};
