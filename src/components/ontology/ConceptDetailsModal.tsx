@@ -53,15 +53,15 @@ export function ConceptDetailsModal({
     const [activeTab, setActiveTab] = useState<'explore' | 'evaluate'>('explore');
     const [showOriginalDetails, setShowOriginalDetails] = useState(false);
 
-    // Reset tab when node changes
+    // Reset tab when node changes or case changes (to ensure we start at Explore for each new case)
     const nodeId = selectedNode?.id;
+    const caseId = researchCurrentCase?.id;
     useEffect(() => {
         if (isOpen) {
             setActiveTab('explore');
             setShowOriginalDetails(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, nodeId]); // Use ID for stabilitylity
+    }, [isOpen, nodeId, caseId]); // Reset on case change too
 
     if (!selectedNode) return null;
 
