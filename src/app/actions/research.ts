@@ -14,7 +14,7 @@ export async function sendStudyResultsEmail(studyState: StudyState): Promise<Ema
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const adminEmail = process.env.CONTACT_EMAIL || "admin@instanttea.com";
+    const adminEmail = process.env.CONTACT_EMAIL || "tod.sedbrook@gmail.com";
 
     // Validate study state
     if (!studyState.evaluatorCode || !studyState.responses) {
