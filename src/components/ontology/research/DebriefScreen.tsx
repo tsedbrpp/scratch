@@ -51,7 +51,8 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
 
     const handleCloseFull = () => {
         onClose();
-        router.push('/?view=landing');
+        // Force full reload to landing page to clear state
+        window.location.href = '/?view=landing';
     };
 
     if (showReengagement) {
