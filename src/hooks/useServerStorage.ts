@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWorkspace } from '@/providers/WorkspaceProvider';
+import { useDemoMode } from '@/hooks/useDemoMode'; // [Fix] Import hook
 
 export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
     const { currentWorkspaceId } = useWorkspace();
+    const { isReadOnly } = useDemoMode(); // [Fix] Check read-only status
     const [storedValue, setStoredValue] = useState<T>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -20,25 +22,21 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
     // Fetch initial value from server
     useEffect(() => {
         let isMounted = true;
-        // If workspace is loading or undefined initially, we might wait?
-        // But for now, we'll fetch.
 
         const fetchValue = async () => {
-            console.log(`[useServerStorage] Fetching key: "${key}" for workspace: ${currentWorkspaceId || 'default'}`);
+            // console.log(`[useServerStorage] Fetching key: "${key}" for workspace: ${currentWorkspaceId || 'default'}`);
             try {
-                // Fix: Must match auth-helper logic (check enable flag, fallback to 'demo-user')
                 const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
                     headers: getHeaders()
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(`[useServerStorage] Fetched "${key}":`, data.value ? 'HAS DATA' : 'NULL/EMPTY');
                     if (isMounted) {
                         setStoredValue(data.value ?? initialValue);
                     }
                 } else {
-                    console.warn(`[useServerStorage] Failed to fetch ${key}: ${response.status} ${response.statusText}`);
+                    // console.warn(`[useServerStorage] Failed to fetch ${key}: ${response.status}`);
                 }
             } catch (error) {
                 console.error(`Failed to fetch storage key "${key}":`, error);
@@ -49,18 +47,17 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             }
         };
 
-        if (currentWorkspaceId) {
+        if (currentWorkspaceId || isReadOnly) { // Allow fetch even if read-only (demo)
             fetchValue();
         } else {
-            // If no workspace, maybe we shouldn't fetch? Or fetch default?
-            // Assuming default logic handles it, or just fetch to fail/return null
+            // If no workspace and not demo, we might be in weird state, but try anyway
             fetchValue();
         }
 
         return () => {
             isMounted = false;
         };
-    }, [key, currentWorkspaceId, getHeaders]);
+    }, [key, currentWorkspaceId, getHeaders, isReadOnly]);
 
     // Return a wrapped version of useState's setter function that ...
     // ... persists the new value to the server.
@@ -69,7 +66,14 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
             // Allow value to be a function so we have same API as useState
             setStoredValue((prevValue) => {
                 const valueToStore = value instanceof Function ? value(prevValue) : value;
-                console.log(`[useServerStorage] Saving key: "${key}" for workspace: ${currentWorkspaceId || 'default'}`, valueToStore ? 'HAS DATA' : 'NULL/EMPTY');
+
+                // [Fix] If Read-Only, skip server save to avoid 403
+                if (isReadOnly) {
+                    // console.log(`[useServerStorage] Read-Only Mode: Skipping save for "${key}"`);
+                    return valueToStore;
+                }
+
+                // console.log(`[useServerStorage] Saving key: "${key}"...`);
 
                 // Save to server
                 fetch('/api/storage', {
@@ -78,7 +82,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                     body: JSON.stringify({ key, value: valueToStore }),
                 }).then(res => {
                     if (res.ok) {
-                        console.log(`[useServerStorage] Successfully saved "${key}"`);
+                        // console.log(`[useServerStorage] Successfully saved "${key}"`);
                     } else {
                         console.error(`[useServerStorage] Failed to save "${key}": ${res.status}`);
                     }
@@ -89,7 +93,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         } catch (error) {
             console.error(`Error setting value for key "${key}":`, error);
         }
-    }, [key, currentWorkspaceId, getHeaders]);
+    }, [key, currentWorkspaceId, getHeaders, isReadOnly]);
 
 
     return [storedValue, setValue, isLoading];

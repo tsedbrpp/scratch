@@ -1,0 +1,66 @@
+﻿
+C:\Users\mount\.gemini\antigravity\scratch\src\app\ontology\page.tsx
+  187:22  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  488:30  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx
+   20:70  warning  'isStatic' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   27:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx:27:13
+  25 |     useEffect(() => {
+  26 |         if (isOpen) {
+> 27 |             setActiveTab('explore');
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |         }
+  29 |     }, [isOpen, selectedNode]);
+  30 |  react-hooks/set-state-in-effect
+   43:52  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+  213:91  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+  213:99  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\CalibrationModal.tsx
+  43:98   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  43:109  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  86:99   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  86:107  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  93:87   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\ConsentScreen.tsx
+  27:112  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  27:124  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  44:90   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  44:102  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\DebriefScreen.tsx
+  33:87   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  33:98   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:46   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:57   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  36:128  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\EvaluatorLoginDialog.tsx
+  15:7  warning  'VALID_CODES' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\GhostNodeSurvey.tsx
+  4:10  warning  'Button' is defined but never used          @typescript-eslint/no-unused-vars
+  7:10  warning  'RadioGroup' is defined but never used      @typescript-eslint/no-unused-vars
+  7:22  warning  'RadioGroupItem' is defined but never used  @typescript-eslint/no-unused-vars
+  9:10  warning  'Card' is defined but never used            @typescript-eslint/no-unused-vars
+  9:16  warning  'CardContent' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\ResearchOnboarding.tsx
+  13:38  warning  'studyState' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useResearchMode.ts
+    3:60  warning  'StudyCase' is defined but never used               @typescript-eslint/no-unused-vars
+  123:19  warning  'currentCaseId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 30 problems (19 errors, 11 warnings)
+

@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://instanttea.com"),
   title: "InstantTea | Easy Team Tool for Mapping Policy and Governance",
-  description: "InstantTea is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast. Create clear maps in seconds.",
+  description: "InstantTea is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly. Create clear maps in seconds.",
   keywords: ["Team Collaboration", "Policy Mapping", "Governance Tools", "AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Instant TEA"],
   alternates: {
     canonical: "/",

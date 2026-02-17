@@ -386,12 +386,17 @@ export function Sidebar() {
 
     // Handle hydration mismatch
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
-        // Recover collapsed state from local storage if desired, but for now just default
-        const savedCollapsed = localStorage.getItem("sidebar-collapsed");
-        if (savedCollapsed === "true") setIsCollapsed(true);
-    }, []);
+
+        // [Task] Collapse on survey page entry
+        if (pathname === '/survey') {
+            setIsCollapsed(true);
+        } else {
+            // Recover collapsed state from local storage
+            const savedCollapsed = localStorage.getItem("sidebar-collapsed");
+            if (savedCollapsed === "true") setIsCollapsed(true);
+        }
+    }, [pathname]);
 
     const toggleCollapse = () => {
         setIsCollapsed(prev => {

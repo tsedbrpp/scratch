@@ -15,6 +15,7 @@ interface OntologyMapProps {
   onSelectNode: (nodeId: string | null) => void;
   // onNodeDrag prop is removed as drag is handled internally by D3
   onNodeDrag?: (nodeId: string, x: number, y: number) => void;
+  highlightNodeId?: string;
 }
 
 // Extend types for D3
@@ -32,6 +33,7 @@ export function OntologyMap({
   onSelectCategory,
   selectedNodeId,
   onSelectNode,
+  highlightNodeId,
 }: OntologyMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<SVGGElement>(null);
@@ -149,6 +151,38 @@ export function OntologyMap({
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#94a3b8");
+
+    // Pulse Effect for Highlighted Node (Render BEFORE links/nodes to be in background)
+    const highlightGroup = container.append("g").attr("class", "highlights");
+
+    if (highlightNodeId) {
+      const initialRadius = 45; // Match selected node radius
+
+      const pulseCircle = highlightGroup
+        .append("circle")
+        .attr("class", "pulse-ring")
+        .attr("r", initialRadius)
+        .attr("fill", "none")
+        .attr("stroke", "#9333ea") // purple-600
+        .attr("stroke-width", 3)
+        .attr("opacity", 0.6);
+
+      function repeatPulse() {
+        pulseCircle
+          .transition()
+          .duration(1500)
+          .ease(d3.easeCubicOut)
+          .attr("r", initialRadius + 25)
+          .attr("opacity", 0)
+          .on("end", function () {
+            d3.select(this)
+              .attr("r", initialRadius)
+              .attr("opacity", 0.6);
+            repeatPulse();
+          });
+      }
+      repeatPulse();
+    }
 
     // Links
     const link = container.append("g").selectAll("g").data(d3Links).join("g");
@@ -314,6 +348,17 @@ export function OntologyMap({
         .attr("y", (d) => (d.source.y! + d.target.y!) / 2);
 
       node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+
+      // Update pulse position
+      if (highlightNodeId) {
+        const targetNode = d3Nodes.find((d) => d.id === highlightNodeId);
+        if (targetNode && targetNode.x && targetNode.y) {
+          highlightGroup
+            .selectAll(".pulse-ring")
+            .attr("cx", targetNode.x)
+            .attr("cy", targetNode.y);
+        }
+      }
     });
 
     // Zoom Behavior

@@ -7,12 +7,14 @@ import { useDemoMode } from "@/hooks/useDemoMode"; // [NEW]
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Network, ArrowRightLeft, Sparkles, Loader2 } from "lucide-react";
+import { Network, ArrowRightLeft, Sparkles, Loader2, PlayCircle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { OntologyData, OntologyNode, ComparisonResult } from "@/types/ontology";
 import { getColorForCategory } from "@/lib/ontology-utils";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog"; // [NEW]
 import { useCredits } from "@/hooks/useCredits"; // [NEW]
+
+
 
 // Components
 import { OntologyMap } from "@/components/ontology/OntologyMap";
@@ -20,6 +22,7 @@ import { ConceptList } from "@/components/ontology/ConceptList";
 import { MapGallery } from "@/components/ontology/MapGallery";
 import { ConceptDetailsModal } from "@/components/ontology/ConceptDetailsModal";
 import { ComparisonView } from "@/components/ontology/ComparisonView";
+import { generateCasesFromOntology } from "@/lib/study-utils";
 
 // Static Data (Fallback) - Kept for initial state visualization
 
@@ -100,6 +103,8 @@ export default function OntologyPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [ontologyMaps, setOntologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
 
+
+
     // Comparison State
     const [isComparing, setIsComparing] = useServerStorage<boolean>("ontology_is_comparing", false);
     const [selectedForComparison, setSelectedForComparison] = useServerStorage<string[]>("ontology_selected_comparison_ids", []);
@@ -107,7 +112,8 @@ export default function OntologyPage() {
     const [isComparingLoading, setIsComparingLoading] = useState(false);
 
     // Interactivity State
-    const [selectedNodeId, setSelectedNodeId] = useServerStorage<string | null>("ontology_selected_node_id", null);
+    // Interactivity State
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     type ViewMode = 'all' | 'ghost-network' | 'hide-ghosts';
     const [viewMode, setViewMode] = useState<ViewMode>('all');
@@ -122,8 +128,8 @@ export default function OntologyPage() {
         setIsMounted(true);
     }, []);
 
-    // Filter sources that have text available for analysis
-    const analyzedSources = sources.filter(s => s.extractedText);
+    // Filter sources that have text available for analysis and exclude 'Web' and 'Trace' sources
+    const analyzedSources = sources.filter(s => s.extractedText && s.type !== 'Web' && s.type !== 'Trace');
 
     // Group sources by type for the dropdown
     const groupedSources = useMemo(() => {
@@ -139,6 +145,8 @@ export default function OntologyPage() {
     const currentOntologyData = (selectedSourceId && ontologyMaps && ontologyMaps[selectedSourceId])
         ? ontologyMaps[selectedSourceId]
         : null;
+
+
 
     const handleGenerateOntology = async () => {
         if (selectedSourceId && analyzedSources.find(s => s.id === selectedSourceId) && ontologyMaps && ontologyMaps[selectedSourceId]) {
@@ -348,7 +356,7 @@ export default function OntologyPage() {
     const displayNodes = currentOntologyData
         ? currentOntologyData.nodes.filter(n => {
             const categoryMatch = !selectedCategory || n.category === selectedCategory;
-            
+
             // View mode filtering
             let viewMatch = true;
             if (viewMode === 'hide-ghosts') {
@@ -361,7 +369,7 @@ export default function OntologyPage() {
                     // Check if this real node is connected to any ghost node
                     const connectedToGhost = currentOntologyData.nodes.some(ghostNode => {
                         if (!ghostNode.isGhost) return false;
-                        return ghostNode.potentialConnections?.some(pc => 
+                        return ghostNode.potentialConnections?.some(pc =>
                             pc.targetActor === n.label || n.label.includes(pc.targetActor) || pc.targetActor.includes(n.label)
                         );
                     });
@@ -369,9 +377,9 @@ export default function OntologyPage() {
                 }
             }
             // viewMode === 'all' shows everything
-            
+
             return categoryMatch && viewMatch;
-          })
+        })
         : STATIC_CONCEPTS;
 
     const displayLinks = currentOntologyData
@@ -389,9 +397,17 @@ export default function OntologyPage() {
         ? currentOntologyData.nodes.find(n => n.id === selectedNodeId)
         : STATIC_CONCEPTS.find(n => n.id === selectedNodeId);
 
+    const effectiveSelectedNode = selectedNode;
+
+
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 relative">
             <CreditTopUpDialog open={showTopUp} onOpenChange={setShowTopUp} onSuccess={() => refetchCredits()} />
+
+
+
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
@@ -420,10 +436,19 @@ export default function OntologyPage() {
                         {isComparing ? "Exit Comparison" : "Compare Maps"}
                     </Button>
 
+
+
                     {!isComparing && (
                         <>
                             {isMounted ? (
-                                <Select value={selectedSourceId} onValueChange={setSelectedSourceId}>
+                                <Select
+                                    value={selectedSourceId || ""}
+                                    onValueChange={(val) => {
+                                        if (val !== selectedSourceId) {
+                                            setSelectedSourceId(val);
+                                        }
+                                    }}
+                                >
                                     <SelectTrigger className="w-[280px]">
                                         <SelectValue placeholder="Select a source to analyze" />
                                     </SelectTrigger>
@@ -604,7 +629,7 @@ export default function OntologyPage() {
             />
 
             <ConceptDetailsModal
-                selectedNode={selectedNode || null}
+                selectedNode={effectiveSelectedNode || null}
                 isOpen={!!selectedNodeId}
                 onClose={() => setSelectedNodeId(null)}
                 isStatic={!currentOntologyData}

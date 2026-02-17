@@ -44,7 +44,7 @@ export function HeroSection() {
                     <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-6">
                         <h2 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h2>
                         <p>
-                            InstantTea is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast.
+                            InstantTea is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly.
                         </p>
                         <p>
                             Instead of taking weeks to figure out connections between people, organizations, rules, and tech, your team can create clear maps in seconds with InstantTea.
@@ -115,6 +115,11 @@ export function HeroSection() {
                                 </svg>
                                 Star on GitHub
                             </Button>
+                        </Link>
+                    </div>
+                    <div className="mt-4">
+                        <Link href="/LICENSE.txt" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-opacity">
+                            <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" className="h-6" />
                         </Link>
                     </div>
                 </div>
