@@ -43,6 +43,7 @@ export default function OntologyPage() {
         prevCase: researchPrevCase,
         currentCase: researchCurrentCase,
         resetStudy: resetStudy,
+        logout: researchLogout, // [NEW]
         completeStudy: completeStudy, // [NEW]
         debugCompleteStudy: researchDebugCompleteStudy, // [NEW]
         restoreSession: researchRestoreSession,
@@ -206,7 +207,7 @@ export default function OntologyPage() {
     const handleSuspend = async () => {
         const code = researchState.evaluatorCode;
         if (confirm(`Your progress is securely saved.\n\nTo resume later, simply enter your Evaluator Code: ${code}\n\nClick OK to exit the session now.`)) {
-            await resetStudy();
+            await researchLogout();
             window.location.reload();
         }
     };

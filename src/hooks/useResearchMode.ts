@@ -184,6 +184,11 @@ export function useResearchMode() {
         setState(finalState);
     }, []);
 
+    const logout = useCallback(async () => {
+        await clear();
+        setState(INITIAL_STATE);
+    }, []);
+
     const resetStudy = useCallback(async () => {
         if (state.evaluatorCode) {
             await deleteStudyData(state.evaluatorCode);
@@ -267,6 +272,7 @@ export function useResearchMode() {
         submitResponse,
         prevCase,
         importState,
+        logout, // [NEW]
         resetStudy,
         nextCase,
         completeStudy,
