@@ -45,21 +45,6 @@ export function GhostNodeSurvey({ config, initialData, onChange }: GhostNodeSurv
     // [Fix] Removed useEffect that caused infinite loop.
     // Instead, we bundle current state and call onChange explicitly when interactions happen.
     const notifyChange = useCallback((updates: Partial<GhostNodeSurveyResponse>) => {
-        // Construct the full object based on current state + updates
-        // We use functional state access inside the handler to ensure latest, 
-        // OR we just rely on the fact that this is called synchronously with the setter.
-        // Actually, better to merge state here to send the "complete" picture if needed, 
-        // or just send the partial update if the parent handles merging (which it usually does or replaces).
-        // Looking at the parent (useResearchMode -> submitResponse), it merges with existing data.
-
-        // HOWEVER, to be safe and consistent with previous behavior (sending full object), 
-        // we need access to the *latest* other values. 
-        // Since we are inside a component, 'strength', 'confidence' etc are closed over.
-        // We will pass the *new* value for the field being updated, and fall back to valid state for others.
-
-        // But since we can't easily access "future" state from other setters, 
-        // we will implement specific handlers.
-
         onChange({
             strength,
             confidence,
@@ -285,6 +270,8 @@ export function GhostNodeSurvey({ config, initialData, onChange }: GhostNodeSurv
             </div>
 
 
+
+
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
                     <Label className="text-base font-semibold">4. Reflexivity Statement</Label>
@@ -305,16 +292,16 @@ export function GhostNodeSurvey({ config, initialData, onChange }: GhostNodeSurv
                     </TooltipProvider>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                    What assumption or background knowledge did you rely on most for this rating?
+                    How did your professional expertise or specific background influence this assessment?
                 </p>
                 <Textarea
                     value={reflexivity}
                     onChange={(e) => handleReflexivityChange(e.target.value)}
-                    placeholder="E.g., My background in labor law makes me sensitive to collective bargaining omissions..."
+                    placeholder="E.g., My experience in digital rights advocacy makes me focus on public transparency..."
                     className="min-h-[100px]"
                 />
-                {config.requireReflexivity && reflexivity.length < 40 && reflexivity.length > 0 && (
-                    <p className="text-xs text-amber-600">Please elaborate slightly more (min 40 characters).</p>
+                {config.requireReflexivity && reflexivity.length < 15 && reflexivity.length > 0 && (
+                    <p className="text-xs text-amber-600">Please elaborate slightly more (min 15 characters).</p>
                 )}
             </div>
 
