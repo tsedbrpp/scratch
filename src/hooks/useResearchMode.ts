@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { get, set, clear } from 'idb-keyval';
 import { StudyState, GhostNodeSurveyResponse, STUDY_CASES, StudyCase, SurveyResponseData } from '@/lib/study-config';
-import { saveStudyBackup, getStudyBackup } from '@/app/actions/research';
+import { saveStudyBackup, getStudyBackup, deleteStudyData } from '@/app/actions/research';
 
 const STORAGE_KEY = 'instant_tea_research_store';
 
@@ -185,9 +185,12 @@ export function useResearchMode() {
     }, []);
 
     const resetStudy = useCallback(async () => {
+        if (state.evaluatorCode) {
+            await deleteStudyData(state.evaluatorCode);
+        }
         await clear();
         setState(INITIAL_STATE);
-    }, []);
+    }, [state.evaluatorCode]);
 
     const completeStudy = useCallback(() => {
         setState(prev => ({ ...prev, isComplete: true }));
@@ -217,6 +220,44 @@ export function useResearchMode() {
         return false;
     }, []);
 
+    const debugCompleteStudy = useCallback(() => {
+        setState(prev => {
+            const newResponses = { ...prev.responses };
+            prev.playlist.forEach((caseId, index) => {
+                if (!newResponses[caseId]) {
+                    newResponses[caseId] = {
+                        studyId: 'debug-fast-test',
+                        evaluatorId: prev.evaluatorCode ? hashCode(prev.evaluatorCode).toString(16) : 'debug',
+                        caseId: caseId,
+                        caseIndex: index,
+                        startedAt: Date.now() - 5000,
+                        strength: 75,
+                        confidence: 'high',
+                        missingRoles: ['representation', 'standard_setting'],
+                        missingRolesOther: 'Debug auto-fill response',
+                        isUncertain: false,
+                        institutionalLogics: {
+                            market: 'weak',
+                            state: 'moderate',
+                            professional: 'dominant',
+                            community: null
+                        },
+                        reflexivity: 'This is an automated debug response for fast testing.',
+                        submittedAt: Date.now(),
+                        timeOnCaseMs: 1000
+                    };
+                }
+            });
+
+            return {
+                ...prev,
+                responses: newResponses,
+                isComplete: true,
+                currentCaseIndex: prev.playlist.length - 1
+            };
+        });
+    }, []);
+
     return {
         state,
         isLoading,
@@ -229,7 +270,8 @@ export function useResearchMode() {
         resetStudy,
         nextCase,
         completeStudy,
-        restoreSession, // [NEW]
+        debugCompleteStudy, // [NEW]
+        restoreSession,
         currentCase,
         cases: availableCases
     };

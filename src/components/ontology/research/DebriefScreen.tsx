@@ -3,8 +3,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import { Download, X, Loader2, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { StudyState } from '@/lib/study-config';
 import { sendStudyResultsEmail } from '@/app/actions/research';
 import { toast } from 'sonner';
@@ -18,7 +18,6 @@ interface DebriefScreenProps {
 export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreenProps) {
     const [showReengagement, setShowReengagement] = React.useState(false);
     const [emailStatus, setEmailStatus] = React.useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-    const router = useRouter();
 
 
 
@@ -49,12 +48,6 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
         }
     };
 
-    const handleCloseFull = () => {
-        onClose();
-        // Force full reload to landing page to clear state
-        window.location.href = '/?view=landing';
-    };
-
     if (showReengagement) {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -66,59 +59,88 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                         <p className="text-indigo-100 text-sm">Your contribution is invaluable.</p>
                     </div>
 
-                    <CardContent className="space-y-6 pt-6 px-6">
-                        {/* Payment Reminder */}
-                        <div className="space-y-2">
-                            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                                💰 Honorarium Payment
-                            </h3>
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                To receive your honorarium, please submit how you would like to receive payment ( Zelle, PayPal, or Venmo). Please provide your account information. Send payment instructions to <a href="mailto:tod.sedbrook@bears.unco.edu" className="text-indigo-700 font-bold hover:underline">tod.sedbrook@bears.unco.edu</a>. For any other payment methods, please email instructions.
-                            </p>
-                        </div>
+                    <div className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-[420px]">
+                            <CardContent className="space-y-6 pt-6 px-6">
+                                {/* Honorarium Payment */}
+                                <div className="space-y-3">
+                                    <h3 className="font-bold text-slate-900 flex items-center gap-2 text-lg">
+                                        💰 Honorarium payment
+                                    </h3>
+                                    <p className="text-sm text-slate-700 leading-relaxed">
+                                        To receive your <strong>$100 honorarium</strong>, please choose a payment method and provide the minimum identifier below.
+                                    </p>
+                                    <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100">
+                                        <div className="grid grid-cols-[100px_1fr] items-start gap-2 text-sm">
+                                            <span className="font-bold text-slate-900">PayPal:</span>
+                                            <span className="text-slate-600">PayPal email</span>
 
-                        {/* Free Credits Invitation */}
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                            We invite you to sign-up and log-in to receive 100 free credits to allow analysis of your policy documents. We are happy to honor any requests for more free credits for evaluation.
-                        </p>
+                                            <span className="font-bold text-slate-900">Venmo:</span>
+                                            <span className="text-slate-600">@username</span>
 
-                        {/* Free Credits Alert */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3 items-start">
-                            <div className="bg-blue-100 p-1.5 rounded-full mt-0.5">
-                                <Sparkles className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-blue-900">Earn Free Credits</h4>
-                                <p className="text-xs text-blue-800 mt-1">
-                                    Receive free credits for testing policy analysis with your own documents!
-                                </p>
-                            </div>
-                        </div>
+                                            <span className="font-bold text-slate-900">Zelle:</span>
+                                            <span className="text-slate-600">email address (preferred) or phone number</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-amber-700 font-semibold uppercase tracking-wider">
+                                        Please do not enter bank account numbers, passwords, or security codes.
+                                    </p>
+                                    <p className="text-xs text-slate-500 italic">
+                                        Payments are typically processed within 48 hours of submission.
+                                    </p>
+                                    <div className="pt-1">
+                                        <p className="text-sm text-slate-700">
+                                            Send payment instructions to <a href="mailto:tod.sedbrook@bears.unco.edu" className="text-indigo-700 font-bold hover:underline">tod.sedbrook@bears.unco.edu</a>.
+                                        </p>
+                                    </div>
+                                    <div className="pt-2 mt-2 border-t border-slate-100/50">
+                                        <p className="text-sm font-semibold text-slate-900 mb-1">If you prefer another payment method:</p>
+                                        <p className="text-xs text-slate-600 leading-relaxed mb-2">
+                                            Please email <a href="mailto:tod.sedbrook@bears.unco.edu" className="text-indigo-700 font-medium hover:underline">tod.sedbrook@bears.unco.edu</a> with:
+                                        </p>
+                                        <ul className="list-disc ml-4 text-xs text-slate-600 space-y-1 mb-2">
+                                            <li>Your preferred method (e.g., ACH via university system, check, gift card, etc.)</li>
+                                            <li>Your country (if outside the U.S.), so we can choose a compatible option</li>
+                                        </ul>
+                                        <p className="text-[10px] text-slate-400 leading-tight italic">
+                                            Do not email bank account numbers, passwords, or security codes. We will reply with a secure way to provide any required details.
+                                        </p>
+                                    </div>
+                                </div>
 
-                        {/* Encouragement to Explore */}
-                        <div className="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
-                            <p>
-                                We invite you to explore the advanced ontology tools and interactive features of InstantTea, designed for deep policy analysis.
-                            </p>
-                        </div>
-                    </CardContent>
+                                {/* Optional: InstantTea credits */}
+                                <div className="pt-4 border-t border-slate-100 space-y-2">
+                                    <h3 className="font-bold text-slate-900">
+                                        Optional: InstantTea credits (unrelated to payment)
+                                    </h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        If you&apos;d like to explore InstantTea with your own AI governance documents, you may create an account to receive <strong>100 free credits</strong>. This is completely optional and not required to receive your honorarium.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </ScrollArea>
+                    </div>
 
                     <CardFooter className="flex flex-col gap-3 bg-slate-50/50 pt-0 pb-6 px-6">
                         <Button
-                            onClick={handleCloseFull}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-base py-5"
+                            onClick={() => {
+                                window.location.href = '/?view=landing';
+                            }}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-base py-5 font-bold"
                         >
-                            Close Survey and Explore InstantTea
+                            Explore InstantTea
                         </Button>
 
-                        <div className="flex justify-between w-full items-center mt-2">
-                            <Button
-                                variant="link"
-                                onClick={() => router.push('/governance/contributor-credits')}
-                                className="text-indigo-600 hover:text-indigo-800 font-medium px-0"
-                            >
-                                Learn How to Earn Free Credits <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
+                        <Button
+                            onClick={() => {
+                                window.location.href = '/sign-up';
+                            }}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md text-base py-5 font-bold"
+                        >
+                            Create an account
+                        </Button>
+
+                        <div className="flex justify-end w-full items-center mt-2">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -171,9 +193,9 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                         onClick={handleEmailClick}
                         disabled={emailStatus !== 'idle'}
                         size="lg"
-                        className={`w-full py-6 text-lg shadow-xl transition-all ${emailStatus === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                        className={`w-full py-6 text-lg shadow-xl transition-all text-white ${emailStatus === 'success' ? 'bg-green-600 hover:bg-green-700' :
                             emailStatus === 'error' ? 'bg-amber-600 hover:bg-amber-700' :
-                                'bg-indigo-600 hover:bg-indigo-700'
+                                'bg-emerald-600 hover:bg-emerald-700'
                             }`}
                     >
                         {emailStatus === 'sending' ? (
@@ -194,7 +216,7 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                             variant="link"
                             size="sm"
                             onClick={onDownload}
-                            className="text-slate-400 hover:text-indigo-600"
+                            className="text-slate-400 hover:text-emerald-600"
                         >
                             <Download className="mr-1 h-3 w-3" /> Download copy for my records
                         </Button>

@@ -11,6 +11,10 @@ export function ResearchWorkflowGuide() {
 
     // Auto-minimize on specific pages if needed, or keep persistent
     // For now, we'll just let the user control it.
+    // Hide on the research survey page to declutter the experience
+    if (pathname === "/survey") {
+        return null;
+    }
 
     if (!isOpen) {
         return (
