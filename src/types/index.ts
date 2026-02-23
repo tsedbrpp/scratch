@@ -207,6 +207,66 @@ export interface AnalysisResult {
     escalation_status?: import('./escalation').EscalationStatus;
 }
 
+// --- GHOST NODE (v2.0 Spec) ---
+export interface GhostNodeEvidence {
+    quote?: string;
+    rationale: string;
+    context?: string;
+}
+
+export interface GhostNode {
+    id: string; // Separate UUID for stable referencing
+    fingerprint: string; // SHA-256 hash for deduplication
+    policyId: string; // Essential for scoped access and cross-policy tracking
+    name: string;
+    aliases?: string[]; // Handle variations like "Community groups" vs "Local communities"
+    description: string;
+    category?: string;
+    relatedThemes?: string[]; // Used in fingerprint calculation for nuance
+    confidence?: number; // AI-scored reliability
+    evidence: GhostNodeEvidence[];
+    sourcePipelines: string[];
+    status: "proposed" | "validated" | "rejected";
+    createdAt: string;
+    updatedAt: string;
+    mergedIntoId?: string;
+    // V2 AI Output Fields
+    evidenceQuotes?: Array<{
+        quote: string;
+        actors: string[];
+        sourceRef: string;
+    }>;
+    claim?: {
+        summaryBullets: string[];
+        disambiguations: string[];
+        fullReasoning: string;
+    };
+    discourseThreats?: Array<{
+        conflictType: string;
+        dominantDiscourse: string;
+        explanation: string;
+    }>;
+    roster?: {
+        actors: string[];
+        mechanisms: string[];
+    };
+    missingSignals?: Array<{
+        signal: string;
+        searchTerms: string[];
+    }>;
+    absenceType?: string;
+    exclusionType?: string;
+    institutionalLogics?: Array<{
+        logic: string;
+        description: string;
+    }>;
+    potentialConnections?: Array<{
+        targetActor: string;
+        relationshipType: string;
+        evidence: string;
+    }>;
+}
+
 // Core interfaces for analysis
 export interface PositionalityData {
     locus: string;

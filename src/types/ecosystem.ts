@@ -178,7 +178,7 @@ export interface EcosystemEdge {
     type: string;
     label?: string; // Optional label for visualization
     weight?: number; // Strength of connection
-    flow_type?: 'power' | 'logic'; // [NEW] Differentiate types of association
+    flow_type?: 'power' | 'logic' | 'ghost'; // [NEW] Differentiate types of association
 
     // [NEW] ANT Properties
     nature?: "intermediary" | "mediator";

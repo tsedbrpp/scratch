@@ -14,9 +14,24 @@ export const SWISS_COLORS = {
     default: "#94A3B8"
 };
 
-export const getActorColor = (type: string) => {
+export const normalizeTaxonomyKey = (type: string): string => {
     let key = type.toLowerCase().replace(/\s/g, "");
-    if (key === 'startup') key = 'privatetech';
+    if (key.includes('startup') || key.includes('company')) return 'privatetech';
+    if (key.includes('policy') || key.includes('government') || key.includes('regulator')) return 'policymaker';
+    if (key.includes('civil') || key.includes('ngo') || key.includes('union')) return 'civilsociety';
+    if (key.includes('academic') || key.includes('university') || key.includes('research')) return 'academic';
+    if (key.includes('infrastructure') || key.includes('compute') || key.includes('hardware')) return 'infrastructure';
+    if (key.includes('algorithm') || key.includes('model')) return 'algorithm';
+    if (key.includes('data')) return 'dataset';
+
+    // Fallback dictionary map
+    if (key === 'startup') return 'privatetech';
+
+    return key;
+};
+
+export const getActorColor = (type: string) => {
+    const key = normalizeTaxonomyKey(type);
     return SWISS_COLORS[key as keyof typeof SWISS_COLORS] || SWISS_COLORS.default;
 };
 
@@ -44,74 +59,75 @@ export interface GhostActor extends EcosystemActor {
     isGhost: boolean;
 }
 
-export const mergeGhostNodes = (actors: EcosystemActor[], absenceAnalysis: AssemblageAnalysis | AiAbsenceAnalysis | null): GhostActor[] => {
+export function generateGhostId(name: string): string {
+    const sanitized = name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return `ghost-${sanitized}`;
+}
+
+export const mergeGhostNodes = (actors: EcosystemActor[], unifiedGhosts: any[] = []): GhostActor[] => {
     const baseActors: GhostActor[] = actors.map(a => ({ ...a, isGhost: false }));
-    if (!absenceAnalysis) return baseActors;
+    const absences = unifiedGhosts;
 
-    // Handle potentially different data shapes (absent_actors vs missing_voices)
-    // Cast to any for checking property existence safely if types overlap poorly, 
-    // OR refine types. 'missing_voices' exists in both. 'absent_actors' is likely internal or old.
-    // Let's refine based on the types we saw in 'types/ecosystem.ts'.
-    // AssemblageAnalysis defines: missing_voices
-    // AiAbsenceAnalysis defines: missing_voices
-    // Neither seems to define 'absent_actors' in the file I saw, but code referenced it. 
-    // I will keep the check but type it lightly or just check missing_voices.
+    if (absences && absences.length > 0) {
+        // Create a normalized set of existing standard actor names for deduplication
+        const existingNames = new Set(
+            actors.map(a => a.name.toLowerCase().trim().replace(/[^a-z0-9]/g, ''))
+        );
 
-    // Actually, looking at types/ecosystem.ts, both have 'missing_voices'. 
-    // I will use that as the primary source.
-    const absences = absenceAnalysis.missing_voices || [];
-
-    if (absences.length > 0) {
         absences.forEach((absent) => {
-            // Ensure we have a valid name before adding
             if (!absent.name) return;
 
-            // Normalize type to ensure connections
-            let normalizedType = "Civil Society"; // Default fallback
-            const role = (absent.role || absent.category || "").toLowerCase();
+            const normalizedName = absent.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 
-            if (role.includes("government") || role.includes("state") || role.includes("ministry")) normalizedType = "Policymaker";
-            else if (role.includes("academic") || role.includes("research") || role.includes("expert")) normalizedType = "Academic";
-            else if (role.includes("startup") || role.includes("business") || role.includes("private") || role.includes("tech")) normalizedType = "PrivateTech";
-            else if (role.includes("infra") || role.includes("platform")) normalizedType = "Infrastructure";
-            else if (role.includes("data") || role.includes("set")) normalizedType = "Dataset";
-            else if (role.includes("algo") || role.includes("ai")) normalizedType = "Algorithm";
-            else if (role.includes("agent")) normalizedType = "AlgorithmicAgent";
-            else if (role.includes("law") || role.includes("legal")) normalizedType = "LegalObject";
+            // Only drop if there is an EXACT name match with a standard actor. 
+            // We trust the Unified Catalog (which already deduplicates internally).
+            if (existingNames.has(normalizedName)) {
+                return;
+            }
+
+            // Preserve incoming type if provided (e.g., from page.tsx), otherwise fallback
+            let normalizedType = absent.type || "Civil Society";
+            if (!absent.type || absent.type.startsWith("Missing Voice")) {
+                const role = (absent.role || absent.category || "").toLowerCase();
+                if (role.includes("government") || role.includes("state") || role.includes("ministry")) normalizedType = "Policymaker";
+                else if (role.includes("academic") || role.includes("research") || role.includes("expert")) normalizedType = "Academic";
+                else if (role.includes("startup") || role.includes("business") || role.includes("private") || role.includes("tech")) normalizedType = "PrivateTech";
+                else if (role.includes("infra") || role.includes("platform")) normalizedType = "Infrastructure";
+                else if (role.includes("data") || role.includes("set")) normalizedType = "Dataset";
+                else if (role.includes("algo") || role.includes("ai")) normalizedType = "Algorithm";
+                else if (role.includes("agent")) normalizedType = "AlgorithmicAgent";
+                else if (role.includes("law") || role.includes("legal")) normalizedType = "LegalObject";
+            }
+
+            // Ensure the ID has the "ghost-" prefix for EcosystemMap rendering rules, but preserve the catalog ID/fingerprint
+            const finalId = absent.id ? (absent.id.startsWith('ghost-') ? absent.id : `ghost-${absent.id}`) : generateGhostId(absent.name);
 
             baseActors.push({
-                id: `ghost-${absent.name.replace(/\s+/g, '-')}`,
-                sourceId: 'absence_analysis',
+                ...absent,
+                id: finalId,
+                sourceId: absent.sourceId || 'absence_analysis',
+                source: 'absence_fill',
                 name: absent.name,
                 type: normalizedType as EcosystemActor['type'],
-                description: absent.reason || "Structurally absent actor",
-                metrics: {
+                description: absent.description || absent.reason || "Structurally absent actor",
+                // Preserve V2 Analytical Properties
+                absenceType: absent.absenceType || absent.absence_type,
+                exclusionType: absent.exclusionType || absent.exclusion_type,
+                metrics: absent.metrics || {
                     territorialization: "Weak",
                     deterritorialization: "Strong",
                     coding: "Weak"
                 },
-                influence: "Low",
-                isGhost: true // Flag for rendering
+                influence: absent.influence || "Low",
+                isGhost: true
             });
         });
-    } else if (absenceAnalysis.narrative || absenceAnalysis.structural_voids) {
-        // [FALLBACK] If analysis exists but missing_voices is empty, create a generic ghost node
-        // This ensures users get visual feedback that absence analysis was performed
-        baseActors.push({
-            id: 'ghost-structural-absence',
-            sourceId: 'absence_analysis',
-            name: 'Structural Absences Detected',
-            type: 'Civil Society',
-            description: absenceAnalysis.narrative || 'Analysis identified systemic gaps in representation',
-            metrics: {
-                territorialization: "Weak",
-                deterritorialization: "Strong",
-                coding: "Weak"
-            },
-            influence: "Low",
-            isGhost: true
-        });
     }
+
     return baseActors as GhostActor[];
 };
 
@@ -279,4 +295,34 @@ export const calculateConfigMetrics = (
             total_links: total
         }
     };
+};
+
+// [NEW] Shared Actor-to-Stage Mapping Logic
+export const isActorRelevantToStage = (actor: EcosystemActor, stageId: string): boolean => {
+    const t = actor.type.toLowerCase().replace(/\s/g, "");
+
+    switch (stageId) {
+        case 'problem':
+            // Social actors: Civil Society, NGOs, Academics
+            return ['civilsociety', 'ngo', 'academic', 'activist', 'public', 'humandights', 'labor'].some(k => t.includes(k));
+
+        case 'regulation':
+            // Regulatory actors: Policymakers, Governments, Legal Objects
+            return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law', 'commissioner'].some(k => t.includes(k));
+
+        case 'inscription':
+            // Technical technicalities: Algorithms, Datasets, Infrastructure bits
+            return ['standard', 'algorithm', 'technologist', 'expert', 'scientist', 'dataset', 'model', 'metric', 'benchmark'].some(k => t.includes(k));
+
+        case 'delegation':
+            // Operational mobilization: Auditors, Cloud, Infra, compliance agents
+            return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal', 'algorithmicagent', 'platform', 'verifier'].some(k => t.includes(k));
+
+        case 'market':
+            // Market outcomes: Startups, Private Tech, Users, SMEs
+            return ['privatetech', 'startup', 'private', 'corporation', 'sme', 'user', 'consumer', 'business', 'market'].some(k => t.includes(k));
+
+        default:
+            return false;
+    }
 };

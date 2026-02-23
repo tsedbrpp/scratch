@@ -1,0 +1,17 @@
+
+C:\Users\mount\.gemini\antigravity\scratch\src\app\ecosystem\page.tsx
+    7:10  warning  'generateGhostId' is defined but never used                                        @typescript-eslint/no-unused-vars
+   15:10  warning  'GhostNode' is defined but never used                                              @typescript-eslint/no-unused-vars
+   67:12  warning  'ontologyMaps' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+   95:23  warning  'setColorMode' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+   96:24  warning  'setFilterType' is assigned a value but never used                                 @typescript-eslint/no-unused-vars
+  226:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  282:25  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  319:22  warning  'e' is defined but never used                                                      @typescript-eslint/no-unused-vars
+  347:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  358:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  436:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  954:41  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+✖ 12 problems (0 errors, 12 warnings)
+

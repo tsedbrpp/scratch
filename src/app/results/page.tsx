@@ -47,7 +47,7 @@ export default function ResultsPage() {
             } else {
                 throw new Error(data.error || "Simulation failed");
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error("Simulation failed:", error);
             setError(error.message || "Failed to generate perspectives");
         } finally {
@@ -105,7 +105,7 @@ export default function ResultsPage() {
             } else {
                 throw new Error(data.error || "Analysis returned no data");
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error("Analysis failed:", error);
             setError(error.message || "An unexpected error occurred during analysis");
         } finally {

@@ -5,6 +5,12 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Sidebar } from "@/components/Sidebar";
 import { CREDIT_PACKAGES } from "@/config/pricing";
 import { cn } from "@/lib/utils";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Pricing & Academic Grants | InstantTea',
+    description: 'Transparent pay-as-you-go pricing for open science AI governance mapping. Discounts and free grants available for students and academic researchers.',
+};
 
 export default function PricingPage() {
     return (

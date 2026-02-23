@@ -1,0 +1,5 @@
+src/lib/ecosystem-utils.test.ts(1,44): error TS2459: Module '"@/lib/ecosystem-utils"' declares 'EcosystemActor' locally, but it is not exported.
+src/lib/ecosystem-utils.test.ts(42,21): error TS2741: Property 'category' is missing in type '{ name: string; reason: string; role: string; }' but required in type '{ name: string; reason: string; category: string; role?: string | undefined; }'.
+src/lib/ecosystem-utils.test.ts(48,60): error TS2345: Argument of type 'AssemblageAnalysis' is not assignable to parameter of type 'any[]'.
+  Type 'AssemblageAnalysis' is missing the following properties from type 'any[]': length, pop, push, concat, and 35 more.
+src/lib/ecosystem-utils.test.ts(71,60): error TS2345: Argument of type 'null' is not assignable to parameter of type 'any[] | undefined'.

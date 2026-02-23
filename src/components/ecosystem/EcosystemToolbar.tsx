@@ -35,6 +35,9 @@ interface EcosystemToolbarProps {
     onToggleUnverified?: () => void;
     linkClassFilter?: 'all' | 'mediator' | 'intermediary';
     onCycleClassFilter?: () => void;
+    // [NEW] Directory View
+    isAssociationDirectoryOpen?: boolean;
+    onToggleAssociationDirectory?: () => void;
 }
 
 export const EcosystemToolbar = memo(function EcosystemToolbar({
@@ -65,7 +68,9 @@ export const EcosystemToolbar = memo(function EcosystemToolbar({
     showUnverifiedLinks,
     onToggleUnverified,
     linkClassFilter = 'all',
-    onCycleClassFilter
+    onCycleClassFilter,
+    isAssociationDirectoryOpen = false,
+    onToggleAssociationDirectory
 }: EcosystemToolbarProps) {
     return (
         <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-md border border-slate-200 overflow-x-auto max-w-full pb-1">
@@ -127,6 +132,21 @@ export const EcosystemToolbar = memo(function EcosystemToolbar({
             )}
 
             <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+
+            {/* [NEW] Association Directory Toggle */}
+            {onToggleAssociationDirectory && (
+                <>
+                    <Button
+                        variant="ghost" size="sm"
+                        onClick={onToggleAssociationDirectory}
+                        className={`h-7 px-2.5 text-xs font-medium shrink-0 ${isAssociationDirectoryOpen ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "text-slate-500 hover:text-slate-900"}`}
+                        title="Open Association Directory"
+                    >
+                        <Network className="h-3 w-3 mr-1" /> {isAssociationDirectoryOpen ? "Close Directory" : "Directory"}
+                    </Button>
+                    <div className="w-px h-3 bg-slate-300 mx-0.5 shrink-0" />
+                </>
+            )}
 
             {/* ANT Workbench Controls */}
             {tracedActorId && (

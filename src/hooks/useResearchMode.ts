@@ -1,9 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { get, set, clear } from 'idb-keyval';
-import { StudyState, GhostNodeSurveyResponse, STUDY_CASES, StudyCase, SurveyResponseData } from '@/lib/study-config';
+import { StudyState, GhostNodeSurveyResponse, STUDY_CASES, StudyCase, SurveyResponseData, GhostNodeSurveyResponseSchema } from '@/lib/study-config';
 import { saveStudyBackup, getStudyBackup, deleteStudyData } from '@/app/actions/research';
 
 const STORAGE_KEY = 'instant_tea_research_store';
+
+// V2 Legacy Migration Helper
+function migrateStudyState(state: StudyState): StudyState {
+    if (!state.responses) return state;
+    const migratedResponses = { ...state.responses };
+    Object.keys(migratedResponses).forEach(key => {
+        const res = migratedResponses[key];
+        if (res.absenceGate === undefined) res.absenceGate = 'unsure';
+        if (res.feasibility === undefined) res.feasibility = 0;
+    });
+    return { ...state, responses: migratedResponses };
+}
 
 // Linear Congruential Generator constants
 const LCG_MUL = 1664525;
@@ -51,7 +63,7 @@ const INITIAL_STATE: StudyState = {
     isComplete: false,
 };
 
-export function useResearchMode() {
+export function useResearchMode(fallbackCases?: StudyCase[]) {
     const [state, setState] = useState<StudyState>(INITIAL_STATE);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -61,7 +73,7 @@ export function useResearchMode() {
             try {
                 const savedState = await get<StudyState>(STORAGE_KEY);
                 if (savedState) {
-                    setState(savedState);
+                    setState(migrateStudyState(savedState));
                 } else {
                     setState(INITIAL_STATE);
                 }
@@ -80,12 +92,7 @@ export function useResearchMode() {
         }
     }, [state, isLoading]);
 
-    // [NEW] Persist to Redis backup whenever state changes (if logged in)
-    useEffect(() => {
-        if (state.evaluatorCode) {
-            saveStudyBackup(state).catch(err => console.error("Auto-backup failed:", err));
-        }
-    }, [state]);
+
 
     const login = useCallback((code: string, customCases?: StudyCase[]) => {
         const sourceCases = customCases && customCases.length > 0 ? customCases : STUDY_CASES;
@@ -99,12 +106,16 @@ export function useResearchMode() {
         // Playlist: Calibration (if exists) -> Shuffled Core Cases
         const finalPlaylist = calibrationCase ? [calibrationCase.id, ...shuffledIds] : shuffledIds;
 
-        setState({
-            ...INITIAL_STATE,
-            evaluatorCode: code,
-            playlist: finalPlaylist,
-            currentCaseIndex: 0,
-            customCases: customCases
+        setState(() => {
+            const nextState = {
+                ...INITIAL_STATE,
+                evaluatorCode: code,
+                playlist: finalPlaylist,
+                currentCaseIndex: 0,
+                customCases: customCases
+            };
+            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
+            return nextState;
         });
     }, []);
 
@@ -143,6 +154,15 @@ export function useResearchMode() {
                 timeOnCaseMs: 0 // Placeholder, component should pass this ideally
             };
 
+            // V2 Payload Validation
+            try {
+                GhostNodeSurveyResponseSchema.parse(fullResponse);
+            } catch (validationError) {
+                console.error("Zod Validation Error: Invalid Survey Response Payload", validationError);
+                // In production, we should probably stop the save or alert the user.
+                // For now, we log the schema error so developers can catch malformed submits.
+            }
+
             const newResponses = { ...prev.responses, [caseId]: fullResponse };
 
             // [Fix] Do NOT auto-set isComplete here. 
@@ -152,19 +172,23 @@ export function useResearchMode() {
             const nextState = {
                 ...prev,
                 responses: newResponses,
-                // isComplete: prev.isComplete // Keep existing state (false until manually set)
             };
 
+            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
             return nextState;
         });
     }, []);
 
     const nextCase = useCallback(() => {
-        if (state.currentCaseIndex < state.playlist.length - 1) {
-            const nextIdx = state.currentCaseIndex + 1;
-            setState(prev => ({ ...prev, currentCaseIndex: nextIdx }));
-        }
-    }, [state]);
+        setState(prev => {
+            if (prev.currentCaseIndex < prev.playlist.length - 1) {
+                const nextState = { ...prev, currentCaseIndex: prev.currentCaseIndex + 1 };
+                saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
+                return nextState;
+            }
+            return prev;
+        });
+    }, []);
 
     const prevCase = useCallback(() => {
         setState(prev => {
@@ -176,7 +200,7 @@ export function useResearchMode() {
     }, []);
 
     const importState = useCallback((importedState: StudyState, fallbackCases?: StudyCase[]) => {
-        const finalState = { ...importedState };
+        const finalState = migrateStudyState({ ...importedState });
         // If imported state doesn't have customCases but playlist refers to them, try to use fallback
         if ((!finalState.customCases || finalState.customCases.length === 0) && fallbackCases) {
             finalState.customCases = fallbackCases;
@@ -198,22 +222,30 @@ export function useResearchMode() {
     }, [state.evaluatorCode]);
 
     const completeStudy = useCallback(() => {
-        setState(prev => ({ ...prev, isComplete: true }));
+        setState(prev => {
+            const nextState = { ...prev, isComplete: true };
+            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
+            return nextState;
+        });
     }, []);
 
     // const currentCaseId = state.playlist[state.currentCaseIndex];
-    // Look up in customCases if available, otherwise static STUDY_CASES
-    const availableCases = state.customCases || STUDY_CASES;
+    // Look up in customCases if available, otherwise fallbackCases or static STUDY_CASES
+    const availableCases = state.customCases || fallbackCases || STUDY_CASES;
     const currentCase = availableCases.find(c => c.id === state.playlist[state.currentCaseIndex]);
 
-    const restoreSession = useCallback(async (code: string) => {
+    const restoreSession = useCallback(async (code: string, fallbackCases?: StudyCase[]) => {
         setIsLoading(true);
         try {
             const backup = await getStudyBackup(code);
             if (backup) {
                 // Verify it has necessary fields
                 if (backup.playlist && backup.evaluatorCode === code) {
-                    setState(backup);
+                    const finalState = migrateStudyState({ ...backup });
+                    if ((!finalState.customCases || finalState.customCases.length === 0) && fallbackCases && fallbackCases.length > 0) {
+                        finalState.customCases = fallbackCases;
+                    }
+                    setState(finalState);
                     return true;
                 }
             }

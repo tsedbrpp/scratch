@@ -81,14 +81,27 @@ export function ActorList({
     const [searchQuery, setSearchQuery] = React.useState("");
 
     const filteredActors = React.useMemo(() => {
-        if (!searchQuery.trim()) return actors;
-        const lowerQuery = searchQuery.toLowerCase();
-        return actors.filter(actor =>
-            actor.name.toLowerCase().includes(lowerQuery) ||
-            actor.description?.toLowerCase().includes(lowerQuery) ||
-            actor.type.toLowerCase().includes(lowerQuery)
-        );
-    }, [actors, searchQuery]);
+        let result = actors;
+        if (searchQuery.trim()) {
+            const lowerQuery = searchQuery.toLowerCase();
+            result = actors.filter(actor =>
+                actor.name.toLowerCase().includes(lowerQuery) ||
+                actor.description?.toLowerCase().includes(lowerQuery) ||
+                actor.type.toLowerCase().includes(lowerQuery)
+            );
+        }
+
+        // [NEW] Pin traced actor to top
+        if (tracedActorId) {
+            result = [...result].sort((a, b) => {
+                if (a.id === tracedActorId) return -1;
+                if (b.id === tracedActorId) return 1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [actors, searchQuery, tracedActorId]);
 
     return (
         <Card className="h-[500px] lg:h-full flex flex-col">

@@ -11,8 +11,10 @@ import { generateEdges, getHullPath } from '@/lib/graph-utils';
 import { TranslationChain } from './TranslationChain';
 import dynamic from 'next/dynamic';
 import { ViewTypeLegend } from './EcosystemLegends';
-import { SWISS_COLORS, getActorColor, getActorShape, mergeGhostNodes, GhostActor, calculateConfigMetrics, getBiasIntensity } from '@/lib/ecosystem-utils';
+import { SWISS_COLORS, getActorColor, getActorShape, GhostActor, calculateConfigMetrics, getBiasIntensity, normalizeTaxonomyKey } from '@/lib/ecosystem-utils';
+import { computeNodeViz } from '@/lib/viz-contract';
 import { EcosystemToolbar } from './EcosystemToolbar';
+import { mergeLinks, normalizeActorName } from '@/lib/link_merge_utils';
 
 const EcosystemMap3D = dynamic(() => import('./EcosystemMap3D').then(mod => mod.EcosystemMap3D), {
     ssr: false,
@@ -25,6 +27,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { getGlossaryDefinition } from "@/lib/glossary-definitions";
 import { AssemblageDynamics } from './AssemblageDynamics';
+import { AssociationDirectory } from './AssociationDirectory'; // [NEW] Directory Import
 
 
 interface EcosystemMapProps {
@@ -71,6 +74,14 @@ const HULL_STYLES = {
 };
 
 // ... unchanged styles ...
+
+const DIMENSION_DEFINITIONS: Record<string, string> = {
+    'transformation': 'The degree to which this mediation alters or manipulates the forces passing through it.',
+    'stability': 'How persistent or entrenched this mediation is over time, resisting external disruptions.',
+    'multiplicity': 'The extent to which this mediator connects diverse, heterogeneous networks that would otherwise be isolated.',
+    'generativity': 'The capacity of this mediation to produce novel relationships, data, or secondary effects.',
+    'contestation': 'The level of conflict, friction, or resistance surrounding how this mediator exerts influence.'
+};
 
 export function EcosystemMap({
     actors,
@@ -137,6 +148,14 @@ export function EcosystemMap({
     const [showUnverifiedLinks, setShowUnverifiedLinks] = useState(false);
     const [linkClassFilter, setLinkClassFilter] = useState<'all' | 'mediator' | 'intermediary'>('all');
 
+    // [NEW] Association Directory Toggle
+    const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
+
+    // [NEW] 3D Taxonomy Filter State
+    const [activeTaxonomyFilter, setActiveTaxonomyFilter] = useState<string | null>(null);
+    const [activeMaterialityFilter, setActiveMaterialityFilter] = useState<string | null>(null);
+    const [activePatternFilter, setActivePatternFilter] = useState<string | null>(null);
+
     const handleCycleClassFilter = useCallback(() => {
         setLinkClassFilter(prev => {
             if (prev === 'all') return 'mediator';
@@ -146,8 +165,8 @@ export function EcosystemMap({
     }, []);
 
     const mergedActors = useMemo(() => {
-        return mergeGhostNodes(actors, absenceAnalysis || null);
-    }, [actors, absenceAnalysis]);
+        return actors as unknown as GhostActor[];
+    }, [actors]);
 
     const filteredActors = useMemo(() => {
         if (showGhostEdges) {
@@ -254,14 +273,43 @@ export function EcosystemMap({
             const rawLinks = generateEdges(filteredActors);
             const neighborIds = new Set<string>();
             rawLinks.forEach(l => {
-                if (l.source.id === tracedActorId) neighborIds.add(l.target.id);
-                if (l.target.id === tracedActorId) neighborIds.add(l.source.id);
+                const sId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                const tId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+
+                if (sId === tracedActorId) neighborIds.add(tId);
+                if (tId === tracedActorId) neighborIds.add(sId);
             });
+
+            // [FIX] Also include AI-discovered relationships for Ghost Nodes
+            // `absenceAnalysis` can be AiAbsenceAnalysis which lacks relationships, or AssemblageAnalysis which has it.
+            const asAssemblageAnalysis = absenceAnalysis as AssemblageAnalysis;
+            if (asAssemblageAnalysis?.relationships) {
+                asAssemblageAnalysis.relationships.forEach((rel: { source: string; target: string }) => {
+                    const sId = rel.source;
+                    const tId = rel.target;
+
+                    // We need to resolve names to IDs since relationships might use names
+                    const resolveId = (nameOrId: string) => {
+                        const actor = (filteredActors as EcosystemActor[]).find(a => a.id === nameOrId || a.name.toLowerCase() === nameOrId.toLowerCase());
+                        return actor?.id || nameOrId;
+                    };
+
+                    const resolvedSource = resolveId(sId);
+                    const resolvedTarget = resolveId(tId);
+
+                    if (resolvedSource === tracedActorId) neighborIds.add(resolvedTarget);
+                    if (resolvedTarget === tracedActorId) neighborIds.add(resolvedSource);
+                });
+            }
+
             neighborIds.add(tracedActorId);
+
             result = result.map(a => {
                 const isRelevant = neighborIds.has(a.id) || a.id.startsWith('blackbox-');
+                // Don't un-hide things that were already hidden, but if they are relevant, make them NOT hidden.
+                // Otherwise, hide them.
                 if (!isRelevant) return { ...a, isHidden: true };
-                return { ...a, isHidden: false };
+                return { ...a, isHidden: a.isHidden || false };
             });
         }
         if (activeTypeFilter) {
@@ -274,7 +322,7 @@ export function EcosystemMap({
             });
         }
         return result;
-    }, [filteredActors, collapsedAssemblages, tracedActorId, activeTypeFilter, configurations]);
+    }, [filteredActors, collapsedAssemblages, tracedActorId, activeTypeFilter, configurations, absenceAnalysis]);
 
     const links = useMemo(() => {
         const rawEdges = generateEdges(filteredActors);
@@ -290,25 +338,50 @@ export function EcosystemMap({
 
         const relationshipMap = new Map(activeAnalysis?.relationships?.map(r => [r.id, r]));
 
-        let processedLinks = rawEdges.map(e => {
-            let sourceId = e.source.id;
-            let targetId = e.target.id;
+        // [NEW] Use unified merge engine
+        const nameToIdMap = new Map();
+        hydratedActors.forEach(a => nameToIdMap.set(normalizeActorName(a.name), a.id));
+
+        let processedLinks = mergeLinks(rawEdges, hydratedActors, nameToIdMap);
+
+        processedLinks = processedLinks.map(l => {
+            const sId = typeof l.source === 'string' ? l.source : (l.source as any).id;
+            const tId = typeof l.target === 'string' ? l.target : (l.target as any).id;
+
+            let sourceId = sId;
+            let targetId = tId;
+
+            // Map to physical node IDs if they are member of a blackbox
             if (memberToBlackBoxMap.has(sourceId)) sourceId = memberToBlackBoxMap.get(sourceId)!;
             if (memberToBlackBoxMap.has(targetId)) targetId = memberToBlackBoxMap.get(targetId)!;
 
-            // [NEW] Attach Analysis
-            // ID construction must match AssemblagePanel: `${source.id}-${target.id}`
-            // Note: generateEdges always puts source/target in a deterministic order? 
-            // Actually generateEdges iterates array order. We should check both directions or ensure stable key.
-            // For now assuming the generateEdges order is consistent enough or we check both.
-            const relKey = `${e.source.id}-${e.target.id}`;
-            const relKeyRev = `${e.target.id}-${e.source.id}`;
-            const analysis = relationshipMap.get(relKey) || relationshipMap.get(relKeyRev);
+            // [NEW] Attach Analysis from formal relationshipMap (for non-ghost links)
+            // If l.analysis already exists (from mergeLinks), we keep it but could augment it.
+            if (!l.analysis) {
+                const relKey = `${sId}-${tId}`;
+                const relKeyRev = `${tId}-${sId}`;
+                l.analysis = relationshipMap.get(relKey) || relationshipMap.get(relKeyRev);
+            }
+
+            // [NEW] Structurally enforce ghost flow types globally so 3D renders and Maps agree
+            let finalFlowType = l.flow_type || (l.type === 'ghost' ? 'ghost' : 'logic');
+            if (finalFlowType !== 'ghost') {
+                const sourceActor = hydratedActors.find(a => a.id === sId);
+                const targetActor = hydratedActors.find(a => a.id === tId);
+                const sourceIsGhost = sourceActor && ('isGhost' in sourceActor ? (sourceActor as any).isGhost : sourceActor.source === 'absence_fill' || sourceActor.id.startsWith('ghost-'));
+                const targetIsGhost = targetActor && ('isGhost' in targetActor ? (targetActor as any).isGhost : targetActor.source === 'absence_fill' || targetActor.id.startsWith('ghost-'));
+                if (sourceIsGhost || targetIsGhost) finalFlowType = 'ghost';
+            }
 
             return {
-                source: sourceId, target: targetId, type: e.label, description: e.description,
-                flow_type: e.flow_type, originalSource: e.source.id, originalTarget: e.target.id,
-                analysis // [NEW] Pass to 3D View
+                ...l,
+                source: sourceId,
+                target: targetId,
+                type: l.type || l.label || "Relates To", // Ensure fallback
+                flow_type: finalFlowType, // Bound permanently to the object
+                label: l.label || l.type || "Relates To", // Ensure consistent label
+                originalSource: sId,
+                originalTarget: tId
             };
         });
         const validActorIds = new Set(hydratedActors.map(a => a.id));
@@ -351,15 +424,8 @@ export function EcosystemMap({
 
     const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
         if (!stageId) return true;
-        const t = actor.type.toLowerCase();
-        switch (stageId) {
-            case 'problem': return ['civilsociety', 'ngo', 'academic', 'activist', 'public'].some(k => t.includes(k));
-            case 'regulation': return ['policymaker', 'government', 'legislator', 'regulator', 'court', 'legalobject', 'law'].some(k => t.includes(k));
-            case 'inscription': return ['standard', 'algorithm', 'technologist', 'expert', 'scientist'].some(k => t.includes(k));
-            case 'delegation': return ['auditor', 'cloud', 'infrastructure', 'compliance', 'legal'].some(k => t.includes(k));
-            case 'market': return ['privatetech', 'startup', 'private', 'corporation', 'sme', 'user'].some(k => t.includes(k));
-            default: return true;
-        }
+        const { isActorRelevantToStage } = require('@/lib/ecosystem-utils');
+        return isActorRelevantToStage(actor, stageId);
     };
 
     const memoizedConfigurations = useMemo(() => configurations.map(c => ({ id: c.id, memberIds: c.memberIds })), [configurations]);
@@ -566,6 +632,7 @@ export function EcosystemMap({
 
 
     const [hoveredNode, setHoveredNode] = useState<EcosystemActor | null>(null);
+    const [hoveredBadgeActor, setHoveredBadgeActor] = useState<EcosystemActor | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
     const [hoveredLink, setHoveredLink] = useState<{ source: string | object, target: string | object, type: string } | null>(null);
@@ -579,6 +646,16 @@ export function EcosystemMap({
         });
         setHoveredNode(actor);
         setHoveredLink(null);
+    };
+
+    const handleBadgeHover = (e: React.MouseEvent, actor: EcosystemActor) => {
+        e.stopPropagation();
+        setTooltipPos({
+            x: e.clientX,
+            y: e.clientY
+        });
+        setHoveredBadgeActor(actor);
+        setHoveredNode(null);
     };
 
     const handleLinkHover = (e: React.MouseEvent, link: { source: string | SimulationNode; target: string | SimulationNode; type: string }) => {
@@ -617,6 +694,74 @@ export function EcosystemMap({
             !selectedConfigIds || selectedConfigIds.length === 0 || selectedConfigIds.includes(config.id)
         );
     }, [hydratedConfigs, selectedConfigIds]);
+
+    // --- [NEW] Multi-faceted Filtering for 3D View ---
+    const { filtered3DActors, filtered3DLinks } = useMemo(() => {
+        // If no filters are active, return the full hydrated set
+        if (!activeTaxonomyFilter && !activeMaterialityFilter && !activePatternFilter) {
+            return { filtered3DActors: hydratedActors, filtered3DLinks: links || [] };
+        }
+
+        // 1. Filter Actors (Taxonomy + Materiality)
+        const nextActors = hydratedActors.filter(actor => {
+            // Check Taxonomy
+            if (activeTaxonomyFilter) {
+                const key = normalizeTaxonomyKey(actor.type);
+                if (key !== activeTaxonomyFilter) return false;
+            }
+
+            // Check Materiality
+            if (activeMaterialityFilter) {
+                const viz = computeNodeViz(actor);
+                if (activeMaterialityFilter === 'high_stability' && viz.territorialization < 0.5) return false;
+                if (activeMaterialityFilter === 'low_stability' && viz.territorialization >= 0.5) return false;
+                if (activeMaterialityFilter === 'bias_hotspots' && viz.ethicalRisk <= 0.4) return false;
+                if (activeMaterialityFilter === 'provisional' && !viz.isProvisional) return false;
+            }
+
+            return true;
+        });
+
+        // 2. Filter Links (Survival + Pattern)
+        const validActorIds = new Set(nextActors.map(a => a.id));
+        const nextLinks = (links || []).filter((link: any) => {
+            const sId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+            const tId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+
+            // Must survive Node culling
+            if (!validActorIds.has(sId) || !validActorIds.has(tId)) return false;
+
+            // Check Pattern
+            if (activePatternFilter) {
+                // Determine implicit flowType to match GraphVisuals.tsx exact evaluation
+                let flowType = link.viz?.flowType || (link as any).flow_type || (link.type === 'ghost' ? 'ghost' : 'logic');
+
+                // Absolute strict match
+                if (flowType !== activePatternFilter) return false;
+            }
+
+            return true;
+        });
+
+        // 3. Optional: Cull Orphaned Nodes (if Pattern filter removed lines)
+        let finalActors = nextActors;
+        if (activePatternFilter) {
+            const connectedActorIds = new Set<string>();
+            nextLinks.forEach((link: any) => {
+                connectedActorIds.add(typeof link.source === 'object' ? (link.source as any).id : link.source);
+                connectedActorIds.add(typeof link.target === 'object' ? (link.target as any).id : link.target);
+            });
+            finalActors = nextActors.filter(actor => {
+                if (activePatternFilter === 'ghost') {
+                    const isGhostNode = actor.id.startsWith('ghost-') || actor.source === 'absence_fill';
+                    if (isGhostNode) return true;
+                }
+                return connectedActorIds.has(actor.id);
+            });
+        }
+
+        return { filtered3DActors: finalActors, filtered3DLinks: nextLinks };
+    }, [hydratedActors, links, activeTaxonomyFilter, activeMaterialityFilter, activePatternFilter]);
 
     return (
         <div className="relative w-full h-full">
@@ -672,6 +817,8 @@ export function EcosystemMap({
                         onToggleUnverified={() => setShowUnverifiedLinks(p => !p)}
                         linkClassFilter={linkClassFilter}
                         onCycleClassFilter={handleCycleClassFilter}
+                        isAssociationDirectoryOpen={isDirectoryOpen}
+                        onToggleAssociationDirectory={() => setIsDirectoryOpen(p => !p)}
                     />
                 </CardHeader>
 
@@ -683,8 +830,8 @@ export function EcosystemMap({
                     {is3DMode ? (
                         <div className="relative w-full h-full">
                             <EcosystemMap3D
-                                actors={hydratedActors}
-                                links={links} // [NEW] Pass pre-calculated links
+                                actors={filtered3DActors}
+                                links={filtered3DLinks} // [FIX] Passed filtered arrays to prevent WebGL dangling references
                                 configurations={configurations}
                                 selectedForGrouping={selectedForGrouping}
                                 onToggleSelection={onToggleSelection}
@@ -710,7 +857,14 @@ export function EcosystemMap({
                                 onMouseDown={handleLegendMouseDown}
                             >
                                 <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                                    <ViewTypeLegend />
+                                    <ViewTypeLegend
+                                        activeTaxonomyFilter={activeTaxonomyFilter}
+                                        onTaxonomySelect={(key) => setActiveTaxonomyFilter(prev => prev === key ? null : key)}
+                                        activeMaterialityFilter={activeMaterialityFilter}
+                                        onMaterialitySelect={(key) => setActiveMaterialityFilter(prev => prev === key ? null : key)}
+                                        activePatternFilter={activePatternFilter}
+                                        onPatternSelect={(key) => setActivePatternFilter(prev => prev === key ? null : key)}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -970,25 +1124,33 @@ export function EcosystemMap({
                                                 )}
 
                                                 {getActorShape(actor) === 'diamond' ?
-                                                    <polygon points={`0,${-r - 4} ${r + 4},0 0,${r + 4} ${-r - 4},0`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                    <polygon points={`0,${-r - 4} ${r + 4},0 0,${r + 4} ${-r - 4},0`} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                     : getActorShape(actor) === 'hexagon' ?
-                                                        <polygon points={`${r + 2},0 ${(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2)},0 ${-(r + 2) / 2},${-(r + 2) * 0.866} ${(r + 2) / 2},${-(r + 2) * 0.866}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                        <polygon points={`${r + 2},0 ${(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2) / 2},${(r + 2) * 0.866} ${-(r + 2)},0 ${-(r + 2) / 2},${-(r + 2) * 0.866} ${(r + 2) / 2},${-(r + 2) * 0.866}`} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                         : getActorShape(actor) === 'square' ?
-                                                            <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                            <rect x={-r} y={-r} width={r * 2} height={r * 2} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                             : getActorShape(actor) === 'triangle' ?
-                                                                <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                                <polygon points={`0,${-r - 2} ${r + 2},${r + 2} ${-r - 2},${r + 2}`} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                                 : getActorShape(actor) === 'rect' ?
-                                                                    <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
-                                                                    : <circle r={r} fill={isGhost ? "#F8FAFC" : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                                    <rect x={-(r + 2)} y={-r} width={(r + 2) * 2} height={r * 2} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
+                                                                    : <circle r={r} fill={isGhost ? (isRelevant && highlightedStage ? color : "#F8FAFC") : color} className="drop-shadow-sm transition-all duration-200" stroke={color} strokeWidth={isGhost ? 2 : 1.5} strokeDasharray={strokeDash} />
                                                 }
 
                                                 {/* [LOD OPTIMIZED] Labels - Only show if zoomed in or focused */}
                                                 {showLabel && (
                                                     <foreignObject x="8" y="-10" width="150" height="24" className="overflow-visible pointer-events-none">
                                                         <div className={`flex items-center px-1.5 py-0.5 rounded-sm bg-slate-100/90 border border-slate-200 backdrop-blur-[1px] transform transition-opacity duration-200 ${(focusedNodeId && !isFocused) || (highlightedStage && !isRelevant) ? "opacity-20" : "opacity-100"}`}>
-                                                            <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`}>
+                                                            <span className={`text-[10px] whitespace-nowrap font-medium leading-none ${isGhost ? "text-slate-600 font-semibold" : "text-slate-700"}`} style={{ pointerEvents: 'auto' }}>
                                                                 {actor.id.startsWith('blackbox-') ? `■ ${actor.name}` : actor.name}
-                                                                {isMultiAssemblage && <span className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200" title={`Bridge: ${memberOfConfigs.length} Assemblages`}>×{memberOfConfigs.length}</span>}
+                                                                {isMultiAssemblage && (
+                                                                    <span
+                                                                        className="text-[8px] ml-1 bg-amber-100 text-amber-700 px-1 rounded-full border border-amber-200 cursor-help"
+                                                                        onMouseEnter={(e) => handleBadgeHover(e, actor)}
+                                                                        onMouseLeave={() => setHoveredBadgeActor(null)}
+                                                                    >
+                                                                        ×{memberOfConfigs.length}
+                                                                    </span>
+                                                                )}
                                                                 {isGhost && <span className="text-[9px] text-red-500 font-normal ml-0.5">(Absent)</span>}
                                                             </span>
                                                         </div>
@@ -1029,10 +1191,10 @@ export function EcosystemMap({
                                         <div className="text-slate-400 text-[10px] mt-0.5">
                                             {(() => {
                                                 const s = hoveredLink.source;
-                                                const sName = typeof s === 'object' ? (s as SimulationNode).name : mergedActors.find(a => a.id === s)?.name || s;
+                                                const sName = typeof s === 'object' ? (s as SimulationNode).name : hydratedActors.find(a => a.id === s)?.name || s;
 
                                                 const t = hoveredLink.target;
-                                                const tName = typeof t === 'object' ? (t as SimulationNode).name : mergedActors.find(a => a.id === t)?.name || t;
+                                                const tName = typeof t === 'object' ? (t as SimulationNode).name : hydratedActors.find(a => a.id === t)?.name || t;
 
                                                 return (
                                                     <>
@@ -1105,10 +1267,59 @@ export function EcosystemMap({
                                 </div>
                             )}
 
+                            {hoveredBadgeActor && (
+                                <div
+                                    className="fixed z-[100] pointer-events-none"
+                                    style={{
+                                        left: tooltipPos.x + 15,
+                                        top: tooltipPos.y - 10,
+                                    }}
+                                >
+                                    <div className="bg-slate-900/95 backdrop-blur-md text-slate-50 text-xs p-3 rounded-lg shadow-2xl border border-indigo-500/30 max-w-[300px] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="flex items-center gap-2 mb-2 border-b border-slate-700 pb-2">
+                                            <div className="p-1 bg-amber-500/20 rounded shadow-inner">
+                                                <div className="text-[10px] font-bold text-amber-400 leading-none">×{configurations.filter(c => c.memberIds.includes(hoveredBadgeActor.id)).length}</div>
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-200">{hoveredBadgeActor.name}</div>
+                                                <div className="text-[9px] text-slate-400 tracking-tight uppercase">Cross-Assemblage Memberships</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {configurations
+                                                .filter(c => c.memberIds.includes(hoveredBadgeActor.id))
+                                                .map(config => (
+                                                    <div key={config.id} className="flex flex-col gap-1 p-1.5 bg-slate-800/40 rounded border border-slate-700/50">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }}></div>
+                                                            <span className="font-semibold text-slate-200 text-[11px] truncate">{config.name}</span>
+                                                        </div>
+                                                        <div className="flex gap-3 text-[10px] text-slate-400 pl-4">
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="opacity-50">Stability:</span>
+                                                                <span className="text-slate-300 font-medium">{(Number(config.properties?.calculated_stability || 0.5) * 100).toFixed(0)}%</span>
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="opacity-50">Porosity:</span>
+                                                                <span className="text-slate-300 font-medium">{Number(config.properties?.porosity_index || 0).toFixed(2)}</span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                        <div className="mt-2 text-[9px] text-indigo-400/70 italic text-center border-t border-slate-800 pt-2">
+                                            Acts as a structural bridge between these regimes.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+
                             {isNestedMode && (
                                 <div className="animate-in slide-in-from-bottom-5 duration-700">
                                     <TranslationChain
-                                        actors={actors}
+                                        actors={hydratedActors}
                                         onHoverStage={setHighlightedStage}
                                     />
                                 </div>
@@ -1156,7 +1367,7 @@ export function EcosystemMap({
 
             {isLegendOpen && (
                 <div
-                    className="legend-container absolute top-64 right-6 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-48 text-xs z-[100] max-h-[600px] overflow-y-auto cursor-grab active:cursor-grabbing select-none"
+                    className="legend-container absolute top-64 right-6 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-sm p-3 w-56 text-xs z-[100] max-h-[80vh] overflow-y-auto cursor-grab active:cursor-grabbing select-none scrollbar-thin scrollbar-thumb-slate-200"
                     style={{ transform: `translate(${legendPos.x}px, ${legendPos.y}px)` }}
                     onMouseDown={handleLegendMouseDown}
                 >
@@ -1192,6 +1403,45 @@ export function EcosystemMap({
                                 </div>
                             );
                         })}
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-100">
+                        <p className="font-semibold text-slate-800 mb-2">Node Shapes</p>
+                        <div className="grid grid-cols-1 gap-1">
+                            {(() => {
+                                const { getActorShape } = require('@/lib/ecosystem-utils');
+                                // Get unique shapes currently visible and not hidden or irrelevant
+                                const activeShapes = new Set(
+                                    hydratedActors
+                                        .filter(a => !a.isHidden && isActorRelevant(a, highlightedStage))
+                                        .map(a => getActorShape(a))
+                                );
+
+                                const SHAPE_DEFS = [
+                                    { shape: 'circle', label: 'Social / Institutional', icon: <circle r="5" fill="#94A3B8" /> },
+                                    { shape: 'square', label: 'Market / Commercial', icon: <rect x="-5" y="-5" width="10" height="10" fill="#A78BFA" /> },
+                                    { shape: 'diamond', label: 'Expressive / High Risk', icon: <polygon points="0,-6 6,0 0,6 -6,0" fill="#818CF8" /> },
+                                    { shape: 'triangle', label: 'Algorithmic Agent', icon: <polygon points="0,-6 6,5 -6,5" fill="#F87171" /> },
+                                    { shape: 'hexagon', label: 'Infrastructure / Dataset', icon: <polygon points="6,0 3,5.2 -3,5.2 -6,0 -3,-5.2 3,-5.2" fill="#64748B" /> },
+                                    { shape: 'rect', label: 'Legal / Regulatory', icon: <rect x="-6" y="-4" width="12" height="8" fill="#6366F1" /> }
+                                ];
+
+                                // If everything is hidden/irrelevant, show nothing or maybe hint? 
+                                // Better to show what fits the current filters.
+                                const filteredShapes = SHAPE_DEFS.filter(s => activeShapes.has(s.shape as any));
+
+                                if (filteredShapes.length === 0 && hydratedActors.length > 0) {
+                                    return <p className="text-[9px] text-slate-400 italic">No actants in view</p>;
+                                }
+
+                                return filteredShapes.map(s => (
+                                    <div key={s.shape} className="flex items-center gap-2 p-0.5 animate-in fade-in slide-in-from-left-1 duration-300">
+                                        <svg width="14" height="14" viewBox="-7 -7 14 14">{s.icon}</svg>
+                                        <span className="text-slate-600">{s.label}</span>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
                     </div>
 
                     {configurations.length > 0 && (
@@ -1275,6 +1525,55 @@ export function EcosystemMap({
                     )}
 
                     <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
+                        <p className="font-semibold text-slate-800 mb-2">Association Patterns</p>
+                        <div className="space-y-2">
+                            {(() => {
+                                // Find which link types are currently visible
+                                const visibleLinkTypes = new Set(
+                                    links.filter(l => {
+                                        const s = hydratedActors.find(a => a.id === (typeof l.source === 'object' ? (l.source as any).id : l.source));
+                                        const t = hydratedActors.find(a => a.id === (typeof l.target === 'object' ? (l.target as any).id : l.target));
+                                        if (!s || !t) return false;
+                                        // A link is visible if both endpoints are visible and relevant to current stage/filters
+                                        return !s.isHidden && !t.isHidden && isActorRelevant(s, highlightedStage) && isActorRelevant(t, highlightedStage);
+                                    }).map(l => l.flow_type || (l.type === 'ghost' ? 'ghost' : 'logic'))
+                                );
+
+                                const PATTERN_DEFS = [
+                                    {
+                                        id: 'power',
+                                        label: 'Power Flow (Solid)',
+                                        icon: <div className="flex items-center shrink-0"><div className="w-4 h-0.5 bg-red-500" /><div className="w-1 h-1 bg-red-500 rotate-45 -ml-0.5" /></div>
+                                    },
+                                    {
+                                        id: 'logic',
+                                        label: 'Logic Flow (Dashed)',
+                                        icon: <div className="w-4 h-0.5 border-t border-dashed border-amber-500 shrink-0" />
+                                    },
+                                    {
+                                        id: 'ghost',
+                                        label: 'Absent / Virtual (Dotted)',
+                                        icon: <div className="w-4 h-0.5 border-t border-dotted border-indigo-500 shrink-0" />
+                                    }
+                                ];
+
+                                const filteredPatterns = PATTERN_DEFS.filter(p => visibleLinkTypes.has(p.id as any));
+
+                                if (filteredPatterns.length === 0 && links.length > 0) {
+                                    return <p className="text-[9px] text-slate-400 italic">No associations in view</p>;
+                                }
+
+                                return filteredPatterns.map(p => (
+                                    <div key={p.id} className="flex items-center gap-2 animate-in fade-in slide-in-from-left-1 duration-300">
+                                        {p.icon}
+                                        <span className="text-slate-600">{p.label}</span>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-100 text-[10px]">
                         <p className="font-semibold text-slate-800 mb-2">Edge Filters</p>
                         <div className="space-y-1.5">
                             <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
@@ -1310,6 +1609,20 @@ export function EcosystemMap({
                 />
             )}
 
+            {/* ASSOCIATION DIRECTORY OVERLAY */}
+            {isDirectoryOpen && (
+                <AssociationDirectory
+                    links={links}
+                    actors={hydratedActors}
+                    onSelectLink={(link) => {
+                        setSelectedLink(link);
+                        // Optional: Keep directory open, or close it:
+                        // setIsDirectoryOpen(false); 
+                    }}
+                    onClose={() => setIsDirectoryOpen(false)}
+                />
+            )}
+
             {/* CENTRALLY POSITIONED DIALOGS */}
             <Dialog open={!!selectedLink} onOpenChange={(open) => !open && setSelectedLink(null)}>
                 <DialogContent className="sm:max-w-md bg-white">
@@ -1318,16 +1631,163 @@ export function EcosystemMap({
                         <DialogDescription>Mapping the mediation between actants.</DialogDescription>
                     </DialogHeader>
                     {selectedLink && (
-                        <div className="space-y-4 py-2 text-sm">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border border-slate-100 text-slate-700 font-medium">
-                                <span>{typeof selectedLink.source === 'object' ? (selectedLink.source as SimulationNode).name : selectedLink.source}</span>
-                                <span className="px-2">→</span>
-                                <span>{typeof selectedLink.target === 'object' ? (selectedLink.target as SimulationNode).name : selectedLink.target}</span>
+                        <div className="space-y-6 py-2 text-sm max-h-[80vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+                            {/* Actor Path */}
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 font-bold shadow-inner">
+                                <span className="flex-1 text-center">{typeof selectedLink.source === 'object' ? (selectedLink.source as SimulationNode).name : (hydratedActors.find(a => a.id === selectedLink.source)?.name || selectedLink.source)}</span>
+                                <div className="px-4 flex flex-col items-center opacity-40">
+                                    <Activity className="h-4 w-4 text-indigo-500" />
+                                    <span className="text-[10px] font-mono leading-none mt-1">
+                                        {((selectedLink as any).analysis?.classification || "ASSOCIATION").toUpperCase().replace(/_/g, ' ')}
+                                    </span>
+                                </div>
+                                <span className="flex-1 text-center">{typeof selectedLink.target === 'object' ? (selectedLink.target as SimulationNode).name : (hydratedActors.find(a => a.id === selectedLink.target)?.name || selectedLink.target)}</span>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold text-slate-500 uppercase">Type</p>
-                                <p className="p-2 border border-indigo-100 bg-indigo-50/50 rounded-md text-indigo-700">{selectedLink.type}</p>
+
+                            {/* Mediator Summary */}
+                            {(selectedLink as any).analysis && (
+                                <div className="p-3 bg-indigo-50/30 rounded-lg border border-indigo-100/50">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Mediator Profile</span>
+                                            <HelpTooltip title="Mediator Profile" description="The overall classification of this relationship's structural significance according to Actor-Network Theory. Strong Mediators drastically reshape networks, while Intermediaries pass forces along unchanged." />
+                                        </div>
+                                        <div className="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded border border-indigo-100">
+                                            <span className="text-[10px] font-mono text-indigo-400">
+                                                Score: {((selectedLink as any).analysis.mediatorScore || 0).toFixed(2)}
+                                            </span>
+                                            <HelpTooltip title="Mediator Score" description="An aggregate index (0.0 to 1.0) quantifying the overall structural impact of this mediation based on its 5 dimensions. A score closer to 1.0 indicates a powerful mediator that significantly transforms the network." />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs font-semibold text-indigo-900 capitalize">
+                                        {(selectedLink as any).analysis.classification?.replace(/_/g, ' ') || 'Standard Association'}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Dimensions Grid */}
+                            {(selectedLink as any).analysis?.dimensions && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {Object.entries((selectedLink as any).analysis.dimensions).map(([key, data]: [string, any]) => (
+                                        <div key={key} className="space-y-1.5 p-2 rounded-md bg-white border border-slate-100 shadow-sm">
+                                            <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-500">
+                                                <div className="flex items-center gap-1">
+                                                    <span>{key}</span>
+                                                    <HelpTooltip title={key.toUpperCase()} description={DIMENSION_DEFINITIONS[key.toLowerCase()] || "A dimension of the mediator's structural significance."} />
+                                                </div>
+                                                <span className="text-indigo-600">{(data.score * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-500 transition-all duration-1000"
+                                                    style={{ width: `${data.score * 100}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between items-start gap-2 mt-1 -mb-0.5">
+                                                <p className="text-[9px] text-slate-400 leading-tight italic flex-1">
+                                                    {data.justification}
+                                                </p>
+                                                {data.confidence && (
+                                                    <span className="text-[8px] font-mono text-slate-300 uppercase px-1 py-0.5 bg-slate-50 rounded border border-slate-100 leading-none">
+                                                        {data.confidence}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Relationship Info */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Interaction Type</p>
+                                    <HelpTooltip title="Interaction Type" description="The heuristic characterization defining the formal nature of this relationship." />
+                                    <div className="h-px flex-1 bg-slate-100"></div>
+                                </div>
+                                <div className="flex gap-2 items-center flex-wrap">
+                                    <p className="p-2 border border-indigo-100 bg-indigo-50/50 rounded-md text-indigo-700 font-medium inline-block text-xs">{selectedLink.type}</p>
+                                    {selectedLink.flow_type && (
+                                        <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 border border-slate-200 rounded">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                                {selectedLink.flow_type} Flow
+                                            </span>
+                                            <HelpTooltip title={`${selectedLink.flow_type.toUpperCase()} FLOW`} description={selectedLink.flow_type.toLowerCase() === 'power' ? "An authoritative interaction conveying command, control, regulation, or material force." : "An epistemic interaction conveying data, logic, reasoning, or justification."} />
+                                        </div>
+                                    )}
+                                    {/* Link Strength independently of mediator score if present */}
+                                    {(selectedLink as any).strength !== undefined && (
+                                        <span className="px-2 py-1 text-[10px] uppercase rounded border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                            Strength <span className="font-bold">{((selectedLink as any).strength * 100).toFixed(0)}%</span>
+                                        </span>
+                                    )}
+                                </div>
+                                {selectedLink.description && (
+                                    <p className="text-xs text-slate-600 leading-relaxed italic border-l-2 border-slate-200 pl-3 py-1 mt-2">
+                                        {selectedLink.description}
+                                    </p>
+                                )}
                             </div>
+
+                            {/* Empirical Traces */}
+                            {(selectedLink as any).analysis?.empiricalTraces?.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-xs font-semibold text-slate-500 uppercase">Empirical Traces</p>
+                                        <div className="h-px flex-1 bg-slate-100"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {(selectedLink as any).analysis.empiricalTraces.map((trace: string, i: number) => (
+                                            <div key={i} className="group relative p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-600 leading-relaxed hover:bg-white hover:border-indigo-200 transition-all">
+                                                <MessageSquare className="h-3 w-3 text-slate-300 absolute top-2 right-2 group-hover:text-indigo-400" />
+                                                "{trace}"
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Relationship History Timeline */}
+                            {(selectedLink as any).history && (selectedLink as any).history.length > 0 && (
+                                <div className="space-y-3 pt-3 border-t border-slate-100">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Evolution & History</p>
+                                        <div className="h-px flex-1 bg-slate-100"></div>
+                                    </div>
+                                    <div className="space-y-3 pl-2 border-l-2 border-indigo-100 ml-2">
+                                        {((selectedLink as any).history).map((event: any, idx: number) => (
+                                            <div key={idx} className="relative pl-4">
+                                                <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-400 ring-4 ring-white"></div>
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-xs font-semibold text-slate-700">{event.event}</span>
+                                                    <span className="text-[9px] font-mono text-slate-400 whitespace-nowrap">{new Date(event.date).toLocaleDateString()}</span>
+                                                </div>
+                                                {event.notes && <p className="text-xs text-slate-500 mt-0.5">{event.notes}</p>}
+                                                {event.mediatorScore !== undefined && (
+                                                    <div className="mt-1 inline-block px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-mono text-slate-500">
+                                                        Score: {event.mediatorScore.toFixed(2)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Analysis Metadata */}
+                            {((selectedLink as any).analysis?.metadata || (selectedLink as any).metadata) && (
+                                <div className="pt-4 mt-2 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 items-center opacity-40 hover:opacity-100 transition-opacity">
+                                    {((selectedLink as any).analysis?.metadata?.aiModel || (selectedLink as any).metadata?.aiModel) && (
+                                        <span className="text-[9px] font-mono text-slate-400">Model: {((selectedLink as any).analysis?.metadata?.aiModel || (selectedLink as any).metadata?.aiModel)}</span>
+                                    )}
+                                    {((selectedLink as any).analysis?.metadata?.confidence || (selectedLink as any).metadata?.confidence) && (
+                                        <span className="text-[9px] font-mono text-slate-400 capitalize">Confidence: {((selectedLink as any).analysis?.metadata?.confidence || (selectedLink as any).metadata?.confidence)}</span>
+                                    )}
+                                    {((selectedLink as any).analysis?.metadata?.analyzedAt || (selectedLink as any).metadata?.analyzedAt) && (
+                                        <span className="text-[9px] font-mono text-slate-400 uppercase">Analyzed: {new Date(((selectedLink as any).analysis?.metadata?.analyzedAt || (selectedLink as any).metadata?.analyzedAt)).toLocaleDateString()}</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </DialogContent>

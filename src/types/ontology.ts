@@ -12,6 +12,12 @@ export interface OntologyNode {
   whyAbsent?: string; // AI-generated explanation of why this actor is absent
   absenceStrength?: number; // 0-100 score indicating how "strongly absent" this actor is
   exclusionType?: 'silenced' | 'marginalized' | 'structurally-excluded' | 'displaced'; // Mechanism of exclusion
+  absenceType?: 'textual-absence' | 'structural-exclusion' | 'discursive-marginalization' | 'constitutive-silence'; // ANT absence category
+  discourseThreats?: Array<{
+    dominantDiscourse: string;
+    conflictType: string;
+    explanation: string;
+  }>;
   ghostReason?: string; // Legacy field
   strength?: number; // Legacy field
   potentialConnections?: Array<{
@@ -25,6 +31,24 @@ export interface OntologyNode {
     professional: number;
     community: number;
   };
+  evidenceQuotes?: Array<{
+    quote: string;
+    actors: string[];
+    sourceRef: string;
+  }>;
+  claim?: {
+    summaryBullets: string[];
+    disambiguations: string[];
+    fullReasoning: string;
+  };
+  roster?: {
+    actors: string[];
+    mechanisms: string[];
+  };
+  missingSignals?: Array<{
+    signal: string;
+    searchTerms: string[];
+  }>;
 }
 
 export interface OntologyLink {
@@ -64,6 +88,9 @@ export interface OntologyData {
     };
   };
   ghostNodeCount?: number;
+  methodologicalNotes?: string; // AI transparency: explains analytical approach and biases
+  userActorsUsed?: string[]; // Custom actors the user specified for ghost node detection
+  dominantDiscourses?: string[];
 }
 
 export interface ComparisonResult {

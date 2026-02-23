@@ -1,0 +1,92 @@
+﻿.next/dev/types/validator.ts(495,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/invites/[token]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/invites/[token]">'.
+  Types of property 'GET' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { token: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ token: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ token: string; }>; }' is not assignable to type '{ params: { token: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'token' is missing in type 'Promise<{ token: string; }>' but required in type '{ token: string; }'.
+.next/dev/types/validator.ts(522,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/teams/[teamId]/members/[userId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/teams/[teamId]/members/[userId]">'.
+  Types of property 'DELETE' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { teamId: string; userId: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ teamId: string; userId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ teamId: string; userId: string; }>; }' is not assignable to type '{ params: { teamId: string; userId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Type 'Promise<{ teamId: string; userId: string; }>' is missing the following properties from type '{ teamId: string; userId: string; }': teamId, userId
+.next/dev/types/validator.ts(531,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/teams/[teamId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/teams/[teamId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { teamId: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ teamId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ teamId: string; }>; }' is not assignable to type '{ params: { teamId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'teamId' is missing in type 'Promise<{ teamId: string; }>' but required in type '{ teamId: string; }'.
+.next/types/validator.ts(495,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/invites/[token]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/invites/[token]">'.
+  Types of property 'GET' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { token: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ token: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ token: string; }>; }' is not assignable to type '{ params: { token: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'token' is missing in type 'Promise<{ token: string; }>' but required in type '{ token: string; }'.
+.next/types/validator.ts(522,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/teams/[teamId]/members/[userId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/teams/[teamId]/members/[userId]">'.
+  Types of property 'DELETE' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { teamId: string; userId: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ teamId: string; userId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ teamId: string; userId: string; }>; }' is not assignable to type '{ params: { teamId: string; userId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Type 'Promise<{ teamId: string; userId: string; }>' is missing the following properties from type '{ teamId: string; userId: string; }': teamId, userId
+.next/types/validator.ts(531,31): error TS2344: Type 'typeof import("C:/Users/mount/.gemini/antigravity/scratch/src/app/api/collaboration/teams/[teamId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/collaboration/teams/[teamId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(req: NextRequest, { params }: { params: { teamId: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ teamId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ teamId: string; }>; }' is not assignable to type '{ params: { teamId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'teamId' is missing in type 'Promise<{ teamId: string; }>' but required in type '{ teamId: string; }'.
+scripts/clear-teams.ts(6,30): error TS2307: Cannot find module 'redis' or its corresponding type declarations.
+src/app/api/ecosystem/trajectory/route.ts(69,38): error TS18046: 'error' is of type 'unknown'.
+src/app/api/enrich-actor/route.ts(54,43): error TS18046: 'error' is of type 'unknown'.
+src/app/api/extract-file/route.ts(48,77): error TS18046: 'pdfError' is of type 'unknown'.
+src/app/api/prompts/test/route.ts(54,22): error TS18046: 'error' is of type 'unknown'.
+src/app/api/simulation/deterritorialization/route.ts(162,32): error TS18046: 'error' is of type 'unknown'.
+src/app/api/simulation/deterritorialization/route.ts(213,32): error TS18046: 'error' is of type 'unknown'.
+src/app/api/simulation/territorialization/route.ts(201,38): error TS18046: 'error' is of type 'unknown'.
+src/app/api/simulation/territorialization/route.ts(252,38): error TS18046: 'error' is of type 'unknown'.
+src/app/api/webhooks/stripe/route.ts(27,74): error TS18046: 'err' is of type 'unknown'.
+src/app/results/page.tsx(52,22): error TS18046: 'error' is of type 'unknown'.
+src/app/results/page.tsx(110,22): error TS18046: 'error' is of type 'unknown'.
+src/app/settings/prompts/page.tsx(238,66): error TS18046: 'error' is of type 'unknown'.
+src/components/analysis/BlindSpotRenderer.tsx(47,40): error TS2339: Property 'title' does not exist on type 'never'.
+src/components/ontology/research/CalibrationModal.tsx(56,38): error TS18048: 'calibrationCase.pane1' is possibly 'undefined'.
+src/components/ontology/research/CalibrationModal.tsx(68,42): error TS18048: 'calibrationCase.pane2' is possibly 'undefined'.
+src/components/ontology/research/CalibrationModal.tsx(72,65): error TS18048: 'calibrationCase.pane2' is possibly 'undefined'.
+src/components/policy/analysis/VerifiedEvidenceSection.tsx(85,48): error TS2339: Property 'source' does not exist on type '{ text: string; verified: boolean; confidence: number; context: string; }'.
+src/lib/ecosystem-utils.test.ts(1,44): error TS2459: Module '"@/lib/ecosystem-utils"' declares 'EcosystemActor' locally, but it is not exported.
+src/lib/ecosystem-utils.test.ts(4,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(5,5): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(6,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(7,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(10,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(11,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(14,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(15,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(18,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(19,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(22,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(23,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(27,5): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(28,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(42,21): error TS2741: Property 'category' is missing in type '{ name: string; reason: string; role: string; }' but required in type '{ name: string; reason: string; category: string; role?: string | undefined; }'.
+src/lib/ecosystem-utils.test.ts(48,60): error TS2345: Argument of type 'AssemblageAnalysis' is not assignable to parameter of type 'any[]'.
+  Type 'AssemblageAnalysis' is missing the following properties from type 'any[]': length, pop, push, concat, and 35 more.
+src/lib/ecosystem-utils.test.ts(50,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(51,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(52,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(54,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(55,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(56,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(59,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(71,60): error TS2345: Argument of type 'null' is not assignable to parameter of type 'any[] | undefined'.
+src/lib/ecosystem-utils.test.ts(72,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(73,13): error TS2304: Cannot find name 'expect'.
+src/scripts/test-mediator.ts(2,19): error TS7016: Could not find a declaration file for module 'node-fetch'. 'C:/Users/mount/.gemini/antigravity/scratch/node_modules/node-fetch/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/node-fetch` if it exists or add a new declaration (.d.ts) file containing `declare module 'node-fetch';`
+src/utils/report/sections/legitimacy.ts(21,31): error TS2345: Argument of type 'string | Record<string, unknown>' is not assignable to parameter of type 'string | null | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'string'.

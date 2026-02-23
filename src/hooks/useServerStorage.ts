@@ -4,7 +4,7 @@ import { useDemoMode } from '@/hooks/useDemoMode'; // [Fix] Import hook
 
 export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
     const { currentWorkspaceId } = useWorkspace();
-    const { isReadOnly } = useDemoMode(); // [Fix] Check read-only status
+    const { isReadOnly, isDemoEnabled, isAuthLoaded } = useDemoMode(); // [Fix] Check read-only status
     const [storedValue, setStoredValue] = useState<T>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -13,11 +13,11 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         if (currentWorkspaceId) {
             headers['x-workspace-id'] = currentWorkspaceId;
         }
-        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true') {
+        if (isDemoEnabled) {
             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
         return headers;
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, isDemoEnabled]);
 
     // Fetch initial value from server
     useEffect(() => {
@@ -68,7 +68,8 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                 const valueToStore = value instanceof Function ? value(prevValue) : value;
 
                 // [Fix] If Read-Only, skip server save to avoid 403
-                if (isReadOnly) {
+                // Or if we don't know yet because auth is loading and demo is enabled
+                if (isReadOnly || (!isAuthLoaded && isDemoEnabled)) {
                     // console.log(`[useServerStorage] Read-Only Mode: Skipping save for "${key}"`);
                     return valueToStore;
                 }
@@ -84,7 +85,11 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
                     if (res.ok) {
                         // console.log(`[useServerStorage] Successfully saved "${key}"`);
                     } else {
-                        console.error(`[useServerStorage] Failed to save "${key}": ${res.status}`);
+                        if (res.status === 403) {
+                            console.warn(`[useServerStorage] Skipped save for "${key}" (Read-Only/Demo)`);
+                        } else {
+                            console.error(`[useServerStorage] Failed to save "${key}": ${res.status}`);
+                        }
                     }
                 }).catch(err => console.error(`Failed to save storage key "${key}":`, err));
 
@@ -93,7 +98,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         } catch (error) {
             console.error(`Error setting value for key "${key}":`, error);
         }
-    }, [key, currentWorkspaceId, getHeaders, isReadOnly]);
+    }, [key, currentWorkspaceId, getHeaders, isReadOnly, isDemoEnabled, isAuthLoaded]);
 
 
     return [storedValue, setValue, isLoading];

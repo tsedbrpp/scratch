@@ -3,6 +3,8 @@ import { OntologyNode } from '@/types/ontology';
 import { getColorForCategory } from '@/lib/ontology-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { QuoteHighlighter } from './QuoteHighlighter';
 
 interface ConceptListProps {
     nodes: OntologyNode[];
@@ -40,6 +42,20 @@ export function ConceptList({ nodes, selectedNodeId, onSelectNode }: ConceptList
                                                 Ghost
                                             </Badge>
                                         )}
+                                        {node.isGhost && node.absenceType && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-amber-300 bg-amber-50 text-amber-800">
+                                                {node.absenceType === 'textual-absence' ? 'Textual'
+                                                    : node.absenceType === 'structural-exclusion' ? 'Structural'
+                                                        : node.absenceType === 'discursive-marginalization' ? 'Discursive'
+                                                            : node.absenceType === 'constitutive-silence' ? 'Constitutive'
+                                                                : node.absenceType}
+                                            </Badge>
+                                        )}
+                                        {node.isGhost && node.exclusionType && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-rose-300 bg-rose-50 text-rose-700">
+                                                {node.exclusionType}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
                                 {node.description && (
@@ -49,9 +65,20 @@ export function ConceptList({ nodes, selectedNodeId, onSelectNode }: ConceptList
                                 )}
                                 {node.isGhost && node.ghostReason && (
                                     <div className="bg-purple-50 p-2 rounded text-[10px] text-purple-700 border-l-2 border-purple-600 mb-2">
-                                        <span className="font-semibold">Why absent?</span> {node.ghostReason}
+                                        <span className="font-semibold">Why absent?</span> <QuoteHighlighter text={node.ghostReason} />
                                     </div>
                                 )}
+                                {node.isGhost && node.discourseThreats?.map((threat, i) => (
+                                    <div key={i} className={cn(
+                                        "p-2 rounded text-[10px] border-l-2 mb-1",
+                                        threat.conflictType === 'contradicts' ? "bg-red-50 text-red-700 border-red-400"
+                                            : threat.conflictType === 'undermines' ? "bg-orange-50 text-orange-700 border-orange-400"
+                                                : "bg-slate-50 text-slate-700 border-slate-400"
+                                    )}>
+                                        <span className="font-semibold">Challenges {threat.dominantDiscourse}:</span>{' '}
+                                        <span className="opacity-80"><QuoteHighlighter text={threat.explanation} /></span>
+                                    </div>
+                                ))}
                                 {node.quote && !node.isGhost && (
                                     <div className="bg-slate-50 p-2 rounded text-[10px] text-slate-500 italic border-l-2 border-slate-200">
                                         &quot;{node.quote.substring(0, 80)}...&quot;

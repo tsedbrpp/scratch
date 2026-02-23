@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: false, message: "No results found" });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("[Enrichment Error]", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstantTea · Rhizomatic Navigation</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg: #060d1a;
+      --bg2: #0a1628;
+      --panel: #0e1e35;
+      --border: #1a3050;
+      --text: #c8d8f0;
+      --text-dim: #5a7a9a;
+      --text-bright: #e8f4ff;
+
+      /* Scale colors — gradient micro→macro */
+      --micro:    #e05060;
+      --meso:     #3a8fd4;
+      --macro:    #2ec4a0;
+      --overview: #a070e0;
+
+      /* 6 canonical edge colors */
+      --e-depends:     #f5a623;
+      --e-operatl:     #4ecdc4;
+      --e-grounds:     #a8e063;
+      --e-produces:    #a070e0;
+      --e-contests:    #e05060;
+      --e-translates:  #60aaff;
+      /* Phase-2 optional */
+      --e-territ:      #ff9800;
+      --e-deterrit:    #f06292;
+
+      /* Node type accent */
+      --nt-tool:       #3a8fd4;
+      --nt-concept:    #a070e0;
+      --nt-actor:      #f5a623;
+      --nt-artifact:   #a8e063;
+      --nt-practice:   #4ecdc4;
+      --nt-value:      #f06292;
+      --nt-event:      #ff5252;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, #3a8fd4, #2ec4a0);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .logo-text { font-size: 14px; font-weight: 700; color: var(--text-bright); }
+    .logo-sub  { font-size: 9px; color: var(--text-dim); letter-spacing: 1.2px; text-transform: uppercase; }
+
+    .header-center { text-align: center; flex: 1; min-width: 0; }
+    .header-title  { font-size: 12px; font-weight: 600; color: var(--text-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-sub    { font-size: 9px; color: var(--text-dim); letter-spacing: 0.8px; text-transform: uppercase; }
+
+    .header-controls { display: flex; gap: 6px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+
+    .ctrl-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .ctrl-btn:hover { background: var(--border); color: var(--text-bright); }
+    .ctrl-btn.active { background: #1a3a5a; border-color: var(--meso); color: var(--meso); }
+    .ctrl-btn.warn   { border-color: var(--e-contests); color: var(--e-contests); }
+
+    .search-wrap { position: relative; }
+    #search-input {
+      background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); padding: 4px 8px 4px 24px;
+      border-radius: 5px; font-size: 10px; width: 140px; outline: none;
+      transition: border-color 0.2s;
+    }
+    #search-input:focus { border-color: var(--meso); }
+    #search-input::placeholder { color: var(--text-dim); }
+    .search-icon { position: absolute; left: 7px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 10px; pointer-events: none; }
+
+    /* ── SNAPSHOT BAR ── */
+    .snapshot-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 16px;
+      background: rgba(160,112,224,0.06);
+      border-bottom: 1px solid rgba(160,112,224,0.2);
+      font-size: 10px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .snap-label { color: var(--text-dim); letter-spacing: 0.8px; text-transform: uppercase; font-weight: 700; font-size: 9px; }
+    .snap-name  { color: var(--overview); font-weight: 600; }
+    .snap-meta  { color: var(--text-dim); }
+    .snap-ttl   { color: var(--e-grounds); font-size: 9px; }
+    .snap-ttl.warn { color: var(--e-contests); }
+    .snap-sep   { width: 1px; height: 14px; background: var(--border); }
+    .snap-fork  { margin-left: auto; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      gap: 5px;
+      padding: 6px 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .filter-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-right: 2px; }
+    .filter-btn {
+      padding: 2px 9px; border-radius: 10px; font-size: 9px; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .sep { width: 1px; height: 18px; background: var(--border); margin: 0 3px; }
+
+    /* Level filters */
+    .fb-all   { background: rgba(255,255,255,0.07); color: var(--text); border-color: var(--border); }
+    .fb-all.active { background: rgba(255,255,255,0.14); color: var(--text-bright); }
+    .fb-micro { background: rgba(224,80,96,0.1); color: var(--micro); border-color: rgba(224,80,96,0.3); }
+    .fb-micro.active { background: rgba(224,80,96,0.22); border-color: var(--micro); }
+    .fb-meso  { background: rgba(58,143,212,0.1); color: var(--meso); border-color: rgba(58,143,212,0.3); }
+    .fb-meso.active  { background: rgba(58,143,212,0.22); border-color: var(--meso); }
+    .fb-macro { background: rgba(46,196,160,0.1); color: var(--macro); border-color: rgba(46,196,160,0.3); }
+    .fb-macro.active { background: rgba(46,196,160,0.22); border-color: var(--macro); }
+    .fb-ov    { background: rgba(160,112,224,0.1); color: var(--overview); border-color: rgba(160,112,224,0.3); }
+    .fb-ov.active    { background: rgba(160,112,224,0.22); border-color: var(--overview); }
+
+    /* Edge filters */
+    .fe-depends    { background: rgba(245,166,35,0.1);  color: var(--e-depends);    border-color: rgba(245,166,35,0.3); }
+    .fe-depends.active    { background: rgba(245,166,35,0.22);  border-color: var(--e-depends); }
+    .fe-operatl   { background: rgba(78,205,196,0.1);  color: var(--e-operatl);   border-color: rgba(78,205,196,0.3); }
+    .fe-operatl.active   { background: rgba(78,205,196,0.22);  border-color: var(--e-operatl); }
+    .fe-grounds    { background: rgba(168,224,99,0.1);  color: var(--e-grounds);    border-color: rgba(168,224,99,0.3); }
+    .fe-grounds.active    { background: rgba(168,224,99,0.22);  border-color: var(--e-grounds); }
+    .fe-produces   { background: rgba(160,112,224,0.1); color: var(--e-produces);   border-color: rgba(160,112,224,0.3); }
+    .fe-produces.active   { background: rgba(160,112,224,0.22); border-color: var(--e-produces); }
+    .fe-contests   { background: rgba(224,80,96,0.1);   color: var(--e-contests);   border-color: rgba(224,80,96,0.3); }
+    .fe-contests.active   { background: rgba(224,80,96,0.22);   border-color: var(--e-contests); }
+    .fe-translates { background: rgba(96,170,255,0.1);  color: var(--e-translates); border-color: rgba(96,170,255,0.3); }
+    .fe-translates.active { background: rgba(96,170,255,0.22);  border-color: var(--e-translates); }
+
+    /* ── MAIN ── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+    svg#graph { width: 100%; height: 100%; cursor: grab; }
+    svg#graph:active { cursor: grabbing; }
+
+    /* Band labels */
+    .band-label {
+      font-size: 55px; font-weight: 900; opacity: 0.035;
+      text-transform: uppercase; letter-spacing: 4px;
+      pointer-events: none; user-select: none;
+    }
+
+    /* Edges */
+    .link { stroke-opacity: 0.5; transition: stroke-opacity 0.25s; }
+    .link.fading { stroke-opacity: 0.15; stroke-dasharray: 3,5; }
+    .link-label { font-size: 8.5px; fill: var(--text-dim); pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+
+    /* Nodes */
+    .node-group { cursor: pointer; }
+    .node-ring-outer { fill: none; stroke-width: 1.2; opacity: 0.35; }
+    .node-shape { stroke-width: 2; transition: filter 0.2s; }
+    .node-icon { font-size: 13px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .node-label-name  { font-size: 10.5px; font-weight: 600; text-anchor: middle; fill: var(--text-bright); pointer-events: none; }
+    .node-label-level { font-size: 7.5px; font-weight: 700; text-anchor: middle; letter-spacing: 1px; text-transform: uppercase; pointer-events: none; }
+    .node-label-role  { font-size: 7px; text-anchor: middle; fill: var(--text-dim); pointer-events: none; opacity: 0; }
+    .node-type-badge  { font-size: 7px; font-weight: 700; text-anchor: middle; pointer-events: none; opacity: 0.65; }
+
+    /* Decay fade */
+    .node-group.decaying { opacity: 0.45; }
+    .node-group.decaying .node-shape { stroke-dasharray: 4,3; }
+
+    /* OPP pulse */
+    @keyframes opp-pulse {
+      0%   { r: 28; opacity: 0.55; }
+      100% { r: 42; opacity: 0; }
+    }
+    .opp-pulse { fill: none; stroke: var(--e-depends); stroke-width: 1.5; animation: opp-pulse 2.2s ease-out infinite; }
+
+    /* Event node flash */
+    @keyframes event-flash {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .event-flash { animation: event-flash 1.8s ease-in-out infinite; }
+
+    /* Boundary object glow */
+    .boundary-glow { filter: drop-shadow(0 0 6px rgba(168,224,99,0.7)); }
+
+    /* Dimmed */
+    .node-group.dimmed { opacity: 0.15; }
+    .link.dimmed { opacity: 0.04; }
+
+    /* ── GRAVITY SLIDER ── */
+    .gravity-wrap {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 6px;
+    }
+    .gravity-label { font-size: 9px; color: var(--text-dim); white-space: nowrap; }
+    #gravity-slider {
+      -webkit-appearance: none;
+      width: 80px; height: 3px;
+      background: linear-gradient(to right, var(--meso) 0%, var(--meso) 50%, var(--border) 50%);
+      border-radius: 2px; outline: none; cursor: pointer;
+    }
+    #gravity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--meso);
+      border: 2px solid var(--bg2);
+      cursor: pointer;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .panel {
+      width: 290px; background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+    }
+    .panel-tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .panel-tab {
+      flex: 1; padding: 8px 4px; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.8px; text-transform: uppercase; text-align: center;
+      cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .panel-tab.active { color: var(--meso); border-bottom-color: var(--meso); background: rgba(58,143,212,0.05); }
+    .panel-content { flex: 1; overflow-y: auto; padding: 14px; }
+    .panel-content::-webkit-scrollbar { width: 3px; }
+    .panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Detail */
+    .detail-empty { text-align: center; padding: 36px 16px; color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+    .detail-empty .hint-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.35; }
+    .detail-name { font-size: 15px; font-weight: 700; color: var(--text-bright); margin-bottom: 4px; }
+    .detail-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+    .badge { padding: 2px 7px; border-radius: 9px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; }
+    .badge-micro    { background: rgba(224,80,96,0.18);  color: var(--micro);    border: 1px solid rgba(224,80,96,0.3); }
+    .badge-meso     { background: rgba(58,143,212,0.18); color: var(--meso);     border: 1px solid rgba(58,143,212,0.3); }
+    .badge-macro    { background: rgba(46,196,160,0.18); color: var(--macro);    border: 1px solid rgba(46,196,160,0.3); }
+    .badge-overview { background: rgba(160,112,224,0.18);color: var(--overview); border: 1px solid rgba(160,112,224,0.3); }
+    .badge-opp      { background: rgba(245,166,35,0.18); color: var(--e-depends);border: 1px solid rgba(245,166,35,0.3); }
+    .badge-boundary { background: rgba(168,224,99,0.18); color: var(--e-grounds);border: 1px solid rgba(168,224,99,0.3); }
+    .badge-event    { background: rgba(255,82,82,0.18);  color: var(--nt-event); border: 1px solid rgba(255,82,82,0.3); }
+    .badge-role     { background: rgba(255,255,255,0.06);color: var(--text);     border: 1px solid var(--border); }
+
+    .detail-section-title {
+      font-size: 8.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase;
+      color: var(--text-dim); margin: 12px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .detail-desc   { font-size: 11px; line-height: 1.65; color: var(--text); margin-bottom: 2px; }
+    .detail-theory {
+      font-size: 10.5px; line-height: 1.6; color: var(--text); padding: 9px 10px;
+      background: rgba(255,255,255,0.03); border-radius: 5px; border-left: 2px solid var(--meso);
+    }
+
+    /* Snapshot meta in detail */
+    .snap-detail-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .snap-chip {
+      font-size: 9px; padding: 2px 7px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .snap-chip.green { border-color: rgba(168,224,99,0.4); color: var(--e-grounds); }
+    .snap-chip.red   { border-color: rgba(224,80,96,0.4);  color: var(--e-contests); }
+
+    /* Hotspot metrics */
+    .hotspot-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .hotspot-label { font-size: 10px; color: var(--text); flex: 1; }
+    .hotspot-bar-wrap { width: 70px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; }
+    .hotspot-bar { height: 4px; border-radius: 2px; }
+    .hotspot-val { font-size: 9px; color: var(--text-dim); width: 28px; text-align: right; }
+
+    /* Connections */
+    .connection-item {
+      display: flex; align-items: flex-start; gap: 7px;
+      padding: 5px 5px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 10.5px; cursor: pointer; transition: background 0.15s; border-radius: 4px;
+    }
+    .connection-item:hover { background: rgba(255,255,255,0.04); }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+    .conn-info { flex: 1; }
+    .conn-name { font-weight: 600; color: var(--text-bright); }
+    .conn-type { font-size: 8.5px; color: var(--text-dim); }
+    .conn-dir  { font-size: 8.5px; color: var(--text-dim); }
+
+    /* Drift mode */
+    .drift-btn {
+      width: 100%; padding: 8px; margin: 4px 0;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 10px; cursor: pointer;
+      text-align: left; transition: all 0.2s;
+    }
+    .drift-btn:hover { background: rgba(58,143,212,0.12); border-color: var(--meso); color: var(--text-bright); }
+    .drift-btn .drift-icon { margin-right: 6px; }
+
+    /* Lens cards */
+    .lens-card {
+      padding: 9px 10px; margin-bottom: 8px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; transition: all 0.2s;
+    }
+    .lens-card:hover { border-color: var(--meso); background: rgba(58,143,212,0.06); }
+    .lens-card.active { border-color: var(--meso); background: rgba(58,143,212,0.1); }
+    .lens-name { font-size: 11px; font-weight: 600; color: var(--text-bright); margin-bottom: 3px; }
+    .lens-desc { font-size: 9.5px; color: var(--text-dim); line-height: 1.5; }
+    .lens-icon { font-size: 14px; margin-right: 6px; }
+
+    /* Legend */
+    .legend-section { margin-bottom: 18px; }
+    .legend-title { font-size: 8.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 9px; padding: 4px 0; font-size: 10.5px; color: var(--text); }
+    .legend-node { width: 18px; height: 18px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+    .legend-edge { width: 26px; height: 2px; flex-shrink: 0; border-radius: 1px; }
+    .legend-desc { font-size: 9px; color: var(--text-dim); }
+    .legend-shape { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+    /* ── BOTTOM BAR ── */
+    .bottom-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 16px; background: var(--bg2); border-top: 1px solid var(--border);
+      font-size: 9.5px; color: var(--text-dim); flex-shrink: 0; flex-wrap: wrap; gap: 4px;
+    }
+    .bottom-hint { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hint-item { display: flex; align-items: center; gap: 4px; }
+    .hint-key { background: var(--panel); border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; font-size: 8.5px; color: var(--text); }
+
+    /* ── TOOLTIP ── */
+    #tooltip {
+      position: fixed; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 7px; padding: 9px 12px; font-size: 10.5px; color: var(--text);
+      pointer-events: none; opacity: 0; transition: opacity 0.15s;
+      max-width: 210px; z-index: 1000; box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+    }
+    #tooltip.visible { opacity: 1; }
+    #tooltip .tt-name { font-weight: 700; color: var(--text-bright); margin-bottom: 3px; font-size: 11px; }
+    #tooltip .tt-type { font-size: 8.5px; color: var(--text-dim); letter-spacing: 0.6px; text-transform: uppercase; }
+    #tooltip .tt-desc { margin-top: 5px; line-height: 1.5; }
+    #tooltip .tt-decay { margin-top: 4px; font-size: 9px; color: var(--e-contests); }
+
+    /* Mode indicator */
+    .mode-pill {
+      padding: 2px 9px; border-radius: 10px; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .mode-pill.rhizome  { background: rgba(58,143,212,0.2); color: var(--meso); border: 1px solid rgba(58,143,212,0.4); }
+    .mode-pill.workflow { background: rgba(46,196,160,0.2); color: var(--macro); border: 1px solid rgba(46,196,160,0.4); }
+    .mode-pill.symmetry { background: rgba(245,166,35,0.2); color: var(--e-depends); border: 1px solid rgba(245,166,35,0.4); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍵</div>
+    <div>
+      <div class="logo-text">instant<strong>TEA</strong></div>
+      <div class="logo-sub">Rhizomatic Navigation</div>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <div class="header-title">Explore the Assemblage Through Entangled Concepts</div>
+    <div class="header-sub">ANT · Assemblage Theory · Snapshot Ecology</div>
+  </div>
+
+  <div class="header-controls">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input id="search-input" type="text" placeholder="Search…" />
+    </div>
+    <div class="gravity-wrap">
+      <span class="gravity-label">Gravity</span>
+      <input type="range" id="gravity-slider" min="0" max="100" value="50" />
+    </div>
+    <button class="ctrl-btn active" id="btn-mode" title="Switch between Rhizome / Workflow / Symmetry modes">⬡ Rhizome</button>
+    <button class="ctrl-btn" id="btn-labels">Labels</button>
+    <button class="ctrl-btn" id="btn-reset">Reset</button>
+  </div>
+</header>
+
+<!-- SNAPSHOT BAR -->
+<div class="snapshot-bar">
+  <span class="snap-label">Snapshot</span>
+  <span class="snap-name">InstantTEA Platform · Feature Assemblage</span>
+  <div class="snap-sep"></div>
+  <span class="snap-meta">v1.2 · 2026-02-21</span>
+  <div class="snap-sep"></div>
+  <span class="snap-ttl">TTL: 90 days · Freshness: 94%</span>
+  <div class="snap-sep"></div>
+  <span class="snap-meta">sensitivity: <strong style="color:var(--e-grounds)">public</strong></span>
+  <div class="snap-sep"></div>
+  <span class="snap-meta">trainable: <strong style="color:var(--e-contests)">never</strong></span>
+  <div class="snap-sep"></div>
+  <span class="snap-meta">exportable: <strong style="color:var(--e-grounds)">true</strong></span>
+  <button class="ctrl-btn snap-fork" title="Fork this snapshot (rhizomatic rupture)">⑂ Fork Snapshot</button>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">Scale:</span>
+  <button class="filter-btn fb-all active"  data-filter="all">All</button>
+  <button class="filter-btn fb-micro active" data-filter="micro">Micro</button>
+  <button class="filter-btn fb-meso active"  data-filter="meso">Meso</button>
+  <button class="filter-btn fb-macro active" data-filter="macro">Macro</button>
+  <button class="filter-btn fb-ov active"    data-filter="overview">Overview</button>
+  <div class="sep"></div>
+  <span class="filter-label">Relation:</span>
+  <button class="filter-btn fe-depends active"    data-edge="depends_on">depends_on</button>
+  <button class="filter-btn fe-operatl active"   data-edge="operationalizes">operationalizes</button>
+  <button class="filter-btn fe-grounds active"    data-edge="grounds_in">grounds_in</button>
+  <button class="filter-btn fe-produces active"   data-edge="produces">produces</button>
+  <button class="filter-btn fe-contests active"   data-edge="contests">contests</button>
+  <button class="filter-btn fe-translates active" data-edge="translates">translates</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div id="canvas-wrap">
+    <svg id="graph"></svg>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="panel-tabs">
+      <div class="panel-tab active" data-tab="detail">Detail</div>
+      <div class="panel-tab" data-tab="lenses">Lenses</div>
+      <div class="panel-tab" data-tab="drift">Drift</div>
+      <div class="panel-tab" data-tab="legend">Legend</div>
+    </div>
+
+    <!-- DETAIL TAB -->
+    <div class="panel-content" id="panel-detail">
+      <div class="detail-empty">
+        <div class="hint-icon">⬡</div>
+        <strong>Click any node</strong> to explore its assemblage role, theoretical grounding, snapshot metadata, hotspot metrics, and entangled connections.
+        <br/><br/>
+        Use <strong>Drift</strong> tab for guided random walks through the network.
+      </div>
+    </div>
+
+    <!-- LENSES TAB -->
+    <div class="panel-content" id="panel-lenses" style="display:none">
+      <div class="detail-section-title" style="margin-top:0">4 Lens Cards · Phase 1</div>
+      <div class="lens-card" data-lens="evidence" id="lc-evidence">
+        <div class="lens-name"><span class="lens-icon">🔍</span>Evidence / Provenance</div>
+        <div class="lens-desc">Highlights <strong>grounds_in</strong> edges. Surfaces ungrounded claims (nodes with no evidence link). Scores grounding coverage per node.</div>
+      </div>
+      <div class="lens-card" data-lens="resistance" id="lc-resistance">
+        <div class="lens-name"><span class="lens-icon">✊</span>Resistance</div>
+        <div class="lens-desc">Highlights <strong>contests</strong> edges and Micro-Resistance node. Reveals frictions, refusals, and counter-conduct patterns.</div>
+      </div>
+      <div class="lens-card" data-lens="cultural" id="lc-cultural">
+        <div class="lens-name"><span class="lens-icon">🎭</span>Cultural Framing</div>
+        <div class="lens-desc">Highlights Cultural Framing node and its <strong>operationalizes / translates</strong> edges. Surfaces categories, metaphors, and boundary-drawing.</div>
+      </div>
+      <div class="lens-card" data-lens="infra" id="lc-infra">
+        <div class="lens-name"><span class="lens-icon">🏗</span>Infrastructure</div>
+        <div class="lens-desc">Highlights <strong>depends_on</strong> edges and Tool-type nodes. Reveals LLM/provider dependencies, rate-limits, and hosting constraints.</div>
+      </div>
+      <div style="margin-top:12px;font-size:9.5px;color:var(--text-dim);line-height:1.6">
+        A Lens is a <em>filter + scoring rule + annotations</em>, not a new taxonomy. Click a card to activate. Lenses are exportable and forkable as part of any Snapshot.
+      </div>
+    </div>
+
+    <!-- DRIFT TAB -->
+    <div class="panel-content" id="panel-drift" style="display:none">
+      <div class="detail-section-title" style="margin-top:0">Drift Mode · Guided Random Walk</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:10px;line-height:1.6">
+        Drift preserves rhizomatic play while staying purposeful. Each prompt navigates to the next relevant node.
+      </div>
+      <button class="drift-btn" id="drift-contested"><span class="drift-icon">⚡</span>Show most contested node</button>
+      <button class="drift-btn" id="drift-ungrounded"><span class="drift-icon">🔍</span>Jump to an ungrounded claim</button>
+      <button class="drift-btn" id="drift-translate"><span class="drift-icon">🔗</span>Follow translations from selected node</button>
+      <button class="drift-btn" id="drift-broker"><span class="drift-icon">🌉</span>Find cross-scale broker node</button>
+      <button class="drift-btn" id="drift-decay"><span class="drift-icon">⏳</span>Surface lowest-freshness node</button>
+      <button class="drift-btn" id="drift-random"><span class="drift-icon">🎲</span>Random rhizomatic jump</button>
+      <div id="drift-result" style="margin-top:12px;font-size:10px;color:var(--text-dim);line-height:1.6;padding:8px;background:rgba(255,255,255,0.03);border-radius:5px;display:none"></div>
+    </div>
+
+    <!-- LEGEND TAB -->
+    <div class="panel-content" id="panel-legend" style="display:none">
+      <div class="legend-section">
+        <div class="legend-title">Scale Level (dynamic, AI-suggested)</div>
+        <div class="legend-item"><div class="legend-node" style="border-color:var(--micro);background:rgba(224,80,96,0.12)"></div><div><div>Micro · Individual</div><div class="legend-desc">Ground-level actors, data, resistance</div></div></div>
+        <div class="legend-item"><div class="legend-node" style="border-color:var(--meso);background:rgba(58,143,212,0.12)"></div><div><div>Meso · Institutional</div><div class="legend-desc">Mapping engines, framing, concepts</div></div></div>
+        <div class="legend-item"><div class="legend-node" style="border-color:var(--macro);background:rgba(46,196,160,0.12)"></div><div><div>Macro · System</div><div class="legend-desc">Dynamics, synthesis, governance</div></div></div>
+        <div class="legend-item"><div class="legend-node" style="border-color:var(--overview);background:rgba(160,112,224,0.12)"></div><div><div>Overview</div><div class="legend-desc">Entry points, configuration</div></div></div>
+      </div>
+
+      <div class="legend-section">
+        <div class="legend-title">Node Type (shape)</div>
+        <div class="legend-item"><div class="legend-shape">⬡</div><div><div>Tool / Module</div><div class="legend-desc">Platform feature or software component</div></div></div>
+        <div class="legend-item"><div class="legend-shape">◆</div><div><div>Concept / Value</div><div class="legend-desc">Theoretical or normative construct</div></div></div>
+        <div class="legend-item"><div class="legend-shape">●</div><div><div>Actor / Practice</div><div class="legend-desc">Human or non-human actant</div></div></div>
+        <div class="legend-item"><div class="legend-shape">▣</div><div><div>Artifact / Export</div><div class="legend-desc">Boundary object, output, evidence</div></div></div>
+        <div class="legend-item"><div class="legend-shape">⚡</div><div><div>Event / Controversy</div><div class="legend-desc">Breakdown, disagreement, rupture</div></div></div>
+      </div>
+
+      <div class="legend-section">
+        <div class="legend-title">6 Canonical Edge Types</div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-depends)"></div><div><div>depends_on</div><div class="legend-desc">Tool/Module ↔ Artifact/Tool</div></div></div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-operatl)"></div><div><div>operationalizes</div><div class="legend-desc">Concept/Value → Tool/Practice</div></div></div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-grounds)"></div><div><div>grounds_in</div><div class="legend-desc">Claim → Evidence artifact/quote</div></div></div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-produces)"></div><div><div>produces</div><div class="legend-desc">Tool/Practice → Artifact/Snapshot</div></div></div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-contests);height:2px;border-top:2px dashed var(--e-contests);background:none"></div><div><div>contests</div><div class="legend-desc">Actor/Value ↔ Node/Edge (friction)</div></div></div>
+        <div class="legend-item"><div class="legend-edge" style="background:var(--e-translates)"></div><div><div>translates</div><div class="legend-desc">ANT enrolment/translation catch-all</div></div></div>
+      </div>
+
+      <div class="legend-section">
+        <div class="legend-title">Special Markers</div>
+        <div class="legend-item"><div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--e-depends);box-shadow:0 0 7px var(--e-depends);flex-shrink:0"></div><div><div>Obligatory Passage Point</div><div class="legend-desc">Pulsing ring — all actors pass through</div></div></div>
+        <div class="legend-item"><div style="width:18px;height:18px;border-radius:50%;border:2px dashed var(--e-grounds);flex-shrink:0;opacity:0.5"></div><div><div>Decaying / Low freshness</div><div class="legend-desc">Dashed border — approaching TTL expiry</div></div></div>
+        <div class="legend-item"><div style="width:18px;height:18px;border-radius:3px;border:2px solid var(--e-grounds);box-shadow:0 0 6px rgba(168,224,99,0.6);flex-shrink:0"></div><div><div>Boundary Object</div><div class="legend-desc">Green glow — bridges communities</div></div></div>
+        <div class="legend-item"><div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--nt-event);flex-shrink:0;animation:event-flash 1.8s ease-in-out infinite"></div><div><div>Event / Controversy</div><div class="legend-desc">Flashing — active breakdown or rupture</div></div></div>
+      </div>
+
+      <div class="legend-section">
+        <div class="legend-title">Node Size</div>
+        <div class="legend-item"><div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border);flex-shrink:0"></div><div><div>Larger = Higher Centrality</div><div class="legend-desc">More connections = more structural importance</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bottom-hint">
+    <div class="hint-item"><span class="hint-key">Drag</span> Pan</div>
+    <div class="hint-item"><span class="hint-key">Scroll</span> Zoom</div>
+    <div class="hint-item"><span class="hint-key">Click node</span> Explore</div>
+    <div class="hint-item"><span class="hint-key">Hover edge</span> Reveal</div>
+    <div class="hint-item"><span class="hint-key">Gravity slider</span> Flatten/stratify</div>
+  </div>
+  <div id="status-text">15 nodes · 30 edges · 6 edge types · 4 lenses · Snapshot Ecology</div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SNAPSHOT METADATA (first-class)
+// ═══════════════════════════════════════════════════════════════
+const SNAPSHOT = {
+  title: "InstantTEA Platform · Feature Assemblage",
+  version: "1.2",
+  created_at: "2026-02-21",
+  ttl_days: 90,
+  freshness: 0.94,
+  sensitivity: "public",
+  trainable: "never",
+  exportable: true,
+  user_modifiable: true,
+  derives_from: null,
+  forks: []
+};
+
+// ═══════════════════════════════════════════════════════════════
+// NODE DATA — with nodeType, scaleDefault, scaleConfidence,
+//             isBoundaryObject, isOPP, ttl_days, freshness
+// ═══════════════════════════════════════════════════════════════
+const NODES = [
+  {
+    id: "data-sources",
+    name: "Data & Sources",
+    nodeType: "artifact",   // Artifact — the raw material
+    scaleDefault: "micro", scaleConfidence: 0.88,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 60, freshness: 0.91,
+    icon: "📄",
+    antRole: "Inscription Device",
+    desc: "Uploads PDFs, scrapes web traces, organizes primary sources. The raw material layer from which all subsequent translations emerge.",
+    theory: "In ANT, this is the primary inscription device — the material substrate from which all translations emerge. Documents are not passive containers but active actants shaping what can be said.",
+    hotspot: { entanglement: 0.55, grounding: 0.90, disagreement: 0.10, decay: 0.09 }
+  },
+  {
+    id: "assemblage-compass",
+    name: "Assemblage Compass",
+    nodeType: "tool",
+    scaleDefault: "meso", scaleConfidence: 0.95,
+    isOPP: true, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.97,
+    icon: "🧭",
+    antRole: "Obligatory Passage Point",
+    desc: "The central mapping engine. Visualizes nested Actor → Collective → Regime assemblages with the full ANT translation chain.",
+    theory: "The Compass is the platform's OPP — the node through which all analytical work must pass. It translates heterogeneous actors into a visible, navigable topology.",
+    hotspot: { entanglement: 0.92, grounding: 0.85, disagreement: 0.15, decay: 0.03 }
+  },
+  {
+    id: "trace-provenance",
+    name: "Trace Provenance",
+    nodeType: "tool",
+    scaleDefault: "meso", scaleConfidence: 0.82,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.88,
+    icon: "🔗",
+    antRole: "Translation Chain",
+    desc: "Tracks the genealogy of actors through the five-moment translation chain: Problematization → Interessement → Enrollment → Mobilization → Black Boxing.",
+    theory: "Provenance tracing is the methodological heart of ANT — following actors as they are enrolled, translated, and stabilized. This feature makes the translation process itself visible as an analytical object.",
+    hotspot: { entanglement: 0.60, grounding: 0.80, disagreement: 0.12, decay: 0.12 }
+  },
+  {
+    id: "dynamics-mobilities",
+    name: "Dynamics & Mobilities",
+    nodeType: "tool",
+    scaleDefault: "macro", scaleConfidence: 0.79,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.85,
+    icon: "🌊",
+    antRole: "Mobilization Tracker",
+    desc: "Tracks movement, flow, and change of actors across time and space. Maps how assemblages shift, expand, contract, and migrate.",
+    theory: "Mobilities analysis draws on ANT's concept of mobilization and Assemblage Theory's attention to lines of flight — vectors along which an assemblage escapes its current territorialization.",
+    hotspot: { entanglement: 0.65, grounding: 0.70, disagreement: 0.20, decay: 0.15 }
+  },
+  {
+    id: "cultural-framing",
+    name: "Cultural Framing",
+    nodeType: "tool",
+    scaleDefault: "meso", scaleConfidence: 0.86,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.90,
+    icon: "🎭",
+    antRole: "Discourse Inscription",
+    desc: "Diffractive Spectral Radar. Maps discourse clusters, legitimacy orders, and justification regimes across multiple theoretical lenses simultaneously.",
+    theory: "Cultural Framing operationalizes Boltanski & Thévenot's orders of worth alongside Foucauldian discourse analysis. It maps the expressive axis — how the assemblage communicates and legitimates itself.",
+    hotspot: { entanglement: 0.72, grounding: 0.75, disagreement: 0.30, decay: 0.10 }
+  },
+  {
+    id: "institutional-logics",
+    name: "Institutional Logics",
+    nodeType: "tool",
+    scaleDefault: "meso", scaleConfidence: 0.83,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.87,
+    icon: "⚖️",
+    antRole: "Interessement Analysis",
+    desc: "Maps governance mechanics, power structures, and institutional norms. Identifies how institutions lock actors into defined roles through interessement.",
+    theory: "Institutional logics analysis maps the territorial axis of assemblages — the degree to which norms, rules, and power structures stabilize actor roles.",
+    hotspot: { entanglement: 0.70, grounding: 0.72, disagreement: 0.25, decay: 0.13 }
+  },
+  {
+    id: "temporal-dynamics",
+    name: "Temporal Dynamics",
+    nodeType: "tool",
+    scaleDefault: "macro", scaleConfidence: 0.80,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.82,
+    icon: "⏱",
+    antRole: "Ephemerality Tracker",
+    desc: "Tracks how assemblages shift over time. Embodies the platform's core commitment to ephemerality — assemblages are never fully stable.",
+    theory: "Temporal analysis operationalizes the 'Ephemeral' in InstantTEA. Drawing on Assemblage Theory's emphasis on temporality, it maps the deterritorialization axis — where and when assemblages become unstable.",
+    hotspot: { entanglement: 0.58, grounding: 0.65, disagreement: 0.18, decay: 0.18 }
+  },
+  {
+    id: "cross-case-synthesis",
+    name: "Cross-Case Synthesis",
+    nodeType: "tool",
+    scaleDefault: "macro", scaleConfidence: 0.85,
+    isOPP: false, isBoundaryObject: true,
+    ttl_days: 90, freshness: 0.92,
+    icon: "🔀",
+    antRole: "Comparative Translation",
+    desc: "Comparative analysis of multiple policy documents using the Decolonial Situatedness Framework. Identifies convergence, divergence, and colonial patterns.",
+    theory: "Cross-case synthesis performs a second-order translation — comparing how different assemblages translate similar problems. The Decolonial Situatedness Framework asks whose translations dominate and whose are silenced.",
+    hotspot: { entanglement: 0.78, grounding: 0.80, disagreement: 0.40, decay: 0.08 }
+  },
+  {
+    id: "micro-resistance",
+    name: "Micro-Resistance",
+    nodeType: "practice",
+    scaleDefault: "micro", scaleConfidence: 0.90,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 60, freshness: 0.78,
+    icon: "✊",
+    antRole: "Anti-Enrollment / Friction",
+    desc: "Empirical traces of resistance, counter-mapping, and friction. Analyzes how actors resist enrollment, subvert inscriptions, and create lines of flight.",
+    theory: "Resistance analysis is the platform's most explicitly political feature. In ANT, resistance is the failure of interessement. In Deleuzian terms, resistance maps lines of flight: vectors of becoming that escape the assemblage's current territorialization.",
+    hotspot: { entanglement: 0.68, grounding: 0.60, disagreement: 0.55, decay: 0.22 }
+  },
+  {
+    id: "concept-network",
+    name: "Concept Network",
+    nodeType: "artifact",
+    scaleDefault: "meso", scaleConfidence: 0.87,
+    isOPP: false, isBoundaryObject: true,
+    ttl_days: 90, freshness: 0.93,
+    icon: "🕸",
+    antRole: "Black Box / Ontology",
+    desc: "Ontological map of concepts organized as Core / Mechanism / Actor / Value / Ghost nodes. Visualizes the conceptual infrastructure of the assemblage.",
+    theory: "The Concept Network is the platform's black box — a stabilized representation of the assemblage's ontological commitments. Ghost nodes (absent actors) make visible what the assemblage excludes.",
+    hotspot: { entanglement: 0.75, grounding: 0.88, disagreement: 0.20, decay: 0.07 }
+  },
+  {
+    id: "glossary-theory",
+    name: "Glossary & Theory",
+    nodeType: "concept",
+    scaleDefault: "micro", scaleConfidence: 0.75,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 120, freshness: 0.95,
+    icon: "📚",
+    antRole: "Inscription Device",
+    desc: "Theoretical grounding, definitions, and epistemological anchors. Provides the conceptual vocabulary that makes the platform's analyses legible.",
+    theory: "The Glossary is a meta-inscription device — it stabilizes the theoretical language through which all other features are interpreted. Without shared definitions, the assemblage cannot hold together.",
+    hotspot: { entanglement: 0.50, grounding: 0.95, disagreement: 0.08, decay: 0.05 }
+  },
+  {
+    id: "reflexivity",
+    name: "Reflexivity",
+    nodeType: "practice",
+    scaleDefault: "micro", scaleConfidence: 0.88,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 60, freshness: 0.80,
+    icon: "🪞",
+    antRole: "Reflexive Actant",
+    desc: "Critical reflection on epistemic location and positionality. Documents the researcher's situatedness and the conditions of knowledge production.",
+    theory: "Reflexivity is the platform's most philosophically distinctive feature. It treats the researcher as an actant — an agent whose position shapes what is visible. This is the Deleuzian 'fold': the assemblage turning back on itself.",
+    hotspot: { entanglement: 0.55, grounding: 0.70, disagreement: 0.35, decay: 0.20 }
+  },
+  {
+    id: "meta-governance",
+    name: "Meta-Governance",
+    nodeType: "tool",
+    scaleDefault: "macro", scaleConfidence: 0.91,
+    isOPP: false, isBoundaryObject: true,
+    ttl_days: 90, freshness: 0.89,
+    icon: "📊",
+    antRole: "Macro-Translation",
+    desc: "Governance Orchestration dashboard. Risk landscape analysis, recurring assemblage patterns, and active proposals. The systemic view of the entire corpus.",
+    theory: "Meta-Governance performs the final mobilization — aggregating all analytical outputs into a systemic view. It maps the governance regime as a whole, revealing recurring patterns and structural tendencies.",
+    hotspot: { entanglement: 0.80, grounding: 0.82, disagreement: 0.28, decay: 0.11 }
+  },
+  {
+    id: "dashboard",
+    name: "Dashboard",
+    nodeType: "tool",
+    scaleDefault: "overview", scaleConfidence: 0.99,
+    isOPP: true, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.98,
+    icon: "🏠",
+    antRole: "Enrollment Gateway",
+    desc: "The entry point and navigation hub. Provides project overview and routes users into the analytical workflow.",
+    theory: "The Dashboard is the platform's second OPP — the enrollment gateway through which all users must pass. It performs the first moment of ANT translation: problematization.",
+    hotspot: { entanglement: 0.85, grounding: 0.78, disagreement: 0.05, decay: 0.02 }
+  },
+  {
+    id: "lens-config",
+    name: "Lens Configuration",
+    nodeType: "concept",
+    scaleDefault: "micro", scaleConfidence: 0.78,
+    isOPP: false, isBoundaryObject: false,
+    ttl_days: 90, freshness: 0.86,
+    icon: "🔬",
+    antRole: "Problematization Device",
+    desc: "Configures the theoretical lenses (Legitimacy, Justification, Resistance, etc.) that filter and frame all subsequent analyses.",
+    theory: "Lens Configuration is the platform's problematization device — it defines the analytical problem by selecting which theoretical frameworks will be applied. The choice of lenses is itself a political act.",
+    hotspot: { entanglement: 0.62, grounding: 0.72, disagreement: 0.22, decay: 0.14 }
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// EDGE DATA — 6 canonical types
+// ═══════════════════════════════════════════════════════════════
+const EDGES = [
+  // depends_on — structural dependencies
+  { source: "data-sources",        target: "assemblage-compass",   type: "depends_on",      label: "feeds raw material",    directed: true },
+  { source: "assemblage-compass",  target: "trace-provenance",     type: "depends_on",      label: "requires provenance",   directed: true },
+  { source: "glossary-theory",     target: "lens-config",          type: "depends_on",      label: "grounds lens choice",   directed: true },
+  { source: "lens-config",         target: "assemblage-compass",   type: "depends_on",      label: "configures compass",    directed: true },
+  { source: "concept-network",     target: "meta-governance",      type: "depends_on",      label: "ontology feeds governance", directed: true },
+
+  // operationalizes — concept/value → tool/practice
+  { source: "glossary-theory",     target: "assemblage-compass",   type: "operationalizes", label: "theory → mapping",      directed: true },
+  { source: "lens-config",         target: "cultural-framing",     type: "operationalizes", label: "lens → cultural analysis", directed: true },
+  { source: "lens-config",         target: "institutional-logics", type: "operationalizes", label: "lens → institutional analysis", directed: true },
+  { source: "glossary-theory",     target: "concept-network",      type: "operationalizes", label: "theory → ontology",     directed: true },
+
+  // grounds_in — claim/node → evidence/quote
+  { source: "assemblage-compass",  target: "data-sources",         type: "grounds_in",      label: "grounded in sources",   directed: true },
+  { source: "cultural-framing",    target: "data-sources",         type: "grounds_in",      label: "grounded in sources",   directed: true },
+  { source: "institutional-logics",target: "data-sources",         type: "grounds_in",      label: "grounded in sources",   directed: true },
+  { source: "trace-provenance",    target: "data-sources",         type: "grounds_in",      label: "traces back to sources",directed: true },
+
+  // produces — tool/practice → artifact/snapshot/export
+  { source: "assemblage-compass",  target: "concept-network",      type: "produces",        label: "produces ontology",     directed: true },
+  { source: "cultural-framing",    target: "cross-case-synthesis", type: "produces",        label: "produces comparison",   directed: true },
+  { source: "institutional-logics",target: "cross-case-synthesis", type: "produces",        label: "produces comparison",   directed: true },
+  { source: "temporal-dynamics",   target: "cross-case-synthesis", type: "produces",        label: "produces comparison",   directed: true },
+  { source: "cross-case-synthesis",target: "meta-governance",      type: "produces",        label: "produces governance view", directed: true },
+  { source: "meta-governance",     target: "dashboard",            type: "produces",        label: "surfaces insights",     directed: true },
+  { source: "trace-provenance",    target: "dynamics-mobilities",  type: "produces",        label: "reveals movement",      directed: true },
+
+  // contests — friction, resistance, anti-enrollment
+  { source: "micro-resistance",    target: "institutional-logics", type: "contests",        label: "challenges institutions", directed: false },
+  { source: "micro-resistance",    target: "dynamics-mobilities",  type: "contests",        label: "counter-flows",         directed: false },
+  { source: "reflexivity",         target: "cultural-framing",     type: "contests",        label: "questions frames",      directed: false },
+  { source: "reflexivity",         target: "assemblage-compass",   type: "contests",        label: "questions the mapping", directed: false },
+  { source: "reflexivity",         target: "meta-governance",      type: "contests",        label: "folds back on governance", directed: false },
+
+  // translates — ANT enrolment/translation catch-all
+  { source: "dashboard",           target: "data-sources",         type: "translates",      label: "enrolls user → data",   directed: true },
+  { source: "dashboard",           target: "assemblage-compass",   type: "translates",      label: "enrolls user → mapping",directed: true },
+  { source: "assemblage-compass",  target: "micro-resistance",     type: "translates",      label: "translates friction",   directed: true },
+  { source: "reflexivity",         target: "glossary-theory",      type: "translates",      label: "translates theory",     directed: false },
+  { source: "micro-resistance",    target: "cross-case-synthesis", type: "translates",      label: "translates resistance patterns", directed: true }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// VISUAL CONFIG
+// ═══════════════════════════════════════════════════════════════
+const SCALE_COLORS = { micro: "#e05060", meso: "#3a8fd4", macro: "#2ec4a0", overview: "#a070e0" };
+
+const EDGE_COLORS = {
+  depends_on:      "#f5a623",
+  operationalizes: "#4ecdc4",
+  grounds_in:      "#a8e063",
+  produces:        "#a070e0",
+  contests:        "#e05060",
+  translates:      "#60aaff"
+};
+
+const EDGE_DASHED = { contests: true };
+
+const NODE_TYPE_COLORS = {
+  tool:     "#3a8fd4",
+  concept:  "#a070e0",
+  actor:    "#f5a623",
+  artifact: "#a8e063",
+  practice: "#4ecdc4",
+  value:    "#f06292",
+  event:    "#ff5252"
+};
+
+// Degree centrality
+const degreeMap = {};
+NODES.forEach(n => { degreeMap[n.id] = 0; });
+EDGES.forEach(e => {
+  degreeMap[e.source] = (degreeMap[e.source] || 0) + 1;
+  degreeMap[e.target] = (degreeMap[e.target] || 0) + 1;
+});
+const minDeg = Math.min(...Object.values(degreeMap));
+const maxDeg = Math.max(...Object.values(degreeMap));
+const nodeRadius = id => 20 + ((degreeMap[id] - minDeg) / (maxDeg - minDeg)) * 14;
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let gravityStrength = 0.5; // 0..1 mapped from slider
+let displayMode = "rhizome"; // rhizome | workflow | symmetry
+let activeLens = null;
+let showLabels = false;
+let activeFilters = {
+  levels: new Set(["micro","meso","macro","overview"]),
+  edges:  new Set(["depends_on","operationalizes","grounds_in","produces","contests","translates"])
+};
+let selectedNodeId = null;
+
+// ═══════════════════════════════════════════════════════════════
+// SVG SETUP
+// ═══════════════════════════════════════════════════════════════
+const svg  = d3.select("#graph");
+const wrap = document.getElementById("canvas-wrap");
+let W = wrap.clientWidth;
+let H = wrap.clientHeight;
+svg.attr("viewBox", `0 0 ${W} ${H}`);
+
+const zoomG = svg.append("g").attr("class","zoom-group");
+const zoom  = d3.zoom().scaleExtent([0.25, 3.5]).on("zoom", e => zoomG.attr("transform", e.transform));
+svg.call(zoom);
+
+// Band labels
+const BAND_DATA = [
+  { label: "MICRO",    y: H * 0.82, color: "#e05060" },
+  { label: "MESO",     y: H * 0.50, color: "#3a8fd4" },
+  { label: "MACRO",    y: H * 0.18, color: "#2ec4a0" }
+];
+const bandG = zoomG.append("g");
+BAND_DATA.forEach(b => {
+  bandG.append("text").attr("class","band-label")
+    .attr("x", W/2).attr("y", b.y)
+    .attr("text-anchor","middle").attr("fill", b.color).text(b.label);
+});
+
+// Arrowhead defs
+const defs = svg.append("defs");
+Object.entries(EDGE_COLORS).forEach(([type, color]) => {
+  defs.append("marker").attr("id",`arrow-${type}`)
+    .attr("viewBox","0 -5 10 10").attr("refX",26).attr("refY",0)
+    .attr("markerWidth",5).attr("markerHeight",5).attr("orient","auto")
+    .append("path").attr("d","M0,-5L10,0L0,5").attr("fill",color).attr("opacity",0.65);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SIMULATION
+// ═══════════════════════════════════════════════════════════════
+const LEVEL_Y = { overview: H*0.48, micro: H*0.80, meso: H*0.52, macro: H*0.20 };
+
+const simNodes = NODES.map(n => ({ ...n, r: nodeRadius(n.id) }));
+const simEdges = EDGES.map(e => ({ ...e }));
+
+let simulation = d3.forceSimulation(simNodes)
+  .force("link", d3.forceLink(simEdges).id(d=>d.id).distance(d => {
+    const dist = { depends_on:170, operationalizes:155, grounds_in:145, produces:185, contests:130, translates:175 };
+    return dist[d.type] || 165;
+  }).strength(0.28))
+  .force("charge", d3.forceManyBody().strength(-580))
+  .force("center",    d3.forceCenter(W/2, H/2))
+  .force("collision", d3.forceCollide(d => d.r + 28))
+  .force("gravity-y", d3.forceY(d => LEVEL_Y[d.scaleDefault] || H/2).strength(gravityStrength * 0.25))
+  .force("x",         d3.forceX(W/2).strength(0.03))
+  .alphaDecay(0.02)
+  .on("tick", ticked);
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER EDGES
+// ═══════════════════════════════════════════════════════════════
+const linkG   = zoomG.append("g").attr("class","links");
+const linkSel = linkG.selectAll("g.link-group").data(simEdges).join("g").attr("class","link-group");
+
+const linkLines = linkSel.append("line")
+  .attr("class", d => `link link-${d.type}`)
+  .attr("stroke", d => EDGE_COLORS[d.type])
+  .attr("stroke-width", d => d.type === "depends_on" ? 2.4 : 1.8)
+  .attr("stroke-dasharray", d => EDGE_DASHED[d.type] ? "5,4" : null)
+  .attr("marker-end", d => d.directed ? `url(#arrow-${d.type})` : null);
+
+const linkLabels = linkSel.append("text").attr("class","link-label").text(d => d.label);
+
+linkSel
+  .on("mouseover", function(event, d) {
+    const src = typeof d.source === "object" ? d.source.name : d.source;
+    const tgt = typeof d.target === "object" ? d.target.name : d.target;
+    showTooltip(`<div class="tt-name">${d.label}</div><div class="tt-type">${d.type}</div><div class="tt-desc">${src} → ${tgt}</div>`);
+    d3.select(this).select("line").attr("stroke-opacity",1).attr("stroke-width", d.type==="depends_on"?3.2:2.6);
+    d3.select(this).select("text").style("opacity",1);
+  })
+  .on("mousemove", moveTooltip)
+  .on("mouseout", function(event,d) {
+    hideTooltip();
+    d3.select(this).select("line").attr("stroke-opacity",null).attr("stroke-width", d.type==="depends_on"?2.4:1.8);
+    d3.select(this).select("text").style("opacity",null);
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER NODES
+// ═══════════════════════════════════════════════════════════════
+const nodeG   = zoomG.append("g").attr("class","nodes");
+const nodeSel = nodeG.selectAll("g.node-group").data(simNodes).join("g")
+  .attr("class", d => `node-group${d.freshness < 0.82 ? " decaying" : ""}`)
+  .call(d3.drag().on("start",dragStart).on("drag",dragged).on("end",dragEnd))
+  .on("click", nodeClicked)
+  .on("mouseover", nodeHover)
+  .on("mouseout",  nodeOut);
+
+// OPP pulse
+nodeSel.filter(d => d.isOPP).append("circle").attr("class","opp-pulse").attr("r", d => d.r+6);
+
+// Outer ring
+nodeSel.append("circle").attr("class","node-ring-outer")
+  .attr("r", d => d.r+5)
+  .attr("stroke", d => SCALE_COLORS[d.scaleDefault]).attr("fill","none");
+
+// Main shape — circle for all (shape differentiation via inner overlay)
+nodeSel.append("circle").attr("class","node-shape")
+  .attr("r", d => d.r)
+  .attr("fill", d => {
+    const c = SCALE_COLORS[d.scaleDefault];
+    return `${c}1e`;
+  })
+  .attr("stroke", d => SCALE_COLORS[d.scaleDefault])
+  .attr("stroke-width", d => d.isOPP ? 3 : 2);
+
+// Node type inner shape overlay (encodes human/non-human symmetry)
+// Tool → hexagon outline; Concept → diamond; Artifact → square; Practice → triangle; Event → star
+nodeSel.each(function(d) {
+  const g = d3.select(this);
+  const s = d.r * 0.42;
+  const tc = NODE_TYPE_COLORS[d.nodeType] || "#ffffff";
+  if (d.nodeType === "tool") {
+    // Hexagon
+    const pts = d3.range(6).map(i => {
+      const a = (Math.PI/3)*i - Math.PI/6;
+      return [s*Math.cos(a), s*Math.sin(a)].join(",");
+    }).join(" ");
+    g.append("polygon").attr("points", pts).attr("fill","none").attr("stroke",tc).attr("stroke-width",1).attr("opacity",0.5);
+  } else if (d.nodeType === "concept") {
+    g.append("polygon").attr("points",`0,${-s} ${s},0 0,${s} ${-s},0`).attr("fill","none").attr("stroke",tc).attr("stroke-width",1).attr("opacity",0.5);
+  } else if (d.nodeType === "artifact") {
+    const h = s*0.85;
+    g.append("rect").attr("x",-h).attr("y",-h).attr("width",h*2).attr("height",h*2).attr("rx",2).attr("fill","none").attr("stroke",tc).attr("stroke-width",1).attr("opacity",0.5);
+  } else if (d.nodeType === "practice") {
+    g.append("polygon").attr("points",`0,${-s} ${s*0.87},${s*0.5} ${-s*0.87},${s*0.5}`).attr("fill","none").attr("stroke",tc).attr("stroke-width",1).attr("opacity",0.5);
+  } else if (d.nodeType === "event") {
+    g.append("circle").attr("r", d.r).attr("fill","none").attr("stroke",tc).attr("stroke-width",2).attr("class","event-flash");
+  }
+  // Boundary object glow
+  if (d.isBoundaryObject) {
+    g.select(".node-shape").attr("class","node-shape boundary-glow");
+  }
+});
+
+// Icon
+nodeSel.append("text").attr("class","node-icon").attr("y",-3).text(d => d.icon);
+
+// Scale confidence dot
+nodeSel.append("circle")
+  .attr("cx", d => d.r * 0.7).attr("cy", d => -d.r * 0.7)
+  .attr("r", 3.5)
+  .attr("fill", d => d.scaleConfidence > 0.85 ? "#2ec4a0" : d.scaleConfidence > 0.70 ? "#f5a623" : "#e05060")
+  .attr("opacity", 0.8)
+  .attr("title", d => `Scale confidence: ${Math.round(d.scaleConfidence*100)}%`);
+
+// Name label
+nodeSel.append("text").attr("class","node-label-name").attr("y", d => d.r+14).text(d => d.name);
+
+// Level label
+nodeSel.append("text").attr("class","node-label-level").attr("y", d => d.r+24)
+  .attr("fill", d => SCALE_COLORS[d.scaleDefault]).text(d => d.scaleDefault.toUpperCase());
+
+// Role label (hidden by default)
+nodeSel.append("text").attr("class","node-label-role label-extra").attr("y", d => d.r+34).text(d => d.antRole);
+
+// ═══════════════════════════════════════════════════════════════
+// TICK
+// ═══════════════════════════════════════════════════════════════
+function ticked() {
+  linkLines
+    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  linkLabels
+    .attr("x", d => (d.source.x+d.target.x)/2)
+    .attr("y", d => (d.source.y+d.target.y)/2 - 4);
+  nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG
+// ═══════════════════════════════════════════════════════════════
+function dragStart(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; }
+function dragged(event, d)   { d.fx=event.x; d.fy=event.y; }
+function dragEnd(event, d)   { if (!event.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }
+
+// ═══════════════════════════════════════════════════════════════
+// NODE CLICK → DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════
+function nodeClicked(event, d) {
+  event.stopPropagation();
+  selectedNodeId = d.id;
+  highlightNeighborhood(d.id);
+  renderDetailPanel(d);
+  switchTab("detail");
+}
+
+function renderDetailPanel(d) {
+  const connections = simEdges.filter(e => e.source.id===d.id || e.target.id===d.id).map(e => {
+    const other = e.source.id===d.id ? e.target : e.source;
+    const dir = e.directed ? (e.source.id===d.id ? "outgoing →" : "← incoming") : "↔ bidirectional";
+    return { node: other, edge: e, dir };
+  });
+
+  const lvlBadge = `badge-${d.scaleDefault}`;
+  const oppB = d.isOPP ? `<span class="badge badge-opp">OPP</span>` : "";
+  const bndB = d.isBoundaryObject ? `<span class="badge badge-boundary">Boundary Object</span>` : "";
+  const freshColor = d.freshness > 0.85 ? "green" : "red";
+  const confColor  = d.scaleConfidence > 0.85 ? "green" : "red";
+
+  const hotH = (val, label) => `
+    <div class="hotspot-row">
+      <div class="hotspot-label">${label}</div>
+      <div class="hotspot-bar-wrap"><div class="hotspot-bar" style="width:${Math.round(val*100)}%;background:${val>0.6?"var(--macro)":val>0.35?"var(--e-depends)":"var(--e-contests)"}"></div></div>
+      <div class="hotspot-val">${Math.round(val*100)}%</div>
+    </div>`;
+
+  const connHTML = connections.map(c => `
+    <div class="connection-item" data-id="${c.node.id}">
+      <div class="conn-dot" style="background:${EDGE_COLORS[c.edge.type]}"></div>
+      <div class="conn-info">
+        <div class="conn-name">${c.node.name}</div>
+        <div class="conn-type">${c.edge.type} · ${c.edge.label}</div>
+        <div class="conn-dir">${c.dir}</div>
+      </div>
+    </div>`).join("");
+
+  document.getElementById("panel-detail").innerHTML = `
+    <div class="detail-name">${d.icon} ${d.name}</div>
+    <div class="detail-badges">
+      <span class="badge ${lvlBadge}">${d.scaleDefault.toUpperCase()}</span>
+      <span class="badge badge-role">${d.antRole}</span>
+      <span class="badge badge-role">${d.nodeType}</span>
+      ${oppB}${bndB}
+    </div>
+
+    <div class="detail-section-title">Snapshot Metadata</div>
+    <div class="snap-detail-row">
+      <span class="snap-chip ${freshColor}">Freshness: ${Math.round(d.freshness*100)}%</span>
+      <span class="snap-chip">TTL: ${d.ttl_days}d</span>
+      <span class="snap-chip ${confColor}">Scale confidence: ${Math.round(d.scaleConfidence*100)}%</span>
+    </div>
+
+    <div class="detail-section-title">Feature Description</div>
+    <div class="detail-desc">${d.desc}</div>
+
+    <div class="detail-section-title">Theoretical Grounding</div>
+    <div class="detail-theory">${d.theory}</div>
+
+    <div class="detail-section-title">Hotspot Metrics</div>
+    ${hotH(d.hotspot.entanglement,  "Entanglement diversity")}
+    ${hotH(d.hotspot.grounding,     "Grounding coverage")}
+    ${hotH(1-d.hotspot.disagreement,"Consensus (low disagreement)")}
+    ${hotH(1-d.hotspot.decay,       "Freshness / decay salience")}
+
+    <div class="detail-section-title">Entangled Connections (${connections.length})</div>
+    ${connHTML}
+  `;
+
+  document.querySelectorAll(".connection-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const tn = simNodes.find(n => n.id === el.dataset.id);
+      if (tn) nodeClicked({ stopPropagation:()=>{} }, tn);
+    });
+  });
+}
+
+svg.on("click", () => {
+  selectedNodeId = null;
+  clearHighlight();
+  document.getElementById("panel-detail").innerHTML = `
+    <div class="detail-empty">
+      <div class="hint-icon">⬡</div>
+      <strong>Click any node</strong> to explore its assemblage role, theoretical grounding, snapshot metadata, hotspot metrics, and entangled connections.
+      <br/><br/>
+      Use <strong>Drift</strong> tab for guided random walks through the network.
+    </div>`;
+});
+
+// ═══════════════════════════════════════════════════════════════
+// HIGHLIGHT
+// ═══════════════════════════════════════════════════════════════
+function highlightNeighborhood(id) {
+  const connected = new Set([id]);
+  simEdges.forEach(e => {
+    if (e.source.id===id) connected.add(e.target.id);
+    if (e.target.id===id) connected.add(e.source.id);
+  });
+  nodeSel.classed("dimmed", n => !connected.has(n.id));
+  linkSel.classed("dimmed", e => e.source.id!==id && e.target.id!==id);
+}
+
+function clearHighlight() {
+  nodeSel.classed("dimmed", false);
+  linkSel.classed("dimmed", false);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NODE HOVER TOOLTIP
+// ═══════════════════════════════════════════════════════════════
+function nodeHover(event, d) {
+  const decayWarn = d.freshness < 0.82 ? `<div class="tt-decay">⚠ Low freshness: ${Math.round(d.freshness*100)}%</div>` : "";
+  showTooltip(`<div class="tt-name">${d.icon} ${d.name}</div>
+    <div class="tt-type">${d.antRole} · ${d.nodeType} · ${d.scaleDefault.toUpperCase()}</div>
+    <div class="tt-desc">${d.desc.substring(0,90)}…</div>${decayWarn}`);
+}
+function nodeOut() { hideTooltip(); }
+
+function showTooltip(html) {
+  const tt = document.getElementById("tooltip");
+  tt.innerHTML = html; tt.classList.add("visible");
+}
+function hideTooltip() { document.getElementById("tooltip").classList.remove("visible"); }
+function moveTooltip(event) {
+  const tt = document.getElementById("tooltip");
+  if (tt.classList.contains("visible")) {
+    tt.style.left = (event.clientX+14)+"px";
+    tt.style.top  = (event.clientY-10)+"px";
+  }
+}
+svg.on("mousemove", moveTooltip);
+
+// ═══════════════════════════════════════════════════════════════
+// GRAVITY SLIDER
+// ═══════════════════════════════════════════════════════════════
+const gravSlider = document.getElementById("gravity-slider");
+gravSlider.addEventListener("input", function() {
+  gravityStrength = this.value / 100;
+  const pct = this.value + "%";
+  this.style.background = `linear-gradient(to right, var(--meso) 0%, var(--meso) ${pct}, var(--border) ${pct})`;
+  simulation.force("gravity-y", d3.forceY(d => LEVEL_Y[d.scaleDefault]||H/2).strength(gravityStrength * 0.25));
+  simulation.alpha(0.25).restart();
+  document.getElementById("status-text").textContent =
+    `15 nodes · 30 edges · 6 edge types · 4 lenses · Gravity: ${Math.round(gravityStrength*100)}%`;
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MODE TOGGLE (Rhizome / Workflow / Symmetry)
+// ═══════════════════════════════════════════════════════════════
+const MODES = ["rhizome","workflow","symmetry"];
+const MODE_LABELS = { rhizome:"⬡ Rhizome", workflow:"→ Workflow", symmetry:"◎ Symmetry" };
+document.getElementById("btn-mode").addEventListener("click", function() {
+  const idx = MODES.indexOf(displayMode);
+  displayMode = MODES[(idx+1) % MODES.length];
+  this.textContent = MODE_LABELS[displayMode];
+  this.className = `ctrl-btn active mode-${displayMode}`;
+
+  if (displayMode === "symmetry") {
+    // All nodes same visual weight — remove size differentiation
+    nodeSel.select(".node-shape").attr("r", 24);
+    nodeSel.select(".node-ring-outer").attr("r", 29);
+  } else {
+    nodeSel.select(".node-shape").attr("r", d => d.r);
+    nodeSel.select(".node-ring-outer").attr("r", d => d.r+5);
+  }
+
+  if (displayMode === "workflow") {
+    // Highlight the workflow path: Dashboard → Data → Compass → Analysis → Synthesis → Export
+    const workflowPath = new Set(["dashboard","data-sources","assemblage-compass","cultural-framing","institutional-logics","cross-case-synthesis","meta-governance"]);
+    nodeSel.classed("dimmed", d => !workflowPath.has(d.id));
+    linkSel.classed("dimmed", e => !workflowPath.has(e.source.id) || !workflowPath.has(e.target.id));
+  } else {
+    clearHighlight();
+  }
+  simulation.alpha(0.2).restart();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// LABELS TOGGLE
+// ═══════════════════════════════════════════════════════════════
+document.getElementById("btn-labels").addEventListener("click", function() {
+  showLabels = !showLabels;
+  this.classList.toggle("active", showLabels);
+  d3.selectAll(".label-extra").attr("opacity", showLabels ? 0.65 : 0);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+document.getElementById("btn-reset").addEventListener("click", () => {
+  svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+function applyFilters() {
+  nodeSel.attr("display", d => activeFilters.levels.has(d.scaleDefault) ? null : "none");
+  linkSel.attr("display", d => {
+    const sv = activeFilters.levels.has(d.source.level||d.source.scaleDefault);
+    const tv = activeFilters.levels.has(d.target.level||d.target.scaleDefault);
+    const ev = activeFilters.edges.has(d.type);
+    return (sv && tv && ev) ? null : "none";
+  });
+}
+
+document.querySelectorAll(".filter-btn[data-filter]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const f = btn.dataset.filter;
+    if (f === "all") {
+      const allOn = activeFilters.levels.size === 4;
+      if (allOn) { activeFilters.levels.clear(); btn.classList.remove("active"); }
+      else {
+        activeFilters.levels = new Set(["micro","meso","macro","overview"]);
+        btn.classList.add("active");
+        document.querySelectorAll(".filter-btn[data-filter]:not([data-filter='all'])").forEach(b=>b.classList.add("active"));
+      }
+    } else {
+      if (activeFilters.levels.has(f)) { activeFilters.levels.delete(f); btn.classList.remove("active"); }
+      else { activeFilters.levels.add(f); btn.classList.add("active"); }
+      document.querySelector(".filter-btn[data-filter='all']").classList.toggle("active", activeFilters.levels.size===4);
+    }
+    applyFilters();
+  });
+});
+
+document.querySelectorAll(".filter-btn[data-edge]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const e = btn.dataset.edge;
+    if (activeFilters.edges.has(e)) { activeFilters.edges.delete(e); btn.classList.remove("active"); }
+    else { activeFilters.edges.add(e); btn.classList.add("active"); }
+    applyFilters();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// LENS CARDS
+// ═══════════════════════════════════════════════════════════════
+const LENS_RULES = {
+  evidence:   { edges: new Set(["grounds_in"]),                         nodes: null },
+  resistance: { edges: new Set(["contests"]),                           nodes: new Set(["micro-resistance","reflexivity"]) },
+  cultural:   { edges: new Set(["operationalizes","translates"]),       nodes: new Set(["cultural-framing","lens-config"]) },
+  infra:      { edges: new Set(["depends_on"]),                         nodes: null }
+};
+
+document.querySelectorAll(".lens-card").forEach(card => {
+  card.addEventListener("click", () => {
+    const lens = card.dataset.lens;
+    if (activeLens === lens) {
+      activeLens = null;
+      card.classList.remove("active");
+      clearHighlight();
+      applyFilters();
+    } else {
+      activeLens = lens;
+      document.querySelectorAll(".lens-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+      const rule = LENS_RULES[lens];
+      // Highlight matching edges
+      linkSel.classed("dimmed", e => !rule.edges.has(e.type));
+      // Highlight matching nodes (or all if null)
+      if (rule.nodes) {
+        nodeSel.classed("dimmed", d => !rule.nodes.has(d.id) && !simEdges.some(e => rule.edges.has(e.type) && (e.source.id===d.id||e.target.id===d.id)));
+      } else {
+        nodeSel.classed("dimmed", d => !simEdges.some(e => rule.edges.has(e.type) && (e.source.id===d.id||e.target.id===d.id)));
+      }
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// DRIFT MODE
+// ═══════════════════════════════════════════════════════════════
+function driftTo(node, reason) {
+  selectedNodeId = node.id;
+  highlightNeighborhood(node.id);
+  renderDetailPanel(node);
+  switchTab("detail");
+  const result = document.getElementById("drift-result");
+  result.style.display = "block";
+  result.innerHTML = `<strong>Drifted to:</strong> ${node.icon} ${node.name}<br/><em>${reason}</em>`;
+  // Animate zoom to node
+  const transform = d3.zoomIdentity.translate(W/2 - node.x, H/2 - node.y).scale(1.2);
+  svg.transition().duration(800).call(zoom.transform, transform);
+}
+
+document.getElementById("drift-contested").addEventListener("click", () => {
+  const n = simNodes.reduce((a,b) => b.hotspot.disagreement > a.hotspot.disagreement ? b : a);
+  driftTo(n, `Highest disagreement index: ${Math.round(n.hotspot.disagreement*100)}%`);
+});
+
+document.getElementById("drift-ungrounded").addEventListener("click", () => {
+  const n = simNodes.reduce((a,b) => b.hotspot.grounding < a.hotspot.grounding ? b : a);
+  driftTo(n, `Lowest grounding coverage: ${Math.round(n.hotspot.grounding*100)}%`);
+});
+
+document.getElementById("drift-translate").addEventListener("click", () => {
+  const base = selectedNodeId ? simNodes.find(n=>n.id===selectedNodeId) : simNodes[0];
+  const translEdges = simEdges.filter(e => e.type==="translates" && (e.source.id===base.id||e.target.id===base.id));
+  if (translEdges.length) {
+    const e = translEdges[Math.floor(Math.random()*translEdges.length)];
+    const next = e.source.id===base.id ? e.target : e.source;
+    driftTo(next, `Following translation from ${base.name}`);
+  } else {
+    document.getElementById("drift-result").style.display="block";
+    document.getElementById("drift-result").innerHTML = "No translation edges from selected node. Select a node first.";
+  }
+});
+
+document.getElementById("drift-broker").addEventListener("click", () => {
+  // Cross-scale broker: most edges spanning different scale levels
+  const brokerScore = n => {
+    const edges = simEdges.filter(e => e.source.id===n.id||e.target.id===n.id);
+    const scales = new Set(edges.map(e => {
+      const other = e.source.id===n.id ? e.target : e.source;
+      return other.scaleDefault;
+    }));
+    return scales.size;
+  };
+  const n = simNodes.reduce((a,b) => brokerScore(b)>brokerScore(a)?b:a);
+  driftTo(n, `Cross-scale broker: connects ${brokerScore(n)} different scale levels`);
+});
+
+document.getElementById("drift-decay").addEventListener("click", () => {
+  const n = simNodes.reduce((a,b) => b.freshness < a.freshness ? b : a);
+  driftTo(n, `Lowest freshness: ${Math.round(n.freshness*100)}% — approaching TTL expiry`);
+});
+
+document.getElementById("drift-random").addEventListener("click", () => {
+  const n = simNodes[Math.floor(Math.random()*simNodes.length)];
+  driftTo(n, "Rhizomatic jump — no predetermined destination");
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════════
+document.getElementById("search-input").addEventListener("input", function() {
+  const q = this.value.toLowerCase().trim();
+  if (!q) { clearHighlight(); return; }
+  const matches = new Set(simNodes.filter(n =>
+    n.name.toLowerCase().includes(q) ||
+    n.antRole.toLowerCase().includes(q) ||
+    n.nodeType.toLowerCase().includes(q) ||
+    n.scaleDefault.toLowerCase().includes(q)
+  ).map(n => n.id));
+  nodeSel.classed("dimmed", d => !matches.has(d.id));
+  linkSel.classed("dimmed", e => !matches.has(e.source.id) && !matches.has(e.target.id));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PANEL TABS
+// ═══════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll(".panel-tab").forEach(t => t.classList.toggle("active", t.dataset.tab===tab));
+  ["detail","lenses","drift","legend"].forEach(id => {
+    document.getElementById(`panel-${id}`).style.display = id===tab ? "block" : "none";
+  });
+}
+document.querySelectorAll(".panel-tab").forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
+
+// ═══════════════════════════════════════════════════════════════
+// FORK SNAPSHOT (UI stub)
+// ═══════════════════════════════════════════════════════════════
+document.querySelector(".snap-fork").addEventListener("click", () => {
+  const d = new Date();
+  const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  alert(`Snapshot forked!\n\nNew snapshot: "InstantTEA Platform · Feature Assemblage (fork)"\nCreated: ${ts}\nDerives from: v1.2\nRelation: derives_from\n\nIn a full implementation, this would create a new editable graph instance connected to this one via a derives_from edge — a rhizomatic rupture.`);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener("resize", () => {
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  svg.attr("viewBox", `0 0 ${W} ${H}`);
+  simulation.force("center", d3.forceCenter(W/2, H/2));
+  simulation.force("gravity-y", d3.forceY(d => LEVEL_Y[d.scaleDefault]||H/2).strength(gravityStrength*0.25));
+  simulation.alpha(0.2).restart();
+});
+</script>
+</body>
+</html>

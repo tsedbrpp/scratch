@@ -1,18 +1,26 @@
 import Redis from 'ioredis';
 
-const getRedisUrl = () => {
+const getRedisClient = () => {
     if (process.env.REDIS_URL) {
-        return process.env.REDIS_URL;
+        return new Redis(process.env.REDIS_URL);
     }
 
-    // During build time or if not configured, return a dummy URL to prevent crash
-    // The actual connection will fail if used, but it allows the app to build.
-    if (process.env.NODE_ENV === 'production') {
-        console.warn('REDIS_URL is not defined. Using dummy URL for build.');
-        return 'redis://localhost:6379';
-    }
-
-    throw new Error('REDIS_URL is not defined');
+    console.warn('REDIS_URL is not defined. Using dummy in-memory fallback.');
+    const memCache = new Map();
+    // Proxy intercepts any redis method and simulates it safely
+    return new Proxy({}, {
+        get(target, prop) {
+            if (prop === 'get') return async (k: string) => memCache.get(k) || null;
+            if (prop === 'set') return async (k: string, v: string) => memCache.set(k, v);
+            if (prop === 'del') return async (k: string) => memCache.delete(k);
+            if (prop === 'hgetall') return async () => ({});
+            if (prop === 'hset') return async () => 1;
+            if (prop === 'hdel') return async () => 1;
+            if (prop === 'pipeline') return () => ({ set: () => { }, exec: async () => [] });
+            if (prop === 'on') return () => { }; // for .on('error')
+            return async () => null;
+        }
+    }) as unknown as Redis;
 };
 
 // Use a global variable to preserve the client across hot reloads in development
@@ -21,7 +29,7 @@ const globalForRedis = global as unknown as { redis: Redis };
 
 export const redis =
     globalForRedis.redis ||
-    new Redis(getRedisUrl());
+    getRedisClient();
 
 // Prevent unhandled error events from crashing the process
 redis.on('error', (err) => {

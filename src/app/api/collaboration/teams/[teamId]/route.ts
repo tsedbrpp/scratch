@@ -6,7 +6,7 @@ import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { teamId: string } }
+    { params }: { params: Promise<{ teamId: string }> }
 ) {
     try {
         const userId = await getAuthenticatedUserId(req);

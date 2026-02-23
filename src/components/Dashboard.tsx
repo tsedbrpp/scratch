@@ -19,8 +19,10 @@ export function Dashboard() {
 
     const [credits, setCredits] = useState<number | null>(null);
     const [showTopUp, setShowTopUp] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         fetch('/api/credits')
             .then(res => res.json())
             .then(data => setCredits(data.credits))
@@ -49,7 +51,7 @@ export function Dashboard() {
                         <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">CreditsAvailable</span>
                         <span className="text-xl font-bold text-indigo-600 flex items-center gap-1">
                             <Coins className="h-4 w-4" />
-                            {credits !== null ? credits : '...'}
+                            {mounted && credits !== null ? credits : '...'}
                         </span>
                     </div>
                     <Button onClick={() => setShowTopUp(true)} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -70,7 +72,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-blue-900">{docCount}</div>
+                        <div className="text-3xl font-bold text-blue-900">{mounted ? docCount : '...'}</div>
                         <p className="text-xs text-blue-600 mt-1 font-medium">
                             Primary policy texts
                         </p>
@@ -86,7 +88,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-indigo-900">{traceCount}</div>
+                        <div className="text-3xl font-bold text-indigo-900">{mounted ? traceCount : '...'}</div>
                         <p className="text-xs text-indigo-600 mt-1 font-medium">
                             Collected from web sources
                         </p>
@@ -102,7 +104,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-emerald-900">{analyzedCount}</div>
+                        <div className="text-3xl font-bold text-emerald-900">{mounted ? analyzedCount : '...'}</div>
                         <p className="text-xs text-emerald-600 mt-1 font-medium">
                             Processed with AI lenses
                         </p>

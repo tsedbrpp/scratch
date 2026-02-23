@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { STUDY_CASES } from '@/lib/study-config';
+import { QuoteHighlighter } from '../QuoteHighlighter';
 
 interface CalibrationModalProps {
     onComplete: (rating: string) => void;
@@ -52,8 +53,8 @@ export function CalibrationModal({ onComplete, onReset }: CalibrationModalProps)
                             <CardContent className="pt-6">
                                 <h4 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">Pane 1: Document Evidence</h4>
                                 <ul className="list-disc pl-5 space-y-2 text-sm">
-                                    {calibrationCase.pane1.evidencePoints.map((pt, i) => (
-                                        <li key={i}>{pt}</li>
+                                    {calibrationCase.pane1?.evidencePoints.map((pt, i) => (
+                                        <li key={i}><QuoteHighlighter text={pt} /></li>
                                     ))}
                                 </ul>
                             </CardContent>
@@ -64,11 +65,11 @@ export function CalibrationModal({ onComplete, onReset }: CalibrationModalProps)
                                 <div className="space-y-4 text-sm">
                                     <div>
                                         <span className="font-semibold block">Hypothesis:</span>
-                                        {calibrationCase.pane2.hypothesis}
+                                        {calibrationCase.pane2?.hypothesis}
                                     </div>
                                     <div>
                                         <span className="font-semibold block">Reasoning:</span>
-                                        {calibrationCase.pane2.reasoning}
+                                        <QuoteHighlighter text={calibrationCase.pane2?.reasoning || ""} />
                                     </div>
                                 </div>
                             </CardContent>

@@ -1,6 +1,6 @@
 import { Source } from '@/types';
 import { OntologyData } from '@/types/ontology';
-import { StudyCase, StudyCaseConfig } from './study-config';
+import { StudyCase, StudyCaseConfig, STUDY_CASES } from './study-config';
 
 /**
  * Generates a list of StudyCases based on the Ghost Nodes present in the provided ontology maps.
@@ -15,6 +15,9 @@ export function generateCasesFromOntology(
 ): StudyCase[] {
     const casesBySource: Record<string, StudyCase[]> = {};
     const allCases: StudyCase[] = [];
+
+    // Include the static cases defined in study-config.ts first
+    const selectedCases: StudyCase[] = [...STUDY_CASES];
 
     // 1. Generate all potential cases grouped by source
     sources.forEach(source => {
@@ -45,6 +48,26 @@ export function generateCasesFromOntology(
                 ? formatExclusionType(node.exclusionType)
                 : "Constitutive Ghost Node";
 
+            // Map the V2 AI output properties. 
+            // Note: Our LLM outputs 'quote' and 'actors', but the UI expects 'text' and 'actorTags'.
+            const mappedEvidenceQuotes = node.evidenceQuotes?.map((eq, index) => ({
+                id: `q-${index}`,
+                text: eq.quote, // Mapped
+                sourceRef: { docId: source.id, section: eq.sourceRef }, // Mapped
+                actorTags: eq.actors || [], // Mapped
+                mechanismTags: []
+            })) || [];
+
+            const mappedRoster = node.roster ? {
+                actorsInSection: node.roster.actors || [],
+                mechanismsInSection: node.roster.mechanisms || []
+            } : undefined;
+
+            const mappedMissingSignals = node.missingSignals?.map((ms, index) => ({
+                id: `ms-${index}`,
+                label: ms.signal
+            })) || [];
+
             sourceCases.push({
                 id: caseId,
                 sourceId: source.id,
@@ -55,7 +78,12 @@ export function generateCasesFromOntology(
                     hypothesis,
                     reasoning: node.whyAbsent || "No reasoning provided for this ghost node."
                 },
-                config: { requireReflexivity: true }
+                config: { requireReflexivity: true },
+                // V2 Overrides for mapping
+                evidenceQuotes: mappedEvidenceQuotes.length > 0 ? mappedEvidenceQuotes : undefined,
+                claim: node.claim,
+                roster: mappedRoster,
+                missingSignals: mappedMissingSignals.length > 0 ? mappedMissingSignals : undefined
             });
         });
 
@@ -65,7 +93,6 @@ export function generateCasesFromOntology(
     });
 
     // 2. Select cases to meet requirements (At least 2 per source, Max 10 total)
-    const selectedCases: StudyCase[] = [];
     const sourceIds = Object.keys(casesBySource);
     const MIN_PER_SOURCE = 2;
     const MAX_TOTAL = 10;

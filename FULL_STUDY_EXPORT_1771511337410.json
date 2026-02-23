@@ -1,0 +1,1115 @@
+{
+  "exportTimestamp": "2026-02-19T14:28:57.410Z",
+  "totalRecords": 4,
+  "records": [
+    {
+      "evaluatorCode": "G-Node-001f",
+      "consentGiven": true,
+      "consentTimestamp": 1771458220110,
+      "profile": {
+        "expertiseAreas": [
+          "AI Safety"
+        ],
+        "jurisdictionalFamiliarity": {
+          "eu": 0,
+          "us": 0,
+          "brazil": 2,
+          "india": 0
+        }
+      },
+      "playlist": [
+        "case_1765754719222_ghost-ai-2",
+        "case_1765754719222_ghost-ai-1",
+        "case_1765746824479_ghost-ai-2",
+        "case_1766865829640_ghost-ai-1",
+        "case_1765754719222_ghost-ai-0",
+        "case_1765746824479_ghost-ai-0",
+        "case_1768150402212_ghost-ai-1",
+        "case_1765746824479_ghost-ai-1",
+        "case_1766865829640_ghost-ai-0",
+        "case_1768150402212_ghost-ai-0"
+      ],
+      "currentCaseIndex": 2,
+      "responses": {
+        "case_1765754719222_ghost-ai-2": {
+          "strength": 85,
+          "confidence": "high",
+          "missingRoles": [
+            "standard_setting"
+          ],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "dsfasdfsdegsdagdg",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "3353f8e6",
+          "caseId": "case_1765754719222_ghost-ai-2",
+          "caseIndex": 0,
+          "submittedAt": 1771458262416,
+          "timeOnCaseMs": 0
+        },
+        "case_1765754719222_ghost-ai-1": {
+          "strength": 84,
+          "confidence": null,
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "asdfasfasdasdfg",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "3353f8e6",
+          "caseId": "case_1765754719222_ghost-ai-1",
+          "caseIndex": 1,
+          "submittedAt": 1771458277132,
+          "timeOnCaseMs": 0
+        }
+      },
+      "isComplete": false,
+      "customCases": [
+        {
+          "id": "case_1765746824479_ghost-ai-0",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-0",
+          "title": "EU ai policy governance: Civil Society and Fundamental Rights NGOs",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The text states that risk classification is based on impacts on people’s ‘safety, security, or fundamental rights’ but does not mention independent organizations that usually represent and monitor those rights in EU regulatory processes.\"",
+              "Potential connection to Tiered Compliance Framework: \"The tiered framework allocates obligations based on risk but is presented as a technical design between EU institutions and businesses, with no mention of NGO input on what constitutes ‘high-risk’ for affected communities.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document repeatedly mentions safety, security, and fundamental rights but frames them only as regulatory objectives of EU institutions and compliance burdens for businesses. There is no reference to civil society organizations, advocacy groups, or NGOs as actors in shaping, contesting, or monitoring the AI Act, despite their typical presence in EU fundamental rights debates."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-1",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-1",
+          "title": "EU ai policy governance: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Developers and deployers of AI systems: \"The text focuses on what ‘developers and deployers’ must do—such as building AI governance frameworks—without acknowledging how these practices reshape work processes or require worker consultation.\"",
+              "Potential connection to Businesses and other organizations: \"Businesses are instructed to maintain AI inventories and assess classification, but the document does not mention involving employees or unions in these assessments despite implications for workplace automation and monitoring.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The document addresses ‘business leaders’ and ‘organizations’ but is silent on workers whose labor conditions, surveillance, and job security are likely to be affected by AI deployment and compliance measures. Labor unions and worker representatives, common stakeholders in EU social policy, are not mentioned."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-0",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-0",
+          "title": "Brazil AI policy: Indigenous Peoples and Traditional Communities",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law’s principles list environmental protection and sustainable development but omit any explicit recognition of Indigenous or traditional communities as rights-holders affected by AI-related land use, data extraction, or surveillance.\"",
+              "Potential connection to AI Governance Principles: \"Principles such as equality, non-discrimination, and inclusion are articulated in universal terms but are not operationalized for Indigenous epistemologies, collective rights, or differentiated consultation obligations.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Although the bill refers broadly to environmental protection, sustainable development, and the benefit of humankind, it does not mention Indigenous peoples, quilombola communities, or other traditional populations, nor does it define any consultation or consent mechanisms specific to them in AI governance. The focus remains at a generic level of 'humankind' and 'the human person', erasing differentiated rights and vulnerabilities recognized elsewhere in Brazilian law."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-1",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-1",
+          "title": "Brazil AI policy: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI System Lifecycle: \"Lifecycle obligations emphasize developers, implementers, and supervising humans, but do not specify any role for workers or unions in shaping or contesting AI deployment in workplaces.\"",
+              "Potential connection to AI Governance Principles: \"Labor rights are included at the level of principles, yet no concrete mechanisms or institutional roles are assigned to worker organizations in the governance architecture.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The bill mentions 'respect for labor rights' as a principle but does not identify workers, platform workers, or unions as actors in AI governance, nor does it detail participation, consultation, or co-determination mechanisms regarding automation, algorithmic management, or workplace surveillance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-0",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-0",
+          "title": "Colorado AI policy: Civil Society and Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"The regime is framed as a state–industry arrangement: obligations are placed on a 'DEVELOPER OR DEPLOYER' and exemptions reference private clubs and federal law, without any role for independent advocacy groups in monitoring, complaint handling, or participatory rule-making.\"",
+              "Potential connection to Artificial Intelligence System: \"AI systems are governed through definitions and compliance carve-outs but not through mandated public interest audits or civil society review, suggesting that advocacy organizations are not formally enrolled as monitors of AI behavior.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The document allows developers and deployers to perform 'SELF-TESTING' to identify or prevent discrimination, without specifying any channels through which external advocacy actors can challenge or validate the adequacy of these tests.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The text defines algorithmic discrimination and regulates developers and deployers but does not mention civil rights groups, digital rights organizations, or consumer advocacy bodies as stakeholders in oversight, standard-setting, or enforcement, despite the policy’s explicit focus on protected classes and consumer protection."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-1",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-1",
+          "title": "Colorado AI policy: Workers and Labor Unions Affected by AI Decisions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"Employment is covered as a 'CONSEQUENTIAL DECISION', but the regime addresses this only via consumer-style protections, not via collective bargaining or workplace-specific protections that would explicitly involve workers’ organizations.\"",
+              "Potential connection to Artificial Intelligence System: \"AI-driven decisions in 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' will materially affect workers, yet the text does not differentiate their role or provide mechanisms for worker or union input into how such systems are designed or deployed.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The permission for developers and deployers to conduct 'SELF-TESTING' assumes internal control over risk management, leaving no formal place for labor representatives to negotiate thresholds, uses, or redress processes for AI in employment.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "While 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' is listed as a consequential decision domain, the document speaks only of 'CONSUMERS' and 'INDIVIDUALS' in protected classes; it does not recognize employees, job-seekers, workplace representatives, or labor unions as distinct actors in shaping or contesting AI use in hiring, firing, or workplace management."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-0",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-0",
+          "title": "India AI Policy: Civil Society and Digital Rights Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"The framework is described as an actionable blueprint for ministries, regulators, PSUs, and large enterprises, with no reference to participatory governance or input from civil society groups.\"",
+              "Potential connection to Data Protection and Digital Privacy (DPDP) Act: \"The DPDP Act is framed as elevating consent and fiduciary duties, but no mention is made of rights groups that often monitor and challenge how such duties are interpreted in practice.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document centers ministries, regulatory bodies, PSUs, and large enterprises as implementation targets and references population-scale harm in abstract terms, but does not mention NGOs, advocacy groups, or digital rights organizations that typically contest AI risks, bias, and surveillance in India."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-1",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-1",
+          "title": "India AI Policy: Worker and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"Risk classification is framed around public interest priorities and technical controls but omits employment risks, job displacement, and worker safety concerns.\"",
+              "Potential connection to Lifecycle Controls: \"Lifecycle controls cover data, model, application, and operations, yet social and labor impacts are not mentioned as design or monitoring parameters.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Despite emphasizing rapid AI deployment across sectors like payments, healthcare, agriculture, and education, the document does not discuss impacts on labor, automation, working conditions, or any role for unions or worker associations in governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-2",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-2",
+          "title": "EU ai policy governance: End Users and Affected Individuals as Active Stakeholders",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The Act is described as supporting ‘trustworthy and responsible use of AI systems’ and protecting ‘people’s safety, security, or fundamental rights’, yet the text does not mention any mechanisms through which these people can act or be heard.\"",
+              "Potential connection to Tiered Compliance Framework: \"Risk levels are defined by impacts on individuals, but the document only assigns responsibilities to developers, deployers, and regulators, omitting affected individuals from risk evaluation or feedback loops.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "People in the EU appear only as a passive, aggregate category (‘all AI systems impacting people in the EU’). The document does not recognize them as participatory actors—no mention of complaints mechanisms, redress, consultation, or user co-design—despite the regulation’s explicit grounding in their rights and interests."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-2",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-2",
+          "title": "Brazil AI policy: Civil Society and Grassroots Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law is drafted as a top-down national standard-setting instrument with no explicit provisions for civil society participation in implementation, oversight, or periodic review.\"",
+              "Potential connection to AI Governance Principles: \"Principles like transparency, contestability, justice, and inclusion could be operationalized through civil society oversight, which the text does not mention or institutionalize.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "The text foregrounds the State, generic 'human persons', and productive sectors but does not explicitly reference civil society organizations, digital rights groups, or social movements as participants in monitoring, contesting, or co-producing AI governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        }
+      ]
+    },
+    {
+      "evaluatorCode": "G-nODE-001F",
+      "consentGiven": true,
+      "consentTimestamp": 1771457596238,
+      "profile": {
+        "expertiseAreas": [
+          "Technical Standards (IEEE/ISO)"
+        ],
+        "jurisdictionalFamiliarity": {
+          "eu": 2,
+          "us": 0,
+          "brazil": 2,
+          "india": 4
+        }
+      },
+      "playlist": [
+        "case_1765746824479_ghost-ai-2",
+        "case_1768150402212_ghost-ai-1",
+        "case_1765746824479_ghost-ai-1",
+        "case_1768150402212_ghost-ai-0",
+        "case_1765746824479_ghost-ai-0",
+        "case_1766865829640_ghost-ai-0",
+        "case_1765754719222_ghost-ai-2",
+        "case_1765754719222_ghost-ai-0",
+        "case_1766865829640_ghost-ai-1",
+        "case_1765754719222_ghost-ai-1"
+      ],
+      "currentCaseIndex": 1,
+      "responses": {
+        "case_1765746824479_ghost-ai-2": {
+          "strength": 28,
+          "confidence": "medium",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "AEFAWERWEFRAWERWEFRW",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "7a4e30c6",
+          "caseId": "case_1765746824479_ghost-ai-2",
+          "caseIndex": 0,
+          "submittedAt": 1771457609051,
+          "timeOnCaseMs": 0
+        }
+      },
+      "isComplete": false,
+      "customCases": [
+        {
+          "id": "case_1765746824479_ghost-ai-0",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-0",
+          "title": "EU ai policy governance: Civil Society and Fundamental Rights NGOs",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The text states that risk classification is based on impacts on people’s ‘safety, security, or fundamental rights’ but does not mention independent organizations that usually represent and monitor those rights in EU regulatory processes.\"",
+              "Potential connection to Tiered Compliance Framework: \"The tiered framework allocates obligations based on risk but is presented as a technical design between EU institutions and businesses, with no mention of NGO input on what constitutes ‘high-risk’ for affected communities.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document repeatedly mentions safety, security, and fundamental rights but frames them only as regulatory objectives of EU institutions and compliance burdens for businesses. There is no reference to civil society organizations, advocacy groups, or NGOs as actors in shaping, contesting, or monitoring the AI Act, despite their typical presence in EU fundamental rights debates."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-1",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-1",
+          "title": "EU ai policy governance: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Developers and deployers of AI systems: \"The text focuses on what ‘developers and deployers’ must do—such as building AI governance frameworks—without acknowledging how these practices reshape work processes or require worker consultation.\"",
+              "Potential connection to Businesses and other organizations: \"Businesses are instructed to maintain AI inventories and assess classification, but the document does not mention involving employees or unions in these assessments despite implications for workplace automation and monitoring.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The document addresses ‘business leaders’ and ‘organizations’ but is silent on workers whose labor conditions, surveillance, and job security are likely to be affected by AI deployment and compliance measures. Labor unions and worker representatives, common stakeholders in EU social policy, are not mentioned."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-0",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-0",
+          "title": "Brazil AI policy: Indigenous Peoples and Traditional Communities",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law’s principles list environmental protection and sustainable development but omit any explicit recognition of Indigenous or traditional communities as rights-holders affected by AI-related land use, data extraction, or surveillance.\"",
+              "Potential connection to AI Governance Principles: \"Principles such as equality, non-discrimination, and inclusion are articulated in universal terms but are not operationalized for Indigenous epistemologies, collective rights, or differentiated consultation obligations.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Although the bill refers broadly to environmental protection, sustainable development, and the benefit of humankind, it does not mention Indigenous peoples, quilombola communities, or other traditional populations, nor does it define any consultation or consent mechanisms specific to them in AI governance. The focus remains at a generic level of 'humankind' and 'the human person', erasing differentiated rights and vulnerabilities recognized elsewhere in Brazilian law."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-1",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-1",
+          "title": "Brazil AI policy: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI System Lifecycle: \"Lifecycle obligations emphasize developers, implementers, and supervising humans, but do not specify any role for workers or unions in shaping or contesting AI deployment in workplaces.\"",
+              "Potential connection to AI Governance Principles: \"Labor rights are included at the level of principles, yet no concrete mechanisms or institutional roles are assigned to worker organizations in the governance architecture.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The bill mentions 'respect for labor rights' as a principle but does not identify workers, platform workers, or unions as actors in AI governance, nor does it detail participation, consultation, or co-determination mechanisms regarding automation, algorithmic management, or workplace surveillance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-0",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-0",
+          "title": "Colorado AI policy: Civil Society and Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"The regime is framed as a state–industry arrangement: obligations are placed on a 'DEVELOPER OR DEPLOYER' and exemptions reference private clubs and federal law, without any role for independent advocacy groups in monitoring, complaint handling, or participatory rule-making.\"",
+              "Potential connection to Artificial Intelligence System: \"AI systems are governed through definitions and compliance carve-outs but not through mandated public interest audits or civil society review, suggesting that advocacy organizations are not formally enrolled as monitors of AI behavior.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The document allows developers and deployers to perform 'SELF-TESTING' to identify or prevent discrimination, without specifying any channels through which external advocacy actors can challenge or validate the adequacy of these tests.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The text defines algorithmic discrimination and regulates developers and deployers but does not mention civil rights groups, digital rights organizations, or consumer advocacy bodies as stakeholders in oversight, standard-setting, or enforcement, despite the policy’s explicit focus on protected classes and consumer protection."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-1",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-1",
+          "title": "Colorado AI policy: Workers and Labor Unions Affected by AI Decisions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"Employment is covered as a 'CONSEQUENTIAL DECISION', but the regime addresses this only via consumer-style protections, not via collective bargaining or workplace-specific protections that would explicitly involve workers’ organizations.\"",
+              "Potential connection to Artificial Intelligence System: \"AI-driven decisions in 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' will materially affect workers, yet the text does not differentiate their role or provide mechanisms for worker or union input into how such systems are designed or deployed.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The permission for developers and deployers to conduct 'SELF-TESTING' assumes internal control over risk management, leaving no formal place for labor representatives to negotiate thresholds, uses, or redress processes for AI in employment.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "While 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' is listed as a consequential decision domain, the document speaks only of 'CONSUMERS' and 'INDIVIDUALS' in protected classes; it does not recognize employees, job-seekers, workplace representatives, or labor unions as distinct actors in shaping or contesting AI use in hiring, firing, or workplace management."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-0",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-0",
+          "title": "India AI Policy: Civil Society and Digital Rights Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"The framework is described as an actionable blueprint for ministries, regulators, PSUs, and large enterprises, with no reference to participatory governance or input from civil society groups.\"",
+              "Potential connection to Data Protection and Digital Privacy (DPDP) Act: \"The DPDP Act is framed as elevating consent and fiduciary duties, but no mention is made of rights groups that often monitor and challenge how such duties are interpreted in practice.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document centers ministries, regulatory bodies, PSUs, and large enterprises as implementation targets and references population-scale harm in abstract terms, but does not mention NGOs, advocacy groups, or digital rights organizations that typically contest AI risks, bias, and surveillance in India."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-1",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-1",
+          "title": "India AI Policy: Worker and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"Risk classification is framed around public interest priorities and technical controls but omits employment risks, job displacement, and worker safety concerns.\"",
+              "Potential connection to Lifecycle Controls: \"Lifecycle controls cover data, model, application, and operations, yet social and labor impacts are not mentioned as design or monitoring parameters.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Despite emphasizing rapid AI deployment across sectors like payments, healthcare, agriculture, and education, the document does not discuss impacts on labor, automation, working conditions, or any role for unions or worker associations in governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-2",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-2",
+          "title": "EU ai policy governance: End Users and Affected Individuals as Active Stakeholders",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The Act is described as supporting ‘trustworthy and responsible use of AI systems’ and protecting ‘people’s safety, security, or fundamental rights’, yet the text does not mention any mechanisms through which these people can act or be heard.\"",
+              "Potential connection to Tiered Compliance Framework: \"Risk levels are defined by impacts on individuals, but the document only assigns responsibilities to developers, deployers, and regulators, omitting affected individuals from risk evaluation or feedback loops.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "People in the EU appear only as a passive, aggregate category (‘all AI systems impacting people in the EU’). The document does not recognize them as participatory actors—no mention of complaints mechanisms, redress, consultation, or user co-design—despite the regulation’s explicit grounding in their rights and interests."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-2",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-2",
+          "title": "Brazil AI policy: Civil Society and Grassroots Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law is drafted as a top-down national standard-setting instrument with no explicit provisions for civil society participation in implementation, oversight, or periodic review.\"",
+              "Potential connection to AI Governance Principles: \"Principles like transparency, contestability, justice, and inclusion could be operationalized through civil society oversight, which the text does not mention or institutionalize.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "The text foregrounds the State, generic 'human persons', and productive sectors but does not explicitly reference civil society organizations, digital rights groups, or social movements as participants in monitoring, contesting, or co-producing AI governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        }
+      ]
+    },
+    {
+      "evaluatorCode": "G-NODE-21V",
+      "consentGiven": true,
+      "consentTimestamp": 1771368223195,
+      "profile": {
+        "expertiseAreas": [
+          "AI Governance",
+          "Industry Compliance"
+        ],
+        "jurisdictionalFamiliarity": {
+          "eu": 3,
+          "us": 3,
+          "brazil": 0,
+          "india": 1
+        }
+      },
+      "playlist": [
+        "case_1766865829640_ghost-ai-1",
+        "case_1766865829640_ghost-ai-0",
+        "case_1768150402212_ghost-ai-1",
+        "case_1765754719222_ghost-ai-2",
+        "case_1765746824479_ghost-ai-1",
+        "case_1765754719222_ghost-ai-1",
+        "case_1765754719222_ghost-ai-0",
+        "case_1765746824479_ghost-ai-2",
+        "case_1768150402212_ghost-ai-0",
+        "case_1765746824479_ghost-ai-0"
+      ],
+      "currentCaseIndex": 9,
+      "responses": {
+        "case_1766865829640_ghost-ai-1": {
+          "strength": 23,
+          "confidence": "medium",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1766865829640_ghost-ai-1",
+          "caseIndex": 0,
+          "submittedAt": 1771368268728,
+          "timeOnCaseMs": 0
+        },
+        "case_1766865829640_ghost-ai-0": {
+          "strength": 75,
+          "confidence": "medium",
+          "missingRoles": [
+            "representation"
+          ],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1766865829640_ghost-ai-0",
+          "caseIndex": 1,
+          "submittedAt": 1771368298654,
+          "timeOnCaseMs": 0
+        },
+        "case_1768150402212_ghost-ai-1": {
+          "strength": 76,
+          "confidence": null,
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1768150402212_ghost-ai-1",
+          "caseIndex": 2,
+          "submittedAt": 1771368308775,
+          "timeOnCaseMs": 0
+        },
+        "case_1765754719222_ghost-ai-2": {
+          "strength": 70,
+          "confidence": "medium",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765754719222_ghost-ai-2",
+          "caseIndex": 3,
+          "submittedAt": 1771368326173,
+          "timeOnCaseMs": 0
+        },
+        "case_1765746824479_ghost-ai-1": {
+          "strength": 87,
+          "confidence": "medium",
+          "missingRoles": [
+            "remedy_access"
+          ],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765746824479_ghost-ai-1",
+          "caseIndex": 4,
+          "submittedAt": 1771368345326,
+          "timeOnCaseMs": 0
+        },
+        "case_1765754719222_ghost-ai-1": {
+          "strength": 80,
+          "confidence": "medium",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765754719222_ghost-ai-1",
+          "caseIndex": 5,
+          "submittedAt": 1771368364087,
+          "timeOnCaseMs": 0
+        },
+        "case_1765754719222_ghost-ai-0": {
+          "strength": 76,
+          "confidence": null,
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765754719222_ghost-ai-0",
+          "caseIndex": 6,
+          "submittedAt": 1771368374075,
+          "timeOnCaseMs": 0
+        },
+        "case_1765746824479_ghost-ai-2": {
+          "strength": 84,
+          "confidence": "high",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765746824479_ghost-ai-2",
+          "caseIndex": 7,
+          "submittedAt": 1771368386887,
+          "timeOnCaseMs": 0
+        },
+        "case_1768150402212_ghost-ai-0": {
+          "strength": 75,
+          "confidence": "medium",
+          "missingRoles": [
+            "standard_setting"
+          ],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1768150402212_ghost-ai-0",
+          "caseIndex": 8,
+          "submittedAt": 1771368420206,
+          "timeOnCaseMs": 0
+        },
+        "case_1765746824479_ghost-ai-0": {
+          "strength": 28,
+          "confidence": null,
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "annot update a component (`Router`) while rendering a different component (`OntologyPage`). To locate the bad setState() call inside `OntologyPage`, follow the stack trace as described in https://react.dev/link/setstate-in-render\n\n",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8ee72",
+          "caseId": "case_1765746824479_ghost-ai-0",
+          "caseIndex": 9,
+          "submittedAt": 1771368441607,
+          "timeOnCaseMs": 0
+        }
+      },
+      "isComplete": true,
+      "customCases": [
+        {
+          "id": "case_1765746824479_ghost-ai-0",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-0",
+          "title": "EU ai policy governance: Civil Society and Fundamental Rights NGOs",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The text states that risk classification is based on impacts on people’s ‘safety, security, or fundamental rights’ but does not mention independent organizations that usually represent and monitor those rights in EU regulatory processes.\"",
+              "Potential connection to Tiered Compliance Framework: \"The tiered framework allocates obligations based on risk but is presented as a technical design between EU institutions and businesses, with no mention of NGO input on what constitutes ‘high-risk’ for affected communities.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document repeatedly mentions safety, security, and fundamental rights but frames them only as regulatory objectives of EU institutions and compliance burdens for businesses. There is no reference to civil society organizations, advocacy groups, or NGOs as actors in shaping, contesting, or monitoring the AI Act, despite their typical presence in EU fundamental rights debates."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-1",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-1",
+          "title": "EU ai policy governance: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Developers and deployers of AI systems: \"The text focuses on what ‘developers and deployers’ must do—such as building AI governance frameworks—without acknowledging how these practices reshape work processes or require worker consultation.\"",
+              "Potential connection to Businesses and other organizations: \"Businesses are instructed to maintain AI inventories and assess classification, but the document does not mention involving employees or unions in these assessments despite implications for workplace automation and monitoring.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The document addresses ‘business leaders’ and ‘organizations’ but is silent on workers whose labor conditions, surveillance, and job security are likely to be affected by AI deployment and compliance measures. Labor unions and worker representatives, common stakeholders in EU social policy, are not mentioned."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-0",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-0",
+          "title": "Brazil AI policy: Indigenous Peoples and Traditional Communities",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law’s principles list environmental protection and sustainable development but omit any explicit recognition of Indigenous or traditional communities as rights-holders affected by AI-related land use, data extraction, or surveillance.\"",
+              "Potential connection to AI Governance Principles: \"Principles such as equality, non-discrimination, and inclusion are articulated in universal terms but are not operationalized for Indigenous epistemologies, collective rights, or differentiated consultation obligations.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Although the bill refers broadly to environmental protection, sustainable development, and the benefit of humankind, it does not mention Indigenous peoples, quilombola communities, or other traditional populations, nor does it define any consultation or consent mechanisms specific to them in AI governance. The focus remains at a generic level of 'humankind' and 'the human person', erasing differentiated rights and vulnerabilities recognized elsewhere in Brazilian law."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-1",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-1",
+          "title": "Brazil AI policy: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI System Lifecycle: \"Lifecycle obligations emphasize developers, implementers, and supervising humans, but do not specify any role for workers or unions in shaping or contesting AI deployment in workplaces.\"",
+              "Potential connection to AI Governance Principles: \"Labor rights are included at the level of principles, yet no concrete mechanisms or institutional roles are assigned to worker organizations in the governance architecture.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The bill mentions 'respect for labor rights' as a principle but does not identify workers, platform workers, or unions as actors in AI governance, nor does it detail participation, consultation, or co-determination mechanisms regarding automation, algorithmic management, or workplace surveillance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-0",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-0",
+          "title": "Colorado AI policy: Civil Society and Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"The regime is framed as a state–industry arrangement: obligations are placed on a 'DEVELOPER OR DEPLOYER' and exemptions reference private clubs and federal law, without any role for independent advocacy groups in monitoring, complaint handling, or participatory rule-making.\"",
+              "Potential connection to Artificial Intelligence System: \"AI systems are governed through definitions and compliance carve-outs but not through mandated public interest audits or civil society review, suggesting that advocacy organizations are not formally enrolled as monitors of AI behavior.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The document allows developers and deployers to perform 'SELF-TESTING' to identify or prevent discrimination, without specifying any channels through which external advocacy actors can challenge or validate the adequacy of these tests.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The text defines algorithmic discrimination and regulates developers and deployers but does not mention civil rights groups, digital rights organizations, or consumer advocacy bodies as stakeholders in oversight, standard-setting, or enforcement, despite the policy’s explicit focus on protected classes and consumer protection."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-1",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-1",
+          "title": "Colorado AI policy: Workers and Labor Unions Affected by AI Decisions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"Employment is covered as a 'CONSEQUENTIAL DECISION', but the regime addresses this only via consumer-style protections, not via collective bargaining or workplace-specific protections that would explicitly involve workers’ organizations.\"",
+              "Potential connection to Artificial Intelligence System: \"AI-driven decisions in 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' will materially affect workers, yet the text does not differentiate their role or provide mechanisms for worker or union input into how such systems are designed or deployed.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The permission for developers and deployers to conduct 'SELF-TESTING' assumes internal control over risk management, leaving no formal place for labor representatives to negotiate thresholds, uses, or redress processes for AI in employment.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "While 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' is listed as a consequential decision domain, the document speaks only of 'CONSUMERS' and 'INDIVIDUALS' in protected classes; it does not recognize employees, job-seekers, workplace representatives, or labor unions as distinct actors in shaping or contesting AI use in hiring, firing, or workplace management."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-0",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-0",
+          "title": "India AI Policy: Civil Society and Digital Rights Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"The framework is described as an actionable blueprint for ministries, regulators, PSUs, and large enterprises, with no reference to participatory governance or input from civil society groups.\"",
+              "Potential connection to Data Protection and Digital Privacy (DPDP) Act: \"The DPDP Act is framed as elevating consent and fiduciary duties, but no mention is made of rights groups that often monitor and challenge how such duties are interpreted in practice.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document centers ministries, regulatory bodies, PSUs, and large enterprises as implementation targets and references population-scale harm in abstract terms, but does not mention NGOs, advocacy groups, or digital rights organizations that typically contest AI risks, bias, and surveillance in India."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-1",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-1",
+          "title": "India AI Policy: Worker and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"Risk classification is framed around public interest priorities and technical controls but omits employment risks, job displacement, and worker safety concerns.\"",
+              "Potential connection to Lifecycle Controls: \"Lifecycle controls cover data, model, application, and operations, yet social and labor impacts are not mentioned as design or monitoring parameters.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Despite emphasizing rapid AI deployment across sectors like payments, healthcare, agriculture, and education, the document does not discuss impacts on labor, automation, working conditions, or any role for unions or worker associations in governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-2",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-2",
+          "title": "EU ai policy governance: End Users and Affected Individuals as Active Stakeholders",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The Act is described as supporting ‘trustworthy and responsible use of AI systems’ and protecting ‘people’s safety, security, or fundamental rights’, yet the text does not mention any mechanisms through which these people can act or be heard.\"",
+              "Potential connection to Tiered Compliance Framework: \"Risk levels are defined by impacts on individuals, but the document only assigns responsibilities to developers, deployers, and regulators, omitting affected individuals from risk evaluation or feedback loops.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "People in the EU appear only as a passive, aggregate category (‘all AI systems impacting people in the EU’). The document does not recognize them as participatory actors—no mention of complaints mechanisms, redress, consultation, or user co-design—despite the regulation’s explicit grounding in their rights and interests."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-2",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-2",
+          "title": "Brazil AI policy: Civil Society and Grassroots Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law is drafted as a top-down national standard-setting instrument with no explicit provisions for civil society participation in implementation, oversight, or periodic review.\"",
+              "Potential connection to AI Governance Principles: \"Principles like transparency, contestability, justice, and inclusion could be operationalized through civil society oversight, which the text does not mention or institutionalize.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "The text foregrounds the State, generic 'human persons', and productive sectors but does not explicitly reference civil society organizations, digital rights groups, or social movements as participants in monitoring, contesting, or co-producing AI governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        }
+      ]
+    },
+    {
+      "evaluatorCode": "G-NODE-23R",
+      "consentGiven": true,
+      "consentTimestamp": 1771363856428,
+      "profile": {
+        "expertiseAreas": [
+          "Technical Standards (IEEE/ISO)"
+        ],
+        "jurisdictionalFamiliarity": {
+          "eu": 3,
+          "us": 3,
+          "brazil": 4,
+          "india": 2
+        }
+      },
+      "playlist": [
+        "case_1766865829640_ghost-ai-1",
+        "case_1765754719222_ghost-ai-0",
+        "case_1768150402212_ghost-ai-1",
+        "case_1765754719222_ghost-ai-2",
+        "case_1768150402212_ghost-ai-0",
+        "case_1765746824479_ghost-ai-1",
+        "case_1765754719222_ghost-ai-1",
+        "case_1766865829640_ghost-ai-0",
+        "case_1765746824479_ghost-ai-2",
+        "case_1765746824479_ghost-ai-0"
+      ],
+      "currentCaseIndex": 1,
+      "responses": {
+        "case_1766865829640_ghost-ai-1": {
+          "strength": 22,
+          "confidence": "medium",
+          "missingRoles": [],
+          "missingRolesOther": "",
+          "isUncertain": false,
+          "reflexivity": "dfasffasfasfasfasdfasfasfgsdgsdfgsdfgsdsdgg",
+          "studyId": "v5.0-hybrid",
+          "evaluatorId": "41f8eeac",
+          "caseId": "case_1766865829640_ghost-ai-1",
+          "caseIndex": 0,
+          "submittedAt": 1771363883985,
+          "timeOnCaseMs": 0
+        }
+      },
+      "isComplete": false,
+      "customCases": [
+        {
+          "id": "case_1765746824479_ghost-ai-0",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-0",
+          "title": "EU ai policy governance: Civil Society and Fundamental Rights NGOs",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The text states that risk classification is based on impacts on people’s ‘safety, security, or fundamental rights’ but does not mention independent organizations that usually represent and monitor those rights in EU regulatory processes.\"",
+              "Potential connection to Tiered Compliance Framework: \"The tiered framework allocates obligations based on risk but is presented as a technical design between EU institutions and businesses, with no mention of NGO input on what constitutes ‘high-risk’ for affected communities.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document repeatedly mentions safety, security, and fundamental rights but frames them only as regulatory objectives of EU institutions and compliance burdens for businesses. There is no reference to civil society organizations, advocacy groups, or NGOs as actors in shaping, contesting, or monitoring the AI Act, despite their typical presence in EU fundamental rights debates."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-1",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-1",
+          "title": "EU ai policy governance: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Developers and deployers of AI systems: \"The text focuses on what ‘developers and deployers’ must do—such as building AI governance frameworks—without acknowledging how these practices reshape work processes or require worker consultation.\"",
+              "Potential connection to Businesses and other organizations: \"Businesses are instructed to maintain AI inventories and assess classification, but the document does not mention involving employees or unions in these assessments despite implications for workplace automation and monitoring.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The document addresses ‘business leaders’ and ‘organizations’ but is silent on workers whose labor conditions, surveillance, and job security are likely to be affected by AI deployment and compliance measures. Labor unions and worker representatives, common stakeholders in EU social policy, are not mentioned."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-0",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-0",
+          "title": "Brazil AI policy: Indigenous Peoples and Traditional Communities",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law’s principles list environmental protection and sustainable development but omit any explicit recognition of Indigenous or traditional communities as rights-holders affected by AI-related land use, data extraction, or surveillance.\"",
+              "Potential connection to AI Governance Principles: \"Principles such as equality, non-discrimination, and inclusion are articulated in universal terms but are not operationalized for Indigenous epistemologies, collective rights, or differentiated consultation obligations.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Although the bill refers broadly to environmental protection, sustainable development, and the benefit of humankind, it does not mention Indigenous peoples, quilombola communities, or other traditional populations, nor does it define any consultation or consent mechanisms specific to them in AI governance. The focus remains at a generic level of 'humankind' and 'the human person', erasing differentiated rights and vulnerabilities recognized elsewhere in Brazilian law."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-1",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-1",
+          "title": "Brazil AI policy: Workers and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI System Lifecycle: \"Lifecycle obligations emphasize developers, implementers, and supervising humans, but do not specify any role for workers or unions in shaping or contesting AI deployment in workplaces.\"",
+              "Potential connection to AI Governance Principles: \"Labor rights are included at the level of principles, yet no concrete mechanisms or institutional roles are assigned to worker organizations in the governance architecture.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "The bill mentions 'respect for labor rights' as a principle but does not identify workers, platform workers, or unions as actors in AI governance, nor does it detail participation, consultation, or co-determination mechanisms regarding automation, algorithmic management, or workplace surveillance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-0",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-0",
+          "title": "Colorado AI policy: Civil Society and Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"The regime is framed as a state–industry arrangement: obligations are placed on a 'DEVELOPER OR DEPLOYER' and exemptions reference private clubs and federal law, without any role for independent advocacy groups in monitoring, complaint handling, or participatory rule-making.\"",
+              "Potential connection to Artificial Intelligence System: \"AI systems are governed through definitions and compliance carve-outs but not through mandated public interest audits or civil society review, suggesting that advocacy organizations are not formally enrolled as monitors of AI behavior.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The document allows developers and deployers to perform 'SELF-TESTING' to identify or prevent discrimination, without specifying any channels through which external advocacy actors can challenge or validate the adequacy of these tests.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The text defines algorithmic discrimination and regulates developers and deployers but does not mention civil rights groups, digital rights organizations, or consumer advocacy bodies as stakeholders in oversight, standard-setting, or enforcement, despite the policy’s explicit focus on protected classes and consumer protection."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1766865829640_ghost-ai-1",
+          "sourceId": "1766865829640",
+          "nodeId": "ghost-ai-1",
+          "title": "Colorado AI policy: Workers and Labor Unions Affected by AI Decisions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Colorado AI Consumer Protection Regime: \"Employment is covered as a 'CONSEQUENTIAL DECISION', but the regime addresses this only via consumer-style protections, not via collective bargaining or workplace-specific protections that would explicitly involve workers’ organizations.\"",
+              "Potential connection to Artificial Intelligence System: \"AI-driven decisions in 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' will materially affect workers, yet the text does not differentiate their role or provide mechanisms for worker or union input into how such systems are designed or deployed.\"",
+              "Potential connection to Developers of High-Risk AI Systems: \"The permission for developers and deployers to conduct 'SELF-TESTING' assumes internal control over risk management, leaving no formal place for labor representatives to negotiate thresholds, uses, or redress processes for AI in employment.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Marginalized",
+            "reasoning": "While 'EMPLOYMENT OR AN EMPLOYMENT OPPORTUNITY' is listed as a consequential decision domain, the document speaks only of 'CONSUMERS' and 'INDIVIDUALS' in protected classes; it does not recognize employees, job-seekers, workplace representatives, or labor unions as distinct actors in shaping or contesting AI use in hiring, firing, or workplace management."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-0",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-0",
+          "title": "India AI Policy: Civil Society and Digital Rights Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"The framework is described as an actionable blueprint for ministries, regulators, PSUs, and large enterprises, with no reference to participatory governance or input from civil society groups.\"",
+              "Potential connection to Data Protection and Digital Privacy (DPDP) Act: \"The DPDP Act is framed as elevating consent and fiduciary duties, but no mention is made of rights groups that often monitor and challenge how such duties are interpreted in practice.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "The document centers ministries, regulatory bodies, PSUs, and large enterprises as implementation targets and references population-scale harm in abstract terms, but does not mention NGOs, advocacy groups, or digital rights organizations that typically contest AI risks, bias, and surveillance in India."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1768150402212_ghost-ai-1",
+          "sourceId": "1768150402212",
+          "nodeId": "ghost-ai-1",
+          "title": "India AI Policy: Worker and Labor Unions",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to AI Governance Framework for India: \"Risk classification is framed around public interest priorities and technical controls but omits employment risks, job displacement, and worker safety concerns.\"",
+              "Potential connection to Lifecycle Controls: \"Lifecycle controls cover data, model, application, and operations, yet social and labor impacts are not mentioned as design or monitoring parameters.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Structurally Excluded",
+            "reasoning": "Despite emphasizing rapid AI deployment across sectors like payments, healthcare, agriculture, and education, the document does not discuss impacts on labor, automation, working conditions, or any role for unions or worker associations in governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765746824479_ghost-ai-2",
+          "sourceId": "1765746824479",
+          "nodeId": "ghost-ai-2",
+          "title": "EU ai policy governance: End Users and Affected Individuals as Active Stakeholders",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to EU Artificial Intelligence Act: \"The Act is described as supporting ‘trustworthy and responsible use of AI systems’ and protecting ‘people’s safety, security, or fundamental rights’, yet the text does not mention any mechanisms through which these people can act or be heard.\"",
+              "Potential connection to Tiered Compliance Framework: \"Risk levels are defined by impacts on individuals, but the document only assigns responsibilities to developers, deployers, and regulators, omitting affected individuals from risk evaluation or feedback loops.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "People in the EU appear only as a passive, aggregate category (‘all AI systems impacting people in the EU’). The document does not recognize them as participatory actors—no mention of complaints mechanisms, redress, consultation, or user co-design—despite the regulation’s explicit grounding in their rights and interests."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        },
+        {
+          "id": "case_1765754719222_ghost-ai-2",
+          "sourceId": "1765754719222",
+          "nodeId": "ghost-ai-2",
+          "title": "Brazil AI policy: Civil Society and Grassroots Advocacy Organizations",
+          "pane1": {
+            "evidencePoints": [
+              "Potential connection to Brazilian AI Law 2338/2023: \"The law is drafted as a top-down national standard-setting instrument with no explicit provisions for civil society participation in implementation, oversight, or periodic review.\"",
+              "Potential connection to AI Governance Principles: \"Principles like transparency, contestability, justice, and inclusion could be operationalized through civil society oversight, which the text does not mention or institutionalize.\""
+            ]
+          },
+          "pane2": {
+            "hypothesis": "Silenced",
+            "reasoning": "The text foregrounds the State, generic 'human persons', and productive sectors but does not explicitly reference civil society organizations, digital rights groups, or social movements as participants in monitoring, contesting, or co-producing AI governance."
+          },
+          "config": {
+            "requireReflexivity": true
+          }
+        }
+      ]
+    }
+  ]
+}

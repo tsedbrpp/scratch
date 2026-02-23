@@ -48,7 +48,7 @@ export async function POST(req: Request) {
             result: completion.choices[0].message.content
         });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Test Prompt Error:", error);
         return NextResponse.json(
             { error: error.message || 'Failed to test prompt' },

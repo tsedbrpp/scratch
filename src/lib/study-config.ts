@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface Pane1Data {
     evidencePoints: string[];
 }
@@ -12,15 +14,60 @@ export interface StudyCaseConfig {
     highlightLogics?: ('market' | 'state' | 'professional' | 'community')[];
 }
 
+export interface EvidenceQuote {
+    id: string;
+    heading?: string;
+    text: string;
+    sourceRef: { docId: string; section?: string; paragraph?: string; };
+    actorTags: string[];
+    mechanismTags: string[];
+}
+
+export interface GhostNodeClaim {
+    summaryBullets: string[];
+    disambiguationPrompts?: { id: string; question: string; options: string[] }[];
+    fullReasoning?: string;
+    discourseThreats?: Array<{
+        dominantDiscourse: string;
+        conflictType: string;
+        explanation: string;
+    }>;
+}
+
+export interface EvaluationConfig {
+    presenceGateQuestion?: string;
+    presenceGateOptions?: string[];
+    disambiguationPrompts?: { id: string; question: string; options: string[] }[];
+    strengthAbsence?: { min: number; max: number; anchors: { value: number; label: string }[] };
+    confidenceOptions?: string[];
+    feasibility?: {
+        min: number; max: number; anchors: { value: number; label: string }[];
+        mechanismGateThreshold: number; mechanismOptions: string[]
+    };
+}
+
 export interface StudyCase {
     id: string; // Internal ID (e.g., "case_01_workers")
     sourceId?: string; // The ID of the policy source this case belongs to
     nodeId: string; // The ID of the node in the ontology graph
     title: string;
     isCalibration?: boolean;
-    pane1: Pane1Data;
-    pane2: Pane2Data;
-    config: StudyCaseConfig;
+    // Legacy V1 fields - kept for compatibility
+    pane1?: Pane1Data;
+    pane2?: Pane2Data;
+    config?: StudyCaseConfig;
+
+    // V2 Ghost Node Fields
+    documentLabel?: string;
+    expectedActor?: string;
+    scope?: { evidenceScopeLabel: string; scopeTooltip: string; };
+    disambiguationBanner?: { title: string; text: string; };
+    evidenceQuotes?: EvidenceQuote[];
+    roster?: { actorsInSection: string[]; mechanismsInSection: string[]; };
+    missingSignals?: { id: string; label: string }[];
+    searchChips?: string[];
+    claim?: GhostNodeClaim;
+    evaluationConfig?: EvaluationConfig;
 }
 
 export type InstitutionalLogicStrength = 'weak' | 'moderate' | 'dominant' | null;
@@ -51,7 +98,47 @@ export interface GhostNodeSurveyResponse {
     isUncertain?: boolean;
     institutionalLogics: InstitutionalLogicsMap;
     reflexivity: string; // Required if config.requireReflexivity is true
+
+    // V2 Assessment Fields
+    absenceGate?: 'yes' | 'no' | 'unsure';
+    selectedQuoteId?: string;
+    disambiguationAnswers?: Record<string, string>;
+    feasibility?: number; // 0-100
+    feasibleMechanisms?: string[];
+    feasibilityNotes?: string;
 }
+
+export const GhostNodeSurveyResponseSchema = z.object({
+    evaluatorId: z.string(),
+    studyId: z.string(),
+    caseId: z.string(),
+    caseIndex: z.number(),
+    startedAt: z.number(),
+    submittedAt: z.number(),
+    timeOnCaseMs: z.number(),
+
+    // Assessment
+    strength: z.number().nullable(),
+    confidence: z.enum(['low', 'medium', 'high']).nullable(),
+    missingRoles: z.array(z.string()),
+    missingRolesOther: z.string().optional(),
+    isUncertain: z.boolean().optional(),
+    institutionalLogics: z.object({
+        market: z.enum(['weak', 'moderate', 'dominant']).nullable(),
+        state: z.enum(['weak', 'moderate', 'dominant']).nullable(),
+        professional: z.enum(['weak', 'moderate', 'dominant']).nullable(),
+        community: z.enum(['weak', 'moderate', 'dominant']).nullable(),
+    }),
+    reflexivity: z.string(),
+
+    // V2 Assessment Fields
+    absenceGate: z.enum(['yes', 'no', 'unsure']).optional(),
+    selectedQuoteId: z.string().optional(),
+    disambiguationAnswers: z.record(z.string(), z.string()).optional(),
+    feasibility: z.number().min(0).max(100).optional(),
+    feasibleMechanisms: z.array(z.string()).optional(),
+    feasibilityNotes: z.string().optional(),
+});
 
 export type SurveyResponseData = Omit<GhostNodeSurveyResponse, 'studyId' | 'evaluatorId' | 'caseId' | 'caseIndex' | 'submittedAt'>;
 
@@ -74,78 +161,4 @@ export interface StudyState {
 
 // --- CONFIGURATION ---
 
-export const STUDY_CASES: StudyCase[] = [
-    {
-        id: "calibration_smes",
-        nodeId: "2", // Assuming "Global South State" is a proxy/placeholder for calibration for now, or we need a real ID. Using '2' as placeholder.
-        title: "Calibration: SMEs in EU AI Act",
-        isCalibration: true,
-        pane1: {
-            evidencePoints: [
-                "Recital 4a: 'SMEs shall be supported...'",
-                "Article 10: 'Compliance burdens must be proportionate...'"
-            ]
-        },
-        pane2: {
-            hypothesis: "Contested Exclusion",
-            reasoning: "SMEs are mentioned frequently but lack enforcement trigger power."
-        },
-        config: {
-            requireReflexivity: true
-        }
-    },
-    {
-        id: "case_01_workers",
-        nodeId: "3", // Placeholder
-        title: "Case 1: Workers & Labor Unions",
-        pane1: {
-            evidencePoints: [
-                "Article 4: 'Providers shall ensure...'",
-                "No mention of 'collective bargaining' or 'union' in risk assessment obligations."
-            ]
-        },
-        pane2: {
-            hypothesis: "Constitutive Ghost Node",
-            reasoning: "The document addresses 'business leaders' and 'organizations' but is silent on workers whose labor conditions, surveillance, and job security are likely to be affected by AI deployment and compliance measures. Labor unions and worker representatives, common stakeholders in EU social policy, are not mentioned."
-        },
-        config: {
-            requireReflexivity: true
-        }
-    },
-    {
-        id: "case_02_environmental",
-        nodeId: "4",
-        title: "Case 2: Environmental NGOs",
-        pane1: {
-            evidencePoints: [
-                "Article 29: 'Environmental impact assessments...'",
-                "Consultation board includes industry representatives."
-            ]
-        },
-        pane2: {
-            hypothesis: "Co-opted Logic",
-            reasoning: "Environmental concerns are framed purely as efficiency metrics rather than sustainability constraints. NGOs are given observer status but no voting rights."
-        },
-        config: {
-            requireReflexivity: true
-        }
-    },
-    {
-        id: "case_03_future",
-        nodeId: "5",
-        title: "Case 3: Future Generations",
-        pane1: {
-            evidencePoints: [
-                "Recital 10: 'Long-term risks...'",
-                "No mechanism for representing future interests."
-            ]
-        },
-        pane2: {
-            hypothesis: "Constitutive Ghost Node",
-            reasoning: "Future generations are the bearer of long-term risks but have no representation in current risk assessment frameworks."
-        },
-        config: {
-            requireReflexivity: true
-        }
-    }
-];
+export const STUDY_CASES: StudyCase[] = [];

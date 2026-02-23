@@ -44,5 +44,5 @@ export function BlindSpotRenderer({ spot, index, onReAnalyze, onMarkAddressed }:
     }
 
     // Fallback to legacy for unknown types
-    return <LegacyBlindSpot text={spot.title || 'Unknown blind spot'} index={index} />;
+    return <LegacyBlindSpot text={(spot as any).title || 'Unknown blind spot'} index={index} />;
 }

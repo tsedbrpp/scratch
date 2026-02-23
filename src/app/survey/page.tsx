@@ -22,6 +22,7 @@ import { DebriefScreen } from "@/components/ontology/research/DebriefScreen";
 // Components
 import { EvaluationInterface } from "@/components/ontology/ConceptDetailsModal";
 import { generateCasesFromOntology } from "@/lib/study-utils";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 
 
@@ -30,6 +31,9 @@ export default function OntologyPage() {
     const { sources } = useSources();
     const [selectedSourceId] = useServerStorage<string>("ontology_selected_source_id", "");
     const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
+
+    // Memoize generated cases for both login and import fallback
+    const generatedCases = useMemo(() => generateCasesFromOntology(sources, ontologyMaps), [sources, ontologyMaps]);
 
     // Research Mode Hook
     const {
@@ -48,7 +52,7 @@ export default function OntologyPage() {
         debugCompleteStudy: researchDebugCompleteStudy, // [NEW]
         restoreSession: researchRestoreSession,
         cases: researchCases
-    } = useResearchMode();
+    } = useResearchMode(generatedCases);
 
 
 
@@ -148,8 +152,6 @@ export default function OntologyPage() {
         downloadAnchorNode.remove();
     };
 
-    // Memoize generated cases for both login and import fallback
-    const generatedCases = useMemo(() => generateCasesFromOntology(sources, ontologyMaps), [sources, ontologyMaps]);
 
 
 
@@ -160,8 +162,7 @@ export default function OntologyPage() {
 
 
 
-
-    const selectedNode = currentOntologyData?.nodes.find(n => n.id === selectedNodeId);
+    const selectedNode = currentOntologyData?.nodes?.find(n => n.id === selectedNodeId);
 
     // [Fix] Ghost Node Fallback
     // If we are locating a node that represents a "Ghost" (missing) actor, it might not exist in the map data.
@@ -214,218 +215,221 @@ export default function OntologyPage() {
 
 
     return (
-        <div className="space-y-8 relative">
+        <ErrorBoundary>
+            <div className="space-y-8 relative">
 
 
-            {/* RESEARCH MODE OVERLAYS */}
-            {/* RESEARCH MODE OVERLAYS */}
-            <EvaluatorLoginDialog
-                isOpen={isLoginOpen}
-                onLogin={async (code, cases) => {
-                    // Try to restore first
-                    const restored = await researchRestoreSession(code);
-                    if (restored) {
-                        toast.success("Welcome back! Previous session restored.");
-                        setIsLoginOpen(false);
-                    } else {
-                        // Start new
-                        researchLogin(code, cases);
-                        toast.success("New session started.");
-                        setIsLoginOpen(false);
-                    }
-                }}
-                generatedCases={generatedCases}
-                // onResume={handleResearchImport} // Removed manual upload from UI
-                isLoading={isResearchLoading}
-                onClose={() => setIsLoginOpen(false)}
-            />
-
-            {showConsent && (
-                <ConsentScreen
-                    onConsent={researchGiveConsent}
-                    onDecline={() => resetStudy()} // Log out/reset if declined
-                />
-            )}
-
-            {showProfile && (
-                <ProfileModal onComplete={researchSaveProfile} />
-            )}
-
-            {showCalibration && (
-                <CalibrationModal onComplete={(rating) => {
-                    if (researchCurrentCase) {
-                        // Map the qualitative rating to a score number for storage
-                        const strengthMap: Record<string, number> = {
-                            'low': 20,
-                            'med': 60,
-                            'high': 90
-                        };
-
-                        researchSubmitResponse(researchCurrentCase.id, {
-                            strength: strengthMap[rating] || 0,
-                            confidence: 'high',
-                            missingRoles: ['calibration'], // Dummy value for calibration
-                            institutionalLogics: {
-                                market: null,
-                                state: null,
-                                professional: null,
-                                community: null
-                            },
-                            reflexivity: "Calibration task completed",
-                            isUncertain: false,
-                            missingRolesOther: "",
-                            startedAt: Date.now(),
-                            timeOnCaseMs: 0
-                        });
-
-                        // Small timeout to ensure state update propagates before switching case?
-                        // React state updates are batched, but nextCase also updates state.
-                        // They usually work fine together in event handlers.
-                        setTimeout(() => {
-                            researchNextCase();
-                        }, 50);
-                    }
-                }}
-                    onReset={async () => {
-                        if (confirm("Reset study progress? This will delete all local data.")) {
-                            await resetStudy();
-                            window.location.reload();
+                {/* RESEARCH MODE OVERLAYS */}
+                {/* RESEARCH MODE OVERLAYS */}
+                <EvaluatorLoginDialog
+                    isOpen={isLoginOpen}
+                    onLogin={async (code, cases) => {
+                        // Try to restore first
+                        const restored = await researchRestoreSession(code, cases);
+                        if (restored) {
+                            toast.success("Welcome back! Previous session restored.");
+                            setIsLoginOpen(false);
+                        } else {
+                            // Start new
+                            researchLogin(code, cases);
+                            toast.success("New session started.");
+                            setIsLoginOpen(false);
                         }
                     }}
+                    generatedCases={generatedCases}
+                    // onResume={handleResearchImport} // Removed manual upload from UI
+                    isLoading={isResearchLoading}
+                    onClose={() => setIsLoginOpen(false)}
                 />
-            )}
 
-            {showDebrief && (
-                <DebriefScreen
-                    studyState={researchState}
-                    onDownload={handleDownloadData}
-                    onClose={async () => {
-                        await resetStudy();
-                        window.location.reload();
+                {showConsent && (
+                    <ConsentScreen
+                        onConsent={researchGiveConsent}
+                        onDecline={() => resetStudy()} // Log out/reset if declined
+                    />
+                )}
+
+                {showProfile && (
+                    <ProfileModal onComplete={researchSaveProfile} />
+                )}
+
+                {showCalibration && (
+                    <CalibrationModal onComplete={(rating) => {
+                        if (researchCurrentCase) {
+                            // Map the qualitative rating to a score number for storage
+                            const strengthMap: Record<string, number> = {
+                                'low': 20,
+                                'med': 60,
+                                'high': 90
+                            };
+
+                            researchSubmitResponse(researchCurrentCase.id, {
+                                strength: strengthMap[rating] || 0,
+                                confidence: 'high',
+                                missingRoles: ['calibration'], // Dummy value for calibration
+                                institutionalLogics: {
+                                    market: null,
+                                    state: null,
+                                    professional: null,
+                                    community: null
+                                },
+                                reflexivity: "Calibration task completed",
+                                isUncertain: false,
+                                missingRolesOther: "",
+                                startedAt: Date.now(),
+                                timeOnCaseMs: 0
+                            });
+
+                            // Small timeout to ensure state update propagates before switching case?
+                            // React state updates are batched, but nextCase also updates state.
+                            // They usually work fine together in event handlers.
+                            setTimeout(() => {
+                                researchNextCase();
+                            }, 50);
+                        }
                     }}
-                />
-            )}
+                        onReset={async () => {
+                            if (confirm("Reset study progress? This will delete all local data.")) {
+                                await resetStudy();
+                                window.location.reload();
+                            }
+                        }}
+                    />
+                )}
+
+                {showDebrief && (
+                    <DebriefScreen
+                        studyState={researchState}
+                        onDownload={handleDownloadData}
+                        onClose={async () => {
+                            await resetStudy();
+                            window.location.reload();
+                        }}
+                    />
+                )}
 
 
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-                        <Network className="h-8 w-8 text-indigo-600" />
-                        Survey & Validation
-                    </h2>
-                </div>
-            </div>
-
-            {/* Welcome Section for New Evaluators */}
-            {!researchState.evaluatorCode && (
-                <Card className="overflow-hidden border-indigo-100 shadow-xl bg-white">
-                    <div className="flex flex-col lg:flex-row">
-                        {/* Image Section */}
-                        <div className="lg:w-1/3 relative min-h-[300px] lg:min-h-full bg-indigo-50">
-                            <Image
-                                src="/surveybkg.png"
-                                alt="Survey Background"
-                                fill
-                                priority
-                                className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-indigo-900/10 mix-blend-multiply"></div>
-                        </div>
-
-                        {/* Content Section */}
-                        <CardContent className="flex-1 pt-8 px-8 pb-8 lg:px-12 lg:pt-12 bg-gradient-to-br from-white to-indigo-50/30">
-                            <div className="max-w-2xl">
-                                <h2 className="text-3xl font-bold text-indigo-950 mb-4 tracking-tight">Ghost Node Validation Study</h2>
-
-                                <p className="text-slate-700 mb-6 leading-relaxed text-lg">
-                                    Thank you for participating. A &ldquo;ghost node&rdquo; is a stakeholder or actor that may be materially relevant to governance but absent from the policy text&apos;s formal roles, rights, obligations, or enforcement pathways.
-                                </p>
-
-                                <div className="space-y-6 mb-10">
-                                    <div className="bg-white/80 rounded-xl p-5 border border-indigo-100 shadow-sm">
-                                        <h4 className="font-bold text-indigo-900 mb-2 uppercase text-xs tracking-widest">To begin:</h4>
-                                        <p className="text-slate-700">
-                                            Enter your <strong>Evaluator Code</strong> to load your assigned cases and start the survey.
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <ul className="space-y-3 text-sm text-slate-600">
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                                <strong>Estimated time:</strong> 30&ndash;60 minutes
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                                Pause & resume later with same code
-                                            </li>
-                                        </ul>
-                                        <ul className="space-y-3 text-sm text-slate-600">
-                                            <li className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                                Best experience on laptop/desktop
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-4 items-center">
-                                    <Button
-                                        onClick={() => setIsLoginOpen(true)}
-                                        size="lg"
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[180px] h-14 text-lg font-bold shadow-lg shadow-indigo-200 transition-all hover:scale-105"
-                                    >
-                                        <PlayCircle className="h-6 w-6 mr-2" />
-                                        Begin Survey
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setIsLoginOpen(true)}
-                                        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 h-14 px-6 font-semibold"
-                                    >
-                                        Resume survey
-                                    </Button>
-                                </div>
-
-                                <div className="mt-12 pt-6 border-t border-indigo-100 text-[13px] text-slate-500 italic">
-                                    If your code isn&apos;t recognized or you have technical issues, contact <a href="mailto:Tod.Sedbrook@bears.unco.edu" className="text-indigo-600 font-bold hover:underline">Tod.Sedbrook@bears.unco.edu</a>.
-                                </div>
-                            </div>
-                        </CardContent>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+                            <Network className="h-8 w-8 text-indigo-600" />
+                            Survey & Validation
+                        </h2>
                     </div>
-                </Card>
-            )}
+                </div>
 
-            <EvaluationInterface
-                selectedNode={effectiveSelectedNode}
-                isActive={
-                    !!selectedNodeId &&
-                    researchState.consentGiven &&
-                    !!researchState.profile &&
-                    !researchCurrentCase?.isCalibration &&
-                    !researchState.isComplete
-                }
-                onClose={() => setSelectedNodeId(null)}
-                researchCurrentCase={researchCurrentCase || undefined}
-                researchResponse={researchCurrentCase ? researchState.responses[researchCurrentCase.id] : undefined}
-                onResearchSubmit={(data) => {
-                    if (researchCurrentCase) {
-                        researchSubmitResponse(researchCurrentCase.id, data);
+                {/* Welcome Section for New Evaluators (also shown after study completion + debrief dismissal) */}
+                {(!researchState.evaluatorCode || (researchState.isComplete && isDebriefDismissed)) && (
+                    <Card className="overflow-hidden border-indigo-100 shadow-xl bg-white">
+                        <div className="flex flex-col lg:flex-row">
+                            {/* Image Section */}
+                            <div className="lg:w-1/3 relative min-h-[300px] lg:min-h-full bg-indigo-50">
+                                <Image
+                                    src="/surveybkg.png"
+                                    alt="Survey Background"
+                                    fill
+                                    priority
+                                    className="object-cover"
+                                />
+                                <div className="absolute inset-0 bg-indigo-900/10 mix-blend-multiply"></div>
+                            </div>
+
+                            {/* Content Section */}
+                            <CardContent className="flex-1 pt-8 px-8 pb-8 lg:px-12 lg:pt-12 bg-gradient-to-br from-white to-indigo-50/30">
+                                <div className="max-w-2xl">
+                                    <h2 className="text-3xl font-bold text-indigo-950 mb-4 tracking-tight">Ghost Node Validation Study</h2>
+
+                                    <p className="text-slate-700 mb-6 leading-relaxed text-lg">
+                                        Thank you for participating. A &ldquo;ghost node&rdquo; is a stakeholder or actor that may be materially relevant to governance but absent from the policy text&apos;s formal roles, rights, obligations, or enforcement pathways.
+                                    </p>
+
+                                    <div className="space-y-6 mb-10">
+                                        <div className="bg-white/80 rounded-xl p-5 border border-indigo-100 shadow-sm">
+                                            <h4 className="font-bold text-indigo-900 mb-2 uppercase text-xs tracking-widest">To begin:</h4>
+                                            <p className="text-slate-700">
+                                                Enter your <strong>Evaluator Code</strong> to load your assigned cases and start the survey.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <ul className="space-y-3 text-sm text-slate-600">
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                                    <strong>Estimated time:</strong> 30&ndash;60 minutes
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                                    Pause & resume later with same code
+                                                </li>
+                                            </ul>
+                                            <ul className="space-y-3 text-sm text-slate-600">
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
+                                                    Best experience on laptop/desktop
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-4 items-center">
+                                        <Button
+                                            onClick={() => setIsLoginOpen(true)}
+                                            size="lg"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[180px] h-14 text-lg font-bold shadow-lg shadow-indigo-200 transition-all hover:scale-105"
+                                        >
+                                            <PlayCircle className="h-6 w-6 mr-2" />
+                                            Begin Survey
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsLoginOpen(true)}
+                                            className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 h-14 px-6 font-semibold"
+                                        >
+                                            Resume survey
+                                        </Button>
+                                    </div>
+
+                                    <div className="mt-12 pt-6 border-t border-indigo-100 text-[13px] text-slate-500 italic">
+                                        If your code isn&apos;t recognized or you have technical issues, contact <a href="mailto:Tod.Sedbrook@bears.unco.edu" className="text-indigo-600 font-bold hover:underline">Tod.Sedbrook@bears.unco.edu</a>.
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </div>
+                    </Card>
+                )}
+
+                <EvaluationInterface
+                    selectedNode={effectiveSelectedNode}
+                    isActive={
+                        !!selectedNodeId &&
+                        researchState.consentGiven &&
+                        !!researchState.profile &&
+                        !researchCurrentCase?.isCalibration &&
+                        !researchState.isComplete
                     }
-                }}
-                onNextCase={handleNextCase}
-                onPrevCase={handlePrevCase}
-                onReset={handleReset}
-                onDebug={researchDebugCompleteStudy}
-                onSave={handleResearchSave}
-                onSuspend={handleSuspend}
-                studyState={researchState}
-                // Pass derived values directly to avoid modal logic complexity
-                currentCaseIndex={researchState.currentCaseIndex}
-                totalCases={researchCases ? researchCases.length : (researchState.playlist?.length || 0)}
-                isLastCase={researchState.playlist && researchState.currentCaseIndex === researchState.playlist.length - 1}
-            />
-        </div>
+                    onClose={() => setSelectedNodeId(null)}
+                    sourceId={researchCurrentCase?.sourceId || selectedSourceId}
+                    researchCurrentCase={researchCurrentCase || undefined}
+                    researchResponse={researchCurrentCase ? researchState.responses[researchCurrentCase.id] : undefined}
+                    onResearchSubmit={(data) => {
+                        if (researchCurrentCase) {
+                            researchSubmitResponse(researchCurrentCase.id, data);
+                        }
+                    }}
+                    onNextCase={handleNextCase}
+                    onPrevCase={handlePrevCase}
+                    onReset={handleReset}
+                    onDebug={researchDebugCompleteStudy}
+                    onSave={handleResearchSave}
+                    onSuspend={handleSuspend}
+                    studyState={researchState}
+                    // Pass derived values directly to avoid modal logic complexity
+                    currentCaseIndex={researchState.currentCaseIndex}
+                    totalCases={researchCases ? researchCases.length : (researchState.playlist?.length || 0)}
+                    isLastCase={researchState.playlist && researchState.currentCaseIndex === researchState.playlist.length - 1}
+                />
+            </div>
+        </ErrorBoundary>
     );
 }

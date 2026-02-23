@@ -4,7 +4,7 @@ import { createErrorResponse } from '@/lib/api-helpers';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { token: string } }
+    { params }: { params: Promise<{ token: string }> }
 ) {
     try {
         const { token } = await params;

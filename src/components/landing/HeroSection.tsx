@@ -1,6 +1,7 @@
 
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
 import { HeroGraph } from "@/components/landing/HeroGraph";
@@ -33,16 +34,19 @@ export function HeroSection() {
                 </div>
                 {/* Replaced Text Title with Branding Image */}
                 <div className="flex justify-center mb-8">
-                    <img
+                    <Image
                         src="/instanttea-logo.png"
                         alt="InstantTea"
+                        width={400} // Approximate width for h-64
+                        height={256} // h-64 equivalent
+                        priority
                         className="h-48 md:h-64 w-auto object-contain animate-in fade-in zoom-in duration-1000 drop-shadow-2xl"
                     />
                 </div>
 
                 <div className="mt-6 space-y-8">
                     <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-6">
-                        <h2 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h2>
+                        <h1 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h1>
                         <p>
                             InstantTea is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly.
                         </p>
@@ -117,9 +121,16 @@ export function HeroSection() {
                             </Button>
                         </Link>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 flex justify-center">
                         <Link href="/LICENSE.txt" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-opacity">
-                            <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" className="h-6" />
+                            <Image
+                                src="https://img.shields.io/badge/License-MIT-yellow.svg"
+                                alt="MIT License"
+                                width={88}
+                                height={24}
+                                unoptimized
+                                className="h-6 w-auto"
+                            />
                         </Link>
                     </div>
                 </div>

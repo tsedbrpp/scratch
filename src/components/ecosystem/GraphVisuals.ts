@@ -166,52 +166,104 @@ export function createNodeObject(node: GraphNode): THREE.Object3D {
 }
 
 export function createLinkGeometry(link: GraphLink) {
-    // Group to hold Tube + (Optional) Particles
+    // Group to hold Tube/Line + (Optional) Particles
     const group = new THREE.Group();
 
-    // Default values for non-analyzed links
-    let color = 0x94A3B8; // Default Slate-400
-    let thickness = 1;
-    let curvature = 0;
-    let opacity = 0.4;
+    // Determine Pattern Type & Base Colors
+    const flowType = link.viz?.flowType || (link as any).flow_type || (link.type === 'ghost' ? 'ghost' : 'logic');
+
+    // Evaluate if we should override with Mediator Score (Only for thickness/particles, colors stay fixed to Flow Legend)
     let classification = 'weak_intermediary';
+    let opacity = 0.5;
+    let thicknessMultiplier = 1;
 
     if (link.analysis) {
-        const rel = link.analysis;
-        classification = rel.classification || getMediatorClassification(rel.mediatorScore);
-        color = PALETTE[classification as keyof typeof PALETTE] || 0x94A3B8;
-        thickness = THICKNESS[classification as keyof typeof THICKNESS] || 2;
-        curvature = CURVATURE[classification as keyof typeof CURVATURE] || 0.2;
-        opacity = classification.includes('intermediary') ? 0.8 : 0.6;
+        classification = link.analysis.classification || getMediatorClassification(link.analysis.mediatorScore);
+        thicknessMultiplier = (THICKNESS[classification as keyof typeof THICKNESS] || 2) * 0.5;
+        // Intermediaries (0-0.5 score) are subtle, Mediators (0.5-1.0) are bold
+        opacity = classification.includes('intermediary') ? 0.4 : 0.8;
     }
 
-    // 1. The Tube (Mesh with Volume for hit-testing)
-    const tubeGeo = new THREE.TubeGeometry(
-        new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1)]),
-        20,
-        thickness * 0.5, // [FIX] Reduced thickness to not obscure nodes
-        8,
-        false
-    );
+    // 1. Core Geometry & Material Selection based on Flow Type
+    let mesh: THREE.Mesh | THREE.Line;
+    let curvature = CURVATURE[classification as keyof typeof CURVATURE] || 0.2;
 
-    const material = new THREE.MeshStandardMaterial({
-        color: color,
-        transparent: true,
-        opacity: Math.max(opacity, 0.6), // [FIX] Balanced opacity
-        emissive: color,
-        emissiveIntensity: 0.4
-    });
+    if (flowType === 'power') {
+        // [SOLID RED TUBE] - Power Flow
+        const tubeColor = 0xEF4444; // Red-500
+        const tubeGeo = new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1)]),
+            20,
+            thicknessMultiplier * 0.5,
+            8,
+            false
+        );
+        const material = new THREE.MeshStandardMaterial({
+            color: tubeColor,
+            transparent: true,
+            opacity: Math.max(opacity, 0.6),
+            emissive: tubeColor,
+            emissiveIntensity: 0.4
+        });
+        mesh = new THREE.Mesh(tubeGeo, material);
+        mesh.userData = { isLinkMesh: true, curvature, flowType: 'power', baseColor: tubeColor };
+        group.add(mesh);
 
-    const mesh = new THREE.Mesh(tubeGeo, material);
-    mesh.userData = { isLinkMesh: true, curvature: curvature };
-    group.add(mesh);
+        // Always attach a particle to Power forces to indicate Direction
+        const particleGeo = new THREE.BufferGeometry();
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
+        particleGeo.setAttribute('offset', new THREE.BufferAttribute(new Float32Array([Math.random()]), 1));
+        const particleMat = new THREE.PointsMaterial({ color: 0xffaaaa, size: Math.max(2, thicknessMultiplier * 1.5), sizeAttenuation: true });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        particles.userData = { isParticleSystem: true, speed: 0.6, isDirected: true };
+        group.add(particles);
 
-    // 2. Particles (if Mediator)
-    if (classification.includes('mediator')) {
-        const particleCount = classification === 'strong_mediator' ? 12 : 5;
+    } else if (flowType === 'ghost') {
+        // [TRANSLUCENT INDIGO TUBE] - Absent/Ghost Flow
+        // Switched from THREE.Line to THREE.TubeGeometry for guaranteed hardware visibility
+        const tubeColor = 0x6366F1; // Indigo-500
+        const tubeGeo = new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1)]),
+            20,
+            Math.max(0.3, thicknessMultiplier * 0.4), // Thinner than power
+            8,
+            false
+        );
+        const ghostMaterial = new THREE.MeshStandardMaterial({
+            color: tubeColor,
+            transparent: true,
+            opacity: Math.max(opacity, 0.4),
+            emissive: tubeColor,
+            emissiveIntensity: 0.6,
+            wireframe: true // Gives a 'virtual' dotted appearance securely
+        });
+        mesh = new THREE.Mesh(tubeGeo, ghostMaterial);
+        mesh.userData = { isLinkMesh: true, curvature: 0.1, flowType: 'ghost', baseColor: tubeColor };
+        group.add(mesh);
+    } else {
+        // [DASHED AMBER LINE] - Logic Flow (Default)
+        const lineColor = 0xF59E0B; // Amber-500
+        const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1)];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const logicMaterial = new THREE.LineDashedMaterial({
+            color: lineColor,
+            linewidth: Math.max(1, thicknessMultiplier),
+            transparent: true,
+            opacity: Math.max(opacity, 0.5),
+            dashSize: 4, // Long dash
+            gapSize: 4   // Standard gap = Dashed
+        });
+        mesh = new THREE.Line(lineGeo, logicMaterial);
+        mesh.userData = { isLinkLine: true, curvature, flowType: 'logic', baseColor: lineColor };
+        group.add(mesh);
+    }
+
+    // 2. Extra Mediator Particles (Only for strong structural Logic/Ghost links, since Power already gets a directional dot)
+    if (classification.includes('mediator') && flowType !== 'power') {
+        const particleCount = classification === 'strong_mediator' ? 8 : 3;
         const particleGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
-        const offsets = new Float32Array(particleCount); // Position along curve (0-1)
+        const offsets = new Float32Array(particleCount);
 
         for (let i = 0; i < particleCount; i++) {
             offsets[i] = Math.random();
@@ -225,7 +277,7 @@ export function createLinkGeometry(link: GraphLink) {
 
         const particleMat = new THREE.PointsMaterial({
             color: classification === 'strong_mediator' ? 0xffea00 : 0xffffff,
-            size: classification === 'strong_mediator' ? 2 : 1,
+            size: classification === 'strong_mediator' ? 2 : 1.5,
             sizeAttenuation: true
         });
 
@@ -250,29 +302,32 @@ export function updateLinkPosition(
     if (!start || !end) return;
 
     const group = object as THREE.Group;
-    let mesh = group.children.find(c => c.userData.isLinkMesh) as THREE.Mesh;
-    const particles = group.children.find(c => c.userData.isParticleSystem) as THREE.Points;
+    let mainGeometryChild = group.children.find(c => c.userData.isLinkMesh || c.userData.isLinkLine) as THREE.Mesh | THREE.Line;
+
+    // Safety check
+    if (!mainGeometryChild) return;
 
     // [NEW] Dynamic Visual Update
-    if (link && link.analysis && mesh) {
+    if (link && link.analysis && mainGeometryChild.userData.baseColor) {
         const rel = link.analysis;
         const classification = rel.classification || getMediatorClassification(rel.mediatorScore);
-        const targetColor = new THREE.Color(PALETTE[classification]);
 
-        // Check if we need to update material
-        const mat = mesh.material as THREE.MeshStandardMaterial;
+        // Ensure flow_type colors (Power/Logic/Ghost) are strictly maintained when overridden by updates
+        const targetColor = new THREE.Color(mainGeometryChild.userData.baseColor);
+
+        // Check if we need to update material properties
+        const mat = mainGeometryChild.material as THREE.Material & { color?: THREE.Color; emissive?: THREE.Color; opacity: number };
         const targetOpacity = Math.max(classification.includes('intermediary') ? 0.9 : 0.7, 0.6);
 
-        if (!mat.color.equals(targetColor) || mat.opacity !== targetOpacity) {
-            mat.color.set(targetColor);
-            mat.emissive.set(targetColor);
+        if (mat.color && (!mat.color.equals(targetColor) || mat.opacity !== targetOpacity)) {
+            mat.color.copy(targetColor);
+            if (mat.emissive) mat.emissive.copy(targetColor);
             mat.opacity = targetOpacity;
 
-            // Also update curvature capability if needed (requires geometry regen)
+            // Update curvature property based on relation strength
             const targetCurvature = CURVATURE[classification as keyof typeof CURVATURE] || 0.2;
-            if (mesh.userData.curvature !== targetCurvature) {
-                mesh.userData.curvature = targetCurvature;
-                // Geometry will be updated below in the curve regeneration
+            if (mainGeometryChild.userData.curvature !== targetCurvature && mainGeometryChild.userData.flowType !== 'ghost') {
+                mainGeometryChild.userData.curvature = targetCurvature;
             }
         }
     }
@@ -282,48 +337,56 @@ export function updateLinkPosition(
     const midV = new THREE.Vector3().addVectors(startV, endV).multiplyScalar(0.5);
 
     // Apply Curvature (Perpendicular offset)
-    if (mesh && mesh.userData.curvature > 0) {
+    if (mainGeometryChild.userData.curvature > 0) {
         const dist = startV.distanceTo(endV);
         const dir = new THREE.Vector3().subVectors(endV, startV).normalize();
 
-        // Arbitrary perpendicular vector (up-ish)
+        // Arbitrary perpendicular vector
         const up = new THREE.Vector3(0, 1, 0);
-        const perp = new THREE.Vector3().crossVectors(dir, up).normalize();
+        let perp = new THREE.Vector3().crossVectors(dir, up);
+        if (perp.lengthSq() < 0.001) {
+            perp = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(1, 0, 0));
+        }
+        perp.normalize();
 
         // Wobble for Strong Mediators
         let wobble = 0;
-        if (mesh.userData.curvature > 0.6) {
+        if (mainGeometryChild.userData.curvature > 0.6) {
             const time = Date.now() * 0.002;
             wobble = Math.sin(time) * 2; // subtle wave
         }
 
-        midV.add(perp.multiplyScalar(dist * mesh.userData.curvature * 0.2 + wobble));
+        midV.add(perp.multiplyScalar(dist * mainGeometryChild.userData.curvature * 0.2 + wobble));
     }
 
     const curve = new THREE.CatmullRomCurve3([startV, midV, endV]);
 
-    // Use dynamic radius based on analysis if available
-    let targetRadius = 0.5; // [FIX] Balanced thickness
+    // Store curve in group for particle animation systems
+    group.userData.curve = curve;
+
+    // Use dynamic radius based on analysis if available (for Tube)
+    let targetRadius = 0.5;
     if (link && link.analysis) {
-        const rel = link.analysis;
-        const classification = rel.classification || getMediatorClassification(rel.mediatorScore);
-        targetRadius = (THICKNESS[classification as keyof typeof THICKNESS] || 2) * 0.5; // [FIX] Match multiplier
+        const classification = link.analysis.classification || getMediatorClassification(link.analysis.mediatorScore);
+        targetRadius = (THICKNESS[classification as keyof typeof THICKNESS] || 2) * 0.5;
     }
 
-    // Update Tube Geometry
-    if (mesh) {
-        // [FIX] Store curve for animation
-        group.userData.curve = curve;
+    // Update the geometry based on the type of WebGL object (Tube vs DashedLine)
+    if (mainGeometryChild.userData.isLinkMesh && mainGeometryChild instanceof THREE.Mesh) {
+        // [SOLID POWER FLOW] Re-generate Tube
+        const newGeo = new THREE.TubeGeometry(curve, 20, targetRadius, 8, false);
+        mainGeometryChild.geometry.dispose();
+        mainGeometryChild.geometry = newGeo;
+    } else if (mainGeometryChild.userData.isLinkLine && mainGeometryChild instanceof THREE.Line) {
+        // [DASHED LOGIC/GHOST FLOW] Sample curve points and generate Line
+        const points = curve.getPoints(20);
+        mainGeometryChild.geometry.dispose();
 
-        const newGeo = new THREE.TubeGeometry(
-            curve,
-            20,
-            targetRadius, // [FIX] Thinner radius
-            8,
-            false
-        );
-        mesh.geometry.dispose();
-        mesh.geometry = newGeo;
+        const newGeo = new THREE.BufferGeometry().setFromPoints(points);
+        mainGeometryChild.geometry = newGeo;
+
+        // Crucial for Dashed/Dotted Materials to render gap intervals natively on GPU
+        mainGeometryChild.computeLineDistances();
     }
 }
 

@@ -1,10 +1,13 @@
-
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Users, GitBranch, Globe } from "lucide-react";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'About | InstantTea',
+    description: 'Learn about InstantTea, an open-source research initiative designed to map, analyze, and critique the complex ecosystems of global AI governance.',
+};
 
 export default function AboutPage() {
     return (

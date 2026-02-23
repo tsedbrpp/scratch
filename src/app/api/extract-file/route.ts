@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
                 const pdfParse = (await import('pdf-parse-fork')).default;
                 const data = await pdfParse(buffer);
                 text = data.text;
-                 
-            } catch (pdfError: unknown) {
+
+            } catch (pdfError: any) {
                 console.error("[PDF PARSE ERROR]", pdfError);
                 return NextResponse.json({ error: "Failed to parse PDF: " + pdfError.message }, { status: 500 });
             }

@@ -64,7 +64,7 @@ export const WorkspaceSelector = () => {
     };
 
     if (isLoading) {
-        return <Button variant="outline" className="w-[200px] justify-between h-9 animate-pulse">Loading...</Button>;
+        return <Button variant="outline" className="w-[200px] justify-between h-9 animate-pulse" suppressHydrationWarning>Loading...</Button>;
     }
 
     return (

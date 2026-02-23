@@ -406,6 +406,11 @@ export function Sidebar() {
         });
     };
 
+    // [Task] Hide completely on survey page
+    if (pathname === '/survey') {
+        return null;
+    }
+
     return (
         <>
             {/* Desktop Sidebar */}

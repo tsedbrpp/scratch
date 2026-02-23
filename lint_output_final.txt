@@ -1,0 +1,4 @@
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\app\api\analyze\route.ts
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\app\ecosystem\page.tsx
+  L270: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx

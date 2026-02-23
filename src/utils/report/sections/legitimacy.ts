@@ -18,7 +18,7 @@ export function renderLegitimacyAnalysis(generator: ReportGeneratorDOCX, legitim
                 const jObj = justification as any;
                 justification = jObj.summary || jObj.text || jObj.description || JSON.stringify(jObj);
             }
-            generator.addText(justification);
+            generator.addText(justification as string);
         }
         generator.addSpacer();
     }

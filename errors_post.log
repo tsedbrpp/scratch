@@ -1,0 +1,31 @@
+scripts/clear-teams.ts(6,30): error TS2307: Cannot find module 'redis' or its corresponding type declarations.
+src/lib/ecosystem-utils.test.ts(1,44): error TS2459: Module '"@/lib/ecosystem-utils"' declares 'EcosystemActor' locally, but it is not exported.
+src/lib/ecosystem-utils.test.ts(4,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(5,5): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(6,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(7,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(10,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(11,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(14,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(15,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(18,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(19,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(22,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(23,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(27,5): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(28,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(42,21): error TS2741: Property 'category' is missing in type '{ name: string; reason: string; role: string; }' but required in type '{ name: string; reason: string; category: string; role?: string | undefined; }'.
+src/lib/ecosystem-utils.test.ts(48,60): error TS2345: Argument of type 'AssemblageAnalysis' is not assignable to parameter of type 'any[]'.
+  Type 'AssemblageAnalysis' is missing the following properties from type 'any[]': length, pop, push, concat, and 35 more.
+src/lib/ecosystem-utils.test.ts(50,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(51,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(52,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(54,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(55,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(56,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(59,9): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/lib/ecosystem-utils.test.ts(71,60): error TS2345: Argument of type 'null' is not assignable to parameter of type 'any[] | undefined'.
+src/lib/ecosystem-utils.test.ts(72,13): error TS2304: Cannot find name 'expect'.
+src/lib/ecosystem-utils.test.ts(73,13): error TS2304: Cannot find name 'expect'.
+src/scripts/test-mediator.ts(2,19): error TS7016: Could not find a declaration file for module 'node-fetch'. 'C:/Users/mount/.gemini/antigravity/scratch/node_modules/node-fetch/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/node-fetch` if it exists or add a new declaration (.d.ts) file containing `declare module 'node-fetch';`

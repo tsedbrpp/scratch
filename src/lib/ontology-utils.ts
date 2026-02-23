@@ -1,4 +1,5 @@
-export const getColorForCategory = (category: string) => {
+export const getColorForCategory = (category?: string) => {
+    if (!category) return "#cbd5e1"; // Formally, missing category falls back to Slate-300
     const lower = category.toLowerCase();
     // Using lighter pastel shades (300/400) for better text readability
     if (lower.includes('core') || lower.includes('concept')) return "#fca5a5"; // Red-300

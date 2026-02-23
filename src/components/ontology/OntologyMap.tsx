@@ -236,7 +236,7 @@ export function OntologyMap({
     // Tooltip for potential connections
     potentialLinkPath
       .append("title")
-      .text((d) => `${d.relationshipType}\n\nEvidence: ${d.evidence}`);
+      .text((d) => `${d.relationshipType}\n\nEvidence: \u201C${d.evidence}\u201D`);
 
     // Nodes
     const node = container

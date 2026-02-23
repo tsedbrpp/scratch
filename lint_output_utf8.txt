@@ -1,0 +1,47 @@
+﻿
+C:\Users\mount\.gemini\antigravity\scratch\src\app\actions\research.ts
+  101:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+C:\Users\mount\.gemini\antigravity\scratch\src\app\survey\page.tsx
+    8:10  warning  'Badge' is defined but never used                                                  @typescript-eslint/no-unused-vars
+   11:31  warning  'Trash2' is defined but never used                                                 @typescript-eslint/no-unused-vars
+   13:10  warning  'Select' is defined but never used                                                 @typescript-eslint/no-unused-vars
+   13:18  warning  'SelectContent' is defined but never used                                          @typescript-eslint/no-unused-vars
+   13:33  warning  'SelectItem' is defined but never used                                             @typescript-eslint/no-unused-vars
+   13:45  warning  'SelectTrigger' is defined but never used                                          @typescript-eslint/no-unused-vars
+   13:60  warning  'SelectValue' is defined but never used                                            @typescript-eslint/no-unused-vars
+   35:13  warning  'isReadOnly' is assigned a value but never used                                    @typescript-eslint/no-unused-vars
+   36:30  warning  'setSelectedSourceId' is assigned a value but never used                           @typescript-eslint/no-unused-vars
+   37:26  warning  'setOntologyMaps' is assigned a value but never used                               @typescript-eslint/no-unused-vars
+   50:22  warning  'researchImportState' is assigned a value but never used                           @typescript-eslint/no-unused-vars
+   63:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   67:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   70:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   75:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  206:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  236:11  warning  'handleWithdraw' is assigned a value but never used                                @typescript-eslint/no-unused-vars
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx
+   1:38  warning  'useRef' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  36:5   warning  'isStatic' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  43:5   warning  'onSave' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  53:12  warning  'showOriginalDetails' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  61:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx:61:13
+  59 |     useEffect(() => {
+  60 |         if (isActive) {
+> 61 |             setActiveTab('explore');
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  62 |             setShowOriginalDetails(false);
+  63 |         }
+  64 |     }, [isActive, nodeId, caseId]);  react-hooks/set-state-in-effect
+
+Γ£û 23 problems (1 error, 22 warnings)
+

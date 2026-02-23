@@ -6,7 +6,7 @@ import { validateWorkspaceAccess } from '@/lib/auth-middleware';
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { teamId: string; userId: string } }
+    { params }: { params: Promise<{ teamId: string; userId: string }> }
 ) {
     try {
         const userId = await getAuthenticatedUserId(req);

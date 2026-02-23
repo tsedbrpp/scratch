@@ -1,0 +1,23 @@
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\app\api\analyze\route.ts
+  L710: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L718: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\app\ecosystem\page.tsx
+  L261: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L265: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L272: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+FILE: C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx
+  L149: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L151: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L153: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L154: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L155: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L163: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L164: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L166: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L167: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L168: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L171: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L171: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L174: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L177: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  L187: Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)

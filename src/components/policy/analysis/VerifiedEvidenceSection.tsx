@@ -82,7 +82,7 @@ export function VerifiedEvidenceSection({ quotes, fullText, sourceTitle }: Verif
                                     </span>
                                 )}
                                 <span className="text-[10px] text-slate-400 font-medium">
-                                    Source: {q.source || q.context || "AI Extracted"}
+                                    Source: {(q as any).source || q.context || "AI Extracted"}
                                 </span>
                             </div>
                         </div>

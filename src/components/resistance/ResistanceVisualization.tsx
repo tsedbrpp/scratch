@@ -55,11 +55,21 @@ export function ResistanceVisualization({ result, monitoredVectors = [], onToggl
         if (!result.lines_of_flight?.scoring_breakdown) return [];
 
         const getScore = (val: any) => {
-            if (!val) return 0;
+            if (!val && val !== 0) return 0;
+
+            // Handle if the AI returned a number instead of a string
+            if (typeof val === 'number') {
+                return Math.max(0, Math.min(3, val));
+            }
+
             const v = String(val).toLowerCase();
-            if (v.includes("high")) return 3;
-            if (v.includes("medium")) return 2;
-            if (v.includes("low")) return 1;
+            if (v.includes("high") || v === "3") return 3;
+            if (v.includes("medium") || v === "2") return 2;
+            if (v.includes("low") || v === "1") return 1;
+
+            const num = parseInt(v, 10);
+            if (!isNaN(num) && num >= 0 && num <= 3) return num;
+
             return 0; // "None" or unknown
         };
 

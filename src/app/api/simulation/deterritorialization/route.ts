@@ -156,7 +156,7 @@ Generate the Deterritorialization Simulation JSON.
       cacheKey: actorHash
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Deterritorialization simulation error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
       cached: false
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Cache retrieval error:', error);
     return NextResponse.json(
       { success: false, error: error.message },

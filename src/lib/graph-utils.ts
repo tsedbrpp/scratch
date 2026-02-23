@@ -64,8 +64,10 @@ export function generateEdges(actors: EcosystemActor[]) {
                 (sType === "Policymaker" && tType === "Policymaker") || // Inter-agency
                 (sType === "Civil Society" && tType === "Civil Society") || // Coalitions
 
-                // Fallback for typed Ghost Nodes if they match above, or explicit broad connectivity?
-                // Ghosts usually have valid types now, so they fall into above buckets.
+                // [FIX] Explicit Ghost Node Connectivity Fallback
+                // If either node is a ghost, explicitly ensure it connects to Policymakers (Exclusion) or other Civil Society (Solidarity)
+                (('isGhost' in source && (source as any).isGhost) && (tType === "Policymaker" || tType === "PrivateTech" || tType === "Civil Society")) ||
+                (('isGhost' in target && (target as any).isGhost) && (sType === "Policymaker" || sType === "PrivateTech" || sType === "Civil Society")) ||
 
                 // Universal Catch-All for "Related" nodes if manually forced? No, stick to type logic for coherence.
                 false

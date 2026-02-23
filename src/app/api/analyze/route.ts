@@ -11,13 +11,14 @@ import {
   generateCacheKey,
   runComprehensiveAnalysis
 } from '@/lib/analysis-service';
-import { AnalysisResult } from '@/types';
+import { AnalysisResult, GhostNode } from '@/types';
 
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v38-audit-metadata'; // Incremented to ensure audit metadata is captured
+const PROMPT_VERSION = 'v41-relax-verbatim';
+// Invalidated to debug ghost node pipeline
 
 /**
  * Determines the user ID to use for cache operations.
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const ctx = await getEffectiveContext(request, userId);
     contextId = ctx.contextId;
   } catch (e: unknown) {
-    if (e.message === 'Access Denied to Workspace') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (e instanceof Error && e.message === 'Access Denied to Workspace') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     throw e;
   }
 
@@ -608,23 +609,91 @@ export async function POST(request: NextRequest) {
     }
     const { analysis, usage } = await performAnalysis(openai, contextId, requestData); // Use ContextId
 
-    // --- GHOST NODE DETECTION FOR ONTOLOGY MODE ---
-    if (analysisMode === 'ontology' && analysis && analysis.nodes) {
+    // --- GHOST NODE DETECTION FOR BOTH MODES (Ontology & Ecosystem) ---
+    const detectedNodes = analysis?.nodes || analysis?.assemblage_network?.nodes;
+    if (detectedNodes && Array.isArray(detectedNodes)) {
       try {
-        console.log('[API] Starting ghost node detection...');
+        console.log(`[API] Starting ghost node detection based on ${detectedNodes.length} discovered entities...`);
         const { analyzeInstitutionalLogicsAndDetectGhostNodes } = await import('@/lib/ghost-nodes');
-        const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, analysis, sourceType);
+
+        // Pass the resolved nodes array so existing actors are considered for similarity checks
+        const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, { nodes: detectedNodes }, sourceType, requestData.expectedActors);
+
         console.log('[API] Ghost node detection completed:', {
           ghostNodeCount: ghostNodesResult.ghostNodes?.length || 0,
           hasInstitutionalLogics: !!ghostNodesResult.institutionalLogics
         });
-        
+
         // Add ghost nodes to the analysis
-        if (ghostNodesResult.ghostNodes && ghostNodesResult.ghostNodes.length > 0) {
-          analysis.nodes = [...analysis.nodes, ...ghostNodesResult.ghostNodes];
+        const nodesToAdd = Array.isArray(ghostNodesResult.ghostNodes) ? ghostNodesResult.ghostNodes : [];
+        if (nodesToAdd.length > 0) {
+          // Send to correct structure based on which mode we're using
+          if (analysisMode === 'assemblage' && analysis.assemblage_network && analysis.assemblage_network.nodes) {
+            analysis.assemblage_network.nodes = [...analysis.assemblage_network.nodes, ...nodesToAdd];
+          }
+          if (analysis.nodes) {
+            analysis.nodes = [...analysis.nodes, ...nodesToAdd];
+          }
+
           analysis.institutionalLogics = ghostNodesResult.institutionalLogics;
           analysis.ghostNodeCount = ghostNodesResult.ghostNodes.length;
+          if (ghostNodesResult.methodologicalNotes) {
+            analysis.methodologicalNotes = ghostNodesResult.methodologicalNotes;
+          }
+          if (ghostNodesResult.userActorsUsed?.length) {
+            analysis.userActorsUsed = ghostNodesResult.userActorsUsed;
+          }
+          if (ghostNodesResult.dominantDiscourses) {
+            analysis.dominantDiscourses = ghostNodesResult.dominantDiscourses;
+          }
           console.log('[API] Added', ghostNodesResult.ghostNodes.length, 'ghost nodes to analysis');
+
+          // Append to unified v2.0 catalog
+          try {
+            const { GhostNodeStore } = await import('@/lib/ghost-node-store');
+            const policyId = requestData.documentId || "default_policy";
+            for (const gn of ghostNodesResult.ghostNodes) {
+              const ghostNodeData = gn as unknown as Record<string, unknown>;
+              const ghostReason = typeof ghostNodeData.ghostReason === 'string' ? ghostNodeData.ghostReason : '';
+              const absenceStrength = typeof ghostNodeData.absenceStrength === 'number' ? ghostNodeData.absenceStrength : (typeof gn.strength === 'number' ? gn.strength : 50);
+              const evidence = Array.isArray(ghostNodeData.evidence)
+                ? ghostNodeData.evidence as { rationale: string; quote?: string; context?: string }[]
+                : [{ rationale: ghostReason }];
+
+              const ghostData = gn as unknown as GhostNode & Record<string, unknown>;
+
+              const fingerprint = GhostNodeStore.generateFingerprint(
+                gn.label,
+                policyId,
+                gn.category ? [gn.category] : []
+              );
+              await GhostNodeStore.createGhostNode(contextId, {
+                fingerprint,
+                policyId,
+                name: gn.label,
+                description: gn.description || ghostReason,
+                category: gn.category,
+                confidence: absenceStrength,
+                evidence: evidence,
+                sourcePipelines: ['ontology_analysis'],
+                aliases: [],
+                relatedThemes: gn.category ? [gn.category] : [],
+                // V2 Fields Passthrough
+                evidenceQuotes: ghostData.evidenceQuotes,
+                claim: ghostData.claim,
+                discourseThreats: ghostData.discourseThreats,
+                roster: ghostData.roster,
+                missingSignals: ghostData.missingSignals,
+                absenceType: ghostData.absenceType,
+                exclusionType: ghostData.exclusionType,
+                institutionalLogics: ghostData.institutionalLogics,
+                potentialConnections: ghostData.potentialConnections
+              });
+            }
+            console.log('[API] Appended ghost nodes to catalog');
+          } catch (catalogErr) {
+            console.error('[API] Failed to append ghost nodes to unified catalog:', catalogErr);
+          }
         }
       } catch (error) {
         console.error('[API] Ghost node detection failed:', error);
@@ -650,8 +719,8 @@ export async function POST(request: NextRequest) {
     console.log(`[ANALYSIS] Request completed successfully in ${Date.now() - startTime} ms`);
 
     // [DEBUG] Log Node Count
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const debugNodes = (analysis as any)?.assemblage_network?.nodes;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const debugNodes = (analysis as Record<string, any>)?.assemblage_network?.nodes;
     if (Array.isArray(debugNodes)) {
       console.log(`[DEBUG_DENSITY] AI Generated Node Count: ${debugNodes.length}`);
     } else {
@@ -659,7 +728,8 @@ export async function POST(request: NextRequest) {
     }
 
     // [FIX] Normalize topology keys (AI sometimes uses 'territorial' or 'territorial_scope' instead of 'scope')
-    const topology = (analysis as any)?.topology_analysis;
+    const topology = (analysis as Record<string, any>)?.topology_analysis;
+    /* eslint-enable @typescript-eslint/no-explicit-any */
     if (topology) {
       const keys = Object.keys(topology);
       console.log(`[DEBUG_TOPOLOGY] Received topology keys: ${keys.join(', ')}`);

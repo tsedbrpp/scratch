@@ -103,8 +103,10 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
 
     // Calculate Presence Live
     const hydratedStages = React.useMemo(() => {
+        const { isActorRelevantToStage } = require('@/lib/ecosystem-utils');
         return STAGES_TEMPLATE.map(stage => {
-            const count = actors.filter(a => stage.match_types.includes(a.type)).length;
+            // Only count actors that are NOT hidden
+            const count = actors.filter(a => !a.isHidden && isActorRelevantToStage(a, stage.id)).length;
             return {
                 ...stage,
                 active_actor_count: count,

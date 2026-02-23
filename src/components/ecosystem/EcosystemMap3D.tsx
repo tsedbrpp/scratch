@@ -214,7 +214,7 @@ export const EcosystemMap3D = ({
                 target: targetId,
                 type: l.type || "Association",
                 weight: 1.0,
-                flow_type: 'logic', // Default
+                flow_type: (l as any).flow_type || 'logic', // Use actual flow type or default
                 confidence: 1.0
             });
 
@@ -222,6 +222,7 @@ export const EcosystemMap3D = ({
                 source: sourceId,
                 target: targetId,
                 type: l.type,
+                flow_type: (l as any).flow_type || 'logic',
                 viz,
                 analysis: l.analysis
             };

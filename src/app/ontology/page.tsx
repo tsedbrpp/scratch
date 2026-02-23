@@ -7,8 +7,9 @@ import { useDemoMode } from "@/hooks/useDemoMode"; // [NEW]
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Network, ArrowRightLeft, Sparkles, Loader2, PlayCircle, Trash2 } from "lucide-react";
+import { Network, ArrowRightLeft, Sparkles, Loader2, PlayCircle, Trash2, Brain, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { OntologyData, OntologyNode, ComparisonResult } from "@/types/ontology";
 import { getColorForCategory } from "@/lib/ontology-utils";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog"; // [NEW]
@@ -121,6 +122,7 @@ export default function OntologyPage() {
     // Credit System
     const { hasCredits, refetch: refetchCredits, loading: creditsLoading } = useCredits();
     const [showTopUp, setShowTopUp] = useState(false);
+    const [customExpectedActors, setCustomExpectedActors] = useState('');
 
     // [Fix] Hydration Mismatch for Radix UI
     const [isMounted, setIsMounted] = useState(false);
@@ -180,9 +182,10 @@ export default function OntologyPage() {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
-                    text: source.extractedText.substring(0, 3000), // Limit text length
+                    text: source.extractedText.substring(0, 100000), // Increase limit to 100k, let backend handle structural parsing
                     analysisMode: 'ontology',
-                    force: true // Force refresh to bypass cache
+                    force: true, // Force refresh to bypass cache
+                    ...(customExpectedActors.trim() && { expectedActors: customExpectedActors }),
                 })
             });
 
@@ -201,7 +204,11 @@ export default function OntologyPage() {
                     summary: data.analysis.summary,
                     nodes: processedNodes,
                     links: data.analysis.links,
-                    ghostNodeCount: data.analysis.ghostNodeCount || 0
+                    ghostNodeCount: data.analysis.ghostNodeCount || 0,
+                    ...(data.analysis.institutionalLogics && { institutionalLogics: data.analysis.institutionalLogics }),
+                    ...(data.analysis.methodologicalNotes && { methodologicalNotes: data.analysis.methodologicalNotes }),
+                    ...(data.analysis.userActorsUsed?.length && { userActorsUsed: data.analysis.userActorsUsed }),
+                    ...(data.analysis.dominantDiscourses?.length && { dominantDiscourses: data.analysis.dominantDiscourses }),
                 };
 
                 // Update the maps record
@@ -504,116 +511,176 @@ export default function OntologyPage() {
                 </div>
             </div>
 
-            {/* Comparison Result View */}
-            {isComparing && comparisonResult && (
-                <ComparisonView result={comparisonResult} sources={sources} />
+            {/* Custom Expected Actors — collapsible textarea */}
+            {!isComparing && (
+                <details className="group">
+                    <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-800 select-none">
+                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                        Custom Expected Actors (optional)
+                    </summary>
+                    <div className="mt-2 max-w-lg">
+                        <textarea
+                            className="w-full h-24 text-sm border border-slate-200 rounded-lg p-3 resize-y focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors"
+                            placeholder={"One expected actor per line, e.g.:\nIndigenous communities\nGig economy workers\nEnvironmental justice organizations"}
+                            value={customExpectedActors}
+                            onChange={(e) => setCustomExpectedActors(e.target.value)}
+                        />
+                        {customExpectedActors.split('\n').filter(s => s.trim()).length > 15 && (
+                            <p className="text-xs text-amber-600 mt-1">
+                                ⚠️ More than 15 actors may reduce detection quality. Consider trimming.
+                            </p>
+                        )}
+                    </div>
+                </details>
             )}
+
+            {/* Post-analysis confirmation of user actors */}
+            {currentOntologyData?.userActorsUsed && currentOntologyData.userActorsUsed.length > 0 && (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Analysis included your custom actors: {currentOntologyData.userActorsUsed.join(', ')}</span>
+                </div>
+            )}
+
+            {/* Primary discourses display */}
+            {currentOntologyData?.dominantDiscourses && currentOntologyData.dominantDiscourses.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {currentOntologyData.dominantDiscourses.map((disc: string, idx: number) => (
+                        <span key={idx} className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                            {disc}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* Comparison Result View */}
+            {
+                isComparing && comparisonResult && (
+                    <ComparisonView result={comparisonResult} sources={sources} />
+                )
+            }
 
             {/* Main Visualization */}
-            {!isComparing && (
-                <>
-                    {currentOntologyData?.summary && (
-                        <Card className="bg-slate-50 border-indigo-100">
-                            <CardContent className="pt-6">
-                                <p className="text-slate-700 leading-relaxed">
-                                    <span className="font-semibold text-indigo-700">Analysis Summary: </span>
-                                    {currentOntologyData.summary}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
+            {
+                !isComparing && (
+                    <>
+                        {currentOntologyData?.summary && (
+                            <Card className="bg-slate-50 border-indigo-100">
+                                <CardContent className="pt-6">
+                                    <p className="text-slate-700 leading-relaxed">
+                                        <span className="font-semibold text-indigo-700">Analysis Summary: </span>
+                                        {currentOntologyData.summary}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                    {/* Ghost Node Statistics */}
-                    {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
-                        <div className="grid grid-cols-3 gap-4">
-                            <Card className="border-blue-200 bg-blue-50">
-                                <CardContent className="pt-6">
-                                    <div className="text-3xl font-bold text-blue-700">
-                                        {currentOntologyData.nodes.filter(n => !n.isGhost).length}
-                                    </div>
-                                    <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
-                                </CardContent>
-                            </Card>
-                            <Card className="border-purple-200 bg-purple-50">
-                                <CardContent className="pt-6">
-                                    <div className="text-3xl font-bold text-purple-700">
-                                        {currentOntologyData.ghostNodeCount}
-                                    </div>
-                                    <div className="text-sm text-purple-600 mt-1">Ghost Nodes</div>
-                                </CardContent>
-                            </Card>
-                            <Card className="border-gray-200 bg-gray-50">
-                                <CardContent className="pt-6">
-                                    <div className="text-3xl font-bold text-gray-700">
-                                        {currentOntologyData.links.length}
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-1">Connections</div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
+                        {/* Ghost Node Statistics */}
+                        {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                            <div className="grid grid-cols-3 gap-4">
+                                <Card className="border-blue-200 bg-blue-50">
+                                    <CardContent className="pt-6">
+                                        <div className="text-3xl font-bold text-blue-700">
+                                            {currentOntologyData.nodes.filter(n => !n.isGhost).length}
+                                        </div>
+                                        <div className="text-sm text-blue-600 mt-1">Visible Actors</div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-purple-200 bg-purple-50">
+                                    <CardContent className="pt-6">
+                                        <div className="text-3xl font-bold text-purple-700">
+                                            {currentOntologyData.ghostNodeCount}
+                                        </div>
+                                        <div className="text-sm text-purple-600 mt-1">Ghost Nodes</div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-gray-200 bg-gray-50">
+                                    <CardContent className="pt-6">
+                                        <div className="text-3xl font-bold text-gray-700">
+                                            {currentOntologyData.links.length}
+                                        </div>
+                                        <div className="text-sm text-gray-600 mt-1">Connections</div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-4">
-                            {/* Ghost Node Toggle */}
-                            {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
-                                <div className="flex flex-col gap-2">
-                                    <div className="text-sm font-medium text-slate-700">View Mode</div>
-                                    <Select value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-                                        <SelectTrigger className="w-[280px] bg-purple-50 border-purple-300">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">
-                                                <div className="flex items-center gap-2">
-                                                    <span>🌐</span>
-                                                    <div>
-                                                        <div className="font-medium">All Actors</div>
-                                                        <div className="text-xs text-slate-500">Show complete network</div>
-                                                    </div>
-                                                </div>
-                                            </SelectItem>
-                                            <SelectItem value="ghost-network">
-                                                <div className="flex items-center gap-2">
-                                                    <span>👻</span>
-                                                    <div>
-                                                        <div className="font-medium">Ghost Network Only ({currentOntologyData.ghostNodeCount})</div>
-                                                        <div className="text-xs text-slate-500">Absent actors + their connections</div>
-                                                    </div>
-                                                </div>
-                                            </SelectItem>
-                                            <SelectItem value="hide-ghosts">
-                                                <div className="flex items-center gap-2">
-                                                    <span>👤</span>
-                                                    <div>
-                                                        <div className="font-medium">Hide Ghost Nodes</div>
-                                                        <div className="text-xs text-slate-500">Only present actors</div>
-                                                    </div>
-                                                </div>
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                        {/* AI Methodology Notes — transparency panel */}
+                        {currentOntologyData && currentOntologyData.methodologicalNotes && (
+                            <details className="group">
+                                <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 hover:bg-amber-100 transition-colors select-none">
+                                    <Brain className="h-4 w-4 text-amber-600" />
+                                    <span>AI Methodology Notes</span>
+                                    <ChevronDown className="h-3.5 w-3.5 ml-auto transition-transform group-open:rotate-180 text-amber-500" />
+                                </summary>
+                                <div className="mt-2 px-4 py-3 text-sm text-amber-800 bg-amber-50/60 border border-amber-100 rounded-lg leading-relaxed">
+                                    {currentOntologyData.methodologicalNotes}
                                 </div>
-                            )}
-                            <OntologyMap
+                            </details>
+                        )}
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="lg:col-span-2 space-y-4">
+                                {/* Ghost Node Toggle */}
+                                {currentOntologyData && currentOntologyData.ghostNodeCount && currentOntologyData.ghostNodeCount > 0 && (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="text-sm font-medium text-slate-700">View Mode</div>
+                                        <Select value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+                                            <SelectTrigger className="w-[280px] bg-purple-50 border-purple-300">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>🌐</span>
+                                                        <div>
+                                                            <div className="font-medium">All Actors</div>
+                                                            <div className="text-xs text-slate-500">Show complete network</div>
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="ghost-network">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>👻</span>
+                                                        <div>
+                                                            <div className="font-medium">Ghost Network Only ({currentOntologyData.ghostNodeCount})</div>
+                                                            <div className="text-xs text-slate-500">Absent actors + their connections</div>
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="hide-ghosts">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>👤</span>
+                                                        <div>
+                                                            <div className="font-medium">Hide Ghost Nodes</div>
+                                                            <div className="text-xs text-slate-500">Only present actors</div>
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                <OntologyMap
+                                    nodes={displayNodes}
+                                    links={displayLinks}
+                                    selectedCategory={selectedCategory}
+                                    onSelectCategory={setSelectedCategory}
+                                    selectedNodeId={selectedNodeId}
+                                    onSelectNode={setSelectedNodeId}
+                                    onNodeDrag={handleNodeDrag}
+                                />
+                            </div>
+
+                            <ConceptList
                                 nodes={displayNodes}
-                                links={displayLinks}
-                                selectedCategory={selectedCategory}
-                                onSelectCategory={setSelectedCategory}
                                 selectedNodeId={selectedNodeId}
                                 onSelectNode={setSelectedNodeId}
-                                onNodeDrag={handleNodeDrag}
                             />
                         </div>
-
-                        <ConceptList
-                            nodes={displayNodes}
-                            selectedNodeId={selectedNodeId}
-                            onSelectNode={setSelectedNodeId}
-                        />
-                    </div>
-                </>
-            )}
+                    </>
+                )
+            }
 
             <MapGallery
                 ontologyMaps={ontologyMaps}
@@ -628,12 +695,18 @@ export default function OntologyPage() {
                 isComparisonResultLoading={isComparisonResultLoading}
             />
 
-            <ConceptDetailsModal
-                selectedNode={effectiveSelectedNode || null}
-                isOpen={!!selectedNodeId}
-                onClose={() => setSelectedNodeId(null)}
-                isStatic={!currentOntologyData}
-            />
-        </div>
+            <Dialog open={!!selectedNodeId} onOpenChange={(open) => !open && setSelectedNodeId(null)}>
+                <DialogContent className="max-w-4xl p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto">
+                    <DialogTitle className="sr-only">Concept Details</DialogTitle>
+                    <ConceptDetailsModal
+                        selectedNode={effectiveSelectedNode || null}
+                        isActive={!!selectedNodeId}
+                        onClose={() => setSelectedNodeId(null)}
+                        isStatic={!currentOntologyData}
+                        sourceId={selectedSourceId}
+                    />
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }

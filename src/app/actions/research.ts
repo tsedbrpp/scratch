@@ -98,7 +98,6 @@ export async function getStudyBackup(evaluatorCode: string): Promise<StudyState 
         const key = `research:backup:${evaluatorCode}`;
         const data = await redis.get(key);
         if (data) {
-            console.log(`[Backup] Found existing session for ${evaluatorCode}`);
             return JSON.parse(data) as StudyState;
         }
     } catch (error) {

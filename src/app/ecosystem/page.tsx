@@ -4,12 +4,15 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { useSources } from "@/hooks/useSources";
 import { EcosystemActor, EcosystemConfiguration, AssemblageAnalysis } from "@/types/ecosystem";
+import { generateGhostId, mergeGhostNodes } from "@/lib/ecosystem-utils";
 import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation"; // [NEW] For Deep Linking
 
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useAssemblageExtraction } from "@/hooks/useAssemblageExtraction";
+import { GhostNode } from "@/types";
 import { useWorkspace } from "@/providers/WorkspaceProvider"; // [NEW] Workspace Context
 
 
@@ -17,6 +20,7 @@ import { useWorkspace } from "@/providers/WorkspaceProvider"; // [NEW] Workspace
 import { ActorList } from "@/components/ecosystem/ActorList";
 import { EcosystemMap } from "@/components/ecosystem/EcosystemMap";
 import { ConfigurationDialog } from "@/components/ecosystem/ConfigurationDialog";
+import { toast } from "sonner";
 import { AssemblagePanel } from "@/components/ecosystem/AssemblagePanel";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +34,7 @@ import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActorCard } from '@/components/ecosystem/ActorCard';
+import { ConceptDetailsModal } from "@/components/ontology/ConceptDetailsModal";
 
 
 
@@ -59,6 +64,8 @@ function EcosystemContent() {
     const [selectedActorId, setSelectedActorId] = useServerStorage<string | null>(selectedActorKey, null);
 
     const [absenceAnalysis, setAbsenceAnalysis] = useServerStorage<AssemblageAnalysis | null>(absenceKey, null);
+    const [ontologyMaps] = useServerStorage<Record<string, import("@/types/ontology").OntologyData>>("ontology_maps", {});
+
 
     // Config Layout State (for dragging)
     const [configLayout, setConfigLayout] = useState<Record<string, { x: number, y: number }>>({});
@@ -88,9 +95,7 @@ function EcosystemContent() {
     const [colorMode, setColorMode] = useState<"type" | "epistemic">("type");
     const [filterType, setFilterType] = useState<EcosystemActor["type"] | "All">("All");
 
-    const filteredActors = useMemo(() => actors.filter(actor =>
-        filterType === "All" ? true : actor.type === filterType
-    ), [actors, filterType]);
+
 
 
 
@@ -227,6 +232,158 @@ function EcosystemContent() {
             setIsExtractionDialogOpen(true);
         }
     }, [searchParams, selectedPolicyId, setSelectedPolicyId, setIsExtractionDialogOpen]);
+
+    // [v2.0 Spec] Fetch Ghost Nodes from Unified Catalog
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [mergedVoices, setMergedVoices] = useState<any[]>([]);
+    const [isGhostNodesLoading, setIsGhostNodesLoading] = useState(!!selectedPolicyId);
+
+    useEffect(() => {
+        if (!selectedPolicyId) {
+            setMergedVoices([]);
+            setIsGhostNodesLoading(false);
+            return;
+        }
+
+        const fetchGhostNodes = async () => {
+            setIsGhostNodesLoading(true);
+            try {
+                const headers: HeadersInit = {};
+                if (currentWorkspaceId) headers['x-workspace-id'] = currentWorkspaceId;
+
+                const res = await fetch(`/api/ghost-nodes/${selectedPolicyId}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.ghostNodes) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        setMergedVoices(data.ghostNodes.map((gn: any) => {
+                            const catalogId = gn.fingerprint || gn.id;
+                            const reason = (gn.evidence && gn.evidence.length > 0) ? gn.evidence[0].rationale : (gn.description || gn.whyAbsent || 'Structurally absent actor');
+                            return {
+                                ...gn, // [NEW] Preserve full object for rich modal display
+                                id: catalogId.startsWith('ghost-') ? catalogId : `ghost-${catalogId}`,
+                                name: gn.name || gn.label,
+                                description: gn.description || '',
+                                type: `Missing Voice (${gn.status || 'proposed'})`,
+                                ghostReason: reason,
+                                // [NEW] Shim for V2 Analytical UI consistency
+                                evidenceQuotes: gn.evidenceQuotes || (gn.evidence && gn.evidence.length > 0 ? gn.evidence.map((e: { quote?: string; rationale: string; context?: string }) => ({
+                                    quote: e.quote || e.rationale,
+                                    actors: [gn.name || gn.label],
+                                    sourceRef: e.context || selectedPolicyId || 'Document Evidence'
+                                })) : []),
+                                claim: gn.claim || {
+                                    summaryBullets: gn.description ? [gn.description] : ["Actor identified as structurally absent from the policy document."],
+                                    disambiguations: [],
+                                    fullReasoning: reason
+                                }
+                            };
+                        }));
+                        console.log(`[Ecosystem] Loaded ${data.ghostNodes.length} unified ghost nodes for policy ${selectedPolicyId}`);
+                    }
+                } else {
+                    console.warn(`[Ecosystem] Ghost Node API returned ${res.status}`);
+                }
+            } catch (err) {
+                console.error("[Ecosystem] Failed to fetch unified ghost nodes:", err);
+            } finally {
+                setIsGhostNodesLoading(false);
+            }
+        };
+        fetchGhostNodes();
+    }, [selectedPolicyId, currentWorkspaceId]); // Keep deps to re-trigger if needed
+
+    // [NEW] Centralized Data Merging
+    const displayedActors = useMemo(() => {
+        return mergeGhostNodes(actors, mergedVoices);
+    }, [actors, mergedVoices]);
+
+    const filteredActors = useMemo(() => displayedActors.filter(actor =>
+        filterType === "All" ? true : actor.type === filterType
+    ), [displayedActors, filterType]);
+
+    // [NEW] Separate useEffect for tracing once actors are loaded
+    useEffect(() => {
+        const traceParam = searchParams.get("trace");
+
+        // Wait until sources are loaded and we have either standard actors or absence data
+        if (traceParam && !isSourcesLoading && !isGhostNodesLoading && (actors.length > 0 || absenceAnalysis || selectedConfigIds.length > 0 || mergedVoices.length > 0)) {
+            // Robust decoding: handle potential double-encoding or raw URI components
+            let decodedTrace = traceParam;
+            try {
+                decodedTrace = decodeURIComponent(traceParam);
+                // Try a second decode just in case it was double encoded by Next router
+                if (decodedTrace.includes('%')) {
+                    decodedTrace = decodeURIComponent(decodedTrace);
+                }
+            } catch (e) {
+                console.warn("Could not decode trace param:", traceParam);
+            }
+
+            // [ROBUST MATCHING] Aggressive normalization for name matching
+            const normalize = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+            const targetNorm = normalize(decodedTrace);
+
+            // Try ID match first (exact)
+            let matchedActor = actors.find(a => a.id === traceParam || a.id === decodedTrace);
+            let matchedGhost = mergedVoices.find(v => v.id === traceParam || v.id === decodedTrace || (v.fingerprint === decodedTrace));
+
+            // Then try normalized name match on standard actors
+            if (!matchedActor && !matchedGhost) {
+                matchedActor = actors.find(a => normalize(a.name) === targetNorm);
+            }
+
+            // Then try normalized name match on Ghost Nodes
+            if (!matchedActor && !matchedGhost) {
+                matchedGhost = mergedVoices.find(v => normalize(v.name) === targetNorm);
+            }
+
+            // Determine the final ID to trace (align with ecosystem-utils 'ghost-' prefix mapping)
+            const finalTraceId = matchedActor?.id || (matchedGhost ? (matchedGhost.id.startsWith('ghost-') ? matchedGhost.id : `ghost-${matchedGhost.id}`) : null);
+            const finalTraceName = matchedActor?.name || matchedGhost?.name;
+
+            if (finalTraceId) {
+                if (finalTraceId !== tracedActorId) {
+                    console.log("Deep Link: Tracing Actor", finalTraceName, "ID:", finalTraceId);
+                    setTracedActorId(finalTraceId);
+                    setIsSidebarOpen(true);
+                    setActiveTab("actors");
+                }
+            } else if (targetNorm.length > 0) {
+                // If we have a target but no match, only toast error if loading is truly finished
+                if (!isGhostNodesLoading && !isSourcesLoading) {
+                    toast.error(`Trace failed: Target [${decodedTrace}] not found.`);
+                    console.warn("Invalid trace parameter:", traceParam, " Decoded:", decodedTrace, " Normalized:", targetNorm);
+                    // Proactively try to log what we HAVE so we can see why it failed
+                    console.log("[Ecosystem] Available actors:", actors.length, "Available Ghosts:", mergedVoices.length);
+                }
+            }
+        } else if (!traceParam && tracedActorId) {
+            // Clear trace if URL param is removed
+            setTracedActorId(null);
+        }
+    }, [searchParams, actors, isSourcesLoading, isGhostNodesLoading, tracedActorId, absenceAnalysis, selectedConfigIds, configurations, mergedVoices]);
+
+    // [NEW] Sync tracedActorId state BACK to the URL for shareability and state consistency
+    useEffect(() => {
+        if (!mounted) return;
+
+        const currentTrace = searchParams.get("trace");
+        const targetName = tracedActorId ? (displayedActors.find(a => a.id === tracedActorId)?.name) : null;
+
+        if (tracedActorId && targetName) {
+            if (currentTrace !== targetName) {
+                const params = new URLSearchParams(window.location.search);
+                params.set("trace", targetName); // URLSearchParams handles encoding
+                router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+            }
+        } else if (!tracedActorId && currentTrace) {
+            const params = new URLSearchParams(window.location.search);
+            params.delete("trace");
+            router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+        }
+    }, [tracedActorId, displayedActors, searchParams, router, mounted]);
+
 
     // Handlers
 
@@ -391,23 +548,73 @@ function EcosystemContent() {
         <div className="flex flex-col h-full gap-4 relative isolate">
             {/* [NEW] Centered Actor Detail Modal */}
             <Dialog open={!!selectedActorId} onOpenChange={(open) => !open && setSelectedActorId(null)}>
-                <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Actor Details</DialogTitle>
-                        <DialogDescription>
-                            Examining actor properties and assemblage memberships.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {selectedActorId && actors.find(a => a.id === selectedActorId) && (
-                        <ActorCard
-                            actor={actors.find(a => a.id === selectedActorId)!}
-                            isSelected={true}
-                            isGroupSelected={selectedForGrouping.includes(selectedActorId)}
-                            onSelect={() => { }} // No-op in modal
-                            onToggleGroupSelection={() => handleListSelectionToggle(selectedActorId)}
-                            configurations={configurations}
-                        />
-                    )}
+                <DialogContent className={cn(
+                    "max-h-[90vh] overflow-y-auto border-none bg-transparent shadow-none p-0",
+                    selectedActorId?.startsWith('ghost-') || mergedVoices.find(v => v.id === selectedActorId)
+                        ? "sm:max-w-4xl"
+                        : "sm:max-w-md"
+                )}>
+                    {selectedActorId && (() => {
+                        const standardActor = actors.find(a => a.id === selectedActorId);
+                        const ghostNode = mergedVoices.find(v => v.id === selectedActorId);
+
+                        /* eslint-disable @typescript-eslint/no-explicit-any */
+                        if (ghostNode || (standardActor && (standardActor.source === 'absence_fill' || (standardActor as any).isGhost))) {
+                            const rawNode = ghostNode || standardActor;
+
+                            // [NEW] Robust shim for V2 UI components in the modal
+                            const node = {
+                                ...rawNode,
+                                claim: (rawNode as any).claim || {
+                                    fullReasoning: (rawNode as any).rationale || (rawNode as any).whyAbsent || (rawNode as any).description || 'No rationale available.'
+                                },
+                                evidenceQuotes: (rawNode as any).evidenceQuotes || ((rawNode as any).evidence && (rawNode as any).evidence.length > 0 ? (rawNode as any).evidence.map((e: any) => ({
+                                    quote: e.quote || e.rationale,
+                                    actors: [rawNode!.name || (rawNode as any).label],
+                                    sourceRef: e.context || selectedPolicyId || 'Document Evidence'
+                                })) : [])
+                            };
+
+                            return (
+                                <ConceptDetailsModal
+                                    selectedNode={{
+                                        id: node!.id,
+                                        label: node!.name,
+                                        category: "Actor",
+                                        isGhost: true,
+                                        ...node
+                                    } as any}
+                                    isActive={true}
+                                    onClose={() => setSelectedActorId(null)}
+                                    sourceId={selectedPolicyId || undefined}
+                                />
+                            );
+                        }
+                        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+                        if (standardActor) {
+                            return (
+                                <div className="bg-white rounded-lg p-6 pt-12 relative overflow-hidden">
+                                    <DialogHeader className="mb-4">
+                                        <DialogTitle>Actor Details</DialogTitle>
+                                        <DialogDescription>
+                                            Examining actor properties and assemblage memberships.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <ActorCard
+                                        actor={standardActor}
+                                        isSelected={true}
+                                        isGroupSelected={selectedForGrouping.includes(selectedActorId)}
+                                        onSelect={() => { }}
+                                        onToggleGroupSelection={() => handleListSelectionToggle(selectedActorId)}
+                                        configurations={configurations}
+                                    />
+                                </div>
+                            );
+                        }
+
+                        return null;
+                    })()}
                 </DialogContent>
             </Dialog>
 
@@ -513,30 +720,18 @@ function EcosystemContent() {
                             tracedId={tracedActorId}
                             onToggleCollapse={handleToggleCollapse}
                             selectedActorId={selectedActorId}
-                            // [FIX] Merge missing_voices from selected assemblage AND global absence analysis
+                            // [FIX] Merge missing_voices from selected assemblage, global absence analysis, AND ontology
                             absenceAnalysis={(() => {
                                 const selectedAnalysis = selectedConfigIds.length === 1
                                     ? configurations.find(c => c.id === selectedConfigIds[0])?.analysisData
                                     : null;
 
-                                // Merge missing_voices from both sources
-                                const mergedVoices = [
-                                    ...(selectedAnalysis?.missing_voices || []),
-                                    ...(absenceAnalysis?.missing_voices || [])
-                                ];
-
-                                // Deduplicate by name
-                                const uniqueVoices = Array.from(
-                                    new Map(mergedVoices.map(v => [v.name, v])).values()
-                                );
-
-                                // Return the most complete analysis object with merged voices
-                                const baseAnalysis = selectedAnalysis || absenceAnalysis;
-                                if (!baseAnalysis) return null;
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const baseAnalysis = selectedAnalysis || absenceAnalysis || { missing_voices: [] } as any;
 
                                 return {
                                     ...baseAnalysis,
-                                    missing_voices: uniqueVoices
+                                    missing_voices: mergedVoices
                                 };
                             })()}
                             onAddConfiguration={(config) => {
@@ -605,7 +800,7 @@ function EcosystemContent() {
                                     <TabsContent value="actors" className="h-full m-0 p-0 border-0 outline-none data-[state=active]:flex flex-col">
                                         <div className="h-full overflow-y-auto">
                                             <ActorList
-                                                actors={actors}
+                                                actors={displayedActors}
                                                 selectedActorId={selectedActorId}
                                                 onSelectActor={setSelectedActorId}
                                                 onClearAll={handleClearAll}

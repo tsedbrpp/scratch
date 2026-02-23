@@ -234,7 +234,7 @@ export default function PromptSettingsPage() {
             } else {
                 updatePromptState(prompt.id, { testOutput: `Error: ${data.error}` });
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             updatePromptState(prompt.id, { testOutput: `Error: ${error.message}` });
         } finally {
             updatePromptState(prompt.id, { isTesting: false });
