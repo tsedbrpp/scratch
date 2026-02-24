@@ -576,18 +576,21 @@ function EcosystemContent() {
                             };
 
                             return (
-                                <ConceptDetailsModal
-                                    selectedNode={{
-                                        id: node!.id,
-                                        label: node!.name,
-                                        category: "Actor",
-                                        isGhost: true,
-                                        ...node
-                                    } as any}
-                                    isActive={true}
-                                    onClose={() => setSelectedActorId(null)}
-                                    sourceId={selectedPolicyId || undefined}
-                                />
+                                <>
+                                    <DialogTitle className="sr-only">Concept Details</DialogTitle>
+                                    <ConceptDetailsModal
+                                        selectedNode={{
+                                            id: node!.id,
+                                            label: node!.name,
+                                            category: "Actor",
+                                            isGhost: true,
+                                            ...node
+                                        } as any}
+                                        isActive={true}
+                                        onClose={() => setSelectedActorId(null)}
+                                        sourceId={selectedPolicyId || undefined}
+                                    />
+                                </>
                             );
                         }
                         /* eslint-enable @typescript-eslint/no-explicit-any */

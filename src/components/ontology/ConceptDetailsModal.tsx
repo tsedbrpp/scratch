@@ -96,6 +96,9 @@ export function EvaluationInterface({
     const [isChallenging, setIsChallenging] = useState(false);
     const [challengedAnalysis, setChallengedAnalysis] = useState<StructuralConcernResult | null>(null);
 
+    const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
+    const [generatedStructuralAnalysis, setGeneratedStructuralAnalysis] = useState<StructuralConcernResult | null>(null);
+
     const handleSearchRequest = (query: string) => {
         setSearchQuery(query);
         setIsSearchDrawerOpen(true);
@@ -111,6 +114,38 @@ export function EvaluationInterface({
             setIsSearchDrawerOpen(true);
         } else {
             console.warn("No sourceId available to open full document");
+        }
+    };
+
+    const handleGenerateAnalysis = async () => {
+        if (!baseCase || !sourceId) return;
+
+        setIsGeneratingAnalysis(true);
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysisMode: 'structural_concern',
+                    actorName: baseCase.title,
+                    title: sourceId,
+                    excerpts: baseCase.evidenceQuotes || [],
+                    context: baseCase.claim?.fullReasoning || ''
+                })
+            });
+
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                setGeneratedStructuralAnalysis(data.analysis);
+            } else {
+                console.error("Failed to analyze:", data.error);
+                alert("Failed to run structural analysis.");
+            }
+        } catch (error) {
+            console.error("Analysis error:", error);
+            alert("Error running analysis.");
+        } finally {
+            setIsGeneratingAnalysis(false);
         }
     };
 
@@ -159,7 +194,9 @@ export function EvaluationInterface({
             setActiveTab(prev => prev !== 'explore' ? 'explore' : prev);
             setHighlightedExcerptIds([]);
             setChallengedAnalysis(null);
+            setGeneratedStructuralAnalysis(null);
             setIsChallenging(false);
+            setIsGeneratingAnalysis(false);
         }
     }, [isActive, nodeId, caseId]);
 
@@ -226,7 +263,7 @@ export function EvaluationInterface({
     const effectiveCase = baseCase ? {
         ...baseCase,
         // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, use the challenged result.
-        structuralAnalysis: challengedAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
+        structuralAnalysis: challengedAnalysis || generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
@@ -443,17 +480,17 @@ export function EvaluationInterface({
                                                     />
 
                                                     {/* [NEW] Structural Concern Deep Mapping */}
-                                                    {effectiveCase.structuralAnalysis && (
-                                                        <StructuralAnalysisCard
-                                                            actorName={effectiveCase.title}
-                                                            excerptCount={effectiveCase.evidenceQuotes.length}
-                                                            result={effectiveCase.structuralAnalysis}
-                                                            onHighlightExcerpts={setHighlightedExcerptIds}
-                                                            onChallenge={handleChallenge}
-                                                            isChallenging={isChallenging}
-                                                            hasBeenChallenged={!!challengedAnalysis}
-                                                        />
-                                                    )}
+                                                    <StructuralAnalysisCard
+                                                        actorName={effectiveCase.title}
+                                                        excerptCount={effectiveCase.evidenceQuotes?.length || 0}
+                                                        result={effectiveCase.structuralAnalysis}
+                                                        onHighlightExcerpts={setHighlightedExcerptIds}
+                                                        onChallenge={handleChallenge}
+                                                        isChallenging={isChallenging}
+                                                        hasBeenChallenged={!!challengedAnalysis}
+                                                        onGenerate={handleGenerateAnalysis}
+                                                        isGenerating={isGeneratingAnalysis}
+                                                    />
                                                 </div>
 
                                                 {/* Right Column (4 cols) */}

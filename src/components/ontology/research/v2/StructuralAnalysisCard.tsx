@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert, CheckCircle2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Loader2, ShieldAlert, CheckCircle2, AlertTriangle, BookOpen, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { StructuralConcernResult } from '@/lib/structural-concern-service';
 
@@ -15,6 +15,8 @@ interface StructuralAnalysisCardProps {
     onChallenge?: () => void;
     isChallenging?: boolean;
     hasBeenChallenged?: boolean;
+    onGenerate?: () => void;
+    isGenerating?: boolean;
 }
 
 export function StructuralAnalysisCard({
@@ -24,7 +26,9 @@ export function StructuralAnalysisCard({
     onHighlightExcerpts,
     onChallenge,
     isChallenging,
-    hasBeenChallenged
+    hasBeenChallenged,
+    onGenerate,
+    isGenerating
 }: StructuralAnalysisCardProps) {
     const [hoveredClaimIdx, setHoveredClaimIdx] = useState<number | null>(null);
 
@@ -39,6 +43,40 @@ export function StructuralAnalysisCard({
     };
 
     if (!result) {
+        if (onGenerate) {
+            return (
+                <Card className="border border-slate-200 shadow-sm mt-6 overflow-hidden bg-white">
+                    <CardHeader className="pb-4 border-b bg-slate-50/80">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-indigo-600" />
+                                Structural Concern Mapping
+                            </CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-8 flex flex-col items-center justify-center text-center">
+                        <Brain className="h-8 w-8 text-slate-300 mb-3" />
+                        <h4 className="text-sm font-semibold text-slate-700 mb-1">No Structural Analysis Available</h4>
+                        <p className="text-xs text-slate-500 mb-4 max-w-xs">
+                            Generate an AI analysis to see if this actor's absence is a structural concern based on the provided excerpts.
+                        </p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                            onClick={onGenerate}
+                            disabled={isGenerating}
+                        >
+                            {isGenerating ? (
+                                <><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Analyzing Excerpts...</>
+                            ) : (
+                                <><Brain className="h-3 w-3 mr-2" /> Run Structural Analysis</>
+                            )}
+                        </Button>
+                    </CardContent>
+                </Card>
+            );
+        }
         return null;
     }
 
