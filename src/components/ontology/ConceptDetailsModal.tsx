@@ -150,7 +150,7 @@ export function EvaluationInterface({
     };
 
     const handleChallenge = async () => {
-        if (!researchCurrentCase || !sourceId) return;
+        if (!baseCase || !sourceId) return;
 
         setIsChallenging(true);
         try {
@@ -159,10 +159,10 @@ export function EvaluationInterface({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     analysisMode: 'structural_concern',
-                    actorName: researchCurrentCase.title,
+                    actorName: baseCase.title,
                     title: sourceId,
-                    excerpts: baseCase.evidenceQuotes,
-                    context: researchCurrentCase.claim?.fullReasoning || '',
+                    excerpts: baseCase.evidenceQuotes || [],
+                    context: baseCase.claim?.fullReasoning || baseCase.ghostReason || '',
                     challengeMode: true // <-- Trigger the anti-structural concern prompt
                 })
             });
