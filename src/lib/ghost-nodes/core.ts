@@ -153,7 +153,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 { role: "user", content: pass1Prompt },
             ],
             response_format: { type: "json_object" },
-            max_tokens: 1500,
+            max_tokens: 8000,
         });
 
         let pass1Data;
