@@ -93,9 +93,6 @@ export function EvaluationInterface({
 
     // [New] Highlighted excerpts state for hover
     const [highlightedExcerptIds, setHighlightedExcerptIds] = useState<string[]>([]);
-    const [isChallenging, setIsChallenging] = useState(false);
-    const [challengedAnalysis, setChallengedAnalysis] = useState<StructuralConcernResult | null>(null);
-
     const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
     const [generatedStructuralAnalysis, setGeneratedStructuralAnalysis] = useState<StructuralConcernResult | null>(null);
 
@@ -149,41 +146,6 @@ export function EvaluationInterface({
         }
     };
 
-    const handleChallenge = async () => {
-        if (!baseCase || !sourceId) return;
-
-        setIsChallenging(true);
-        try {
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    analysisMode: 'structural_concern',
-                    actorName: baseCase.title,
-                    title: sourceId,
-                    excerpts: baseCase.evidenceQuotes || [],
-                    context: baseCase.claim?.fullReasoning || baseCase.ghostReason || '',
-                    challengeMode: true // <-- Trigger the anti-structural concern prompt
-                })
-            });
-
-            const data = await response.json();
-            if (data.success && data.analysis) {
-                setChallengedAnalysis(data.analysis.structural_concern || data.analysis);
-            } else {
-                console.error("Failed to challenge:", data.error);
-                alert("Failed to run challenge analysis.");
-            }
-        } catch (error) {
-            console.error("Challenge error:", error);
-            alert("Error running challenge.");
-        } finally {
-            setIsChallenging(false);
-        }
-    };
-
-
-
     // Reset tab when case changes
     const nodeId = selectedNode?.id;
     const caseId = researchCurrentCase?.id;
@@ -193,9 +155,7 @@ export function EvaluationInterface({
             // Only reset if not already 'explore' to avoid unnecessary re-renders
             setActiveTab(prev => prev !== 'explore' ? 'explore' : prev);
             setHighlightedExcerptIds([]);
-            setChallengedAnalysis(null);
             setGeneratedStructuralAnalysis(null);
-            setIsChallenging(false);
             setIsGeneratingAnalysis(false);
         }
     }, [isActive, nodeId, caseId]);
@@ -264,6 +224,7 @@ export function EvaluationInterface({
         ...baseCase,
         // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, display it below.
         structuralAnalysis: generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
+        antiStructuralAnalysis: baseCase.antiStructuralAnalysis || ghostData.antiStructuralAnalysis || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
@@ -484,10 +445,8 @@ export function EvaluationInterface({
                                                         actorName={effectiveCase.title}
                                                         excerptCount={effectiveCase.evidenceQuotes?.length || 0}
                                                         result={effectiveCase.structuralAnalysis}
-                                                        challengedResult={challengedAnalysis}
+                                                        challengedResult={effectiveCase.antiStructuralAnalysis}
                                                         onHighlightExcerpts={setHighlightedExcerptIds}
-                                                        onChallenge={handleChallenge}
-                                                        isChallenging={isChallenging}
                                                         onGenerate={handleGenerateAnalysis}
                                                         isGenerating={isGeneratingAnalysis}
                                                     />

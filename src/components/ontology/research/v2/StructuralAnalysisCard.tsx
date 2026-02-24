@@ -11,8 +11,6 @@ interface StructuralAnalysisCardProps {
     result: StructuralConcernResult | null;
     challengedResult?: StructuralConcernResult | null;
     onHighlightExcerpts?: (excerptIds: string[]) => void;
-    onChallenge?: () => void;
-    isChallenging?: boolean;
     onGenerate?: () => void;
     isGenerating?: boolean;
 }
@@ -23,8 +21,6 @@ export function StructuralAnalysisCard({
     result,
     challengedResult,
     onHighlightExcerpts,
-    onChallenge,
-    isChallenging,
     onGenerate,
     isGenerating
 }: StructuralAnalysisCardProps) {
@@ -135,23 +131,6 @@ export function StructuralAnalysisCard({
                             Analyzed strictly from <strong>{excerptCount} excerpts</strong> for {actorName}
                         </p>
                     </div>
-                    {onChallenge && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-7 px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                            onClick={onChallenge}
-                            disabled={isChallenging || !!challengedResult || result?.insufficientEvidence}
-                        >
-                            {isChallenging ? (
-                                <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Challenging...</>
-                            ) : challengedResult ? (
-                                <><ShieldAlert className="h-3 w-3 mr-1" /> Challenged</>
-                            ) : (
-                                <><ShieldAlert className="h-3 w-3 mr-1" /> Challenge Findings</>
-                            )}
-                        </Button>
-                    )}
                 </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -247,6 +226,6 @@ export function StructuralAnalysisCard({
                 <span>AI-generated formal mapping based solely on provided quote text.</span>
                 <span>{validClaims.length} structural points proved.</span>
             </CardFooter>
-        </Card>
+        </Card >
     );
 }

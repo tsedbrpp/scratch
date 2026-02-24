@@ -4,7 +4,8 @@ import OpenAI from 'openai';
 import { PromptRegistry } from '@/lib/prompts/registry';
 
 // Define the structured output schema
-export const StructuralConcernSchema = z.object({
+// Define the structured output schema first as a base
+export const BaseStructuralConcernSchema = z.object({
     insufficientEvidence: z.boolean().describe("Set to true ONLY if the provided excerpts do not contain enough structural or role-allocating text to make grounded claims about governance standing or explicit exclusion. Do NOT hallucinate roles based on outside knowledge."),
     thesis: z.string().optional().describe("A 1-2 sentence overall conclusion of the structural exclusion or integration. E.g., 'Across these excerpts, the law completely domesticates authority, granting no formal standing to international organizations.'"),
     claims: z.array(z.object({
@@ -15,7 +16,15 @@ export const StructuralConcernSchema = z.object({
     })).describe("The detailed structural points. Max 6 points.")
 });
 
-export type StructuralConcernResult = z.infer<typeof StructuralConcernSchema>;
+// Since the service recursively attaches antiStructuralAnalysis, we need recursive types or manual extension
+export type BaseStructuralConcernResult = z.infer<typeof BaseStructuralConcernSchema>;
+
+export type StructuralConcernResult = BaseStructuralConcernResult & {
+    antiStructuralAnalysis?: BaseStructuralConcernResult;
+};
+
+// Replace old schema with base schema in runtime parser
+export const StructuralConcernSchema = BaseStructuralConcernSchema;
 
 export interface ExcerptInput {
     id: string;
@@ -80,6 +89,32 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
 
             // STRICT GROUNDING VALIDATION: Reject hallucinated IDs
             result = this.enforceGrounding(result, excerpts);
+
+            // [NEW] Automatic Pipeline: If standard mode finishes, run anti-structural mode immediately
+            if (promptId === 'structural_concern' && !result.insufficientEvidence && excerpts.length > 0) {
+                console.log(`[StructuralConcernService] Structural analysis successful, automatically triggering anti-structural concern...`);
+                try {
+                    const antiResult = await this.analyzeStructuralConcern(
+                        openai,
+                        userId,
+                        actorName,
+                        documentTitle,
+                        excerpts,
+                        additionalContext,
+                        'anti_structural_concern'
+                    );
+
+                    // Return both formats. The API route currently unwraps `analysis.structural_concern`.
+                    // We'll wrap it so both are sent down correctly to ConceptDetailsModal.
+                    return {
+                        ...result,
+                        // Attach the secondary result as a nested property
+                        antiStructuralAnalysis: antiResult
+                    };
+                } catch (antiError) {
+                    console.warn(`[StructuralConcernService] Anti-structural concern failed, but returning main result. Error:`, antiError);
+                }
+            }
 
             return result;
         } catch (error) {
