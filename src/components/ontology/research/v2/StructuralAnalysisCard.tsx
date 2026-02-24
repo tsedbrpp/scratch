@@ -238,16 +238,16 @@ export function StructuralAnalysisCard({
                             </div>
                             <div>
                                 <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Methodological Critique</h4>
-                                <p className="text-sm text-slate-800 leading-relaxed italic">{escalation.methodologicalCritique}</p>
+                                <p className="text-sm text-slate-800 leading-relaxed italic">{escalation.methodologicalCritique.notes}</p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
                                 <div>
                                     <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> Tier 1: Proven</h4>
-                                    <p className="text-sm text-slate-700">{escalation.tier1Proven}</p>
+                                    <p className="text-sm text-slate-700">{escalation.tier1Proven.text}</p>
                                 </div>
                                 <div>
                                     <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" /> Tier 2: Unproven</h4>
-                                    <p className="text-sm text-slate-700">{escalation.tier2Unproven}</p>
+                                    <p className="text-sm text-slate-700">{escalation.tier2Unproven.text}</p>
                                 </div>
                             </div>
                         </div>

@@ -1,40 +1,33 @@
 import { z } from 'zod';
 
-export const STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE = `You are a Senior Legal-Institutional Methodologist. Your task is to evaluate two competing arguments about whether an actor ("{{ACTOR_NAME}}") is structurally excluded from governance in a specific document ("{{DOCUMENT_TITLE}}").
+export const STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE = `You have been provided with:
+1) Excerpts (the ONLY acceptable text evidence), each with an excerpt ID.
+2) A Pro-Exclusion (Structural Concern) argument.
+3) An Anti-Exclusion (Challenge) argument.
 
-You have been provided with:
-1. The Excerpts (the only acceptable text evidence).
-2. The Structural Concern (Pro-Exclusion) Argument.
-3. The Anti-Structural Concern (Anti-Exclusion / Challenge) Argument.
+Task: Decide which argument better matches what the excerpts ACTUALLY establish, avoiding logical leaps (argument from silence; audience-to-boundary leap).
 
-Your goal is to evaluate which argument more accurately reflects the grounded boundaries of the text, avoiding logical leaps (like "argument from silence" or "category-to-boundary leap").
+DEFINITIONS / THRESHOLD:
+"Structural exclusion" is justified ONLY if the excerpts show:
+A) a governance mechanism (authority body, enforcement power, committee/forum, mandated consultation/process), AND
+B) a boundary that excludes the actor, either:
+   - Explicit: "only / limited to / shall consist of ..."
+   - Strong-implicit: membership is defined as a closed legal/organizational class the actor cannot belong to (e.g., "public administration bodies"; "competent authority designated by Executive"), OR the mechanism enumerates membership/composition in a closed way.
+NOT sufficient by itself:
+- "designed for / intended for / targeted at" implementers (audience targeting)
+- topical omission statements ("X is not addressed")
 
-METHODOLOGICAL GUIDELINES for your evaluation:
+REQUIRED CHECKS (perform them; do not output as steps):
+1) Mechanism check: do excerpts specify any mechanism? If none, exclusion cannot be proven.
+2) Boundary check: do excerpts contain explicit or strong-implicit boundaries? If none, exclusion cannot be proven.
+3) Coverage check: do excerpts use broader categories that could plausibly include the actor (e.g., "stakeholders", "any interested parties", "entities")? If yes and no exclusion boundary exists, pro-exclusion is weakened.
+4) Fidelity check: which argument accurately reflects (1)-(3) without overclaiming?
 
-1. What "structural exclusion" requires:
-To say an actor is structurally excluded (not just "not mentioned"), the excerpt set must show:
-   A) A governance mechanism exists (authority body, forum, committee, enforcement chain), AND
-   B) The mechanism's eligible participants are bounded in a way that excludes the actor (e.g., explicitly "only X", or implicitly but strongly via a membership definition).
-Silence or underspecification is NOT structural exclusion.
-
-2. Beware the "argument from silence":
-"The actor is not mentioned ⇒ they are structurally excluded" is logically flawed. Non-mention is ambiguous. Absent bounding language, it is not probative of exclusion.
-
-3. Beware the "category-to-boundary leap":
-"Designed for X (e.g., ministries) ⇒ forecloses any formal role for Y" is a leap. Intended audience (who implements) is not the same as exclusive governance standing (who participates). To convert target implementers into an exclusive boundary, you need text indicating those are the *only* legitimate actors.
-
-4. Distinguish "Topical Omission" from "Institutional Exclusion":
-"Environmental implications are not addressed" is about subject matter coverage, not actor recognition. It limits the topic, but does not bound the participants.
-
-YOUR OUTPUT:
-You must return a rigorous JSON evaluation.
-
-- \`verdict\`: Must be either "pro_stronger", "anti_stronger", or "tie". (Usually, if the text lacks explicit boundary language, the anti argument is stronger).
-- \`methodologicalCritique\`: A 2-3 sentence methodological evaluation pointing out any logical leaps (like the argument from silence) in the weaker side, or commending the strict grounding of the stronger side.
-- \`tier1Proven\`: A 1-sentence statement of what the excerpts *actually* prove (e.g., "The framework is implementer-centric and topically omits X.").
-- \`tier2Unproven\`: A 1-sentence statement of what the excerpts fail to establish (e.g., "They do not establish structural exclusion because they lack explicit membership boundaries.").
-
-CRITICAL: Do NOT invent excerpts. Only evaluate based on the text provided.`;
+OUTPUT (return ONLY valid JSON matching the schema):
+CRITICAL:
+- Do NOT invent excerpt IDs.
+- Every supportedBy must reference IDs present in the input.
+- Use ONLY provided text.`;
 
 export const STRUCTURAL_ESCALATION_USER_PROMPT_TEMPLATE = `Actor: {{ACTOR_NAME}}
 Document: {{DOCUMENT_TITLE}}
@@ -52,7 +45,19 @@ Evaluate the arguments according to the methodological guidelines. Return a JSON
 
 export const StructuralEscalationSchema = z.object({
     verdict: z.enum(["pro_stronger", "anti_stronger", "tie"]).describe("Which argument is methodologically stronger based strictly on the excerpts."),
-    methodologicalCritique: z.string().describe("2-3 sentence critique explaining why the winning argument is better grounded, pointing out specific logical leaps (e.g. argument from silence) in the losing argument."),
-    tier1Proven: z.string().describe("1 sentence stating exactly what the excerpts definitively prove (e.g. implementer focus, topical omission)."),
-    tier2Unproven: z.string().describe("1 sentence stating what the excerpts fail to prove (e.g. hard structural exclusion bounds).")
+    confidence: z.enum(["low", "medium", "high"]).describe("Confidence in the verdict based on excerpt clarity."),
+    methodologicalCritique: z.object({
+        strongerSide: z.enum(["pro", "anti", "tie"]),
+        weakerSideErrors: z.array(z.enum(["argument_from_silence", "audience_to_boundary_leap", "overclaiming_mechanism", "ignores_coverage", "none"])),
+        notes: z.string().describe("2-3 sentences, must quote 1 short phrase from each side's argument and cite excerpt IDs if excerpts are provided.")
+    }),
+    tier1Proven: z.object({
+        text: z.string().describe("1 sentence stating exactly what the excerpts definitively prove."),
+        supportedBy: z.array(z.string()).describe("Excerpt IDs supporting this.")
+    }),
+    tier2Unproven: z.object({
+        text: z.string().describe("1 sentence stating what the excerpts fail to prove."),
+        supportedBy: z.array(z.string()).describe("Excerpt IDs showing the gap.")
+    }),
+    whatWouldChangeMyMind: z.array(z.string()).describe("1-3 short items describing the missing excerpt evidence needed to justify structural exclusion.")
 });
