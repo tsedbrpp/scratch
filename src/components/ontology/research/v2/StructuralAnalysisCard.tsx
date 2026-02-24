@@ -9,12 +9,10 @@ interface StructuralAnalysisCardProps {
     actorName: string;
     excerptCount: number;
     result: StructuralConcernResult | null;
-    // Optional callback to highlight specific excerpts in the UI
+    challengedResult?: StructuralConcernResult | null;
     onHighlightExcerpts?: (excerptIds: string[]) => void;
-    // Optional callback to challenge the analysis
     onChallenge?: () => void;
     isChallenging?: boolean;
-    hasBeenChallenged?: boolean;
     onGenerate?: () => void;
     isGenerating?: boolean;
 }
@@ -23,10 +21,10 @@ export function StructuralAnalysisCard({
     actorName,
     excerptCount,
     result,
+    challengedResult,
     onHighlightExcerpts,
     onChallenge,
     isChallenging,
-    hasBeenChallenged,
     onGenerate,
     isGenerating
 }: StructuralAnalysisCardProps) {
@@ -143,11 +141,11 @@ export function StructuralAnalysisCard({
                             size="sm"
                             className="text-xs h-7 px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                             onClick={onChallenge}
-                            disabled={isChallenging || hasBeenChallenged || result?.insufficientEvidence}
+                            disabled={isChallenging || !!challengedResult || result?.insufficientEvidence}
                         >
                             {isChallenging ? (
                                 <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Challenging...</>
-                            ) : hasBeenChallenged ? (
+                            ) : challengedResult ? (
                                 <><ShieldAlert className="h-3 w-3 mr-1" /> Challenged</>
                             ) : (
                                 <><ShieldAlert className="h-3 w-3 mr-1" /> Challenge Findings</>
@@ -203,6 +201,47 @@ export function StructuralAnalysisCard({
                         </div>
                     ))}
                 </div>
+
+                {/* Challenged Results Section */}
+                {challengedResult && (
+                    <div className="border-t-2 border-dashed border-indigo-200 bg-purple-50/30">
+                        <div className="p-4 bg-purple-100/50 border-b border-purple-100 flex items-center gap-2">
+                            <ShieldAlert className="h-4 w-4 text-purple-700" />
+                            <h3 className="font-semibold text-purple-900 text-sm">Anti-Structural Concern Findings</h3>
+                        </div>
+                        {challengedResult.thesis && (
+                            <div className="p-5 border-b border-purple-100/50">
+                                <h4 className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Net Effect / Challenge Thesis
+                                </h4>
+                                <p className="text-sm text-purple-950 font-medium leading-relaxed">
+                                    {highlightQuotes(challengedResult.thesis)}
+                                </p>
+                            </div>
+                        )}
+                        <div className="divide-y divide-purple-100/50">
+                            {challengedResult.claims?.map((claim, idx) => (
+                                <div
+                                    key={`challenge-${idx}`}
+                                    className="p-5 bg-transparent"
+                                >
+                                    <div className="flex items-start justify-between gap-4 mb-3">
+                                        <h4 className="text-sm font-semibold text-slate-800">
+                                            {idx + 1}. {claim.sectionTitle}
+                                        </h4>
+                                        <Badge variant="outline" className={`text-[10px] whitespace-nowrap border-purple-200 text-purple-700 bg-purple-50/50`}>
+                                            {claim.logicType.replace(/-/g, ' ')}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                        {highlightQuotes(claim.claimText)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </CardContent>
             <CardFooter className="bg-slate-50 border-t py-3 px-5 text-xs text-slate-400 flex items-center justify-between">
                 <span>AI-generated formal mapping based solely on provided quote text.</span>

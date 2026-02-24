@@ -262,8 +262,8 @@ export function EvaluationInterface({
     // [NEW] Apply consistent analytical enrichment to the effective case
     const effectiveCase = baseCase ? {
         ...baseCase,
-        // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, use the challenged result.
-        structuralAnalysis: challengedAnalysis || generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
+        // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, display it below.
+        structuralAnalysis: generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
@@ -484,10 +484,10 @@ export function EvaluationInterface({
                                                         actorName={effectiveCase.title}
                                                         excerptCount={effectiveCase.evidenceQuotes?.length || 0}
                                                         result={effectiveCase.structuralAnalysis}
+                                                        challengedResult={challengedAnalysis}
                                                         onHighlightExcerpts={setHighlightedExcerptIds}
                                                         onChallenge={handleChallenge}
                                                         isChallenging={isChallenging}
-                                                        hasBeenChallenged={!!challengedAnalysis}
                                                         onGenerate={handleGenerateAnalysis}
                                                         isGenerating={isGeneratingAnalysis}
                                                     />
