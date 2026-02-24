@@ -439,6 +439,7 @@ export function EvaluationInterface({
                                                         documentLabel={effectiveCase.title.includes(':') ? effectiveCase.title.split(':')[0].trim() : undefined}
                                                         onContextRequest={handleContextRequest}
                                                         onFullDocRequest={handleFullDocRequest}
+                                                        highlightedExcerptIds={highlightedExcerptIds}
                                                     />
 
                                                     {/* [NEW] Structural Concern Deep Mapping */}
