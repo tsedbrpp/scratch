@@ -6,14 +6,14 @@ import { PromptRegistry } from '@/lib/prompts/registry';
 // Define the structured output schema
 // Define the structured output schema first as a base
 export const BaseStructuralConcernSchema = z.object({
-    insufficientEvidence: z.boolean().describe("Set to true ONLY if the provided excerpts do not contain enough structural or role-allocating text to make grounded claims about governance standing or explicit exclusion. Do NOT hallucinate roles based on outside knowledge."),
+    insufficientEvidence: z.boolean().optional().default(false).describe("Set to true ONLY if the provided excerpts do not contain enough structural or role-allocating text to make grounded claims about governance standing or explicit exclusion. Do NOT hallucinate roles based on outside knowledge."),
     thesis: z.string().optional().describe("A 1-2 sentence overall conclusion of the structural exclusion or integration. E.g., 'Across these excerpts, the law completely domesticates authority, granting no formal standing to international organizations.'"),
     claims: z.array(z.object({
         sectionTitle: z.string().describe("Categorical boundary being analyzed (e.g., 'Authority', 'Coordination', 'Transnational Cooperation')."),
         claimText: z.string().describe("The hard analytical claim. e.g., 'Authority is fully domesticated (no shared or external governance seat).' Must be supported by excerpts."),
         supportedBy: z.array(z.string()).describe("Array of EXACT excerpt IDs from the input that prove this claim. YOU MUST ONLY USE IDs PROVIDED IN THE INPUT."),
         logicType: z.string().describe("The type of structural logic operating in these excerpts for this claim, e.g. role-allocation, categorical boundary, or silencing.")
-    })).describe("The detailed structural points. Max 6 points.")
+    })).optional().default([]).describe("The detailed structural points. Max 6 points.")
 });
 
 // Since the service recursively attaches antiStructuralAnalysis, we need recursive types or manual extension
