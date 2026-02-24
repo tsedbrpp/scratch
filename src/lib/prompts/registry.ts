@@ -24,6 +24,7 @@ import { ANT_TRACE_PROMPT, ASSEMBLAGE_REALIST_PROMPT, HYBRID_REFLEXIVE_PROMPT } 
 import { GHOST_NODES_COMBINED_PASS_1_PROMPT, GHOST_NODES_PASS_2_PROMPT } from './ghost-nodes';
 import { STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './structural-concern';
 import { ANTI_STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './anti-structural-concern';
+import { STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE } from './structural-escalation';
 
 export interface PromptDefinition {
     id: string;
@@ -480,6 +481,17 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         version: '1.0.0',
         lastUpdated: '2026-02-24',
         changelog: ['Added challenge prompt for structural exclusion'],
+        outputSchema: { format: 'json' }
+    },
+    'structural_escalation': {
+        id: 'structural_escalation',
+        name: 'Structural Escalation Evaluation',
+        description: 'Evaluates whether the structural or anti-structural argument is stronger based on methodological rigor.',
+        category: 'Analysis',
+        defaultValue: STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-02-24',
+        changelog: ['Added escalation evaluation prompt'],
         outputSchema: { format: 'json' }
     }
 };

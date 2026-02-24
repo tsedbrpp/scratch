@@ -21,6 +21,7 @@ export type BaseStructuralConcernResult = z.infer<typeof BaseStructuralConcernSc
 
 export type StructuralConcernResult = BaseStructuralConcernResult & {
     antiStructuralAnalysis?: BaseStructuralConcernResult;
+    escalation?: any;
 };
 
 // Replace old schema with base schema in runtime parser
@@ -104,13 +105,33 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
                         'anti_structural_concern'
                     );
 
+                    let escalationResult = undefined;
+
+                    // If anti mode successfully ran, evaluate the conflict
+                    if (!antiResult.insufficientEvidence) {
+                        try {
+                            escalationResult = await this.evaluateEscalation(
+                                openai,
+                                userId,
+                                actorName,
+                                documentTitle,
+                                excerpts,
+                                result,
+                                antiResult
+                            );
+                        } catch (escalationError) {
+                            console.warn(`[StructuralConcernService] Escalation evaluation failed. Error:`, escalationError);
+                        }
+                    }
+
                     // Return both formats. The API route currently unwraps `analysis.structural_concern`.
                     // We'll wrap it so both are sent down correctly to ConceptDetailsModal.
                     return {
                         ...result,
                         // Attach the secondary result as a nested property
-                        antiStructuralAnalysis: antiResult
-                    };
+                        antiStructuralAnalysis: antiResult,
+                        escalation: escalationResult
+                    } as any;
                 } catch (antiError) {
                     console.warn(`[StructuralConcernService] Anti-structural concern failed, but returning main result. Error:`, antiError);
                 }
@@ -164,5 +185,59 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
             ...result,
             claims: filteredClaims
         };
+    }
+
+    /**
+     * Evaluates the methodological strength of the pro vs anti structural arguments.
+     */
+    static async evaluateEscalation(
+        openai: OpenAI,
+        userId: string,
+        actorName: string,
+        documentTitle: string,
+        excerpts: ExcerptInput[],
+        proResult: StructuralConcernResult,
+        antiResult: StructuralConcernResult
+    ): Promise<any> {
+        const { StructuralEscalationSchema } = await import('@/lib/prompts/structural-escalation');
+
+        // Render the arguments for the prompt
+        const proArgumentText = `Thesis: ${proResult.thesis || 'None'}\nClaims:\n` +
+            (proResult.claims || []).map(c => `- [${c.sectionTitle}] ${c.claimText}`).join('\n');
+
+        const antiArgumentText = `Thesis: ${antiResult.thesis || 'None'}\nClaims:\n` +
+            (antiResult.claims || []).map(c => `- [${c.sectionTitle}] ${c.claimText}`).join('\n');
+
+        const formattedExcerpts = excerpts.map(e => `[ID: ${e.id}]\nQuote: "${e.text}"\n---`).join('\n\n');
+
+        let systemPrompt = await PromptRegistry.getEffectivePrompt(userId, 'structural_escalation');
+        systemPrompt = systemPrompt
+            .replace(/{{ACTOR_NAME}}/g, actorName)
+            .replace(/{{DOCUMENT_TITLE}}/g, documentTitle);
+
+        let userPrompt = (await PromptRegistry.getEffectivePrompt(userId, 'structural_escalation')) || '';
+        // Because the user prompt is hardcoded in the file near the system prompt, we'll fetch it from the registry
+        // Wait, the PromptRegistry only returns the default value (which is SYSTEM_PROMPT).
+        // Let's just import the user prompt directly to ensure we have it.
+        const { STRUCTURAL_ESCALATION_USER_PROMPT_TEMPLATE } = await import('@/lib/prompts/structural-escalation');
+
+        userPrompt = STRUCTURAL_ESCALATION_USER_PROMPT_TEMPLATE
+            .replace(/{{ACTOR_NAME}}/g, actorName)
+            .replace(/{{DOCUMENT_TITLE}}/g, documentTitle)
+            .replace(/{{EXCERPTS}}/g, formattedExcerpts)
+            .replace(/{{PRO_ARGUMENT}}/g, proArgumentText)
+            .replace(/{{ANTI_ARGUMENT}}/g, antiArgumentText);
+
+        const completion = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || 'gpt-4o-2024-08-06',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            response_format: { type: 'json_object' }
+        });
+
+        const content = completion.choices[0].message.content || '{}';
+        return StructuralEscalationSchema.parse(JSON.parse(content));
     }
 }

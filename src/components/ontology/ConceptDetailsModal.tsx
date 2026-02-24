@@ -225,6 +225,7 @@ export function EvaluationInterface({
         // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, display it below.
         structuralAnalysis: generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
         antiStructuralAnalysis: generatedStructuralAnalysis?.antiStructuralAnalysis || baseCase.antiStructuralAnalysis || baseCase.structuralAnalysis?.antiStructuralAnalysis || ghostData.antiStructuralAnalysis || ghostData.structuralAnalysis?.antiStructuralAnalysis || null,
+        escalationAnalysis: generatedStructuralAnalysis?.escalation || baseCase.escalation || baseCase.structuralAnalysis?.escalation || ghostData.escalation || ghostData.structuralAnalysis?.escalation || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
@@ -446,6 +447,7 @@ export function EvaluationInterface({
                                                         excerptCount={effectiveCase.evidenceQuotes?.length || 0}
                                                         result={effectiveCase.structuralAnalysis}
                                                         challengedResult={effectiveCase.antiStructuralAnalysis}
+                                                        escalation={effectiveCase.escalationAnalysis}
                                                         onHighlightExcerpts={setHighlightedExcerptIds}
                                                         onGenerate={handleGenerateAnalysis}
                                                         isGenerating={isGeneratingAnalysis}

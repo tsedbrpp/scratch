@@ -10,6 +10,7 @@ interface StructuralAnalysisCardProps {
     excerptCount: number;
     result: StructuralConcernResult | null;
     challengedResult?: StructuralConcernResult | null;
+    escalation?: any;
     onHighlightExcerpts?: (excerptIds: string[]) => void;
     onGenerate?: () => void;
     isGenerating?: boolean;
@@ -20,6 +21,7 @@ export function StructuralAnalysisCard({
     excerptCount,
     result,
     challengedResult,
+    escalation,
     onHighlightExcerpts,
     onGenerate,
     isGenerating
@@ -218,6 +220,36 @@ export function StructuralAnalysisCard({
                                     </p>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+                {escalation && (
+                    <div className="border-t-2 border-indigo-300 bg-slate-50">
+                        <div className="p-4 bg-slate-100 border-b flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-slate-700" />
+                            <h3 className="font-semibold text-slate-900 text-sm">Escalation Evaluation</h3>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Verdict</h4>
+                                <Badge variant={escalation.verdict === 'pro_stronger' ? 'destructive' : escalation.verdict === 'anti_stronger' ? 'default' : 'secondary'}>
+                                    {escalation.verdict === 'pro_stronger' ? 'Pro-Exclusion Stronger' : escalation.verdict === 'anti_stronger' ? 'Anti-Exclusion Stronger' : 'Tie / Inconclusive'}
+                                </Badge>
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Methodological Critique</h4>
+                                <p className="text-sm text-slate-800 leading-relaxed italic">{escalation.methodologicalCritique}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
+                                <div>
+                                    <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> Tier 1: Proven</h4>
+                                    <p className="text-sm text-slate-700">{escalation.tier1Proven}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" /> Tier 2: Unproven</h4>
+                                    <p className="text-sm text-slate-700">{escalation.tier2Unproven}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
