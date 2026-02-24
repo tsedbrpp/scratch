@@ -419,7 +419,7 @@ export async function POST(request: NextRequest) {
 
 
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis' && analysisMode !== 'escalation_evaluation') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis' && analysisMode !== 'escalation_evaluation' && analysisMode !== 'structural_concern') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -556,6 +556,67 @@ export async function POST(request: NextRequest) {
 
 
 
+    // [Feature] Deep Structural Concern Analysis
+    if (analysisMode === 'structural_concern') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Structural Concern Analysis" }, { status: 500 });
+      }
+
+      console.log('[ANALYSIS] Mode is STRUCTURAL_CONCERN.');
+      const { StructuralConcernService } = await import('@/lib/structural-concern-service');
+
+      if (!requestData.excerpts || !requestData.actorName || !requestData.title) {
+        return NextResponse.json({ error: "Missing required fields (excerpts, actorName, title)" }, { status: 400 });
+      }
+
+      // 1. Generate Global Hash from Excerpts + Actor
+      // This ensures all users on the survey page get the identical cached analysis for the same data
+      const excerptNames = requestData.excerpts.map((e: any) => e.id).sort().join(',');
+      const signaturePayload = `${requestData.actorName}:${requestData.title}:${excerptNames}:${requestData.challengeMode ? 'challenge' : 'standard'}`;
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(signaturePayload);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const payloadHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const globalCacheKey = `structural_concern:${payloadHash}`;
+
+      if (!force) {
+        console.log(`[STRUCTURAL_CONCERN] Checking global cache for ${globalCacheKey}...`);
+        // We use 'global_analysis' as a shared context block in Redis
+        const cachedAnalysis = await StorageService.getCache('global_analysis', globalCacheKey);
+
+        if (cachedAnalysis) {
+          console.log(`[CACHE HIT] Returning cached structural analysis.`);
+          return NextResponse.json({
+            success: true,
+            analysis: { structural_concern: cachedAnalysis },
+            cached: true
+          });
+        }
+      }
+
+      console.log(`[STRUCTURAL_CONCERN] Cache miss. Generating fresh analysis (challenge: ${!!requestData.challengeMode})...`);
+      const result = await StructuralConcernService.analyzeStructuralConcern(
+        openai,
+        userId,
+        requestData.actorName,
+        requestData.title,
+        requestData.excerpts,
+        requestData.context,
+        requestData.challengeMode ? 'anti_structural_concern' : 'structural_concern'
+      );
+
+      // Save to Global Cache (TTL: 30 days)
+      await StorageService.setCache('global_analysis', globalCacheKey, result, 60 * 60 * 24 * 30);
+
+      return NextResponse.json({
+        success: true,
+        analysis: { structural_concern: result },
+        cached: false
+      });
+    }
+
     // [Feature] Comprehensive Scan
     if (analysisMode === 'comprehensive_scan') {
       if (!openai) {
@@ -617,7 +678,7 @@ export async function POST(request: NextRequest) {
         const { analyzeInstitutionalLogicsAndDetectGhostNodes } = await import('@/lib/ghost-nodes');
 
         // Pass the resolved nodes array so existing actors are considered for similarity checks
-        const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, { nodes: detectedNodes }, sourceType, requestData.expectedActors);
+        const ghostNodesResult = await analyzeInstitutionalLogicsAndDetectGhostNodes(openai, text, { nodes: detectedNodes }, sourceType, requestData.expectedActors, contextId);
 
         console.log('[API] Ghost node detection completed:', {
           ghostNodeCount: ghostNodesResult.ghostNodes?.length || 0,

@@ -49,6 +49,7 @@ export interface OntologyNode {
     signal: string;
     searchTerms: string[];
   }>;
+  structuralAnalysis?: any;
 }
 
 export interface OntologyLink {

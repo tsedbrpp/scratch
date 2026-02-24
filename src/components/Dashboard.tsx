@@ -8,8 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Search, Activity, Upload, Coins, Plus, Network } from "lucide-react";
 import Link from "next/link";
-import { GalaxyGraph } from "@/components/landing/GalaxyGraph";
+import dynamic from "next/dynamic";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+
+const GalaxyGraph = dynamic(() => import("@/components/landing/GalaxyGraph").then(mod => mod.GalaxyGraph), {
+    ssr: false,
+    loading: () => <div className="h-[600px] w-full flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl animate-pulse">Loading Visualization...</div>
+});
 
 export function Dashboard() {
     const { sources } = useSources(); // Fetch sources internally

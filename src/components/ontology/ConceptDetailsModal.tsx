@@ -9,7 +9,7 @@ import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, Clock,
 import { cn } from '@/lib/utils';
 import { GhostNodeSurvey } from './research/GhostNodeSurvey';
 import { Card, CardContent } from '@/components/ui/card';
-import { StudyCase, GhostNodeSurveyResponse, StudyState, SurveyResponseData } from '@/lib/study-config';
+import { StudyCase, GhostNodeSurveyResponse, StudyState, SurveyResponseData, EvidenceQuote } from '@/lib/study-config';
 import { GhostNode } from '@/types';
 import { QuoteHighlighter } from './QuoteHighlighter';
 import { useRouter } from 'next/navigation';
@@ -17,12 +17,13 @@ import { useRouter } from 'next/navigation';
 // V2 Components
 import { CaseSummaryBar } from './research/v2/CaseSummaryBar';
 import { QuoteCardList } from './research/v2/QuoteCardList';
-import { RosterPanel } from './research/v2/RosterPanel';
 import { MissingSignalsPanel } from './research/v2/MissingSignalsPanel';
 import { ClaimCard } from './research/v2/ClaimCard';
 import { SearchDrawer } from './research/v2/SearchDrawer';
 import { GhostNodeEvaluationForm } from './research/v2/GhostNodeEvaluationForm';
 import { EvidenceLineageModal } from '../reflexivity/EvidenceLineageModal';
+import { StructuralAnalysisCard } from './research/v2/StructuralAnalysisCard';
+import type { StructuralConcernResult } from '@/lib/structural-concern-service';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const ABSENCE_DESCRIPTIONS: Record<string, string> = {
@@ -87,16 +88,21 @@ export function EvaluationInterface({
     const [activeTab, setActiveTab] = useState<'explore' | 'evaluate'>('explore');
     const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeQuoteContext, setActiveQuoteContext] = useState<string | null>(null);
+    const [activeQuoteContext, setActiveQuoteContext] = useState<EvidenceQuote | null>(null);
     const router = useRouter(); // [NEW] Use Next.js router for Deep Linking
+
+    // [New] Highlighted excerpts state for hover
+    const [highlightedExcerptIds, setHighlightedExcerptIds] = useState<string[]>([]);
+    const [isChallenging, setIsChallenging] = useState(false);
+    const [challengedAnalysis, setChallengedAnalysis] = useState<StructuralConcernResult | null>(null);
 
     const handleSearchRequest = (query: string) => {
         setSearchQuery(query);
         setIsSearchDrawerOpen(true);
     };
 
-    const handleContextRequest = (quoteText: string) => {
-        setActiveQuoteContext(quoteText);
+    const handleContextRequest = (quote: EvidenceQuote) => {
+        setActiveQuoteContext(quote);
     };
 
     const handleFullDocRequest = () => {
@@ -108,6 +114,41 @@ export function EvaluationInterface({
         }
     };
 
+    const handleChallenge = async () => {
+        if (!researchCurrentCase || !sourceId) return;
+
+        setIsChallenging(true);
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysisMode: 'structural_concern',
+                    actorName: researchCurrentCase.title,
+                    title: sourceId,
+                    excerpts: baseCase.evidenceQuotes,
+                    context: researchCurrentCase.claim?.fullReasoning || '',
+                    challengeMode: true // <-- Trigger the anti-structural concern prompt
+                })
+            });
+
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                setChallengedAnalysis(data.analysis);
+            } else {
+                console.error("Failed to challenge:", data.error);
+                alert("Failed to run challenge analysis.");
+            }
+        } catch (error) {
+            console.error("Challenge error:", error);
+            alert("Error running challenge.");
+        } finally {
+            setIsChallenging(false);
+        }
+    };
+
+
+
     // Reset tab when case changes
     const nodeId = selectedNode?.id;
     const caseId = researchCurrentCase?.id;
@@ -115,8 +156,10 @@ export function EvaluationInterface({
     useEffect(() => {
         if (isActive) {
             // Only reset if not already 'explore' to avoid unnecessary re-renders
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             setActiveTab(prev => prev !== 'explore' ? 'explore' : prev);
+            setHighlightedExcerptIds([]);
+            setChallengedAnalysis(null);
+            setIsChallenging(false);
         }
     }, [isActive, nodeId, caseId]);
 
@@ -150,15 +193,17 @@ export function EvaluationInterface({
         evidenceQuotes: ghostData.evidenceQuotes?.map((q: any, i: number) => ({
             id: `q-${selectedNode.id}-${i}`,
             text: q.quote || q.text || '',
+            context: q.context || '',
             sourceRef: typeof q.sourceRef === 'string' ? { docId: q.sourceRef } : q.sourceRef || { docId: (sourceId || 'Unknown') },
             actorTags: q.actors || q.actorTags || [],
             mechanismTags: q.mechanismTags || [],
             heading: q.heading || 'Excerpt'
         })),
+        structuralAnalysis: ghostData.structuralAnalysis || null,
         claim: ghostData.claim || {
             summaryBullets: [],
             disambiguations: [],
-            fullReasoning: ghostData.description || 'No reasoning provided.'
+            fullReasoning: ghostData.ghostReason || ghostData.whyAbsent || ghostData.description || 'No reasoning provided.'
         },
         roster: ghostData.roster ? {
             actorsInSection: ghostData.roster.actorsInSection || ghostData.roster.actors || [],
@@ -180,11 +225,14 @@ export function EvaluationInterface({
     // [NEW] Apply consistent analytical enrichment to the effective case
     const effectiveCase = baseCase ? {
         ...baseCase,
+        // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, use the challenged result.
+        structuralAnalysis: challengedAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
             disambiguations: baseCase.claim?.disambiguations || [],
-            fullReasoning: baseCase.claim?.fullReasoning || ghostData.description || 'No reasoning provided.',
+            // Prioritize the large 'ghostReason' paragraph over the short 1-sentence 'claim.fullReasoning'
+            fullReasoning: ghostData.ghostReason || ghostData.whyAbsent || baseCase.claim?.fullReasoning || ghostData.description || 'No reasoning provided.',
             discourseThreats: baseCase.claim?.discourseThreats || baseCase.discourseThreats || ghostData.discourseThreats || []
         }
     } : null;
@@ -220,7 +268,7 @@ export function EvaluationInterface({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={onReset}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onReset(); }}
                                         className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                                         title="Withdraw from the study and delete all your data."
                                     >
@@ -389,15 +437,27 @@ export function EvaluationInterface({
                                                 <div className="lg:col-span-8">
                                                     <QuoteCardList
                                                         quotes={effectiveCase.evidenceQuotes}
-                                                        documentLabel={effectiveCase.title.includes(':') ? effectiveCase.title.split(':')[0].trim() : (sourceId || 'Document')}
+                                                        documentLabel={effectiveCase.title.includes(':') ? effectiveCase.title.split(':')[0].trim() : undefined}
                                                         onContextRequest={handleContextRequest}
                                                         onFullDocRequest={handleFullDocRequest}
                                                     />
+
+                                                    {/* [NEW] Structural Concern Deep Mapping */}
+                                                    {effectiveCase.structuralAnalysis && (
+                                                        <StructuralAnalysisCard
+                                                            actorName={effectiveCase.title}
+                                                            excerptCount={effectiveCase.evidenceQuotes.length}
+                                                            result={effectiveCase.structuralAnalysis}
+                                                            onHighlightExcerpts={setHighlightedExcerptIds}
+                                                            onChallenge={handleChallenge}
+                                                            isChallenging={isChallenging}
+                                                            hasBeenChallenged={!!challengedAnalysis}
+                                                        />
+                                                    )}
                                                 </div>
 
                                                 {/* Right Column (4 cols) */}
                                                 <div className="lg:col-span-4 space-y-4">
-                                                    <RosterPanel roster={effectiveCase.roster} />
                                                     <MissingSignalsPanel
                                                         signals={effectiveCase.missingSignals}
                                                         onSearchRequest={handleSearchRequest}
@@ -560,9 +620,9 @@ export function EvaluationInterface({
                         title="Excerpt Context"
                         description="This is the exact quote extracted from the document."
                         quotes={[{
-                            text: activeQuoteContext,
+                            text: activeQuoteContext.text,
                             source: researchCurrentCase?.title,
-                            context: "Contextual surrounding paragraphs are currently limited in this view. Use 'Full Doc' to jump to the document text."
+                            context: activeQuoteContext.context || "Contextual surrounding paragraphs are currently limited in this view. Use 'Full Doc' to jump to the document text."
                         }]}
                         sourceType="Trace"
                     />

@@ -734,7 +734,7 @@ export function EcosystemMap({
             // Check Pattern
             if (activePatternFilter) {
                 // Determine implicit flowType to match GraphVisuals.tsx exact evaluation
-                let flowType = link.viz?.flowType || (link as any).flow_type || (link.type === 'ghost' ? 'ghost' : 'logic');
+                const flowType = link.viz?.flowType || (link as any).flow_type || (link.type === 'ghost' ? 'ghost' : 'logic');
 
                 // Absolute strict match
                 if (flowType !== activePatternFilter) return false;

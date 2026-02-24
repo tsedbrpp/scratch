@@ -186,7 +186,7 @@ export function createLinkGeometry(link: GraphLink) {
 
     // 1. Core Geometry & Material Selection based on Flow Type
     let mesh: THREE.Mesh | THREE.Line;
-    let curvature = CURVATURE[classification as keyof typeof CURVATURE] || 0.2;
+    const curvature = CURVATURE[classification as keyof typeof CURVATURE] || 0.2;
 
     if (flowType === 'power') {
         // [SOLID RED TUBE] - Power Flow
@@ -302,7 +302,7 @@ export function updateLinkPosition(
     if (!start || !end) return;
 
     const group = object as THREE.Group;
-    let mainGeometryChild = group.children.find(c => c.userData.isLinkMesh || c.userData.isLinkLine) as THREE.Mesh | THREE.Line;
+    const mainGeometryChild = group.children.find(c => c.userData.isLinkMesh || c.userData.isLinkLine) as THREE.Mesh | THREE.Line;
 
     // Safety check
     if (!mainGeometryChild) return;

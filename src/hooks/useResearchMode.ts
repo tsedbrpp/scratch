@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { get, set, clear } from 'idb-keyval';
+import { get, set, del } from 'idb-keyval';
 import { StudyState, GhostNodeSurveyResponse, STUDY_CASES, StudyCase, SurveyResponseData, GhostNodeSurveyResponseSchema } from '@/lib/study-config';
 import { saveStudyBackup, getStudyBackup, deleteStudyData } from '@/app/actions/research';
 
@@ -89,6 +89,10 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
     useEffect(() => {
         if (!isLoading) {
             set(STORAGE_KEY, state).catch(err => console.error('Failed to save state:', err));
+            // Trigger server backup whenever state changes (runs outside render phase)
+            if (state.evaluatorCode) {
+                saveStudyBackup(state).catch(err => console.error("Auto-backup failed:", err));
+            }
         }
     }, [state, isLoading]);
 
@@ -114,7 +118,6 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
                 currentCaseIndex: 0,
                 customCases: customCases
             };
-            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
             return nextState;
         });
     }, []);
@@ -138,29 +141,44 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
         }));
     }, []);
 
-    const submitResponse = useCallback((caseId: string, responseData: SurveyResponseData) => {
+    const submitResponse = useCallback((caseId: string, responseData: Partial<SurveyResponseData>) => {
         setState(prev => {
             // Check if currentCaseId is valid/needed or remove
             // const currentCaseId = prev.playlist[prev.currentCaseIndex];
 
-            const fullResponse: GhostNodeSurveyResponse = {
-                ...responseData,
+            // Get existing response so we can cleanly merge partial updates (like sliding a single slider)
+            const existingResponse = prev.responses[caseId] || {};
+            // Build a standard Base template without the strict GhostNodeSurveyResponse typing so we don't trigger duplicate key validation errors during the spread
+            const baseResponse = {
                 studyId: 'v5.0-hybrid',
                 evaluatorId: prev.evaluatorCode ? hashCode(prev.evaluatorCode).toString(16) : 'anon',
                 caseId: caseId,
                 caseIndex: prev.playlist.indexOf(caseId),
                 submittedAt: Date.now(),
-                // timeOnCaseMs needs to be calculated by component or state tracking
-                timeOnCaseMs: 0 // Placeholder, component should pass this ideally
+                strength: null,
+                confidence: null,
+                missingRoles: [],
+                institutionalLogics: { market: null, state: null, professional: null, community: null },
+                reflexivity: '',
+                timeOnCaseMs: 0
             };
+
+            const fullResponse = {
+                ...baseResponse,
+                ...existingResponse,
+                ...responseData
+            } as GhostNodeSurveyResponse;
+
+            // Ensure time tracking doesn't get wiped out by late updates
+            fullResponse.timeOnCaseMs = existingResponse.timeOnCaseMs || 0;
 
             // V2 Payload Validation
             try {
                 GhostNodeSurveyResponseSchema.parse(fullResponse);
             } catch (validationError) {
-                console.error("Zod Validation Error: Invalid Survey Response Payload", validationError);
-                // In production, we should probably stop the save or alert the user.
-                // For now, we log the schema error so developers can catch malformed submits.
+                console.warn("Zod Validation Warning: Incomplete Survey Response Payload. This is expected during partial form editing.", validationError);
+                // We shouldn't throw or block state updates during partial form editing, 
+                // only on final submission, so we downgraded this to a warning.
             }
 
             const newResponses = { ...prev.responses, [caseId]: fullResponse };
@@ -174,7 +192,6 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
                 responses: newResponses,
             };
 
-            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
             return nextState;
         });
     }, []);
@@ -183,7 +200,6 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
         setState(prev => {
             if (prev.currentCaseIndex < prev.playlist.length - 1) {
                 const nextState = { ...prev, currentCaseIndex: prev.currentCaseIndex + 1 };
-                saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
                 return nextState;
             }
             return prev;
@@ -209,7 +225,7 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
     }, []);
 
     const logout = useCallback(async () => {
-        await clear();
+        try { await del(STORAGE_KEY); } catch (e) { console.error("IDB del error", e); }
         setState(INITIAL_STATE);
     }, []);
 
@@ -217,14 +233,13 @@ export function useResearchMode(fallbackCases?: StudyCase[]) {
         if (state.evaluatorCode) {
             await deleteStudyData(state.evaluatorCode);
         }
-        await clear();
+        try { await del(STORAGE_KEY); } catch (e) { console.error("IDB del error", e); }
         setState(INITIAL_STATE);
     }, [state.evaluatorCode]);
 
     const completeStudy = useCallback(() => {
         setState(prev => {
             const nextState = { ...prev, isComplete: true };
-            saveStudyBackup(nextState).catch(err => console.error("Auto-backup failed:", err));
             return nextState;
         });
     }, []);

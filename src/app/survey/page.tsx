@@ -23,6 +23,16 @@ import { DebriefScreen } from "@/components/ontology/research/DebriefScreen";
 import { EvaluationInterface } from "@/components/ontology/ConceptDetailsModal";
 import { generateCasesFromOntology } from "@/lib/study-utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 
@@ -97,15 +107,24 @@ export default function OntologyPage() {
         }
     };
 
-    const handleReset = async () => {
-        if (confirm("Withdraw from the study? This will delete ALL local progress and permanently remove your data from our servers. This action cannot be undone.")) {
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+    const performReset = async () => {
+        try {
             // Clear all local storage keys related to the app
             localStorage.removeItem("ontology_selected_node_id");
             localStorage.removeItem("ontology_selected_source_id");
             localStorage.removeItem("instant_tea_research_store");
             await resetStudy();
+        } catch (e) {
+            console.error("Failed to cleanly reset study:", e);
+        } finally {
             window.location.reload();
         }
+    };
+
+    const handleReset = () => {
+        setIsResetConfirmOpen(true);
     };
 
     // Local state for Login Dialog
@@ -288,12 +307,7 @@ export default function OntologyPage() {
                             }, 50);
                         }
                     }}
-                        onReset={async () => {
-                            if (confirm("Reset study progress? This will delete all local data.")) {
-                                await resetStudy();
-                                window.location.reload();
-                            }
-                        }}
+                        onReset={handleReset}
                     />
                 )}
 
@@ -302,7 +316,7 @@ export default function OntologyPage() {
                         studyState={researchState}
                         onDownload={handleDownloadData}
                         onClose={async () => {
-                            await resetStudy();
+                            try { await resetStudy(); } catch (e) { console.error("Error resetting:", e); }
                             window.location.reload();
                         }}
                     />
@@ -429,6 +443,23 @@ export default function OntologyPage() {
                     totalCases={researchCases ? researchCases.length : (researchState.playlist?.length || 0)}
                     isLastCase={researchState.playlist && researchState.currentCaseIndex === researchState.playlist.length - 1}
                 />
+
+                <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Withdraw and Delete All Data?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete ALL local progress and remove your study data from our servers. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={performReset} className="bg-red-600 hover:bg-red-700 text-white">
+                                Withdraw
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </ErrorBoundary>
     );

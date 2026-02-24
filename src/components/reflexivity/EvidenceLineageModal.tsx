@@ -24,6 +24,31 @@ export function EvidenceLineageModal({
     quotes,
     sourceType = "Trace"
 }: EvidenceLineageModalProps) {
+    const renderContextWithHighlight = (contextText: string, quoteText: string) => {
+        if (!contextText) return null;
+        if (!quoteText) return <span className="whitespace-pre-wrap">{contextText}</span>;
+
+        // Clean up quote for searching (remove leading/trailing ellipses or basic quotes that AI might wrap it in)
+        const cleanQuote = quoteText.replace(/^[\s\.\"\']+/, '').replace(/[\s\.\"\']+$/, '').trim();
+
+        if (!cleanQuote || cleanQuote.length < 5) return <span className="whitespace-pre-wrap">{contextText}</span>;
+
+        const idx = contextText.indexOf(cleanQuote);
+        if (idx === -1) return <span className="whitespace-pre-wrap">{contextText}</span>;
+
+        const before = contextText.substring(0, idx);
+        const match = contextText.substring(idx, idx + cleanQuote.length);
+        const after = contextText.substring(idx + cleanQuote.length);
+
+        return (
+            <span className="whitespace-pre-wrap block">
+                {before}
+                <mark className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5 font-medium">{match}</mark>
+                {after}
+            </span>
+        );
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
@@ -58,8 +83,9 @@ export function EvidenceLineageModal({
                                     </div>
                                 )}
                                 {quote.context && (
-                                    <div className="mt-2 text-xs text-slate-500 bg-slate-50 p-2 rounded">
-                                        Context: {quote.context}
+                                    <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-3 rounded border border-slate-100 shadow-inner max-h-60 overflow-y-auto">
+                                        <div className="font-semibold text-slate-400 uppercase tracking-widest text-[10px] mb-2">Expanded Context</div>
+                                        {renderContextWithHighlight(quote.context, quote.text)}
                                     </div>
                                 )}
                             </div>

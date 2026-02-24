@@ -18,6 +18,7 @@ export interface EvidenceQuote {
     id: string;
     heading?: string;
     text: string;
+    context?: string;
     sourceRef: { docId: string; section?: string; paragraph?: string; };
     actorTags: string[];
     mechanismTags: string[];
@@ -68,6 +69,7 @@ export interface StudyCase {
     searchChips?: string[];
     claim?: GhostNodeClaim;
     evaluationConfig?: EvaluationConfig;
+    structuralAnalysis?: any; // Reusing node-level any structure for port
 }
 
 export type InstitutionalLogicStrength = 'weak' | 'moderate' | 'dominant' | null;

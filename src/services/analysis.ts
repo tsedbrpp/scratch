@@ -64,7 +64,7 @@ export const analyzeDocument = async (
     }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage", force: boolean = false): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };

@@ -64,7 +64,7 @@ export function ConceptList({ nodes, selectedNodeId, onSelectNode }: ConceptList
                                     </p>
                                 )}
                                 {node.isGhost && node.ghostReason && (
-                                    <div className="bg-purple-50 p-2 rounded text-[10px] text-purple-700 border-l-2 border-purple-600 mb-2">
+                                    <div className="bg-purple-50 p-2 rounded text-[10px] text-purple-700 border-l-2 border-purple-600 mb-2 pointer-events-none">
                                         <span className="font-semibold">Why absent?</span> <QuoteHighlighter text={node.ghostReason} />
                                     </div>
                                 )}

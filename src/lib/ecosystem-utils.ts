@@ -15,7 +15,7 @@ export const SWISS_COLORS = {
 };
 
 export const normalizeTaxonomyKey = (type: string): string => {
-    let key = type.toLowerCase().replace(/\s/g, "");
+    const key = type.toLowerCase().replace(/\s/g, "");
     if (key.includes('startup') || key.includes('company')) return 'privatetech';
     if (key.includes('policy') || key.includes('government') || key.includes('regulator')) return 'policymaker';
     if (key.includes('civil') || key.includes('ngo') || key.includes('union')) return 'civilsociety';

@@ -30,7 +30,7 @@ export function ClaimCard({ claim }: ClaimCardProps) {
                 <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-5 w-5 text-purple-600" />
                     <h4 className="text-sm font-bold text-slate-900">
-                        {claim.summaryBullets.length > 0 ? "Analytical Impact & Challenges" : "InstantTea Claim"}
+                        Analytical Impact & Challenges
                     </h4>
                 </div>
 

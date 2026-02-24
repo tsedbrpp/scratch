@@ -1,4 +1,4 @@
-// Force rebuild
+// Force rebuild 2
 import { StorageService } from '@/lib/storage-service';
 import { ABSENCE_PROMPT } from './absence';
 import { ASSEMBLAGE_PROMPT } from './assemblage';
@@ -21,6 +21,9 @@ import { STRESS_TEST_SYSTEM_PROMPT } from './stress-test';
 import { MICRO_FASCISM_RISK_SUMMARY_PROMPT_TEMPLATE } from './micro-fascism';
 import { LIBERATORY_CAPACITY_SUMMARY_PROMPT_TEMPLATE } from './liberatory';
 import { ANT_TRACE_PROMPT, ASSEMBLAGE_REALIST_PROMPT, HYBRID_REFLEXIVE_PROMPT } from './theoretical-prompts';
+import { GHOST_NODES_COMBINED_PASS_1_PROMPT, GHOST_NODES_PASS_2_PROMPT } from './ghost-nodes';
+import { STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './structural-concern';
+import { ANTI_STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './anti-structural-concern';
 
 export interface PromptDefinition {
     id: string;
@@ -431,6 +434,53 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
             format: 'json',
             requiredKeys: ['frames', 'rhetorical_strategies', 'reconfiguration']
         }
+    },
+    'ghost_nodes_combined_pass_1': {
+        id: 'ghost_nodes_combined_pass_1',
+        name: 'Ghost Nodes: Theme & Actor Scan',
+        description: 'Extracts dominant discourses and broadly identifies absent actor candidates.',
+        category: 'Extraction',
+        defaultValue: GHOST_NODES_COMBINED_PASS_1_PROMPT,
+        version: '1.1.0',
+        lastUpdated: '2026-02-23',
+        changelog: ['Combined Pass 0.5 and Pass 1 into a single optimized prompt'],
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['dominantDiscourses', 'ghostNodeCandidates']
+        }
+    },
+    'ghost_nodes_pass_2': {
+        id: 'ghost_nodes_pass_2',
+        name: 'Ghost Nodes: Deep Dive',
+        description: 'Performs forensic evidence grounding on absent actor candidates.',
+        category: 'Analysis',
+        defaultValue: GHOST_NODES_PASS_2_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-02-23',
+        changelog: ['Isolated from hardcoded codebase'],
+        outputSchema: { format: 'json' }
+    },
+    'structural_concern': {
+        id: 'structural_concern',
+        name: 'Structural Concern Analysis',
+        description: 'Performs a thesis-driven structural exclusion mapping grounded in exact excerpts.',
+        category: 'Analysis',
+        defaultValue: STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-02-23',
+        changelog: ['Extracted from service into registry'],
+        outputSchema: { format: 'json' }
+    },
+    'anti_structural_concern': {
+        id: 'anti_structural_concern',
+        name: 'Anti-Structural Concern Challenge',
+        description: 'Challenges a proposed Ghost Node by arguing it is not justified based on excerpts.',
+        category: 'Analysis',
+        defaultValue: ANTI_STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-02-24',
+        changelog: ['Added challenge prompt for structural exclusion'],
+        outputSchema: { format: 'json' }
     }
 };
 

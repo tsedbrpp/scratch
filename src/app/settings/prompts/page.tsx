@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RotateCcw, Save, AlertCircle, Play, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, RotateCcw, Save, AlertCircle, Play, Sparkles, Search } from "lucide-react";
 import Link from "next/link";
 import { PromptDefinition } from "@/lib/prompts/registry";
 
@@ -82,6 +83,7 @@ const PromptEditor = ({ value, onChange }: { value: string, onChange: (val: stri
 
 export default function PromptSettingsPage() {
     const [prompts, setPrompts] = useState<PromptWithState[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
@@ -99,7 +101,7 @@ export default function PromptSettingsPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
-            const res = await fetch('/api/prompts', { headers });
+            const res = await fetch('/api/prompts', { headers, cache: 'no-store' });
             const data = await res.json();
             if (data.prompts) {
                 setPrompts(data.prompts.map((p: any) => ({
@@ -241,6 +243,21 @@ export default function PromptSettingsPage() {
         }
     };
 
+    const filteredPrompts = prompts.filter(prompt => {
+        if (!searchQuery.trim()) return true;
+        const lowerQuery = searchQuery.toLowerCase();
+        return prompt.name.toLowerCase().includes(lowerQuery) ||
+            prompt.description?.toLowerCase().includes(lowerQuery) ||
+            prompt.category?.toLowerCase().includes(lowerQuery);
+    });
+
+    const groupedPrompts = prompts.reduce((acc, prompt) => {
+        const category = prompt.category || "Uncategorized";
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(prompt);
+        return acc;
+    }, {} as Record<string, PromptWithState[]>);
+
     return (
         <div className="container mx-auto py-10 max-w-4xl">
             <div className="flex items-center justify-between mb-8">
@@ -254,123 +271,177 @@ export default function PromptSettingsPage() {
 
             </div>
 
+            <div className="mb-6 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                    placeholder="Search prompts by name, description, or category..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-white"
+                />
+            </div>
+
+            {!isLoading && prompts.length > 0 && !searchQuery.trim() && (
+                <div className="mb-10 p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+                    <h2 className="text-xl font-semibold mb-6 flex items-center text-slate-800">
+                        <Sparkles className="w-5 h-5 mr-2 text-indigo-500" />
+                        Prompt Directory
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-8">
+                        {Object.entries(groupedPrompts)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([category, catPrompts]) => (
+                                <div key={category}>
+                                    <h3 className="font-medium text-slate-900 mb-3 border-b border-slate-200 pb-2 flex items-center justify-between">
+                                        {category}
+                                        <Badge variant="secondary" className="text-xs bg-slate-200/50 text-slate-600 font-normal">
+                                            {catPrompts.length}
+                                        </Badge>
+                                    </h3>
+                                    <ul className="space-y-3">
+                                        {catPrompts.map(p => (
+                                            <li key={p.id}>
+                                                <a
+                                                    href={`#prompt-${p.id}`}
+                                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition-colors block mb-0.5"
+                                                >
+                                                    {p.name}
+                                                </a>
+                                                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed" title={p.description}>
+                                                    {p.description}
+                                                </p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
+
             {isLoading ? (
                 <div className="flex justify-center p-12">
                     <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                 </div>
             ) : (
                 <div className="grid gap-6">
-                    {prompts.map(prompt => (
-                        <Card key={prompt.id} className={`transition-all ${editingId === prompt.id ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md' : ''}`}>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <CardTitle className="text-lg font-semibold">{prompt.name}</CardTitle>
-                                        {prompt.isModified && (
-                                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                                                Customized
-                                            </Badge>
-                                        )}
-                                        {/* DEBUG: Show Admin Status */}
-                                        {prompt.isEditable && (
-                                            <Badge variant="outline" className="border-indigo-200 text-indigo-700">
-                                                Admin
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        {editingId === prompt.id && prompt.isEditable ? (
-                                            <>
-                                                <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-                                                <Button size="sm" onClick={() => handleSave(prompt.id)} disabled={isSaving}>
-                                                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                                                    Save Changes
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {prompt.isEditable && prompt.isModified && (
-                                                    <Button variant="outline" size="sm" onClick={() => handleReset(prompt.id)} title="Restore Default">
-                                                        <RotateCcw className="h-4 w-4 mr-2" />
-                                                        Reset
+                    {filteredPrompts.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500 border rounded-lg bg-slate-50/50">
+                            No prompts found matching "{searchQuery}"
+                        </div>
+                    ) : (
+                        filteredPrompts.map(prompt => (
+                            <Card id={`prompt-${prompt.id}`} key={prompt.id} className={`scroll-mt-8 transition-all ${editingId === prompt.id ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md' : ''}`}>
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <CardTitle className="text-lg font-semibold">{prompt.name}</CardTitle>
+                                            {prompt.isModified && (
+                                                <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                                                    Customized
+                                                </Badge>
+                                            )}
+                                            {/* DEBUG: Show Admin Status */}
+                                            {prompt.isEditable && (
+                                                <Badge variant="outline" className="border-indigo-200 text-indigo-700">
+                                                    Admin
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {editingId === prompt.id && prompt.isEditable ? (
+                                                <>
+                                                    <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
+                                                    <Button size="sm" onClick={() => handleSave(prompt.id)} disabled={isSaving}>
+                                                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                                        Save Changes
                                                     </Button>
-                                                )}
-                                                {prompt.isEditable && (
-                                                    <Button variant="outline" size="sm" onClick={() => handleEdit(prompt)}>
-                                                        Edit Prompt
-                                                    </Button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {prompt.isEditable && prompt.isModified && (
+                                                        <Button variant="outline" size="sm" onClick={() => handleReset(prompt.id)} title="Restore Default">
+                                                            <RotateCcw className="h-4 w-4 mr-2" />
+                                                            Reset
+                                                        </Button>
+                                                    )}
+                                                    {prompt.isEditable && (
+                                                        <Button variant="outline" size="sm" onClick={() => handleEdit(prompt)}>
+                                                            Edit Prompt
+                                                        </Button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
 
-                                    {/* Test Playground */}
-                                    {prompt.isEditable && (
-                                        <div className="mt-6 pt-6 border-t border-slate-200">
-                                            <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                                <Sparkles className="h-4 w-4 text-indigo-500" />
-                                                Test Playground
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-xs font-medium text-slate-500 mb-1 block">Sample Input</label>
-                                                    <Textarea
-                                                        placeholder="Paste a snippet of text to test..."
-                                                        value={prompt.testInput}
-                                                        onChange={(e) => updatePromptState(prompt.id, { testInput: e.target.value })}
-                                                        className="h-40 font-mono text-xs"
-                                                    />
-                                                    <Button
-                                                        onClick={() => handleTest(prompt)}
-                                                        disabled={prompt.isTesting || !prompt.testInput?.trim()}
-                                                        className="mt-2 w-full"
-                                                        size="sm"
-                                                        variant="secondary"
-                                                    >
-                                                        {prompt.isTesting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Play className="h-3 w-3 mr-2" />}
-                                                        Run Test
-                                                    </Button>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-medium text-slate-500 mb-1 block">AI Output</label>
-                                                    <div className="h-40 bg-slate-50 rounded-md border p-3 overflow-y-auto text-xs font-mono whitespace-pre-wrap">
-                                                        {prompt.testOutput || <span className="text-slate-400 italic">Output will appear here...</span>}
+                                        {/* Test Playground */}
+                                        {prompt.isEditable && (
+                                            <div className="mt-6 pt-6 border-t border-slate-200">
+                                                <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                                                    <Sparkles className="h-4 w-4 text-indigo-500" />
+                                                    Test Playground
+                                                </h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-xs font-medium text-slate-500 mb-1 block">Sample Input</label>
+                                                        <Textarea
+                                                            placeholder="Paste a snippet of text to test..."
+                                                            value={prompt.testInput}
+                                                            onChange={(e) => updatePromptState(prompt.id, { testInput: e.target.value })}
+                                                            className="h-40 font-mono text-xs"
+                                                        />
+                                                        <Button
+                                                            onClick={() => handleTest(prompt)}
+                                                            disabled={prompt.isTesting || !prompt.testInput?.trim()}
+                                                            className="mt-2 w-full"
+                                                            size="sm"
+                                                            variant="secondary"
+                                                        >
+                                                            {prompt.isTesting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Play className="h-3 w-3 mr-2" />}
+                                                            Run Test
+                                                        </Button>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-medium text-slate-500 mb-1 block">AI Output</label>
+                                                        <div className="h-40 bg-slate-50 rounded-md border p-3 overflow-y-auto text-xs font-mono whitespace-pre-wrap">
+                                                            {prompt.testOutput || <span className="text-slate-400 italic">Output will appear here...</span>}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        )}
+                                    </div>
+                                    <CardDescription>{prompt.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {editingId === prompt.id ? (
+                                        <div>
+                                            <PromptEditor
+                                                value={editValue}
+                                                onChange={(val) => setEditValue(val)}
+                                            />
+                                            <div className="mt-2 text-xs text-slate-500 flex flex-col gap-1">
+                                                <div className="flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    Variables like <code>`{"${text}"}`</code> or <code>`{"${actors}"}`</code> must be preserved for the prompt to work.
+                                                </div>
+                                                {prompt.outputSchema && (
+                                                    <div className="flex items-center gap-1 text-amber-600 font-medium">
+                                                        <AlertCircle className="h-3 w-3" />
+                                                        Warning: Do NOT change the JSON output keys or structure, or the visualization will break.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-slate-50 p-4 rounded-md border text-sm font-mono text-slate-600 whitespace-pre-wrap max-h-[200px] overflow-y-auto hover:max-h-[500px] transition-all duration-300">
+                                            {prompt.currentValue}
                                         </div>
                                     )}
-                                </div>
-                                <CardDescription>{prompt.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {editingId === prompt.id ? (
-                                    <div>
-                                        <PromptEditor
-                                            value={editValue}
-                                            onChange={(val) => setEditValue(val)}
-                                        />
-                                        <div className="mt-2 text-xs text-slate-500 flex flex-col gap-1">
-                                            <div className="flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                Variables like <code>`{"${text}"}`</code> or <code>`{"${actors}"}`</code> must be preserved for the prompt to work.
-                                            </div>
-                                            {prompt.outputSchema && (
-                                                <div className="flex items-center gap-1 text-amber-600 font-medium">
-                                                    <AlertCircle className="h-3 w-3" />
-                                                    Warning: Do NOT change the JSON output keys or structure, or the visualization will break.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="bg-slate-50 p-4 rounded-md border text-sm font-mono text-slate-600 whitespace-pre-wrap max-h-[200px] overflow-y-auto hover:max-h-[500px] transition-all duration-300">
-                                        {prompt.currentValue}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
                 </div>
             )}
         </div>

@@ -23,7 +23,7 @@ export function QuoteHighlighter({ text, className = '' }: { text: string; class
                     return (
                         <span
                             key={i}
-                            className="italic bg-slate-100 text-slate-700 border-l-2 border-purple-300 pl-1.5 py-0.5 mx-0.5 inline-block rounded-r-sm"
+                            className="italic bg-slate-100 text-slate-700 border-l-2 border-purple-300 pl-1.5 py-0.5 mx-0.5 inline-block rounded-r-sm pointer-events-none"
                             title="Verbatim quote from document"
                         >
                             {part}

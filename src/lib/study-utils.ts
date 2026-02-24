@@ -83,7 +83,37 @@ export function generateCasesFromOntology(
                 evidenceQuotes: mappedEvidenceQuotes.length > 0 ? mappedEvidenceQuotes : undefined,
                 claim: node.claim,
                 roster: mappedRoster,
-                missingSignals: mappedMissingSignals.length > 0 ? mappedMissingSignals : undefined
+                structuralAnalysis: node.structuralAnalysis,
+                missingSignals: mappedMissingSignals.length > 0 ? mappedMissingSignals : undefined,
+                evaluationConfig: {
+                    presenceGateQuestion: `Based on the evidence, is the actor "${node.label}" materially excluded or marginalized in this document?`,
+                    presenceGateOptions: [
+                        "Yes - clearly excluded/marginalized",
+                        "No - adequately represented",
+                        "Unsure/Depends"
+                    ],
+                    strengthAbsence: {
+                        min: 0,
+                        max: 100,
+                        anchors: [
+                            { value: 0, label: "Weak Absence" },
+                            { value: 50, label: "Moderate" },
+                            { value: 100, label: "Profound Absence" }
+                        ]
+                    },
+                    confidenceOptions: ["High", "Medium", "Low"],
+                    feasibility: {
+                        min: 0,
+                        max: 100,
+                        anchors: [
+                            { value: 0, label: "Highly Impractical" },
+                            { value: 50, label: "Possible" },
+                            { value: 100, label: "Highly Feasible" }
+                        ],
+                        mechanismGateThreshold: 60,
+                        mechanismOptions: ["Policy Amendment", "Enforcement Guidelines", "Public Consultation", "Funding Allocation", "Other"]
+                    }
+                }
             });
         });
 
