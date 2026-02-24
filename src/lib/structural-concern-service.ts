@@ -119,8 +119,8 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
                                 result,
                                 antiResult
                             );
-                        } catch (escalationError) {
-                            console.warn(`[StructuralConcernService] Escalation evaluation failed. Error:`, escalationError);
+                        } catch (escalationError: any) {
+                            console.warn(`[StructuralConcernService] Escalation evaluation failed for ${actorName}. Output might have failed schema validation. Error:`, escalationError?.message || escalationError);
                         }
                     }
 
