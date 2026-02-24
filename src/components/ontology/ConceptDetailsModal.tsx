@@ -136,7 +136,7 @@ export function EvaluationInterface({
 
             const data = await response.json();
             if (data.success && data.analysis) {
-                setGeneratedStructuralAnalysis(data.analysis);
+                setGeneratedStructuralAnalysis(data.analysis.structural_concern || data.analysis);
             } else {
                 console.error("Failed to analyze:", data.error);
                 alert("Failed to run structural analysis.");
@@ -169,7 +169,7 @@ export function EvaluationInterface({
 
             const data = await response.json();
             if (data.success && data.analysis) {
-                setChallengedAnalysis(data.analysis);
+                setChallengedAnalysis(data.analysis.structural_concern || data.analysis);
             } else {
                 console.error("Failed to challenge:", data.error);
                 alert("Failed to run challenge analysis.");
