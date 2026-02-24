@@ -224,7 +224,7 @@ export function EvaluationInterface({
         ...baseCase,
         // [NEW] Ensure structuralAnalysis is explicitly passed through to the UI. If challenged, display it below.
         structuralAnalysis: generatedStructuralAnalysis || baseCase.structuralAnalysis || ghostData.structuralAnalysis || null,
-        antiStructuralAnalysis: baseCase.antiStructuralAnalysis || ghostData.antiStructuralAnalysis || null,
+        antiStructuralAnalysis: generatedStructuralAnalysis?.antiStructuralAnalysis || baseCase.antiStructuralAnalysis || baseCase.structuralAnalysis?.antiStructuralAnalysis || ghostData.antiStructuralAnalysis || ghostData.structuralAnalysis?.antiStructuralAnalysis || null,
         claim: {
             ...(baseCase.claim || {}),
             summaryBullets: baseCase.claim?.summaryBullets || [],
