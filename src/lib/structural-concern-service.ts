@@ -107,21 +107,20 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
 
                     let escalationResult = undefined;
 
-                    // If anti mode successfully ran, evaluate the conflict
-                    if (!antiResult.insufficientEvidence) {
-                        try {
-                            escalationResult = await this.evaluateEscalation(
-                                openai,
-                                userId,
-                                actorName,
-                                documentTitle,
-                                excerpts,
-                                result,
-                                antiResult
-                            );
-                        } catch (escalationError: any) {
-                            console.warn(`[StructuralConcernService] Escalation evaluation failed for ${actorName}. Output might have failed schema validation. Error:`, escalationError?.message || escalationError);
-                        }
+                    // Run escalation evaluate regardless of whether the anti mode found sufficient evidence or not.
+                    // If the anti side had no evidence to mount a challenge, the escalation prompt can still evaluate the pro side.
+                    try {
+                        escalationResult = await this.evaluateEscalation(
+                            openai,
+                            userId,
+                            actorName,
+                            documentTitle,
+                            excerpts,
+                            result,
+                            antiResult
+                        );
+                    } catch (escalationError: any) {
+                        console.warn(`[StructuralConcernService] Escalation evaluation failed for ${actorName}. Output might have failed schema validation. Error:`, escalationError?.message || escalationError);
                     }
 
                     // Return both formats. The API route currently unwraps `analysis.structural_concern`.
