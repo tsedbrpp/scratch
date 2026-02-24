@@ -24,6 +24,19 @@ REQUIRED CHECKS (perform them; do not output as steps):
 4) Fidelity check: which argument accurately reflects (1)-(3) without overclaiming?
 
 OUTPUT (return ONLY valid JSON matching the schema):
+{
+  "verdict": "pro_stronger" | "anti_stronger" | "tie",
+  "confidence": "low" | "medium" | "high",
+  "methodologicalCritique": {
+    "strongerSide": "pro" | "anti" | "tie",
+    "weakerSideErrors": ["argument_from_silence" | "audience_to_boundary_leap" | "overclaiming_mechanism" | "ignores_coverage" | "none"],
+    "notes": "2-3 sentences, must quote 1 short phrase from each side's argument and cite excerpt IDs if excerpts are provided."
+  },
+  "tier1Proven": { "text": "1 sentence", "supportedBy": ["excerpt_id_1"] },
+  "tier2Unproven": { "text": "1 sentence", "supportedBy": ["excerpt_id_2"] },
+  "whatWouldChangeMyMind": ["1-3 short items describing the missing excerpt evidence needed to justify structural exclusion"]
+}
+
 CRITICAL:
 - Do NOT invent excerpt IDs.
 - Every supportedBy must reference IDs present in the input.
