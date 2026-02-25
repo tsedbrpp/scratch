@@ -587,51 +587,76 @@ export function EvaluationInterface({
                                                     </Card>
 
                                                     {/* GNDP Counterfactual Panel */}
-                                                    {effectiveCase?.counterfactual && (
-                                                        <Card className="shadow-sm border-dashed border-amber-200 bg-amber-50/30">
+                                                    {effectiveCase?.counterfactual && (() => {
+                                                        const cf = effectiveCase.counterfactual;
+                                                        const TERR_LABELS: Record<string, string> = {
+                                                            destabilizesPower: 'Shifts existing power dynamics',
+                                                            introducesAccountability: 'Introduces new accountability',
+                                                            reconfiguresData: 'Changes data collection obligations',
+                                                            altersEnforcement: 'Modifies enforcement mechanisms',
+                                                        };
+                                                        const humanize = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                                                        return (
+                                                        <Card className="shadow-sm border border-slate-200 bg-white">
                                                             <CardContent className="p-4">
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                                                                    <h4 className="text-sm font-semibold text-amber-800">Counterfactual Impact</h4>
-                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] font-normal">speculative</Badge>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <h4 className="text-sm font-semibold text-slate-800">What would change if included?</h4>
+                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] font-normal">{'\u26A0'} speculative</Badge>
                                                                 </div>
-                                                                <div className="space-y-2 text-xs text-slate-700">
+                                                                {cf.reasoning && (
+                                                                    <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2 mb-3">
+                                                                        <p className="text-[11px] text-slate-700 leading-relaxed">{cf.reasoning}</p>
+                                                                    </div>
+                                                                )}
+                                                                <div className="space-y-3 text-xs text-slate-700">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="font-medium text-slate-500 w-[70px]">Impact:</span>
-                                                                        <Badge className={`text-[10px] ${effectiveCase.counterfactual.counterfactualImpact === 'Transformative' ? 'bg-red-100 text-red-700' :
-                                                                            effectiveCase.counterfactual.counterfactualImpact === 'Moderate' ? 'bg-amber-100 text-amber-700' :
-                                                                                'bg-gray-100 text-gray-600'
-                                                                            }`}>
-                                                                            {effectiveCase.counterfactual.counterfactualImpact}
+                                                                        <span className="text-slate-500 font-medium">Overall impact:</span>
+                                                                        <Badge className={`text-[10px] ${
+                                                                            cf.counterfactualImpact === 'Transformative' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                                            cf.counterfactualImpact === 'Moderate' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                                                            'bg-gray-100 text-gray-600 border-gray-200'
+                                                                        }`}>
+                                                                            {cf.counterfactualImpact}
                                                                         </Badge>
                                                                     </div>
-                                                                    {effectiveCase.counterfactual.territorialization && (
-                                                                        <div className="grid grid-cols-2 gap-1 mt-1">
-                                                                            {Object.entries(effectiveCase.counterfactual.territorialization).map(([key, val]: [string, any]) => (
-                                                                                <div key={key} className="flex items-center gap-1">
-                                                                                    <span className={`h-2 w-2 rounded-full ${val ? 'bg-red-400' : 'bg-gray-300'}`} />
-                                                                                    <span className="text-[10px] text-slate-600">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                    {effectiveCase.counterfactual.riskRedistribution?.beneficiariesOfAbsence?.length > 0 && (
-                                                                        <div className="mt-2">
-                                                                            <span className="text-[10px] font-medium text-slate-500">Benefits from absence:</span>
-                                                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                                                {effectiveCase.counterfactual.riskRedistribution.beneficiariesOfAbsence.map((b: string) => (
-                                                                                    <Badge key={b} variant="secondary" className="text-[9px]">{b}</Badge>
+                                                                    {cf.territorialization && (
+                                                                        <div>
+                                                                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Power dynamics</span>
+                                                                            <div className="mt-1 space-y-1">
+                                                                                {Object.entries(cf.territorialization).map(([key, val]: [string, any]) => (
+                                                                                    <div key={key} className="flex items-center gap-2">
+                                                                                        <span className={`text-[11px] font-bold ${val ? 'text-green-600' : 'text-gray-400'}`}>{val ? '\u2713' : '\u2717'}</span>
+                                                                                        <span className={`text-[11px] ${val ? 'text-slate-700' : 'text-slate-400'}`}>{TERR_LABELS[key] || key}</span>
+                                                                                    </div>
                                                                                 ))}
                                                                             </div>
                                                                         </div>
                                                                     )}
-                                                                    {effectiveCase.counterfactual.reasoning && (
-                                                                        <p className="text-[11px] text-slate-500 italic mt-2">{effectiveCase.counterfactual.reasoning}</p>
+                                                                    {cf.riskRedistribution?.beneficiariesOfAbsence?.length > 0 && (
+                                                                        <div>
+                                                                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Who benefits from their exclusion?</span>
+                                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                                {cf.riskRedistribution.beneficiariesOfAbsence.map((b: string) => (
+                                                                                    <Badge key={b} variant="outline" className="text-[10px] border-slate-300 text-slate-600">{humanize(b)}</Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {cf.riskRedistribution?.shieldedActors?.length > 0 && (
+                                                                        <div>
+                                                                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shielded from scrutiny</span>
+                                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                                {cf.riskRedistribution.shieldedActors.map((s: string) => (
+                                                                                    <Badge key={s} variant="outline" className="text-[10px] border-red-200 text-red-600">{humanize(s)}</Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
-                                                    )}
+                                                        );
+                                                    })()}
 
                                                     {/* GNDP Access Profile */}
                                                     {(ghostData.oppAccess || ghostData.dataVisibility || ghostData.representationType || ghostData.sanctionPower) && (
