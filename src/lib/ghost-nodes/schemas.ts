@@ -33,11 +33,11 @@ const RepresentationTypeSchema = z.enum(['None', 'Proxy', 'Collective', 'Direct'
 const CounterfactualImpactSchema = z.enum(['None', 'Moderate', 'Transformative']);
 
 const ScoreBreakdownSchema = z.object({
-    materialImpact: z.number().min(0).max(30),
-    oppExclusion: z.number().min(0).max(25),
-    sanctionAbsence: z.number().min(0).max(20),
-    dataInvisibility: z.number().min(0).max(15),
-    representationGap: z.number().min(0).max(10),
+    materialImpact: z.number().min(0).max(30).nullable(),
+    oppExclusion: z.number().min(0).max(25).nullable(),
+    sanctionAbsence: z.number().min(0).max(20).nullable(),
+    dataInvisibility: z.number().min(0).max(15).nullable(),
+    representationGap: z.number().min(0).max(10).nullable(),
 });
 
 // --- Pass 1A: Extraction-Only Schema ---
