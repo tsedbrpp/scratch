@@ -91,7 +91,7 @@ ${structuredText.substring(0, 8000)}
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
             response_format: { type: "json_object" },
-            max_tokens: 400,
+            max_completion_tokens: 400,
         });
         const parsed = JSON.parse(res.choices[0].message.content);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,7 +161,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 { role: "user", content: pass1APrompt },
             ],
             response_format: { type: "json_object" },
-            max_tokens: 4000,
+            max_completion_tokens: 4000,
         });
 
         let formalActors: FormalActor[] = [];
@@ -202,7 +202,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 { role: "user", content: pass1BPrompt },
             ],
             response_format: { type: "json_object" },
-            max_tokens: 4000,
+            max_completion_tokens: 4000,
         });
 
         let candidates: CandidateActor[] = [];
@@ -395,7 +395,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                     ],
                     response_format: { type: "json_object" },
                     temperature: 0.4,
-                    max_tokens: 8000,
+                    max_completion_tokens: 8000,
                 });
 
                 try {
