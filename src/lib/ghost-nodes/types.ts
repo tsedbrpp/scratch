@@ -121,7 +121,7 @@ export interface DetectedGhostNode {
     }>;
     structuralAnalysis?: any;
     // GNDP v1.0 extensions
-    ghostType?: GhostTypology;
+    ghostType?: GhostTypology | null;
     evidenceGrade?: EvidenceGrade;
     absenceScore?: number | null;
     scoreBreakdown?: ScoreBreakdown;
@@ -240,7 +240,7 @@ export interface AbsentActorResponse {
     }>;
     discourseThreats?: string[];
     // GNDP v1.0 extensions
-    ghostType?: GhostTypology;
+    ghostType?: GhostTypology | null;
     evidenceGrade?: EvidenceGrade;
     absenceScore?: number | null;
     scoreBreakdown?: ScoreBreakdown;

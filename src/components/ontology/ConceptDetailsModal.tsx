@@ -5,7 +5,7 @@ import { OntologyNode } from '@/types/ontology';
 import { getColorForCategory } from '@/lib/ontology-utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, Clock, ArrowRight, Check, Search } from 'lucide-react';
+import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, Clock, ArrowRight, Check, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GhostNodeSurvey } from './research/GhostNodeSurvey';
 import { Card, CardContent } from '@/components/ui/card';
@@ -216,7 +216,18 @@ export function EvaluationInterface({
         pane2: {
             hypothesis: ghostData.exclusionType || 'Missing Voice',
             reasoning: ghostData.description || 'No reasoning provided.'
-        }
+        },
+        // GNDP v1.0 fields
+        ghostType: ghostData.ghostType || null,
+        evidenceGrade: ghostData.evidenceGrade || null,
+        absenceScore: ghostData.absenceScore ?? null,
+        scoreBreakdown: ghostData.scoreBreakdown || null,
+        counterfactual: ghostData.counterfactual || null,
+        materialImpact: ghostData.materialImpact || null,
+        oppAccess: ghostData.oppAccess || null,
+        sanctionPower: ghostData.sanctionPower || null,
+        dataVisibility: ghostData.dataVisibility || null,
+        representationType: ghostData.representationType || null,
     } as any : null);
 
     // [NEW] Apply consistent analytical enrichment to the effective case
@@ -362,6 +373,94 @@ export function EvaluationInterface({
                                                         <p>{selectedNode.exclusionType ? (EXCLUSION_DESCRIPTIONS[selectedNode.exclusionType] || "Type of exclusion detected.") : "This actor is not represented in the text."}</p>
                                                     </TooltipContent>
                                                 </Tooltip>
+
+                                                {/* GNDP v1.0 Badges */}
+                                                {ghostData.ghostType && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className={`ml-2 cursor-help ${ghostData.ghostType === 'Structural' ? 'bg-red-100 text-red-800 border-red-200' :
+                                                                ghostData.ghostType === 'Data' ? 'bg-cyan-100 text-cyan-800 border-cyan-200' :
+                                                                    ghostData.ghostType === 'Representational' ? 'bg-violet-100 text-violet-800 border-violet-200' :
+                                                                        ghostData.ghostType === 'Scale' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                                                                            ghostData.ghostType === 'Temporal' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                                                                                ghostData.ghostType === 'SupplyChain' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                                                                    'bg-gray-100 text-gray-800 border-gray-200'
+                                                                }`}>
+                                                                {ghostData.ghostType} Ghost
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[250px]">
+                                                            <p>{({
+                                                                'Structural': 'Excluded from formal governance architecture',
+                                                                'Data': 'Experience not measured within compliance structures',
+                                                                'Representational': 'Proxy speaks without accountability or binding representation',
+                                                                'Scale': 'Present at one governance scale but absent at another',
+                                                                'Temporal': 'Affected later but excluded from early-stage design',
+                                                                'SupplyChain': 'Hidden upstream/downstream labor or resource contribution',
+                                                            } as Record<string, string>)[ghostData.ghostType] || 'Ghost typology classification'}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+
+                                                {ghostData.evidenceGrade && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className={`ml-2 cursor-help font-mono text-[10px] ${ghostData.evidenceGrade === 'E4' ? 'bg-green-100 text-green-800 border-green-200' :
+                                                                ghostData.evidenceGrade === 'E3' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                                                    'bg-gray-100 text-gray-500 border-gray-200'
+                                                                }`}>
+                                                                {ghostData.evidenceGrade}
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[250px]">
+                                                            <p>{({
+                                                                'E4': 'Explicit exclusion — direct denial or boundary language',
+                                                                'E3': 'Structural framing — enumerated roles systematically omit this actor',
+                                                                'E2': 'Weak/speculative — non-mention only, no structural evidence',
+                                                                'E1': 'No textual evidence of exclusion found',
+                                                            } as Record<string, string>)[ghostData.evidenceGrade] || 'Evidence quality grade'}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+
+                                                {ghostData.absenceScore != null && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className={`ml-2 cursor-help font-semibold tabular-nums ${ghostData.absenceScore >= 70 ? 'bg-red-100 text-red-800 border-red-300' :
+                                                                ghostData.absenceScore >= 40 ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                                                                    'bg-gray-100 text-gray-600 border-gray-200'
+                                                                }`}>
+                                                                {ghostData.absenceScore}/100
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[280px]">
+                                                            <p className="font-medium mb-1">GNDP Absence Score</p>
+                                                            {ghostData.scoreBreakdown && (
+                                                                <div className="text-[11px] space-y-0.5">
+                                                                    <div>Material Impact: {ghostData.scoreBreakdown.materialImpact}/30</div>
+                                                                    <div>OPP Exclusion: {ghostData.scoreBreakdown.oppExclusion}/25</div>
+                                                                    <div>Sanction Absence: {ghostData.scoreBreakdown.sanctionAbsence}/20</div>
+                                                                    <div>Data Invisibility: {ghostData.scoreBreakdown.dataInvisibility}/15</div>
+                                                                    <div>Representation Gap: {ghostData.scoreBreakdown.representationGap}/10</div>
+                                                                </div>
+                                                            )}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+
+                                                {(ghostData.evidenceGrade === 'E1' || ghostData.evidenceGrade === 'E2') && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className="ml-2 bg-amber-50 text-amber-700 border-amber-300 border-dashed cursor-help">
+                                                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                                                Insufficient Evidence
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[250px]">
+                                                            <p>Evidence grade {ghostData.evidenceGrade}: this ghost node lacks sufficient textual grounding. Score and typology are withheld.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
                                             </>
                                         )}
                                         {isResearchTarget && (
@@ -486,6 +585,79 @@ export function EvaluationInterface({
                                                             </Button>
                                                         </CardContent>
                                                     </Card>
+
+                                                    {/* GNDP Counterfactual Panel */}
+                                                    {effectiveCase?.counterfactual && (
+                                                        <Card className="shadow-sm border-dashed border-amber-200 bg-amber-50/30">
+                                                            <CardContent className="p-4">
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                                                    <h4 className="text-sm font-semibold text-amber-800">Counterfactual Impact</h4>
+                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] font-normal">speculative</Badge>
+                                                                </div>
+                                                                <div className="space-y-2 text-xs text-slate-700">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-medium text-slate-500 w-[70px]">Impact:</span>
+                                                                        <Badge className={`text-[10px] ${effectiveCase.counterfactual.counterfactualImpact === 'Transformative' ? 'bg-red-100 text-red-700' :
+                                                                            effectiveCase.counterfactual.counterfactualImpact === 'Moderate' ? 'bg-amber-100 text-amber-700' :
+                                                                                'bg-gray-100 text-gray-600'
+                                                                            }`}>
+                                                                            {effectiveCase.counterfactual.counterfactualImpact}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    {effectiveCase.counterfactual.territorialization && (
+                                                                        <div className="grid grid-cols-2 gap-1 mt-1">
+                                                                            {Object.entries(effectiveCase.counterfactual.territorialization).map(([key, val]: [string, any]) => (
+                                                                                <div key={key} className="flex items-center gap-1">
+                                                                                    <span className={`h-2 w-2 rounded-full ${val ? 'bg-red-400' : 'bg-gray-300'}`} />
+                                                                                    <span className="text-[10px] text-slate-600">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    {effectiveCase.counterfactual.riskRedistribution?.beneficiariesOfAbsence?.length > 0 && (
+                                                                        <div className="mt-2">
+                                                                            <span className="text-[10px] font-medium text-slate-500">Benefits from absence:</span>
+                                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                                {effectiveCase.counterfactual.riskRedistribution.beneficiariesOfAbsence.map((b: string) => (
+                                                                                    <Badge key={b} variant="secondary" className="text-[9px]">{b}</Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {effectiveCase.counterfactual.reasoning && (
+                                                                        <p className="text-[11px] text-slate-500 italic mt-2">{effectiveCase.counterfactual.reasoning}</p>
+                                                                    )}
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    )}
+
+                                                    {/* GNDP Access Profile */}
+                                                    {(ghostData.oppAccess || ghostData.dataVisibility || ghostData.representationType || ghostData.sanctionPower) && (
+                                                        <Card className="shadow-sm">
+                                                            <CardContent className="p-4">
+                                                                <h4 className="text-sm font-semibold text-slate-800 mb-2">GNDP Access Profile</h4>
+                                                                <div className="space-y-1.5 text-xs">
+                                                                    {ghostData.oppAccess && (
+                                                                        <div className="flex justify-between"><span className="text-slate-500">OPP Access</span><Badge variant="outline" className="text-[10px]">{ghostData.oppAccess}</Badge></div>
+                                                                    )}
+                                                                    {ghostData.sanctionPower && (
+                                                                        <div className="flex justify-between"><span className="text-slate-500">Sanction Power</span><Badge variant="outline" className="text-[10px]">{ghostData.sanctionPower}</Badge></div>
+                                                                    )}
+                                                                    {ghostData.dataVisibility && (
+                                                                        <div className="flex justify-between"><span className="text-slate-500">Data Visibility</span><Badge variant="outline" className="text-[10px]">{ghostData.dataVisibility}</Badge></div>
+                                                                    )}
+                                                                    {ghostData.representationType && (
+                                                                        <div className="flex justify-between"><span className="text-slate-500">Representation</span><Badge variant="outline" className="text-[10px]">{ghostData.representationType}</Badge></div>
+                                                                    )}
+                                                                    {ghostData.materialImpact && (
+                                                                        <div className="flex justify-between"><span className="text-slate-500">Material Impact</span><Badge variant="outline" className={`text-[10px] ${ghostData.materialImpact === 'High' ? 'border-red-300 text-red-700' : ghostData.materialImpact === 'Medium' ? 'border-amber-300 text-amber-700' : ''}`}>{ghostData.materialImpact}</Badge></div>
+                                                                    )}
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    )}
                                                 </div>
                                             </div>
 

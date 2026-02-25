@@ -156,7 +156,7 @@ export function buildGndpPass2Prompt(
  * Takes top 6 validated ghost nodes for speculative scenario analysis.
  */
 export function buildPass3Prompt(
-    validatedGhostNodes: Array<{ id: string; label: string; ghostReason: string; absenceScore?: number | null; ghostType?: string }>,
+    validatedGhostNodes: Array<{ id: string; label: string; ghostReason: string; absenceScore?: number | null; ghostType?: string | null }>,
 ): string {
     const candidateBlocks = validatedGhostNodes.slice(0, 6).map(g => {
         return `### ${g.label} (${g.id})\n` +

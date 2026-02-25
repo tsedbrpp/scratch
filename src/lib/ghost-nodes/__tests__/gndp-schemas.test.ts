@@ -4,6 +4,7 @@
 // Uses golden mock responses — no LLM calls
 // ===================================================================
 
+/// <reference types="vitest" />
 import { describe, it, expect } from 'vitest';
 import {
     GhostNodesPass1ASchema,
