@@ -238,51 +238,84 @@ Rules for isValid:
 `;
 
 // ---------------------------------------------------------------
-// PASS 3 — COUNTERFACTUAL POWER TEST
+// PASS 3 — COUNTERFACTUAL POWER TEST (v2 — Structured Scenario)
 // ---------------------------------------------------------------
-// Purpose: quarantined speculative reasoning
-// Tag: all outputs are speculative_reasoning
-// Cannot introduce new facts
+// Purpose: quarantined speculative reasoning, now structured
+// Forces: chokepoint ID, causal chains, mechanistic beneficiaries
+// All outputs are conditional, not factual
 // ---------------------------------------------------------------
 
-export const GNDP_PASS_3_PROMPT = `# COUNTERFACTUAL POWER TEST — Speculative Scenario Analysis
+export const GNDP_PASS_3_PROMPT = `# COUNTERFACTUAL POWER TEST — Structured Scenario Analysis
 
 ⚠️ ALL outputs from this analysis are SPECULATIVE REASONING.
-They are scenario-based assessments, not grounded claims.
+Frame every statement as conditional ("If X were required to..."), never as fact.
 
 ## Mission
-For each validated ghost node below, assess what would change if they were formally included in the governance architecture.
+For each validated ghost node below, construct a structured counterfactual scenario answering:
+
+> If [actor] were formally included at a specific governance chokepoint, what structural consequences would follow?
 
 ## Candidates for Analysis
 {{CANDIDATE_BLOCKS}}
 
-## For each candidate, answer THREE questions:
+## Available Governance Gates (from document extraction)
+{{OPP_BLOCKS}}
 
-### 1) Counterfactual Inclusion Simulation
-"If this actor had BINDING RIGHTS at one major Obligatory Passage Point, would governance outcomes materially change?"
-- None: no meaningful change expected
-- Moderate: partial redistribution of oversight or accountability
-- Transformative: fundamentally restructures power, data, or enforcement
+## For each candidate, produce SEVEN structured outputs:
 
-### 2) Territorialization Test (Assemblage Stability)
-Would formal inclusion:
-- destabilizesPower: disrupt current power distribution? (boolean)
-- introducesAccountability: create new accountability flows? (boolean)
-- reconfiguresData: alter data collection, metrics, or audit regimes? (boolean)
-- altersEnforcement: change enforcement triggers or sanctions? (boolean)
+### 1) Chokepoint Identification
+Name the SPECIFIC governance gate (OPP) where inclusion would occur:
+- oppName: the gate name (from the OPP list above, or a reasonable gate)
+- oppType: conformity_assessment | deployment_approval | audit | enforcement | procurement | reporting | other
+- bindingDuty: what this actor would be REQUIRED to do (concrete, max 120 chars)
 
-### 3) Risk Redistribution Analysis
-- beneficiariesOfAbsence: who currently benefits from this actor's absence? (max 5)
-- shieldedActors: who is shielded from accountability by this absence? (max 5)
-- reducesCoalitionFriction: does the absence reduce friction for the dominant coalition? (boolean)
+### 2) Scenario Statement
+Write a full conditional statement (max 300 chars):
+"If [actor] were required to [specific duty] at [specific gate], then [consequence]."
+This must be concrete and anchored to the document.
+
+### 3) Estimated Impact (with qualifier)
+- level: None | Moderate | Transformative
+- qualifier: the CONDITIONS under which this level holds (e.g., "if duties were binding and enforceable")
+Never state impact as categorical fact.
+
+### 4) Causal Mechanism Chain (2-6 ordered steps)
+Show HOW power shifts, not just THAT it shifts.
+Each step must follow from the previous.
+Example: ["Lenders assigned model risk audit duties", "Audit obligations expose vendor scoring algorithms", "Regulators gain secondary enforcement targets", "Borrowers gain appeal pathways through lender responsibility"]
+Each step max 120 chars.
+
+### 5) Beneficiary Mechanisms (max 5)
+For each actor that benefits from the ghost node's CURRENT ABSENCE:
+- actor: who benefits
+- mechanism: WHY they benefit (specific causal reason, max 120 chars)
+Do NOT list actors without explaining the mechanism.
+
+### 6) Shielded Actors (max 5, optional)
+For each actor shielded from scrutiny by the absence:
+- actor: who is shielded
+- mechanism: what scrutiny they avoid (max 120 chars)
+
+### 7) Confidence Assessment
+- evidenceBase: Low | Medium | High — how grounded are the inputs?
+  - Low: based on limited excerpts, no explicit exclusion language
+  - Medium: based on structural framing (E3 evidence)
+  - High: based on explicit exclusion language (E4 evidence)
+- speculativeConfidence: Low | Medium | High — how confident is the scenario logic?
+  - Low: causal chain is plausible but largely speculative
+  - Medium: causal chain follows established governance patterns
+  - High: causal chain is near-certain given institutional context
+- caveat: one-sentence methodological caveat (max 160 chars)
 
 ## RULES
-- You may ONLY reference facts established in the candidate data provided.
+- You may ONLY reference facts from the candidate data provided.
 - Do NOT introduce new evidence, quotes, or outside knowledge.
-- "reasoning" must be max 160 chars, clearly speculative.
+- Every "mechanism" field must explain WHY, not just WHO.
+- Frame all outputs as conditional, not factual.
 - Return minified JSON only.
 - Max 6 candidates.
 
 ## OUTPUT SCHEMA
-{"counterfactuals":[{"actorId":"Actor-ID","counterfactualImpact":"Transformative","territorialization":{"destabilizesPower":true,"introducesAccountability":true,"reconfiguresData":false,"altersEnforcement":true},"riskRedistribution":{"beneficiariesOfAbsence":["actor1","actor2"],"shieldedActors":["actor3"],"reducesCoalitionFriction":true},"reasoning":"max 160 chars speculative assessment"}]}
+{"counterfactuals":[{"actorId":"Actor-ID","chokepoint":{"oppName":"gate name","oppType":"conformity_assessment","bindingDuty":"what they must do"},"scenario":"If [actor] were required to [duty] at [gate], then [consequence]...","estimatedImpact":{"level":"Moderate","qualifier":"if duties were binding and enforceable"},"mechanismChain":["step 1","step 2","step 3"],"beneficiaryMechanisms":[{"actor":"name","mechanism":"why they benefit"}],"shieldedActors":[{"actor":"name","mechanism":"what scrutiny they avoid"}],"confidence":{"evidenceBase":"Medium","speculativeConfidence":"Medium","caveat":"Based solely on excerpted text; no explicit exclusion language present."}}]}
 `;
+

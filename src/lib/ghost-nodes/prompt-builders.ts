@@ -152,11 +152,12 @@ export function buildGndpPass2Prompt(
 }
 
 /**
- * Pass 3: Counterfactual power test. Quarantined speculation.
- * Takes top 6 validated ghost nodes for speculative scenario analysis.
+ * Pass 3: Counterfactual power test (v2 — structured scenario analysis).
+ * Takes top 6 validated ghost nodes + OPPs for speculative scenario analysis.
  */
 export function buildPass3Prompt(
     validatedGhostNodes: Array<{ id: string; label: string; ghostReason: string; absenceScore?: number | null; ghostType?: string | null }>,
+    opps?: Array<{ name: string; type: string; controllingActor?: string }>,
 ): string {
     const candidateBlocks = validatedGhostNodes.slice(0, 6).map(g => {
         return `### ${g.label} (${g.id})\n` +
@@ -165,7 +166,12 @@ export function buildPass3Prompt(
             (g.absenceScore != null ? `**Absence Score**: ${g.absenceScore}\n` : '');
     }).join('\n\n---\n\n');
 
+    const oppBlocks = opps && opps.length > 0
+        ? opps.map(o => `- **${o.name}** (${o.type})${o.controllingActor ? ` — controlled by: ${o.controllingActor}` : ''}`).join('\n')
+        : '(No specific OPPs extracted from document — use reasonable governance gates)';
+
     return GNDP_PASS_3_PROMPT
-        .replace('{{CANDIDATE_BLOCKS}}', candidateBlocks);
+        .replace('{{CANDIDATE_BLOCKS}}', candidateBlocks)
+        .replace('{{OPP_BLOCKS}}', oppBlocks);
 }
 

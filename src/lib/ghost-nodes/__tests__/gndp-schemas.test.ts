@@ -115,6 +115,35 @@ const GOLDEN_PASS_3 = {
     counterfactuals: [
         {
             actorId: "Gig-Workers",
+            chokepoint: {
+                oppName: "Conformity Assessment",
+                oppType: "conformity_assessment" as const,
+                bindingDuty: "Certify algorithmic management systems affecting platform workers before deployment",
+            },
+            scenario: "If Gig Workers were assigned binding appeal and audit rights at conformity assessment, algorithmic management systems would require worker-impact certification before deployment.",
+            estimatedImpact: {
+                level: "Transformative" as const,
+                qualifier: "if duties were binding and enforceable across EU member states",
+            },
+            mechanismChain: [
+                "Gig workers gain standing at conformity assessment gate",
+                "Algorithmic management systems require worker-impact audits",
+                "Platform companies must disclose scoring algorithms to auditors",
+                "Regulators gain enforcement targets for worker protection violations",
+            ],
+            beneficiaryMechanisms: [
+                { actor: "Platform Companies", mechanism: "Avoid worker-protection compliance costs and algorithmic transparency obligations" },
+                { actor: "Providers", mechanism: "No shared liability for downstream worker impacts of their AI systems" },
+            ],
+            shieldedActors: [
+                { actor: "Platform Companies", mechanism: "No audit obligation for algorithmic management decisions affecting workers" },
+            ],
+            confidence: {
+                evidenceBase: "Medium" as const,
+                speculativeConfidence: "Medium" as const,
+                caveat: "Based on excerpted text; explicit exclusion language present but scope of worker definition is contested.",
+            },
+            // v1 backward-compat fields (optional)
             counterfactualImpact: "Transformative" as const,
             territorialization: {
                 destabilizesPower: true,
@@ -128,6 +157,36 @@ const GOLDEN_PASS_3 = {
                 reducesCoalitionFriction: true,
             },
             reasoning: "Binding gig worker rights at conformity assessment would force algorithmic management audits",
+        },
+    ],
+};
+
+// Legacy v1 fixture for backward compat test
+const GOLDEN_PASS_3_LEGACY = {
+    schemaVersion: "GNDP-1.0" as const,
+    counterfactuals: [
+        {
+            actorId: "Gig-Workers",
+            chokepoint: { oppName: "Conformity Assessment", oppType: "conformity_assessment" as const, bindingDuty: "Certify systems" },
+            scenario: "If gig workers had binding rights...",
+            estimatedImpact: { level: "Transformative" as const, qualifier: "if enforceable" },
+            mechanismChain: ["Step 1", "Step 2"],
+            beneficiaryMechanisms: [{ actor: "Platform Companies", mechanism: "Avoid compliance" }],
+            confidence: { evidenceBase: "Low" as const, speculativeConfidence: "Low" as const, caveat: "Limited excerpts." },
+            // v1 fields only
+            counterfactualImpact: "Transformative" as const,
+            territorialization: {
+                destabilizesPower: true,
+                introducesAccountability: true,
+                reconfiguresData: true,
+                altersEnforcement: false,
+            },
+            riskRedistribution: {
+                beneficiariesOfAbsence: ["Platform Companies"],
+                shieldedActors: ["Platform Companies"],
+                reducesCoalitionFriction: true,
+            },
+            reasoning: "Binding gig worker rights would force audits",
         },
     ],
 };
@@ -225,22 +284,36 @@ describe('GNDP v1.0 Schema Parsing', () => {
         });
     });
 
-    describe('Pass 3 — Counterfactual', () => {
-        it('parses golden response correctly', () => {
+    describe('Pass 3 — Counterfactual (v2 Structured)', () => {
+        it('parses v2 golden response correctly', () => {
             const result = GhostNodesPass3Schema.parse(GOLDEN_PASS_3);
             expect(result.counterfactuals).toHaveLength(1);
+            const cf = result.counterfactuals[0];
+            expect(cf.chokepoint.oppType).toBe('conformity_assessment');
+            expect(cf.scenario).toContain('If Gig Workers');
+            expect(cf.estimatedImpact.level).toBe('Transformative');
+            expect(cf.mechanismChain).toHaveLength(4);
+            expect(cf.beneficiaryMechanisms).toHaveLength(2);
+            expect(cf.confidence.evidenceBase).toBe('Medium');
+        });
+
+        it('parses legacy v1 format (backward compat)', () => {
+            const result = GhostNodesPass3Schema.parse(GOLDEN_PASS_3_LEGACY);
+            expect(result.counterfactuals).toHaveLength(1);
             expect(result.counterfactuals[0].counterfactualImpact).toBe('Transformative');
-            expect(result.counterfactuals[0].territorialization.destabilizesPower).toBe(true);
+            expect(result.counterfactuals[0].territorialization?.destabilizesPower).toBe(true);
         });
 
         it('enforces max 6 counterfactuals', () => {
             const tooMany = {
                 counterfactuals: Array.from({ length: 7 }, (_, i) => ({
                     actorId: `actor-${i}`,
-                    counterfactualImpact: "None",
-                    territorialization: { destabilizesPower: false, introducesAccountability: false, reconfiguresData: false, altersEnforcement: false },
-                    riskRedistribution: { beneficiariesOfAbsence: [], shieldedActors: [], reducesCoalitionFriction: false },
-                    reasoning: "test",
+                    chokepoint: { oppName: "test", oppType: "audit", bindingDuty: "test" },
+                    scenario: "If actor...",
+                    estimatedImpact: { level: "None", qualifier: "n/a" },
+                    mechanismChain: ["step 1", "step 2"],
+                    beneficiaryMechanisms: [],
+                    confidence: { evidenceBase: "Low", speculativeConfidence: "Low", caveat: "Test." },
                 })),
             };
             expect(() => GhostNodesPass3Schema.parse(tooMany)).toThrow();

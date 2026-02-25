@@ -386,31 +386,39 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         if (validatedGhosts.length > 0) {
             console.warn(`[GHOST_NODES] Pass 3: Counterfactual power test for ${Math.min(validatedGhosts.length, 6)} ghost nodes...`);
             try {
-                const pass3Prompt = buildPass3Prompt(validatedGhosts.slice(0, 6));
+                const pass3Prompt = buildPass3Prompt(validatedGhosts.slice(0, 6), opps);
                 const pass3Completion = await openai.chat.completions.create({
                     model: process.env.OPENAI_MODEL || "gpt-4o",
                     messages: [
-                        { role: "system", content: "You are a governance scenario analyst. ALL outputs are SPECULATIVE REASONING. Return minified JSON only." },
+                        { role: "system", content: "You are a governance scenario analyst. ALL outputs are SPECULATIVE REASONING. Frame every claim as conditional. Return minified JSON only." },
                         { role: "user", content: pass3Prompt },
                     ],
                     response_format: { type: "json_object" },
                     temperature: 0.4,
-                    max_completion_tokens: 8000,
+                    max_completion_tokens: 12000,
                 });
 
                 try {
                     const raw3 = JSON.parse(pass3Completion.choices[0]?.message?.content || "{}");
-                    const parsed3 = GhostNodesPass3Schema.parse(raw3);
+                    let counterfactuals;
+                    try {
+                        const parsed3 = GhostNodesPass3Schema.parse(raw3);
+                        counterfactuals = parsed3.counterfactuals;
+                    } catch {
+                        // Fallback: accept raw if Zod strict parse fails (schema evolution)
+                        console.warn('[GHOST_NODES] Pass 3 Zod strict parse failed, using raw payload.');
+                        counterfactuals = raw3.counterfactuals || [];
+                    }
                     // Merge counterfactual results back onto ghost nodes
-                    for (const cf of parsed3.counterfactuals) {
+                    for (const cf of counterfactuals) {
                         const targetGhost = ghostNodes.find(gn => gn.id === cf.actorId);
                         if (targetGhost) {
                             targetGhost.counterfactual = cf;
                         }
                     }
-                    console.warn(`[GHOST_NODES] Pass 3 complete: ${parsed3.counterfactuals.length} counterfactuals merged`);
+                    console.warn(`[GHOST_NODES] Pass 3 complete: ${counterfactuals.length} counterfactuals merged`);
                 } catch (err) {
-                    console.warn('[GHOST_NODES] Pass 3 Zod parsing failed. Skipping counterfactuals.', err);
+                    console.warn('[GHOST_NODES] Pass 3 JSON parsing failed. Skipping counterfactuals.', err);
                 }
             } catch (pass3Err) {
                 console.warn('[GHOST_NODES] Pass 3 LLM call failed. Skipping counterfactuals.', pass3Err);

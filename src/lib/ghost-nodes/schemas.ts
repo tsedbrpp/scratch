@@ -151,24 +151,63 @@ export const GhostNodesPass2Schema = z.object({
     }))
 });
 
-// --- Pass 3: Counterfactual Schema ---
+// --- Pass 3: Counterfactual Schema (v2 — Structured Scenario Analysis) ---
+
+const ConfidenceLevelSchema = z.enum(['Low', 'Medium', 'High']);
+const OppTypeSchema = z.enum([
+    'conformity_assessment', 'deployment_approval', 'audit',
+    'enforcement', 'procurement', 'reporting', 'other'
+]);
 
 export const GhostNodesPass3Schema = z.object({
     schemaVersion: z.literal('GNDP-1.0').optional(),
     counterfactuals: z.array(z.object({
         actorId: z.string(),
-        counterfactualImpact: CounterfactualImpactSchema,
+        // 1) Chokepoint identification
+        chokepoint: z.object({
+            oppName: z.string(),
+            oppType: OppTypeSchema,
+            bindingDuty: z.string(),
+        }),
+        // 2) Full conditional scenario statement
+        scenario: z.string(),
+        // 3) Impact with conditional qualifier
+        estimatedImpact: z.object({
+            level: CounterfactualImpactSchema,
+            qualifier: z.string(),
+        }),
+        // 4) Causal mechanism chain (ordered steps)
+        mechanismChain: z.array(z.string()).min(2).max(6),
+        // 5) Mechanistic beneficiary claims
+        beneficiaryMechanisms: z.array(z.object({
+            actor: z.string(),
+            mechanism: z.string(),
+        })).max(5),
+        // 6) Shielded actors with mechanisms
+        shieldedActors: z.array(z.object({
+            actor: z.string(),
+            mechanism: z.string(),
+        })).max(5).optional(),
+        // 7) Confidence assessment
+        confidence: z.object({
+            evidenceBase: ConfidenceLevelSchema,
+            speculativeConfidence: ConfidenceLevelSchema,
+            caveat: z.string(),
+        }),
+        // Backward compat (legacy)
+        reasoning: z.string().optional(),
+        counterfactualImpact: CounterfactualImpactSchema.optional(),
         territorialization: z.object({
             destabilizesPower: z.boolean(),
             introducesAccountability: z.boolean(),
             reconfiguresData: z.boolean(),
             altersEnforcement: z.boolean(),
-        }),
+        }).optional(),
         riskRedistribution: z.object({
             beneficiariesOfAbsence: z.array(z.string()).max(5),
             shieldedActors: z.array(z.string()).max(5),
             reducesCoalitionFriction: z.boolean(),
-        }),
-        reasoning: z.string(), // max 160 chars, speculative tag
+        }).optional(),
     })).max(6),
 });
+
