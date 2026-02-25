@@ -14,7 +14,7 @@ import { parseDocumentSections, formatSectionsForPrompt } from './parser';
 import { detectExplicitExclusions } from './negex';
 import { buildPass1Prompt, buildPass2Prompt, buildPass1APrompt, buildPass1BPrompt, buildGndpPass2Prompt, buildPass3Prompt } from './prompt-builders';
 import { normalizeCounterfactualResult } from './normalizeCounterfactual';
-import { validateGhostNodeResponse } from './validation';
+import { validateGhostNodeResponse, bestTrigramSimilarity } from './validation';
 import {
     detectGhostNodes,
     asyncBatchProcess,
@@ -322,7 +322,26 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
             // Evidence grade overrides tier — if LLM found E3/E4 evidence, keep the actor
             // even if the LLM contradictorily set tier=Tier3 or isValid=false.
             const hasStrongEvidence = absentActor.evidenceGrade === 'E3' || absentActor.evidenceGrade === 'E4';
-            if (!hasStrongEvidence && (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade))) {
+
+            // E2 rescue: if LLM gave E2 but our fuzzy matcher confirms quotes exist, rescue
+            if (!hasStrongEvidence && absentActor.evidenceGrade === 'E2' && absentActor.evidenceQuotes?.length) {
+                const normalizedDoc = text.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/gi, '');
+                const verifiedCount = absentActor.evidenceQuotes.filter(eq => {
+                    if (!eq.quote || eq.quote.length < 10) return false;
+                    const nq = eq.quote.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/gi, '');
+                    // Exact match first, then fuzzy
+                    if (normalizedDoc.includes(nq)) return true;
+                    return bestTrigramSimilarity(nq, normalizedDoc) >= 0.75;
+                }).length;
+                if (verifiedCount >= 2) {
+                    console.warn(`[GHOST_NODES] E2 rescue: "${absentActor.label || absentActor.name}" has ${verifiedCount} fuzzy-verified quotes — upgrading to keep`);
+                    // Fall through to keep, don't drop
+                } else if (!hasStrongEvidence && (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade))) {
+                    console.warn(`[GHOST_NODES] Dropping invalid/Tier 3 actor: "${absentActor.label || absentActor.name}" ` +
+                        `[tier=${absentActor.tier}, grade=${absentActor.evidenceGrade}, isValid=${absentActor.isValid}, score=${absentActor.absenceScore}]`);
+                    return; // tier exclusion drops
+                }
+            } else if (!hasStrongEvidence && (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade))) {
                 console.warn(`[GHOST_NODES] Dropping invalid/Tier 3 actor: "${absentActor.label || absentActor.name}" ` +
                     `[tier=${absentActor.tier}, grade=${absentActor.evidenceGrade}, isValid=${absentActor.isValid}, score=${absentActor.absenceScore}]`);
                 return; // tier exclusion drops

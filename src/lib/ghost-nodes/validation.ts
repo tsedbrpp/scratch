@@ -19,7 +19,7 @@ function trigramSimilarity(a: Set<string>, b: Set<string>): number {
     return intersection / (a.size + b.size - intersection); // Jaccard
 }
 
-function bestTrigramSimilarity(needle: string, haystack: string): number {
+export function bestTrigramSimilarity(needle: string, haystack: string): number {
     if (needle.length < 6) return haystack.includes(needle) ? 1 : 0;
     const needleTri = trigrams(needle);
     const windowMin = Math.max(6, Math.floor(needle.length * 0.7));
