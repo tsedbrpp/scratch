@@ -317,11 +317,17 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         const ghostNodes = detectGhostNodes(nodesArray, undefined, documentType);
 
         validatedActors.forEach((absentActor: AbsentActorResponse, index: number) => {
-            // GNDP: Only drop explicit Tier 3; E1/E2 graded actors pass through with gray color
-            if (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade)) {
+            // GNDP: Drop actors only if genuinely unsupported.
+            // Evidence grade overrides tier — if LLM found E3/E4 evidence, keep the actor
+            // even if the LLM contradictorily set tier=Tier3 or isValid=false.
+            const hasStrongEvidence = absentActor.evidenceGrade === 'E3' || absentActor.evidenceGrade === 'E4';
+            if (!hasStrongEvidence && (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade))) {
                 console.warn(`[GHOST_NODES] Dropping invalid/Tier 3 actor: "${absentActor.label || absentActor.name}" ` +
                     `[tier=${absentActor.tier}, grade=${absentActor.evidenceGrade}, isValid=${absentActor.isValid}, score=${absentActor.absenceScore}]`);
                 return; // tier exclusion drops
+            }
+            if (hasStrongEvidence && (absentActor.tier === 'Tier3' || !absentActor.isValid)) {
+                console.warn(`[GHOST_NODES] Keeping ${absentActor.evidenceGrade}-graded actor despite tier/isValid mismatch: "${absentActor.label || absentActor.name}"`);
             }
 
             const name = absentActor.label || absentActor.name || 'Unknown';
