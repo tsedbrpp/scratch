@@ -43,11 +43,11 @@ export type CounterfactualImpact = 'None' | 'Moderate' | 'Transformative';
 // --- GNDP Scoring ---
 
 export interface ScoreBreakdown {
-    materialImpact: number;      // 0–30
-    oppExclusion: number;        // 0–25
-    sanctionAbsence: number;     // 0–20
-    dataInvisibility: number;    // 0–15
-    representationGap: number;   // 0–10
+    materialImpact: number | null;      // 0–30
+    oppExclusion: number | null;        // 0–25
+    sanctionAbsence: number | null;     // 0–20
+    dataInvisibility: number | null;    // 0–15
+    representationGap: number | null;   // 0–10
 }
 
 // --- Pass 3: Counterfactual Types ---
