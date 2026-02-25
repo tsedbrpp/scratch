@@ -128,9 +128,10 @@ const GOLDEN_PASS_3 = {
             estimatedImpact: {
                 level: "Moderate" as const,
                 qualifier: "if authority has mandatory review obligations",
+                guidanceBindingness: "Unknown" as const,
                 enforcementLadder: [
                     { step: "CorrectiveAction" as const, note: "mandatory mitigation plan" },
-                    { step: "Fine" as const },
+                    { step: "Fine" as const, note: "only for noncompliance with binding obligations" },
                     { step: "Suspension" as const },
                     { step: "WithdrawalRecall" as const, note: "last resort for noncompliance" },
                 ],
@@ -163,6 +164,11 @@ const GOLDEN_PASS_3 = {
                     "competent authority has mandatory review obligations",
                 ],
             },
+            analyticalChallenges: [
+                { kind: "StrategicGaming" as const, description: "Actors could flood grievance channels to overwhelm review capacity" },
+                { kind: "CaptureRisk" as const, description: "Dominant employers may shape complaint standards in their favor" },
+                { kind: "CapacityBacklog" as const, description: "Authority capacity constraints could reduce review timeliness" },
+            ],
         },
     ],
 };
@@ -328,6 +334,11 @@ describe('GNDP v1.0 Schema Parsing', () => {
             expect(cf.confidence.inferred).toBeDefined();
             expect(cf.confidence.unknown).toBeDefined();
             expect(cf.confidence.assumptions).toHaveLength(2);
+            // Guidance bindingness
+            expect(cf.estimatedImpact.guidanceBindingness).toBe('Unknown');
+            // Analytical challenges
+            expect(cf.analyticalChallenges).toHaveLength(3);
+            expect((cf.analyticalChallenges as any)[0].kind).toBe('StrategicGaming');
         });
 
         it('parses v2 format (plain string chain, backward compat)', () => {

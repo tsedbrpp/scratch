@@ -282,9 +282,16 @@ Must be concrete and anchored to the document.
 ### 3) Estimated Impact + Enforcement Ladder
 - level: None | Moderate | Transformative
 - qualifier: CONDITIONS under which this level holds
+- guidanceBindingness: Nonbinding | QuasiBinding | Binding | Unknown
+  Assess whether the governance output (guidance, interpretation, standard) is legally binding.
 - enforcementLadder (ordered escalation, max 6 steps):
   Each step: { step: CorrectiveAction | DisclosureOrder | AuditOrder | Fine | Suspension | WithdrawalRecall, note: optional context }
   MUST show escalation from mild → severe. Recall/withdrawal is ONLY the last step, never the only option.
+
+⚠️ ENFORCEMENT LADDER CONSTRAINT:
+- If guidanceBindingness is Nonbinding or Unknown, penalty steps (Fine/Suspension/WithdrawalRecall) MUST reference violations of existing binding obligations, NOT "misalignment with guidance."
+- Separate clearly: the interpretive/guidance output vs the enforcement hooks that depend on pre-existing statutory duties.
+- Example: "Fine (only for noncompliance with binding high-risk controls, not disagreement with published interpretation)"
 
 ### 4) Typed Mechanism Chain (3-8 ordered steps)
 Each step has a kind and a description:
@@ -327,17 +334,30 @@ Do NOT list actors without specific causal mechanism.
 
 EPISTEMIC GATE: if grounded is empty, evidenceBase MUST be Low. If unknown mentions missing enforcement powers, do NOT claim enforcementLadder steps beyond CorrectiveAction.
 
+### 8) Analytical Challenges (2-4 downsides)
+Every scenario has downsides. Surface them honestly:
+- kind: StrategicGaming | CaptureRisk | CapacityBacklog | UnintendedConsequence | ScopeCreep | Other
+- description: max 200 chars
+
+Examples:
+- {"kind":"StrategicGaming","description":"Actors could flood clarification requests to delay classification decisions"}
+- {"kind":"CaptureRisk","description":"Dominant incumbents may shape interpretations in their favor through early requests"}
+- {"kind":"CapacityBacklog","description":"Authority capacity constraints could reduce timeliness, weakening benefits"}
+
+Do NOT omit this section. Scenarios without acknowledged downsides are advocacy, not analysis.
+
 ## RULES
 - No paragraphs. No prose beyond max lengths. JSON only.
 - You may ONLY reference facts from the candidate data provided.
 - Do NOT introduce new evidence, quotes, or outside knowledge.
 - Every "mechanism" field must explain WHY, not just WHO.
-- Frame all outputs as conditional, not factual.
+- Frame all outputs as conditional, not factual. Use "could" / "would" sparingly and only at decision branch points. Do NOT prefix every sentence with "conditionally" — you already label everything speculative.
 - Max 6 candidates.
 - Do NOT silently upgrade inferred mechanisms into grounded ones. If you infer a recall power exists, it goes in confidence.inferred, NOT in oppName as fact.
+- If guidanceBindingness is Nonbinding or Unknown, do NOT model enforcement penalties as flowing directly from guidance output.
 
 ## OUTPUT SCHEMA
-{"counterfactuals":[{"actorId":"Actor-ID","chokepoint":{"oppName":"initiation of enforcement review for unsafe deployments","oppType":"enforcement","standingActor":"unions/workers","obligatedActor":"competent authority","obligatedActorType":"Authority","obligationType":"Investigate"},"scenario":"If unions/workers had standing to submit collective complaints and the competent authority were required to investigate, then...","estimatedImpact":{"level":"Moderate","qualifier":"if authority has mandatory review obligations","enforcementLadder":[{"step":"CorrectiveAction","note":"mandatory mitigation plan"},{"step":"Fine"},{"step":"Suspension"},{"step":"WithdrawalRecall","note":"last resort for noncompliance"}]},"mechanismChain":[{"kind":"EvidenceCollection","step":"Workers document harms"},{"kind":"Aggregation","step":"Union aggregates claims"},{"kind":"Admissibility","step":"Complaint meets threshold"},{"kind":"ReviewInitiation","step":"Authority opens review"},{"kind":"ResponseDueProcess","step":"Deployer must respond"},{"kind":"RemedyEnforcement","step":"Authority orders corrections"},{"kind":"Deterrence","step":"Preemptive compliance increases"}],"beneficiaryMechanisms":[{"actor":"name","mechanism":"why they benefit, referencing chain step"}],"shieldedActors":[{"actor":"name","mechanism":"what scrutiny they avoid"}],"confidence":{"evidenceBase":"Medium","speculativeConfidence":"Medium","caveat":"Based on excerpted text.","grounded":"policy contains enforcement gate framed around inadequate safeguards","inferred":"gate includes review authority but trigger rules not specified","unknown":"whether workplace AI is within scope of enforcement provisions","assumptions":["recall powers exist but are not currently worker-triggered","competent authority has mandatory review obligations"]}}]}
+{"counterfactuals":[{"actorId":"Actor-ID","chokepoint":{"oppName":"risk classification clarification for novel products","oppType":"enforcement","standingActor":"financial institutions","obligatedActor":"competent authority","obligatedActorType":"Authority","obligationType":"RespondPublicly"},"scenario":"If financial institutions had standing to request public clarification on high-risk criteria and the authority were required to publish interpretive responses, then classification certainty could improve.","estimatedImpact":{"level":"Moderate","qualifier":"primarily through classification predictability; enforcement depends on statutory hooks","guidanceBindingness":"Nonbinding","enforcementLadder":[{"step":"DisclosureOrder","note":"published clarification/Q&A"},{"step":"AuditOrder","note":"verify classification against published criteria"},{"step":"CorrectiveAction","note":"reclassify + implement required controls"},{"step":"Fine","note":"only for noncompliance with binding obligations"},{"step":"Suspension"},{"step":"WithdrawalRecall","note":"persistent noncompliance with binding controls only"}]},"mechanismChain":[{"kind":"EvidenceCollection","step":"FIs document borderline scenarios"},{"kind":"Aggregation","step":"Sector bodies aggregate recurring ambiguities"},{"kind":"Admissibility","step":"Authority triages requests by specificity/novelty"},{"kind":"ReviewInitiation","step":"Authority publishes interpretive clarification"},{"kind":"ResponseDueProcess","step":"Comment period improves clarity"},{"kind":"RemedyEnforcement","step":"Enforcement targets misclassified systems where binding duties attach"},{"kind":"Deterrence","step":"Compliance planning improves via published interpretations"}],"beneficiaryMechanisms":[{"actor":"Providers with borderline systems","mechanism":"maintain self-serving classifications under ambiguity, delaying high-risk compliance costs"},{"actor":"Administrators under capacity constraints","mechanism":"avoid workload and political exposure of publishing interpretations"}],"shieldedActors":[{"actor":"Deployers relying on informal classification","mechanism":"less likely to face targeted audits triggered by published criteria"}],"confidence":{"evidenceBase":"Low","speculativeConfidence":"High","caveat":"Only a high-risk gate is assumed; no explicit clarification procedure shown.","grounded":"existence of a high-risk classification gate","inferred":"public clarification mechanism could be layered onto that gate","unknown":"whether current law mandates public responses; whether guidance is binding","assumptions":["high-risk classification gate exists","no public clarification mechanism exists today"]},"analyticalChallenges":[{"kind":"StrategicGaming","description":"Actors could flood clarification requests to delay classification decisions"},{"kind":"CaptureRisk","description":"Dominant incumbents may shape interpretations in their favor through early requests"},{"kind":"CapacityBacklog","description":"Authority capacity constraints could reduce timeliness, weakening benefits"}]}]}
 `;
 
 

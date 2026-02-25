@@ -176,6 +176,10 @@ const MechanismStepKindSchema = z.enum([
     'EvidenceCollection', 'Aggregation', 'Admissibility', 'ReviewInitiation',
     'Notice', 'ResponseDueProcess', 'RemedyEnforcement', 'Deterrence'
 ]);
+const GuidanceBindingnessSchema = z.enum(['Nonbinding', 'QuasiBinding', 'Binding', 'Unknown']);
+const AnalyticalChallengeKindSchema = z.enum([
+    'StrategicGaming', 'CaptureRisk', 'CapacityBacklog', 'UnintendedConsequence', 'ScopeCreep', 'Other'
+]);
 
 export const GhostNodesPass3Schema = z.object({
     schemaVersion: z.literal('GNDP-1.0').optional(),
@@ -203,6 +207,7 @@ export const GhostNodesPass3Schema = z.object({
                 step: EnforcementStepSchema,
                 note: z.string().max(160).optional(),
             })).max(6).optional(),
+            guidanceBindingness: GuidanceBindingnessSchema.optional(),
         }),
         // 4) Typed causal mechanism chain (ordered steps)
         mechanismChain: z.union([
@@ -234,6 +239,11 @@ export const GhostNodesPass3Schema = z.object({
             unknown: z.string().max(240).optional(),
             assumptions: z.array(z.string().max(140)).max(4).optional(),
         }),
+        // 8) Analytical challenges (downsides)
+        analyticalChallenges: z.array(z.object({
+            kind: AnalyticalChallengeKindSchema,
+            description: z.string().max(200),
+        })).max(4).optional(),
         // Backward compat (v1/v2 legacy)
         reasoning: z.string().optional(),
         counterfactualImpact: CounterfactualImpactSchema.optional(),

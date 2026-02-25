@@ -82,6 +82,7 @@ export interface CounterfactualResult {
         level: CounterfactualImpact;
         qualifier: string;
         enforcementLadder?: Array<{ step: string; note?: string }>;
+        guidanceBindingness?: string;
     };
     // v3 typed chain OR v2 plain strings
     mechanismChain?: Array<{ kind: string; step: string }> | string[];
@@ -96,6 +97,8 @@ export interface CounterfactualResult {
         unknown?: string;
         assumptions?: string[];
     };
+    // v3 analytical challenges (downsides)
+    analyticalChallenges?: Array<{ kind: string; description: string }>;
     // v1 legacy fields (backward compat)
     counterfactualImpact?: CounterfactualImpact;
     territorialization?: TerritorizationResult;

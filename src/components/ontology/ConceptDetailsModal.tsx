@@ -472,8 +472,8 @@ export function EvaluationInterface({
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
                                                                 <Badge className={`ml-2 cursor-help text-[9px] font-normal ${cfLevel === 'Low' ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                                                                        cfLevel === 'Medium' ? 'bg-slate-100 text-slate-600 border-slate-300' :
-                                                                            'bg-slate-200 text-slate-700 border-slate-300'
+                                                                    cfLevel === 'Medium' ? 'bg-slate-100 text-slate-600 border-slate-300' :
+                                                                        'bg-slate-200 text-slate-700 border-slate-300'
                                                                     }`}>
                                                                     CF: {cfLevel === 'Medium' ? 'Med' : cfLevel}
                                                                 </Badge>
@@ -668,10 +668,17 @@ export function EvaluationInterface({
                                                                             )}
                                                                         </div>
 
-                                                                        {/* Enforcement ladder */}
+                                                                        {/* Enforcement ladder + guidance bindingness */}
                                                                         {cf.estimatedImpact?.enforcementLadder && cf.estimatedImpact.enforcementLadder.length > 0 && (
                                                                             <div className="flex items-center gap-1 flex-wrap">
                                                                                 <span className="text-[10px] text-slate-400">Escalation:</span>
+                                                                                {cf.estimatedImpact.guidanceBindingness && (
+                                                                                    <Badge variant="outline" className={`text-[8px] shrink-0 ${cf.estimatedImpact.guidanceBindingness === 'Binding' ? 'border-red-300 text-red-600 bg-red-50' :
+                                                                                            cf.estimatedImpact.guidanceBindingness === 'QuasiBinding' ? 'border-amber-300 text-amber-600 bg-amber-50' :
+                                                                                                cf.estimatedImpact.guidanceBindingness === 'Nonbinding' ? 'border-sky-300 text-sky-600 bg-sky-50' :
+                                                                                                    'border-slate-300 text-slate-500 bg-slate-50'
+                                                                                        }`}>{cf.estimatedImpact.guidanceBindingness}</Badge>
+                                                                                )}
                                                                                 {cf.estimatedImpact.enforcementLadder.map((e: any, i: number) => (
                                                                                     <span key={i} className="text-[9px] text-slate-500">
                                                                                         {i > 0 && <span className="text-slate-300 mx-0.5">{'\u2192'}</span>}
@@ -823,15 +830,15 @@ export function EvaluationInterface({
                                                                                     <div className="flex items-center gap-1">
                                                                                         <span className="text-[10px] text-slate-400">Evidence:</span>
                                                                                         <Badge variant="outline" className={`text-[9px] ${cf.confidence.evidenceBase === 'High' ? 'border-green-300 text-green-700' :
-                                                                                                cf.confidence.evidenceBase === 'Medium' ? 'border-amber-300 text-amber-700' :
-                                                                                                    'border-slate-300 text-slate-500'
+                                                                                            cf.confidence.evidenceBase === 'Medium' ? 'border-amber-300 text-amber-700' :
+                                                                                                'border-slate-300 text-slate-500'
                                                                                             }`}>{cf.confidence.evidenceBase}</Badge>
                                                                                     </div>
                                                                                     <div className="flex items-center gap-1">
                                                                                         <span className="text-[10px] text-slate-400">Speculative:</span>
                                                                                         <Badge variant="outline" className={`text-[9px] ${cf.confidence.speculativeConfidence === 'High' ? 'border-green-300 text-green-700' :
-                                                                                                cf.confidence.speculativeConfidence === 'Medium' ? 'border-amber-300 text-amber-700' :
-                                                                                                    'border-slate-300 text-slate-500'
+                                                                                            cf.confidence.speculativeConfidence === 'Medium' ? 'border-amber-300 text-amber-700' :
+                                                                                                'border-slate-300 text-slate-500'
                                                                                             }`}>{cf.confidence.speculativeConfidence}</Badge>
                                                                                     </div>
                                                                                 </div>
@@ -876,6 +883,30 @@ export function EvaluationInterface({
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Analytical challenges (downsides) */}
+                                                                        {cf.analyticalChallenges && cf.analyticalChallenges.length > 0 && (
+                                                                            <div className="border-t border-slate-100 pt-2 mt-2">
+                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Analytical Challenges</span>
+                                                                                <div className="mt-1 space-y-1">
+                                                                                    {cf.analyticalChallenges.map((ch: any, i: number) => {
+                                                                                        const challengeColors: Record<string, string> = {
+                                                                                            StrategicGaming: 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                            CaptureRisk: 'bg-red-50 text-red-700 border-red-200',
+                                                                                            CapacityBacklog: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                                                            UnintendedConsequence: 'bg-violet-50 text-violet-700 border-violet-200',
+                                                                                            ScopeCreep: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+                                                                                        };
+                                                                                        return (
+                                                                                            <div key={i} className="flex items-start gap-1.5">
+                                                                                                <Badge variant="outline" className={`text-[8px] shrink-0 mt-0.5 ${challengeColors[ch.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{ch.kind.replace(/([A-Z])/g, ' $1').trim()}</Badge>
+                                                                                                <span className="text-[10px] text-slate-600">{ch.description}</span>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
                                                                         )}
                                                                     </div>

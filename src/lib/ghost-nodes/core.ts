@@ -412,9 +412,10 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                     try {
                         const parsed3 = GhostNodesPass3Schema.parse(raw3);
                         counterfactuals = parsed3.counterfactuals;
-                    } catch {
+                    } catch (zodErr: any) {
                         // Fallback: accept raw if Zod strict parse fails (schema evolution)
-                        console.warn('[GHOST_NODES] Pass 3 Zod strict parse failed, using raw payload.');
+                        const issues = zodErr?.issues?.slice(0, 3)?.map((i: any) => `${i.path?.join('.')} → ${i.message}`) || [];
+                        console.warn('[GHOST_NODES] Pass 3 Zod strict parse failed, using raw payload.', issues.length ? `Issues: ${JSON.stringify(issues)}` : '');
                         counterfactuals = raw3.counterfactuals || [];
                     }
                     // Merge counterfactual results back onto ghost nodes
