@@ -253,7 +253,7 @@ export function EvaluationInterface({
 
     return (
         <TooltipProvider>
-            <Card className="shadow-lg border-indigo-100 overflow-hidden bg-white flex flex-col max-w-4xl mx-auto w-full max-h-[90vh]">
+            <Card className="shadow-lg border-indigo-100 overflow-hidden bg-white flex flex-col max-w-6xl mx-auto w-full max-h-[90vh]">
                 {/* Header */}
                 <div className="px-6 py-4 border-b shrink-0 select-none">
                     {/* Navigation Header for Research Mode */}
@@ -671,7 +671,7 @@ export function EvaluationInterface({
                                                 };
                                                 return (
                                                     <Card className="shadow-md border-l-4 border-l-amber-400 border border-slate-200 bg-white">
-                                                        <CardContent className="p-6">
+                                                        <CardContent className="p-8">
                                                             {/* Header */}
                                                             <div className="flex items-center justify-between mb-4">
                                                                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -686,21 +686,21 @@ export function EvaluationInterface({
 
                                                             {/* Scenario statement — hero */}
                                                             {cf.scenario && (
-                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-5">
-                                                                    <p className="text-sm text-slate-700 leading-relaxed italic">"{cf.scenario}"</p>
+                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-5 py-4 mb-6">
+                                                                    <p className="text-base text-slate-700 leading-relaxed italic">"{cf.scenario}"</p>
                                                                 </div>
                                                             )}
                                                             {!cf.scenario && cf.reasoning && (
-                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-5">
-                                                                    <p className="text-sm text-slate-700 leading-relaxed">{cf.reasoning}</p>
+                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-5 py-4 mb-6">
+                                                                    <p className="text-base text-slate-700 leading-relaxed">{cf.reasoning}</p>
                                                                 </div>
                                                             )}
 
                                                             {/* Two-column: Gate + Impact */}
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                                                                 {/* Gate (chokepoint) */}
                                                                 {cf.chokepoint && (
-                                                                    <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-4">
+                                                                    <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-5">
                                                                         <h4 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2">Governance Gate</h4>
                                                                         <p className="text-sm font-medium text-blue-900">{cf.chokepoint.oppName}</p>
                                                                         <Badge variant="outline" className="text-[10px] border-blue-200 text-blue-600 mt-1">{cf.chokepoint.oppType.replace(/_/g, ' ')}</Badge>
@@ -726,7 +726,7 @@ export function EvaluationInterface({
                                                                 )}
 
                                                                 {/* Impact + Escalation */}
-                                                                <div className="bg-slate-50/60 border border-slate-200 rounded-lg p-4">
+                                                                <div className="bg-slate-50/60 border border-slate-200 rounded-lg p-5">
                                                                     <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Impact Assessment</h4>
                                                                     <div className="flex items-center gap-2 mb-2">
                                                                         <Badge className={`text-xs px-2 py-0.5 ${impactClass}`}>{impactLevel}</Badge>
