@@ -39,7 +39,29 @@ function extractSurroundingContext(fullText: string, quote: string, padding: num
             const end = Math.min(compactDoc.length, idx + cleanQuote.length + padding);
             return "..." + compactDoc.slice(start, end).trim() + "...";
         }
-        return "Quote not found exactly in text.";
+
+        // Fuzzy fallback: slide a window across the document and find best trigram match
+        if (cleanQuote.length >= 15) {
+            const windowSize = Math.min(cleanQuote.length + 40, compactDoc.length);
+            let bestScore = 0;
+            let bestIdx = -1;
+            const step = Math.max(10, Math.floor(windowSize / 4));
+            for (let i = 0; i <= compactDoc.length - windowSize; i += step) {
+                const window = compactDoc.slice(i, i + windowSize);
+                const score = bestTrigramSimilarity(cleanQuote, window);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestIdx = i;
+                }
+            }
+            if (bestScore >= 0.45 && bestIdx !== -1) {
+                const start = Math.max(0, bestIdx - 50);
+                const end = Math.min(compactDoc.length, bestIdx + windowSize + 50);
+                return "..." + compactDoc.slice(start, end).trim() + "...";
+            }
+        }
+
+        return "AI-paraphrased quote — the model rephrased or condensed this passage. The original wording in the document differs slightly.";
     }
 
     // Exact match found. Find previous and next double newline (paragraph bounds)
