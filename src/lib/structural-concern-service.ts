@@ -7,8 +7,8 @@ import { PromptRegistry } from '@/lib/prompts/registry';
 // Define the structured output schema first as a base
 export const BaseStructuralConcernSchema = z.object({
     insufficientEvidence: z.boolean().optional().default(false).describe("Set to true ONLY if you cannot even determine the evidence scope — i.e. the excerpts are too short, garbled, or off-topic to classify. Do NOT set true merely because governance standing is unproven."),
-    evidenceScope: z.enum(['impact_only', 'standing', 'exclusion']).optional()
-        .describe("Classify what the excerpts support: 'impact_only' = actor mentioned as affected/rights-holder only (no governance roles), 'standing' = ≥1 governance mechanism/OPP/participation rule present, 'exclusion' = bounded membership or closed language proves structural gap"),
+    evidenceScope: z.string().optional()
+        .describe("Classify what the excerpts support. Use EXACTLY one of: 'impact_only' (actor mentioned as affected/rights-holder only, no governance roles), 'standing' (≥1 governance mechanism/OPP/participation rule present), 'exclusion' (bounded membership or closed language proves structural gap)"),
     missingSignals: z.array(z.string()).optional().default([])
         .describe("ALWAYS populate. Which structural signals are absent from excerpts. Use values like: noGovernanceMechanism, noParticipationRule, noBoundedForum, noOPPAccessInfo, noExclusionLanguage, noActorBoundaryLanguage"),
     signalsPresent: z.array(z.string()).optional().default([])
