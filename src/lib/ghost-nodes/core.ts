@@ -444,16 +444,28 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                         counterfactuals = raw3.counterfactuals || [];
                     }
                     // Merge counterfactual results back onto ghost nodes
-                    const normalizeId = (s: string) => s.toLowerCase().replace(/[-_]/g, ' ').trim();
+                    // LLM may return compound actorIds like "Citizens-Public_risk_classification"
+                    // when ghost node IDs are just "Citizens-Public" — use prefix matching
+                    const normalizeId = (s: string) => s.toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
                     let mergedCount = 0;
                     for (const cf of counterfactuals) {
                         const cfId = normalizeId(cf.actorId);
-                        const targetGhost = ghostNodes.find(gn =>
+                        // Exact match first
+                        let targetGhost = ghostNodes.find(gn =>
                             normalizeId(gn.id) === cfId || normalizeId(gn.label) === cfId
                         );
+                        // Prefix match: cfId starts with ghost node ID (e.g. "citizens public risk classification" starts with "citizens public")
+                        if (!targetGhost) {
+                            targetGhost = ghostNodes
+                                .filter(gn => cfId.startsWith(normalizeId(gn.id)) || cfId.startsWith(normalizeId(gn.label)))
+                                .sort((a, b) => normalizeId(b.id).length - normalizeId(a.id).length)[0]; // longest match wins
+                        }
                         if (targetGhost) {
-                            targetGhost.counterfactual = normalizeCounterfactualResult(cf);
-                            mergedCount++;
+                            // First CF per ghost node wins; skip if already merged
+                            if (!targetGhost.counterfactual) {
+                                targetGhost.counterfactual = normalizeCounterfactualResult(cf);
+                                mergedCount++;
+                            }
                         } else {
                             console.warn(`[GHOST_NODES] Pass 3 actorId "${cf.actorId}" did not match any ghost node. Available IDs: ${ghostNodes.map(gn => gn.id).join(', ')}`);
                         }
