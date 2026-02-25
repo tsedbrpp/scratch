@@ -54,7 +54,7 @@ export const GhostNodesPass1ASchema = z.object({
         claim: z.string(),
         supportQuote: z.string(),
         impliedActors: z.array(z.string()).max(5),
-    })).max(15),
+    })).max(30),
     obligatoryPassagePoints: z.array(z.object({
         name: z.string(),
         type: z.enum(['risk_classification', 'conformity_assessment', 'deployment_approval', 'procurement', 'enforcement', 'audit', 'other']),

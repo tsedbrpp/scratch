@@ -317,7 +317,8 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         const ghostNodes = detectGhostNodes(nodesArray, undefined, documentType);
 
         validatedActors.forEach((absentActor: AbsentActorResponse, index: number) => {
-            if (!absentActor.isValid) {
+            // GNDP: Only drop explicit Tier 3; E1/E2 graded actors pass through with gray color
+            if (absentActor.tier === 'Tier3' || (!absentActor.isValid && !absentActor.evidenceGrade)) {
                 console.warn(`[GHOST_NODES] Dropping invalid/Tier 3 actor: "${absentActor.label || absentActor.name}"`);
                 return; // tier exclusion drops
             }

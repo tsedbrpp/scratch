@@ -1,2 +1,2 @@
-﻿src/lib/ghost-nodes/__tests__/gndp-schemas.test.ts(7,23): error TS2688: Cannot find type definition file for 'vitest'.
-src/lib/ghost-nodes/__tests__/gndp-schemas.test.ts(8,38): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.
+﻿.next/dev/types/routes.d.ts(178,3): error TS1109: Expression expected.
+.next/dev/types/routes.d.ts(184,1): error TS1160: Unterminated template literal.
