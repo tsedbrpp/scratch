@@ -6,7 +6,29 @@ import { PromptRegistry } from '@/lib/prompts/registry';
 // Define the structured output schema
 // Define the structured output schema first as a base
 export const BaseStructuralConcernSchema = z.object({
-    insufficientEvidence: z.boolean().optional().default(false).describe("Set to true ONLY if the provided excerpts do not contain enough structural or role-allocating text to make grounded claims about governance standing or explicit exclusion. Do NOT hallucinate roles based on outside knowledge."),
+    insufficientEvidence: z.boolean().optional().default(false).describe("Set to true ONLY if you cannot even determine the evidence scope — i.e. the excerpts are too short, garbled, or off-topic to classify. Do NOT set true merely because governance standing is unproven."),
+    evidenceScope: z.enum(['impact_only', 'standing', 'exclusion']).optional()
+        .describe("Classify what the excerpts support: 'impact_only' = actor mentioned as affected/rights-holder only (no governance roles), 'standing' = ≥1 governance mechanism/OPP/participation rule present, 'exclusion' = bounded membership or closed language proves structural gap"),
+    missingSignals: z.array(z.enum([
+        'noGovernanceMechanism',
+        'noParticipationRule',
+        'noBoundedForum',
+        'noOPPAccessInfo',
+        'noExclusionLanguage',
+        'noActorBoundaryLanguage'
+    ])).optional().default([])
+        .describe("ALWAYS populate. Which structural signals are absent from excerpts, regardless of scope."),
+    signalsPresent: z.array(z.enum([
+        'impactMention',
+        'rightsHolder',
+        'governanceMechanism',
+        'participationRule',
+        'boundedForum',
+        'oppAccess',
+        'exclusionLanguage',
+        'actorBoundaryLanguage'
+    ])).optional().default([])
+        .describe("ALWAYS populate. Which signals WERE found in excerpts."),
     thesis: z.string().optional().describe("A 1-2 sentence overall conclusion of the structural exclusion or integration. E.g., 'Across these excerpts, the law completely domesticates authority, granting no formal standing to international organizations.'"),
     claims: z.array(z.object({
         sectionTitle: z.string().describe("Categorical boundary being analyzed (e.g., 'Authority', 'Coordination', 'Transnational Cooperation')."),
@@ -52,7 +74,9 @@ export class StructuralConcernService {
             return {
                 insufficientEvidence: true,
                 thesis: "No excerpts provided for analysis.",
-                claims: []
+                claims: [],
+                missingSignals: [],
+                signalsPresent: []
             };
         }
 
@@ -176,7 +200,9 @@ Generate a tight, structural concern analysis. Return the structured JSON.`;
             return {
                 insufficientEvidence: true,
                 thesis: "Analysis generated claims that could not be grounded in the provided excerpt IDs. The text lacks the structure to support valid claims.",
-                claims: []
+                claims: [],
+                missingSignals: result.missingSignals || [],
+                signalsPresent: result.signalsPresent || []
             };
         }
 

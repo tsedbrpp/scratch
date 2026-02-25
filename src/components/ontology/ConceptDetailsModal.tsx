@@ -448,16 +448,41 @@ export function EvaluationInterface({
                                                     </Tooltip>
                                                 )}
 
-                                                {(ghostData.evidenceGrade === 'E1' || ghostData.evidenceGrade === 'E2') && (
+                                                {/* Epistemic standing badge — nodeStanding-aware */}
+                                                {ghostData.evidenceGrade === 'E1' && (
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Badge className="ml-2 bg-amber-50 text-amber-700 border-amber-300 border-dashed cursor-help">
+                                                            <Badge className="ml-2 bg-red-50 text-red-600 border-red-300 border-dashed cursor-help">
                                                                 <AlertTriangle className="h-3 w-3 mr-1" />
-                                                                Insufficient Evidence
+                                                                No Mention Evidence
                                                             </Badge>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="max-w-[250px]">
-                                                            <p>Evidence grade {ghostData.evidenceGrade}: this ghost node lacks sufficient textual grounding. Score and typology are withheld.</p>
+                                                            <p>Evidence grade E1: no textual evidence of this actor found in the document.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                                {ghostData.evidenceGrade === 'E2' && (ghostData as any).nodeStanding === 'mention_only' && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className="ml-2 bg-slate-50 text-slate-500 border-slate-300 cursor-help">
+                                                                Mentioned · No Standing
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[280px]">
+                                                            <p>This actor appears in the text as affected/rights-holder, but no governance standing evidence was found in the excerpts.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                                {(ghostData as any).nodeStanding === 'standing_candidate' && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge className="ml-2 bg-amber-50 text-amber-600 border-amber-200 cursor-help">
+                                                                Standing Candidate
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-[280px]">
+                                                            <p>Some governance mechanism or OPP evidence exists, but full standing is not yet proven.</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 )}

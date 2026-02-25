@@ -402,6 +402,11 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 ...(absentActor.sanctionPower && { sanctionPower: absentActor.sanctionPower }),
                 ...(absentActor.dataVisibility && { dataVisibility: absentActor.dataVisibility }),
                 ...(absentActor.representationType && { representationType: absentActor.representationType }),
+                // Epistemic status — seeded from evidenceGrade as prior, overridden by structural concern analysis
+                nodeStanding: absentActor.evidenceGrade === 'E4' ? 'structural_ghost' as const
+                    : absentActor.evidenceGrade === 'E3' ? 'standing_candidate' as const
+                        : (absentActor.evidenceGrade === 'E2' || absentActor.evidenceGrade === 'E1') ? 'mention_only' as const
+                            : undefined,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any);
         });
@@ -483,6 +488,14 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                                 excerpts
                             );
                             gn.structuralAnalysis = structuralResult;
+                            // Override nodeStanding from structural signals (not just grade prior)
+                            if (structuralResult.evidenceScope === 'exclusion') {
+                                gn.nodeStanding = 'structural_ghost';
+                            } else if (structuralResult.evidenceScope === 'standing') {
+                                gn.nodeStanding = 'standing_candidate';
+                            } else if (structuralResult.evidenceScope === 'impact_only' || structuralResult.insufficientEvidence) {
+                                gn.nodeStanding = 'mention_only';
+                            }
                         } catch (err) {
                             console.warn(`[GHOST_NODES] Failed to generate structural analysis for ${gn.label}`, err);
                         }

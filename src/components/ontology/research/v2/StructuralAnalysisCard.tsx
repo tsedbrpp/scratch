@@ -76,17 +76,69 @@ export function StructuralAnalysisCard({
         return null;
     }
 
-    if (result?.insufficientEvidence) {
+    // Signal-name to human-readable label mapping
+    const signalLabels: Record<string, string> = {
+        noGovernanceMechanism: 'Governance Mechanism',
+        noParticipationRule: 'Participation Rule',
+        noBoundedForum: 'Bounded Forum',
+        noOPPAccessInfo: 'OPP Access Info',
+        noExclusionLanguage: 'Exclusion Language',
+        noActorBoundaryLanguage: 'Actor Boundary Language'
+    };
+
+    // Scoped diagnostic messaging based on evidenceScope
+    if (result?.evidenceScope === 'impact_only' || (result?.insufficientEvidence && !result?.evidenceScope)) {
+        const isImpactOnly = result?.evidenceScope === 'impact_only';
+        const missing = (result as any)?.missingSignals as string[] || [];
+        const present = (result as any)?.signalsPresent as string[] || [];
+
         return (
-            <Card className="border border-amber-200 bg-amber-50 shadow-sm mt-6">
-                <CardHeader className="pb-3 border-b border-amber-100 bg-white/50">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-900">
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
-                        Insufficient Structural Evidence
+            <Card className={`border shadow-sm mt-6 ${isImpactOnly ? 'border-slate-200 bg-slate-50/50' : 'border-amber-200 bg-amber-50'}`}>
+                <CardHeader className={`pb-3 border-b ${isImpactOnly ? 'border-slate-100 bg-white/50' : 'border-amber-100 bg-white/50'}`}>
+                    <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${isImpactOnly ? 'text-slate-700' : 'text-amber-900'}`}>
+                        {isImpactOnly ? (
+                            <BookOpen className="h-4 w-4 text-slate-500" />
+                        ) : (
+                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        )}
+                        {isImpactOnly
+                            ? 'Mentioned as Affected — Governance Standing Unproven'
+                            : 'Insufficient Excerpt Signal'}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-5 text-sm text-amber-800 leading-relaxed">
-                    {result.thesis || "The provided excerpts do not contain enough structural or role-allocating text to make grounded claims about governance standing or explicit exclusion. The model refused to hallucinate a structural role based on this data alone."}
+                <CardContent className={`p-5 text-sm leading-relaxed ${isImpactOnly ? 'text-slate-600' : 'text-amber-800'}`}>
+                    {result.thesis && <p className="mb-3">{result.thesis}</p>}
+                    {isImpactOnly ? (
+                        <p className="text-xs text-slate-500">No governance roles, OPPs, or participation rules appear in the provided excerpts.</p>
+                    ) : (
+                        <p className="text-xs text-slate-500">Try expanding the excerpt window or adding governance sections (roles, committees, enforcement).</p>
+                    )}
+                    {/* Diagnostic pills for missing signals */}
+                    {missing.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-200/60">
+                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5">Missing</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {missing.map(s => (
+                                    <Badge key={s} variant="outline" className="text-[10px] border-slate-200 text-slate-500 bg-white">
+                                        {signalLabels[s] || s.replace(/^no/, '').replace(/([A-Z])/g, ' $1').trim()}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {/* Show what WAS found */}
+                    {present.length > 0 && (
+                        <div className="mt-2">
+                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5">Found</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {present.map(s => (
+                                    <Badge key={s} variant="outline" className="text-[10px] border-emerald-200 text-emerald-600 bg-emerald-50/50">
+                                        {s.replace(/([A-Z])/g, ' $1').trim()}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -254,9 +306,24 @@ export function StructuralAnalysisCard({
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="bg-slate-50 border-t py-3 px-5 text-xs text-slate-400 flex items-center justify-between">
-                <span>AI-generated formal mapping based solely on provided quote text.</span>
-                <span>{validClaims.length} structural points proved.</span>
+            <CardFooter className="bg-slate-50 border-t py-3 px-5 flex flex-col gap-2">
+                <div className="w-full text-xs text-slate-400 flex items-center justify-between">
+                    <span>AI-generated formal mapping based solely on provided quote text.</span>
+                    <span>{validClaims.length} structural points proved.</span>
+                </div>
+                {/* Gaps disclosure for successful analyses */}
+                {(result as any)?.missingSignals?.length > 0 && (
+                    <div className="w-full flex items-center gap-2 text-[10px]">
+                        <span className="text-slate-400 uppercase tracking-wider font-semibold shrink-0">Gaps</span>
+                        <div className="flex flex-wrap gap-1">
+                            {((result as any).missingSignals as string[]).map(s => (
+                                <Badge key={s} variant="outline" className="text-[9px] border-slate-200 text-slate-400 bg-white py-0 px-1.5">
+                                    {signalLabels[s] || s.replace(/^no/, '').replace(/([A-Z])/g, ' $1').trim()}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </CardFooter>
         </Card >
     );

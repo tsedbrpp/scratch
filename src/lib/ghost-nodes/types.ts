@@ -33,6 +33,14 @@ export type GhostTypology = 'Structural' | 'Data' | 'Representational' | 'Scale'
 /** Evidence grade ladder. E1/E2 = insufficient, E3/E4 = scoring allowed. */
 export type EvidenceGrade = 'E1' | 'E2' | 'E3' | 'E4';
 
+/**
+ * Epistemic status of a ghost node — derived from structural signals, not grade alone.
+ * - mention_only: quotes exist, no governance/standing signals in excerpts
+ * - standing_candidate: ≥1 governance signal (mechanism, OPP, participation rule)
+ * - structural_ghost: bounded forum / closed language / explicit standing denial
+ */
+export type NodeStanding = 'mention_only' | 'standing_candidate' | 'structural_ghost';
+
 export type MaterialImpact = 'Low' | 'Medium' | 'High';
 export type OppAccess = 'None' | 'Advisory' | 'Partial' | 'Binding';
 export type SanctionPower = 'None' | 'Indirect' | 'Direct';
@@ -165,6 +173,8 @@ export interface DetectedGhostNode {
     sanctionPower?: SanctionPower;
     dataVisibility?: DataVisibility;
     representationType?: RepresentationType;
+    // Epistemic status — derived from structural concern signals, not grade alone
+    nodeStanding?: NodeStanding;
 }
 
 export interface InstitutionalLogics {
