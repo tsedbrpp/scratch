@@ -409,7 +409,8 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         // ============================================================
         // PASS 3: COUNTERFACTUAL POWER TEST (Quarantined Speculation)
         // ============================================================
-        const validatedGhosts = ghostNodes.filter(gn => gn.evidenceGrade === 'E3' || gn.evidenceGrade === 'E4' || (!gn.evidenceGrade && gn.absenceStrength && gn.absenceStrength >= 36));
+        // Include all GNDP ghost nodes (E2 survived rescue, E3/E4 directly) + legacy heuristic nodes
+        const validatedGhosts = ghostNodes.filter(gn => gn.evidenceGrade || (!gn.evidenceGrade && gn.absenceStrength && gn.absenceStrength >= 36));
         if (validatedGhosts.length > 0) {
             console.warn(`[GHOST_NODES] Pass 3: Counterfactual power test for ${Math.min(validatedGhosts.length, 6)} ghost nodes...`);
             try {

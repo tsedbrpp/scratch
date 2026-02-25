@@ -17,7 +17,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v42-fuzzy-rescue';
+const PROMPT_VERSION = 'v43-cf-all-grades';
 // Invalidated to debug ghost node pipeline
 
 /**
