@@ -9,26 +9,10 @@ export const BaseStructuralConcernSchema = z.object({
     insufficientEvidence: z.boolean().optional().default(false).describe("Set to true ONLY if you cannot even determine the evidence scope — i.e. the excerpts are too short, garbled, or off-topic to classify. Do NOT set true merely because governance standing is unproven."),
     evidenceScope: z.enum(['impact_only', 'standing', 'exclusion']).optional()
         .describe("Classify what the excerpts support: 'impact_only' = actor mentioned as affected/rights-holder only (no governance roles), 'standing' = ≥1 governance mechanism/OPP/participation rule present, 'exclusion' = bounded membership or closed language proves structural gap"),
-    missingSignals: z.array(z.enum([
-        'noGovernanceMechanism',
-        'noParticipationRule',
-        'noBoundedForum',
-        'noOPPAccessInfo',
-        'noExclusionLanguage',
-        'noActorBoundaryLanguage'
-    ])).optional().default([])
-        .describe("ALWAYS populate. Which structural signals are absent from excerpts, regardless of scope."),
-    signalsPresent: z.array(z.enum([
-        'impactMention',
-        'rightsHolder',
-        'governanceMechanism',
-        'participationRule',
-        'boundedForum',
-        'oppAccess',
-        'exclusionLanguage',
-        'actorBoundaryLanguage'
-    ])).optional().default([])
-        .describe("ALWAYS populate. Which signals WERE found in excerpts."),
+    missingSignals: z.array(z.string()).optional().default([])
+        .describe("ALWAYS populate. Which structural signals are absent from excerpts. Use values like: noGovernanceMechanism, noParticipationRule, noBoundedForum, noOPPAccessInfo, noExclusionLanguage, noActorBoundaryLanguage"),
+    signalsPresent: z.array(z.string()).optional().default([])
+        .describe("ALWAYS populate. Which signals WERE found in excerpts. Use values like: impactMention, rightsHolder, governanceMechanism, participationRule, boundedForum, oppAccess, exclusionLanguage, actorBoundaryLanguage"),
     thesis: z.string().optional().describe("A 1-2 sentence overall conclusion of the structural exclusion or integration. E.g., 'Across these excerpts, the law completely domesticates authority, granting no formal standing to international organizations.'"),
     claims: z.array(z.object({
         sectionTitle: z.string().describe("Categorical boundary being analyzed (e.g., 'Authority', 'Coordination', 'Transnational Cooperation')."),
