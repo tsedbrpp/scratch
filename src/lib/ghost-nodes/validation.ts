@@ -1,5 +1,41 @@
 import { AbsentActorResponse, ValidationIssue } from './types';
 
+/**
+ * Trigram-based fuzzy substring matching.
+ * Slides a window over `haystack` and returns the best trigram similarity
+ * score against `needle`. Threshold of 0.80 catches minor LLM paraphrasing.
+ */
+function trigrams(s: string): Set<string> {
+    const t = new Set<string>();
+    for (let i = 0; i <= s.length - 3; i++) t.add(s.substring(i, i + 3));
+    return t;
+}
+
+function trigramSimilarity(a: Set<string>, b: Set<string>): number {
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0;
+    let intersection = 0;
+    for (const t of a) if (b.has(t)) intersection++;
+    return intersection / (a.size + b.size - intersection); // Jaccard
+}
+
+function bestTrigramSimilarity(needle: string, haystack: string): number {
+    if (needle.length < 6) return haystack.includes(needle) ? 1 : 0;
+    const needleTri = trigrams(needle);
+    const windowMin = Math.max(6, Math.floor(needle.length * 0.7));
+    const windowMax = Math.ceil(needle.length * 1.3);
+    let best = 0;
+    // Slide window across haystack, stepping by 1/4 of needle length for speed
+    const step = Math.max(1, Math.floor(needle.length / 4));
+    for (let start = 0; start <= haystack.length - windowMin; start += step) {
+        const end = Math.min(start + windowMax, haystack.length);
+        const slice = haystack.substring(start, end);
+        const sim = trigramSimilarity(needleTri, trigrams(slice));
+        if (sim > best) best = sim;
+        if (best >= 0.95) break; // early exit on near-perfect
+    }
+    return best;
+}
 export function validateGhostNodeResponse(
     absentActors: AbsentActorResponse[],
     existingNodeLabels: string[],
@@ -45,7 +81,7 @@ export function validateGhostNodeResponse(
             }
         });
 
-        // V2 Validation: Validate Evidence Quotes
+        // V2 Validation: Validate Evidence Quotes with fuzzy matching
         if (actor.evidenceQuotes && actor.evidenceQuotes.length > 0) {
             actor.evidenceQuotes.forEach((eq, index) => {
                 if (!eq.quote) return;
@@ -53,11 +89,16 @@ export function validateGhostNodeResponse(
                 const normalizedQuote = quoteLower.replace(/\s+/g, ' ').replace(/[^\w\s]/gi, '');
                 const normalizedEvidence = documentEvidenceLower.replace(/\s+/g, ' ').replace(/[^\w\s]/gi, '');
 
-                if (!normalizedEvidence.includes(normalizedQuote) && quoteLower.length > 10) {
+                // Exact substring check first (fast path)
+                if (normalizedEvidence.includes(normalizedQuote) || quoteLower.length <= 10) return;
+
+                // Fuzzy match: sliding window trigram similarity
+                const similarity = bestTrigramSimilarity(normalizedQuote, normalizedEvidence);
+                if (similarity < 0.80) {
                     issues.push({
                         actor: actorName,
                         field: `evidenceQuotes[${index}].quote`,
-                        message: `The extracted quote was not found as a verbatim substring in the provided document sections: "${eq.quote.substring(0, 60)}..."`,
+                        message: `The extracted quote was not found as a verbatim substring in the provided document sections (best match: ${Math.round(similarity * 100)}%): "${eq.quote.substring(0, 60)}..."`,
                     });
                 }
             });
