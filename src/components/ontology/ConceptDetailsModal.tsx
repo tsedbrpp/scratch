@@ -619,301 +619,7 @@ export function EvaluationInterface({
                                                         </CardContent>
                                                     </Card>
 
-                                                    {/* GNDP Counterfactual Panel — v3/v2/v1 */}
-                                                    {effectiveCase?.counterfactual && (() => {
-                                                        const cf = effectiveCase.counterfactual;
-                                                        const humanize = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-                                                        const isV3 = cf.mechanismChain && cf.mechanismChain.length > 0 && typeof cf.mechanismChain[0] === 'object' && 'kind' in (cf.mechanismChain[0] as any);
-                                                        const isV2 = !isV3 && (!!cf.scenario || !!cf.mechanismChain);
-                                                        const isLegacy = !isV3 && !isV2;
-                                                        const impactLevel = cf.estimatedImpact?.level || cf.counterfactualImpact;
-                                                        const impactClass = impactLevel === 'Transformative' ? 'bg-red-100 text-red-700 border-red-200' :
-                                                            impactLevel === 'Moderate' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                                                'bg-gray-100 text-gray-600 border-gray-200';
-                                                        return (
-                                                            <Card className="shadow-sm border border-slate-200 bg-white">
-                                                                <CardContent className="p-4">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <h4 className="text-sm font-semibold text-slate-800">{'\u26A0'} Counterfactual Scenario</h4>
-                                                                        <div className="flex gap-1">
-                                                                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] font-normal">speculative</Badge>
-                                                                            {isLegacy && <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-[9px] font-normal">legacy</Badge>}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* v2: Scenario statement */}
-                                                                    {cf.scenario && (
-                                                                        <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2 mb-3">
-                                                                            <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1">Scenario</p>
-                                                                            <p className="text-[11px] text-slate-700 leading-relaxed">{cf.scenario}</p>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* v1 fallback: reasoning */}
-                                                                    {!cf.scenario && cf.reasoning && (
-                                                                        <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2 mb-3">
-                                                                            <p className="text-[11px] text-slate-700 leading-relaxed">{cf.reasoning}</p>
-                                                                        </div>
-                                                                    )}
-
-                                                                    <div className="space-y-3 text-xs text-slate-700">
-                                                                        {/* Impact level */}
-                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="text-slate-500 font-medium">CF Impact:</span>
-                                                                            <Badge className={`text-[10px] ${impactClass}`}>
-                                                                                {impactLevel}
-                                                                            </Badge>
-                                                                            {cf.estimatedImpact?.qualifier && (
-                                                                                <span className="text-[10px] text-slate-400 italic">{cf.estimatedImpact.qualifier}</span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {/* Enforcement ladder + guidance bindingness */}
-                                                                        {cf.estimatedImpact?.enforcementLadder && cf.estimatedImpact.enforcementLadder.length > 0 && (
-                                                                            <div className="flex items-center gap-1 flex-wrap">
-                                                                                <span className="text-[10px] text-slate-400">Escalation:</span>
-                                                                                {cf.estimatedImpact.guidanceBindingness && (
-                                                                                    <Badge variant="outline" className={`text-[8px] shrink-0 ${cf.estimatedImpact.guidanceBindingness === 'Binding' ? 'border-red-300 text-red-600 bg-red-50' :
-                                                                                            cf.estimatedImpact.guidanceBindingness === 'QuasiBinding' ? 'border-amber-300 text-amber-600 bg-amber-50' :
-                                                                                                cf.estimatedImpact.guidanceBindingness === 'Nonbinding' ? 'border-sky-300 text-sky-600 bg-sky-50' :
-                                                                                                    'border-slate-300 text-slate-500 bg-slate-50'
-                                                                                        }`}>{cf.estimatedImpact.guidanceBindingness}</Badge>
-                                                                                )}
-                                                                                {cf.estimatedImpact.enforcementLadder.map((e: any, i: number) => (
-                                                                                    <span key={i} className="text-[9px] text-slate-500">
-                                                                                        {i > 0 && <span className="text-slate-300 mx-0.5">{'\u2192'}</span>}
-                                                                                        <span className="font-medium">{e.step.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                                                                        {e.note && <span className="text-slate-400 ml-0.5">({e.note})</span>}
-                                                                                    </span>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Chokepoint — v3 role semantics or v2 bindingDuty */}
-                                                                        {cf.chokepoint && (
-                                                                            <div className="bg-blue-50/50 border border-blue-100 rounded px-2 py-1.5">
-                                                                                <span className="text-[10px] font-medium text-blue-800">Gate: </span>
-                                                                                <span className="text-[10px] text-blue-700">{cf.chokepoint.oppName}</span>
-                                                                                <span className="text-[9px] text-blue-500 ml-1">({cf.chokepoint.oppType.replace(/_/g, ' ')})</span>
-                                                                                {cf.chokepoint.standingActor && cf.chokepoint.obligatedActor ? (
-                                                                                    <div className="mt-1 space-y-0.5">
-                                                                                        <p className="text-[10px] text-slate-600">
-                                                                                            <span className="font-medium text-emerald-700">Standing:</span> {cf.chokepoint.standingActor}
-                                                                                        </p>
-                                                                                        <p className="text-[10px] text-slate-600">
-                                                                                            <span className="font-medium text-indigo-700">Obligation:</span> {cf.chokepoint.obligatedActor}
-                                                                                            {cf.chokepoint.obligatedActorType && <span className="text-slate-400 ml-0.5">({cf.chokepoint.obligatedActorType})</span>}
-                                                                                            {cf.chokepoint.obligationType && <span className="text-slate-500 ml-1">{'\u2192'} {cf.chokepoint.obligationType.replace(/([A-Z])/g, ' $1').trim()}</span>}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                ) : cf.chokepoint.bindingDuty ? (
-                                                                                    <p className="text-[10px] text-slate-600 mt-0.5">Duty: {cf.chokepoint.bindingDuty}</p>
-                                                                                ) : null}
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Mechanism chain — v3 typed or v2 plain */}
-                                                                        {cf.mechanismChain && cf.mechanismChain.length > 0 && (
-                                                                            <div>
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Mechanism of change</span>
-                                                                                <div className="mt-1 space-y-1">
-                                                                                    {cf.mechanismChain.map((item: any, i: number) => {
-                                                                                        const isTyped = typeof item === 'object' && item.kind;
-                                                                                        const stepText = isTyped ? item.step : item;
-                                                                                        const kindLabel = isTyped ? item.kind.replace(/([A-Z])/g, ' $1').trim() : null;
-                                                                                        const kindColors: Record<string, string> = {
-                                                                                            EvidenceCollection: 'bg-sky-50 text-sky-700 border-sky-200',
-                                                                                            Aggregation: 'bg-violet-50 text-violet-700 border-violet-200',
-                                                                                            Admissibility: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                                                            ReviewInitiation: 'bg-blue-50 text-blue-700 border-blue-200',
-                                                                                            Notice: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-                                                                                            ResponseDueProcess: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                                                            RemedyEnforcement: 'bg-red-50 text-red-700 border-red-200',
-                                                                                            Deterrence: 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                                        };
-                                                                                        return (
-                                                                                            <div key={i} className="flex items-start gap-2">
-                                                                                                <span className="text-[10px] font-mono text-slate-400 mt-0.5 shrink-0">{i + 1}.</span>
-                                                                                                {kindLabel && (
-                                                                                                    <Badge variant="outline" className={`text-[8px] shrink-0 mt-0.5 ${kindColors[item.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{kindLabel}</Badge>
-                                                                                                )}
-                                                                                                <span className="text-[11px] text-slate-700">{stepText}</span>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* v1 fallback: power dynamics grid */}
-                                                                        {!isV2 && cf.territorialization && (() => {
-                                                                            const TERR_LABELS: Record<string, string> = {
-                                                                                destabilizesPower: 'Shifts existing power dynamics',
-                                                                                introducesAccountability: 'Introduces new accountability',
-                                                                                reconfiguresData: 'Changes data collection obligations',
-                                                                                altersEnforcement: 'Modifies enforcement mechanisms',
-                                                                            };
-                                                                            return (
-                                                                                <div>
-                                                                                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Power dynamics</span>
-                                                                                    <div className="mt-1 space-y-1">
-                                                                                        {Object.entries(cf.territorialization).map(([key, val]: [string, any]) => (
-                                                                                            <div key={key} className="flex items-center gap-2">
-                                                                                                <span className={`text-[11px] font-bold ${val ? 'text-green-600' : 'text-gray-400'}`}>{val ? '\u2713' : '\u2717'}</span>
-                                                                                                <span className={`text-[11px] ${val ? 'text-slate-700' : 'text-slate-400'}`}>{TERR_LABELS[key] || key}</span>
-                                                                                            </div>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                </div>
-                                                                            );
-                                                                        })()}
-
-                                                                        {/* v2: Beneficiary mechanisms */}
-                                                                        {cf.beneficiaryMechanisms && cf.beneficiaryMechanisms.length > 0 && (
-                                                                            <div>
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Who benefits from their exclusion?</span>
-                                                                                <div className="mt-1 space-y-1.5">
-                                                                                    {cf.beneficiaryMechanisms.map((b: any, i: number) => (
-                                                                                        <div key={i} className="flex items-start gap-1.5">
-                                                                                            <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-600 shrink-0 mt-0.5">{humanize(b.actor)}</Badge>
-                                                                                            <span className="text-[10px] text-slate-500">{b.mechanism}</span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* v1 fallback: bare beneficiary list */}
-                                                                        {!isV2 && cf.riskRedistribution?.beneficiariesOfAbsence?.length > 0 && (
-                                                                            <div>
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Who benefits from their exclusion?</span>
-                                                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                                                    {cf.riskRedistribution.beneficiariesOfAbsence.map((b: string) => (
-                                                                                        <Badge key={b} variant="outline" className="text-[10px] border-slate-300 text-slate-600">{humanize(b)}</Badge>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* v2: Shielded actors with mechanisms */}
-                                                                        {cf.shieldedActors && cf.shieldedActors.length > 0 && (
-                                                                            <div>
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shielded from scrutiny</span>
-                                                                                <div className="mt-1 space-y-1.5">
-                                                                                    {cf.shieldedActors.map((s: any, i: number) => (
-                                                                                        <div key={i} className="flex items-start gap-1.5">
-                                                                                            <Badge variant="outline" className="text-[10px] border-red-200 text-red-600 shrink-0 mt-0.5">{humanize(s.actor)}</Badge>
-                                                                                            <span className="text-[10px] text-slate-500">{s.mechanism}</span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* v1 fallback: bare shielded list */}
-                                                                        {!isV2 && cf.riskRedistribution?.shieldedActors?.length > 0 && (
-                                                                            <div>
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Shielded from scrutiny</span>
-                                                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                                                    {cf.riskRedistribution.shieldedActors.map((s: string) => (
-                                                                                        <Badge key={s} variant="outline" className="text-[10px] border-red-200 text-red-600">{humanize(s)}</Badge>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Confidence assessment — v3 grounded/inferred/unknown */}
-                                                                        {cf.confidence && (
-                                                                            <div className="border-t border-slate-100 pt-2 mt-2">
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Confidence</span>
-                                                                                <div className="flex items-center gap-3 mt-1">
-                                                                                    <div className="flex items-center gap-1">
-                                                                                        <span className="text-[10px] text-slate-400">Evidence:</span>
-                                                                                        <Badge variant="outline" className={`text-[9px] ${cf.confidence.evidenceBase === 'High' ? 'border-green-300 text-green-700' :
-                                                                                            cf.confidence.evidenceBase === 'Medium' ? 'border-amber-300 text-amber-700' :
-                                                                                                'border-slate-300 text-slate-500'
-                                                                                            }`}>{cf.confidence.evidenceBase}</Badge>
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-1">
-                                                                                        <span className="text-[10px] text-slate-400">Speculative:</span>
-                                                                                        <Badge variant="outline" className={`text-[9px] ${cf.confidence.speculativeConfidence === 'High' ? 'border-green-300 text-green-700' :
-                                                                                            cf.confidence.speculativeConfidence === 'Medium' ? 'border-amber-300 text-amber-700' :
-                                                                                                'border-slate-300 text-slate-500'
-                                                                                            }`}>{cf.confidence.speculativeConfidence}</Badge>
-                                                                                    </div>
-                                                                                </div>
-                                                                                {cf.confidence.caveat && (
-                                                                                    <p className="text-[10px] text-slate-400 italic mt-1">{cf.confidence.caveat}</p>
-                                                                                )}
-                                                                                {/* v3: Grounded / Inferred / Unknown mini-table */}
-                                                                                {(cf.confidence.grounded || cf.confidence.inferred || cf.confidence.unknown) && (
-                                                                                    <div className="mt-2 border border-slate-100 rounded overflow-hidden">
-                                                                                        <table className="w-full text-[10px]">
-                                                                                            <tbody>
-                                                                                                {cf.confidence.grounded && (
-                                                                                                    <tr className="border-b border-slate-50">
-                                                                                                        <td className="px-2 py-1 font-medium text-green-700 bg-green-50/50 w-20">Grounded</td>
-                                                                                                        <td className="px-2 py-1 text-slate-600">{cf.confidence.grounded}</td>
-                                                                                                    </tr>
-                                                                                                )}
-                                                                                                {cf.confidence.inferred && (
-                                                                                                    <tr className="border-b border-slate-50">
-                                                                                                        <td className="px-2 py-1 font-medium text-amber-700 bg-amber-50/50 w-20">Inferred</td>
-                                                                                                        <td className="px-2 py-1 text-slate-600">{cf.confidence.inferred}</td>
-                                                                                                    </tr>
-                                                                                                )}
-                                                                                                {cf.confidence.unknown && (
-                                                                                                    <tr>
-                                                                                                        <td className="px-2 py-1 font-medium text-red-700 bg-red-50/50 w-20">Unknown</td>
-                                                                                                        <td className="px-2 py-1 text-slate-600">{cf.confidence.unknown}</td>
-                                                                                                    </tr>
-                                                                                                )}
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                    </div>
-                                                                                )}
-                                                                                {/* v3: Assumptions */}
-                                                                                {cf.confidence.assumptions && cf.confidence.assumptions.length > 0 && (
-                                                                                    <div className="mt-1.5">
-                                                                                        <span className="text-[9px] text-slate-400 uppercase tracking-wide">Assumptions</span>
-                                                                                        <div className="mt-0.5 space-y-0.5">
-                                                                                            {cf.confidence.assumptions.map((a: string, i: number) => (
-                                                                                                <p key={i} className="text-[10px] text-slate-500 pl-2 border-l border-slate-200">{a}</p>
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Analytical challenges (downsides) */}
-                                                                        {cf.analyticalChallenges && cf.analyticalChallenges.length > 0 && (
-                                                                            <div className="border-t border-slate-100 pt-2 mt-2">
-                                                                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Analytical Challenges</span>
-                                                                                <div className="mt-1 space-y-1">
-                                                                                    {cf.analyticalChallenges.map((ch: any, i: number) => {
-                                                                                        const challengeColors: Record<string, string> = {
-                                                                                            StrategicGaming: 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                                            CaptureRisk: 'bg-red-50 text-red-700 border-red-200',
-                                                                                            CapacityBacklog: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                                                            UnintendedConsequence: 'bg-violet-50 text-violet-700 border-violet-200',
-                                                                                            ScopeCreep: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-                                                                                        };
-                                                                                        return (
-                                                                                            <div key={i} className="flex items-start gap-1.5">
-                                                                                                <Badge variant="outline" className={`text-[8px] shrink-0 mt-0.5 ${challengeColors[ch.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{ch.kind.replace(/([A-Z])/g, ' $1').trim()}</Badge>
-                                                                                                <span className="text-[10px] text-slate-600">{ch.description}</span>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </CardContent>
-                                                            </Card>
-                                                        );
-                                                    })()}
+                                                    {/* CF panel moved to full-width below grid */}
                                                     {/* GNDP Access Profile */}
                                                     {(ghostData.oppAccess || ghostData.dataVisibility || ghostData.representationType || ghostData.sanctionPower) && (
                                                         <Card className="shadow-sm">
@@ -941,6 +647,278 @@ export function EvaluationInterface({
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* ====== FULL-WIDTH COUNTERFACTUAL PANEL ====== */}
+                                            {effectiveCase?.counterfactual && (() => {
+                                                const cf = effectiveCase.counterfactual;
+                                                const humanize = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                                                const isV3 = cf.mechanismChain && cf.mechanismChain.length > 0 && typeof cf.mechanismChain[0] === 'object' && 'kind' in (cf.mechanismChain[0] as any);
+                                                const isV2 = !isV3 && (!!cf.scenario || !!cf.mechanismChain);
+                                                const isLegacy = !isV3 && !isV2;
+                                                const impactLevel = cf.estimatedImpact?.level || cf.counterfactualImpact;
+                                                const impactClass = impactLevel === 'Transformative' ? 'bg-red-100 text-red-800 border-red-300' :
+                                                    impactLevel === 'Moderate' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                                        'bg-gray-100 text-gray-700 border-gray-300';
+                                                const kindColors: Record<string, string> = {
+                                                    EvidenceCollection: 'bg-sky-50 text-sky-700 border-sky-200',
+                                                    Aggregation: 'bg-violet-50 text-violet-700 border-violet-200',
+                                                    Admissibility: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                    ReviewInitiation: 'bg-blue-50 text-blue-700 border-blue-200',
+                                                    Notice: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+                                                    ResponseDueProcess: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                    RemedyEnforcement: 'bg-red-50 text-red-700 border-red-200',
+                                                    Deterrence: 'bg-orange-50 text-orange-700 border-orange-200',
+                                                };
+                                                return (
+                                                    <Card className="shadow-md border-l-4 border-l-amber-400 border border-slate-200 bg-white">
+                                                        <CardContent className="p-6">
+                                                            {/* Header */}
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                                                                    <span className="text-amber-500 text-lg">{'\u26A0\uFE0F'}</span>
+                                                                    Counterfactual Scenario
+                                                                </h3>
+                                                                <div className="flex gap-2">
+                                                                    <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs">Speculative</Badge>
+                                                                    {isLegacy && <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-xs">Legacy</Badge>}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Scenario statement — hero */}
+                                                            {cf.scenario && (
+                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-5">
+                                                                    <p className="text-sm text-slate-700 leading-relaxed italic">"{cf.scenario}"</p>
+                                                                </div>
+                                                            )}
+                                                            {!cf.scenario && cf.reasoning && (
+                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-5">
+                                                                    <p className="text-sm text-slate-700 leading-relaxed">{cf.reasoning}</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Two-column: Gate + Impact */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                                {/* Gate (chokepoint) */}
+                                                                {cf.chokepoint && (
+                                                                    <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-4">
+                                                                        <h4 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2">Governance Gate</h4>
+                                                                        <p className="text-sm font-medium text-blue-900">{cf.chokepoint.oppName}</p>
+                                                                        <Badge variant="outline" className="text-[10px] border-blue-200 text-blue-600 mt-1">{cf.chokepoint.oppType.replace(/_/g, ' ')}</Badge>
+                                                                        {cf.chokepoint.standingActor && cf.chokepoint.obligatedActor ? (
+                                                                            <div className="mt-3 space-y-1.5">
+                                                                                <div className="flex items-baseline gap-2">
+                                                                                    <span className="text-xs font-semibold text-emerald-700 shrink-0">Standing:</span>
+                                                                                    <span className="text-xs text-slate-700">{cf.chokepoint.standingActor}</span>
+                                                                                </div>
+                                                                                <div className="flex items-baseline gap-2">
+                                                                                    <span className="text-xs font-semibold text-indigo-700 shrink-0">Obligation:</span>
+                                                                                    <span className="text-xs text-slate-700">
+                                                                                        {cf.chokepoint.obligatedActor}
+                                                                                        {cf.chokepoint.obligatedActorType && <span className="text-slate-400 ml-1">({cf.chokepoint.obligatedActorType})</span>}
+                                                                                        {cf.chokepoint.obligationType && <span className="text-slate-500 ml-1">{'\u2192'} {cf.chokepoint.obligationType.replace(/([A-Z])/g, ' $1').trim()}</span>}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : cf.chokepoint.bindingDuty ? (
+                                                                            <p className="text-xs text-slate-600 mt-2">Duty: {cf.chokepoint.bindingDuty}</p>
+                                                                        ) : null}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Impact + Escalation */}
+                                                                <div className="bg-slate-50/60 border border-slate-200 rounded-lg p-4">
+                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Impact Assessment</h4>
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <Badge className={`text-xs px-2 py-0.5 ${impactClass}`}>{impactLevel}</Badge>
+                                                                        {cf.estimatedImpact?.guidanceBindingness && (
+                                                                            <Badge variant="outline" className={`text-[10px] ${cf.estimatedImpact.guidanceBindingness === 'Binding' ? 'border-red-300 text-red-600 bg-red-50' :
+                                                                                cf.estimatedImpact.guidanceBindingness === 'QuasiBinding' ? 'border-amber-300 text-amber-600 bg-amber-50' :
+                                                                                    cf.estimatedImpact.guidanceBindingness === 'Nonbinding' ? 'border-sky-300 text-sky-600 bg-sky-50' :
+                                                                                        'border-slate-300 text-slate-500 bg-slate-50'
+                                                                                }`}>{cf.estimatedImpact.guidanceBindingness}</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    {cf.estimatedImpact?.qualifier && (
+                                                                        <p className="text-xs text-slate-500 italic mb-3">{cf.estimatedImpact.qualifier}</p>
+                                                                    )}
+                                                                    {cf.estimatedImpact?.enforcementLadder && cf.estimatedImpact.enforcementLadder.length > 0 && (
+                                                                        <div>
+                                                                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Enforcement Escalation</span>
+                                                                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                                                                {cf.estimatedImpact.enforcementLadder.map((e: any, i: number) => (
+                                                                                    <span key={i} className="inline-flex items-center">
+                                                                                        {i > 0 && <span className="text-slate-300 mx-1 text-xs">{'\u2192'}</span>}
+                                                                                        <span className="text-[11px] font-medium text-slate-600">{e.step.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                                                        {e.note && <span className="text-[10px] text-slate-400 ml-0.5">({e.note})</span>}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Mechanism Chain — timeline */}
+                                                            {cf.mechanismChain && cf.mechanismChain.length > 0 && (
+                                                                <div className="mb-5">
+                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Mechanism of Change</h4>
+                                                                    <div className="relative pl-4 border-l-2 border-slate-200 space-y-3">
+                                                                        {cf.mechanismChain.map((item: any, i: number) => {
+                                                                            const isTyped = typeof item === 'object' && item.kind;
+                                                                            const stepText = isTyped ? item.step : item;
+                                                                            const kindLabel = isTyped ? item.kind.replace(/([A-Z])/g, ' $1').trim() : null;
+                                                                            return (
+                                                                                <div key={i} className="relative flex items-start gap-3">
+                                                                                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white" />
+                                                                                    <span className="text-xs font-mono text-slate-400 shrink-0 w-5 text-right">{i + 1}.</span>
+                                                                                    {kindLabel && (
+                                                                                        <Badge variant="outline" className={`text-[10px] shrink-0 ${kindColors[item.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{kindLabel}</Badge>
+                                                                                    )}
+                                                                                    <span className="text-xs text-slate-700 leading-relaxed">{stepText}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* v1: Power dynamics */}
+                                                            {!isV2 && cf.territorialization && (() => {
+                                                                const TERR_LABELS: Record<string, string> = { destabilizesPower: 'Shifts existing power dynamics', introducesAccountability: 'Introduces new accountability', reconfiguresData: 'Changes data collection obligations', altersEnforcement: 'Modifies enforcement mechanisms' };
+                                                                return (
+                                                                    <div className="mb-5">
+                                                                        <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Power Dynamics</h4>
+                                                                        <div className="space-y-1">
+                                                                            {Object.entries(cf.territorialization).map(([key, val]: [string, any]) => (
+                                                                                <div key={key} className="flex items-center gap-2">
+                                                                                    <span className={`text-sm font-bold ${val ? 'text-green-600' : 'text-gray-400'}`}>{val ? '\u2713' : '\u2717'}</span>
+                                                                                    <span className={`text-xs ${val ? 'text-slate-700' : 'text-slate-400'}`}>{TERR_LABELS[key] || key}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+
+                                                            {/* Beneficiaries + Shielded side-by-side */}
+                                                            {(cf.beneficiaryMechanisms?.length > 0 || cf.shieldedActors?.length > 0 || cf.riskRedistribution) && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                                    {(cf.beneficiaryMechanisms?.length > 0 || cf.riskRedistribution?.beneficiariesOfAbsence?.length > 0) && (
+                                                                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                                                            <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Who benefits from exclusion?</h4>
+                                                                            <div className="space-y-2">
+                                                                                {cf.beneficiaryMechanisms?.map((b: any, i: number) => (
+                                                                                    <div key={i}>
+                                                                                        <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-700 mb-0.5">{humanize(b.actor)}</Badge>
+                                                                                        <p className="text-xs text-slate-500 pl-2 border-l-2 border-slate-200">{b.mechanism}</p>
+                                                                                    </div>
+                                                                                ))}
+                                                                                {!isV2 && cf.riskRedistribution?.beneficiariesOfAbsence?.map((b: string) => (
+                                                                                    <Badge key={b} variant="outline" className="text-xs border-slate-300 text-slate-600">{humanize(b)}</Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {(cf.shieldedActors?.length > 0 || cf.riskRedistribution?.shieldedActors?.length > 0) && (
+                                                                        <div className="bg-red-50/40 border border-red-100 rounded-lg p-4">
+                                                                            <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">Shielded from Scrutiny</h4>
+                                                                            <div className="space-y-2">
+                                                                                {cf.shieldedActors?.map((s: any, i: number) => (
+                                                                                    <div key={i}>
+                                                                                        <Badge variant="outline" className="text-[10px] border-red-200 text-red-700 mb-0.5">{humanize(s.actor)}</Badge>
+                                                                                        <p className="text-xs text-slate-500 pl-2 border-l-2 border-red-200">{s.mechanism}</p>
+                                                                                    </div>
+                                                                                ))}
+                                                                                {!isV2 && cf.riskRedistribution?.shieldedActors?.map((s: string) => (
+                                                                                    <Badge key={s} variant="outline" className="text-xs border-red-200 text-red-600">{humanize(s)}</Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Confidence assessment */}
+                                                            {cf.confidence && (
+                                                                <div className="border-t border-slate-200 pt-4 mb-4">
+                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Confidence Assessment</h4>
+                                                                    <div className="flex items-center gap-4 mb-2">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-xs text-slate-500">Evidence:</span>
+                                                                            <Badge variant="outline" className={`text-xs ${cf.confidence.evidenceBase === 'High' ? 'border-green-300 text-green-700 bg-green-50' : cf.confidence.evidenceBase === 'Medium' ? 'border-amber-300 text-amber-700 bg-amber-50' : 'border-slate-300 text-slate-500'}`}>{cf.confidence.evidenceBase}</Badge>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-xs text-slate-500">Speculative:</span>
+                                                                            <Badge variant="outline" className={`text-xs ${cf.confidence.speculativeConfidence === 'High' ? 'border-green-300 text-green-700 bg-green-50' : cf.confidence.speculativeConfidence === 'Medium' ? 'border-amber-300 text-amber-700 bg-amber-50' : 'border-slate-300 text-slate-500'}`}>{cf.confidence.speculativeConfidence}</Badge>
+                                                                        </div>
+                                                                    </div>
+                                                                    {cf.confidence.caveat && <p className="text-xs text-slate-400 italic mb-2">{cf.confidence.caveat}</p>}
+                                                                    {(cf.confidence.grounded || cf.confidence.inferred || cf.confidence.unknown) && (
+                                                                        <div className="border border-slate-100 rounded-lg overflow-hidden mb-2">
+                                                                            <table className="w-full text-xs">
+                                                                                <tbody>
+                                                                                    {cf.confidence.grounded && (
+                                                                                        <tr className="border-b border-slate-100">
+                                                                                            <td className="px-3 py-2 font-semibold text-green-700 bg-green-50/50 w-24">Grounded</td>
+                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.grounded}</td>
+                                                                                        </tr>
+                                                                                    )}
+                                                                                    {cf.confidence.inferred && (
+                                                                                        <tr className="border-b border-slate-100">
+                                                                                            <td className="px-3 py-2 font-semibold text-amber-700 bg-amber-50/50 w-24">Inferred</td>
+                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.inferred}</td>
+                                                                                        </tr>
+                                                                                    )}
+                                                                                    {cf.confidence.unknown && (
+                                                                                        <tr>
+                                                                                            <td className="px-3 py-2 font-semibold text-red-700 bg-red-50/50 w-24">Unknown</td>
+                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.unknown}</td>
+                                                                                        </tr>
+                                                                                    )}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    )}
+                                                                    {cf.confidence.assumptions && cf.confidence.assumptions.length > 0 && (
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Assumptions</span>
+                                                                            <div className="mt-1 space-y-1">
+                                                                                {cf.confidence.assumptions.map((a: string, i: number) => (
+                                                                                    <p key={i} className="text-xs text-slate-500 pl-3 border-l-2 border-slate-200">{a}</p>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Analytical challenges */}
+                                                            {cf.analyticalChallenges && cf.analyticalChallenges.length > 0 && (
+                                                                <div className="border-t border-slate-200 pt-4">
+                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Analytical Challenges</h4>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                        {cf.analyticalChallenges.map((ch: any, i: number) => {
+                                                                            const challengeColors: Record<string, string> = {
+                                                                                StrategicGaming: 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                CaptureRisk: 'bg-red-50 text-red-700 border-red-200',
+                                                                                CapacityBacklog: 'bg-amber-50 text-amber-700 border-amber-200',
+                                                                                UnintendedConsequence: 'bg-violet-50 text-violet-700 border-violet-200',
+                                                                                ScopeCreep: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+                                                                            };
+                                                                            return (
+                                                                                <div key={i} className="flex items-start gap-2 p-2 bg-slate-50 rounded-md">
+                                                                                    <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 ${challengeColors[ch.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{ch.kind.replace(/([A-Z])/g, ' $1').trim()}</Badge>
+                                                                                    <span className="text-xs text-slate-600">{ch.description}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+                                                );
+                                            })()}
 
                                             <ClaimCard claim={effectiveCase.claim} />
                                         </div>
