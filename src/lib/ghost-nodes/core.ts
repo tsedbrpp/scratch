@@ -419,13 +419,21 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                         counterfactuals = raw3.counterfactuals || [];
                     }
                     // Merge counterfactual results back onto ghost nodes
+                    const normalizeId = (s: string) => s.toLowerCase().replace(/[-_]/g, ' ').trim();
+                    let mergedCount = 0;
                     for (const cf of counterfactuals) {
-                        const targetGhost = ghostNodes.find(gn => gn.id === cf.actorId);
+                        const cfId = normalizeId(cf.actorId);
+                        const targetGhost = ghostNodes.find(gn =>
+                            normalizeId(gn.id) === cfId || normalizeId(gn.label) === cfId
+                        );
                         if (targetGhost) {
                             targetGhost.counterfactual = normalizeCounterfactualResult(cf);
+                            mergedCount++;
+                        } else {
+                            console.warn(`[GHOST_NODES] Pass 3 actorId "${cf.actorId}" did not match any ghost node. Available IDs: ${ghostNodes.map(gn => gn.id).join(', ')}`);
                         }
                     }
-                    console.warn(`[GHOST_NODES] Pass 3 complete: ${counterfactuals.length} counterfactuals merged`);
+                    console.warn(`[GHOST_NODES] Pass 3 complete: ${counterfactuals.length} counterfactuals, ${mergedCount} matched ghost nodes`);
                 } catch (err) {
                     console.warn('[GHOST_NODES] Pass 3 JSON parsing failed. Skipping counterfactuals.', err);
                 }
