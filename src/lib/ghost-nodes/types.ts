@@ -67,14 +67,35 @@ export interface RiskRedistributionResult {
 
 export interface CounterfactualResult {
     actorId: string;
-    // v2 structured fields
-    chokepoint?: { oppName: string; oppType: string; bindingDuty: string };
+    // v3 role semantics
+    chokepoint?: {
+        oppName: string;
+        oppType: string;
+        standingActor?: string;
+        obligatedActor?: string;
+        obligatedActorType?: string;
+        obligationType?: string;
+        bindingDuty?: string; // v2 backward compat
+    };
     scenario?: string;
-    estimatedImpact?: { level: CounterfactualImpact; qualifier: string };
-    mechanismChain?: string[];
+    estimatedImpact?: {
+        level: CounterfactualImpact;
+        qualifier: string;
+        enforcementLadder?: Array<{ step: string; note?: string }>;
+    };
+    // v3 typed chain OR v2 plain strings
+    mechanismChain?: Array<{ kind: string; step: string }> | string[];
     beneficiaryMechanisms?: Array<{ actor: string; mechanism: string }>;
     shieldedActors?: Array<{ actor: string; mechanism: string }>;
-    confidence?: { evidenceBase: 'Low' | 'Medium' | 'High'; speculativeConfidence: 'Low' | 'Medium' | 'High'; caveat: string };
+    confidence?: {
+        evidenceBase: 'Low' | 'Medium' | 'High';
+        speculativeConfidence: 'Low' | 'Medium' | 'High';
+        caveat: string;
+        grounded?: string;
+        inferred?: string;
+        unknown?: string;
+        assumptions?: string[];
+    };
     // v1 legacy fields (backward compat)
     counterfactualImpact?: CounterfactualImpact;
     territorialization?: TerritorizationResult;

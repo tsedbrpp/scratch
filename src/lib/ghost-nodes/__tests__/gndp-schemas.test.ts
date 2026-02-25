@@ -116,52 +116,74 @@ const GOLDEN_PASS_3 = {
         {
             actorId: "Gig-Workers",
             chokepoint: {
-                oppName: "Conformity Assessment",
-                oppType: "conformity_assessment" as const,
-                bindingDuty: "Certify algorithmic management systems affecting platform workers before deployment",
+                oppName: "Initiation of enforcement review for unsafe workplace AI",
+                oppType: "enforcement" as const,
+                standingActor: "unions/workers",
+                obligatedActor: "competent authority",
+                obligatedActorType: "Authority" as const,
+                obligationType: "Investigate" as const,
+                bindingDuty: "Certify algorithmic management systems", // v2 compat
             },
-            scenario: "If Gig Workers were assigned binding appeal and audit rights at conformity assessment, algorithmic management systems would require worker-impact certification before deployment.",
+            scenario: "If unions/workers had standing to submit collective complaints and the competent authority were required to investigate, then enforcement of workplace AI safeguards would become more responsive.",
             estimatedImpact: {
-                level: "Transformative" as const,
-                qualifier: "if duties were binding and enforceable across EU member states",
+                level: "Moderate" as const,
+                qualifier: "if authority has mandatory review obligations",
+                enforcementLadder: [
+                    { step: "CorrectiveAction" as const, note: "mandatory mitigation plan" },
+                    { step: "Fine" as const },
+                    { step: "Suspension" as const },
+                    { step: "WithdrawalRecall" as const, note: "last resort for noncompliance" },
+                ],
             },
             mechanismChain: [
-                "Gig workers gain standing at conformity assessment gate",
-                "Algorithmic management systems require worker-impact audits",
-                "Platform companies must disclose scoring algorithms to auditors",
-                "Regulators gain enforcement targets for worker protection violations",
+                { kind: "EvidenceCollection" as const, step: "Workers document harms + generate evidence artifacts" },
+                { kind: "Aggregation" as const, step: "Union aggregates individual claims into standardized complaint format" },
+                { kind: "Admissibility" as const, step: "Complaint meets defined evidentiary threshold; authority accepts for review" },
+                { kind: "ReviewInitiation" as const, step: "Authority opens formal review and notifies deployer/provider" },
+                { kind: "ResponseDueProcess" as const, step: "Deployer/provider must respond and propose mitigations" },
+                { kind: "RemedyEnforcement" as const, step: "Authority orders corrective actions; noncompliance escalates" },
+                { kind: "Deterrence" as const, step: "Employers/providers pre-emptively improve safeguards" },
             ],
             beneficiaryMechanisms: [
-                { actor: "Platform Companies", mechanism: "Avoid worker-protection compliance costs and algorithmic transparency obligations" },
-                { actor: "Providers", mechanism: "No shared liability for downstream worker impacts of their AI systems" },
+                { actor: "Platform Companies", mechanism: "Absence of aggregated trigger at Admissibility step lets deployer avoid system-level review" },
+                { actor: "Providers", mechanism: "No shared liability at RemedyEnforcement step for downstream worker impacts" },
             ],
             shieldedActors: [
-                { actor: "Platform Companies", mechanism: "No audit obligation for algorithmic management decisions affecting workers" },
+                { actor: "Platform Companies", mechanism: "Reduced likelihood of system-level investigations tied to worker harm evidence" },
             ],
             confidence: {
                 evidenceBase: "Medium" as const,
                 speculativeConfidence: "Medium" as const,
-                caveat: "Based on excerpted text; explicit exclusion language present but scope of worker definition is contested.",
+                caveat: "Based on excerpted text; scope of worker definition is contested.",
+                grounded: "policy contains enforcement gate framed around inadequate safeguards",
+                inferred: "gate includes review authority but trigger rules not specified",
+                unknown: "whether workplace AI is within scope of enforcement provisions",
+                assumptions: [
+                    "recall powers exist but are not currently worker-triggered",
+                    "competent authority has mandatory review obligations",
+                ],
             },
-            // v1 backward-compat fields (optional)
-            counterfactualImpact: "Transformative" as const,
-            territorialization: {
-                destabilizesPower: true,
-                introducesAccountability: true,
-                reconfiguresData: true,
-                altersEnforcement: false,
-            },
-            riskRedistribution: {
-                beneficiariesOfAbsence: ["Platform Companies", "Providers"],
-                shieldedActors: ["Platform Companies"],
-                reducesCoalitionFriction: true,
-            },
-            reasoning: "Binding gig worker rights at conformity assessment would force algorithmic management audits",
         },
     ],
 };
 
-// Legacy v1 fixture for backward compat test
+// v2 fixture (plain string chain, no role semantics, no enforcement ladder)
+const GOLDEN_PASS_3_V2 = {
+    schemaVersion: "GNDP-1.0" as const,
+    counterfactuals: [
+        {
+            actorId: "Gig-Workers",
+            chokepoint: { oppName: "Conformity Assessment", oppType: "conformity_assessment" as const, bindingDuty: "Certify systems" },
+            scenario: "If gig workers had binding rights at conformity assessment...",
+            estimatedImpact: { level: "Transformative" as const, qualifier: "if enforceable" },
+            mechanismChain: ["Workers gain standing", "Audits required", "Algorithms disclosed"],
+            beneficiaryMechanisms: [{ actor: "Platform Companies", mechanism: "Avoid compliance" }],
+            confidence: { evidenceBase: "Low" as const, speculativeConfidence: "Low" as const, caveat: "Limited excerpts." },
+        },
+    ],
+};
+
+// v1 legacy fixture (pre-v2, has territorialization/riskRedistribution)
 const GOLDEN_PASS_3_LEGACY = {
     schemaVersion: "GNDP-1.0" as const,
     counterfactuals: [
@@ -173,7 +195,7 @@ const GOLDEN_PASS_3_LEGACY = {
             mechanismChain: ["Step 1", "Step 2"],
             beneficiaryMechanisms: [{ actor: "Platform Companies", mechanism: "Avoid compliance" }],
             confidence: { evidenceBase: "Low" as const, speculativeConfidence: "Low" as const, caveat: "Limited excerpts." },
-            // v1 fields only
+            // v1 legacy fields
             counterfactualImpact: "Transformative" as const,
             territorialization: {
                 destabilizesPower: true,
@@ -190,6 +212,7 @@ const GOLDEN_PASS_3_LEGACY = {
         },
     ],
 };
+
 
 // ===================================================================
 // TESTS
@@ -284,17 +307,37 @@ describe('GNDP v1.0 Schema Parsing', () => {
         });
     });
 
-    describe('Pass 3 — Counterfactual (v2 Structured)', () => {
-        it('parses v2 golden response correctly', () => {
+    describe('Pass 3 — Counterfactual (v3 Role Semantics)', () => {
+        it('parses v3 golden response with role semantics + typed chain', () => {
             const result = GhostNodesPass3Schema.parse(GOLDEN_PASS_3);
             expect(result.counterfactuals).toHaveLength(1);
             const cf = result.counterfactuals[0];
-            expect(cf.chokepoint.oppType).toBe('conformity_assessment');
-            expect(cf.scenario).toContain('If Gig Workers');
-            expect(cf.estimatedImpact.level).toBe('Transformative');
-            expect(cf.mechanismChain).toHaveLength(4);
-            expect(cf.beneficiaryMechanisms).toHaveLength(2);
-            expect(cf.confidence.evidenceBase).toBe('Medium');
+            // Role semantics
+            expect(cf.chokepoint.standingActor).toBe('unions/workers');
+            expect(cf.chokepoint.obligatedActor).toBe('competent authority');
+            expect(cf.chokepoint.obligatedActorType).toBe('Authority');
+            expect(cf.chokepoint.obligationType).toBe('Investigate');
+            // Enforcement ladder
+            expect(cf.estimatedImpact.enforcementLadder).toHaveLength(4);
+            // Typed mechanism chain
+            expect(cf.mechanismChain).toHaveLength(7);
+            const firstStep = cf.mechanismChain[0] as any;
+            expect(firstStep.kind).toBe('EvidenceCollection');
+            // Confidence granularity
+            expect(cf.confidence.grounded).toContain('enforcement gate');
+            expect(cf.confidence.inferred).toBeDefined();
+            expect(cf.confidence.unknown).toBeDefined();
+            expect(cf.confidence.assumptions).toHaveLength(2);
+        });
+
+        it('parses v2 format (plain string chain, backward compat)', () => {
+            const result = GhostNodesPass3Schema.parse(GOLDEN_PASS_3_V2);
+            expect(result.counterfactuals).toHaveLength(1);
+            const cf = result.counterfactuals[0];
+            expect(cf.chokepoint.bindingDuty).toBe('Certify systems');
+            expect(cf.mechanismChain).toHaveLength(3);
+            // v2 chain is plain strings
+            expect(typeof cf.mechanismChain[0]).toBe('string');
         });
 
         it('parses legacy v1 format (backward compat)', () => {
@@ -308,10 +351,14 @@ describe('GNDP v1.0 Schema Parsing', () => {
             const tooMany = {
                 counterfactuals: Array.from({ length: 7 }, (_, i) => ({
                     actorId: `actor-${i}`,
-                    chokepoint: { oppName: "test", oppType: "audit", bindingDuty: "test" },
+                    chokepoint: { oppName: "test", oppType: "audit" },
                     scenario: "If actor...",
                     estimatedImpact: { level: "None", qualifier: "n/a" },
-                    mechanismChain: ["step 1", "step 2"],
+                    mechanismChain: [
+                        { kind: "EvidenceCollection", step: "step 1" },
+                        { kind: "Admissibility", step: "step 2" },
+                        { kind: "ResponseDueProcess", step: "step 3" },
+                    ],
                     beneficiaryMechanisms: [],
                     confidence: { evidenceBase: "Low", speculativeConfidence: "Low", caveat: "Test." },
                 })),

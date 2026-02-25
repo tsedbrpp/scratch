@@ -13,6 +13,7 @@ import { DISCOURSE_TAXONOMY } from './constants';
 import { parseDocumentSections, formatSectionsForPrompt } from './parser';
 import { detectExplicitExclusions } from './negex';
 import { buildPass1Prompt, buildPass2Prompt, buildPass1APrompt, buildPass1BPrompt, buildGndpPass2Prompt, buildPass3Prompt } from './prompt-builders';
+import { normalizeCounterfactualResult } from './normalizeCounterfactual';
 import { validateGhostNodeResponse } from './validation';
 import {
     detectGhostNodes,
@@ -420,7 +421,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                     for (const cf of counterfactuals) {
                         const targetGhost = ghostNodes.find(gn => gn.id === cf.actorId);
                         if (targetGhost) {
-                            targetGhost.counterfactual = cf;
+                            targetGhost.counterfactual = normalizeCounterfactualResult(cf);
                         }
                     }
                     console.warn(`[GHOST_NODES] Pass 3 complete: ${counterfactuals.length} counterfactuals merged`);

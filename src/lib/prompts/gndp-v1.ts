@@ -238,84 +238,106 @@ Rules for isValid:
 `;
 
 // ---------------------------------------------------------------
-// PASS 3 — COUNTERFACTUAL POWER TEST (v2 — Structured Scenario)
+// PASS 3 — COUNTERFACTUAL POWER TEST (v3 — Role Semantics + Typed Chains)
 // ---------------------------------------------------------------
-// Purpose: quarantined speculative reasoning, now structured
-// Forces: chokepoint ID, causal chains, mechanistic beneficiaries
-// All outputs are conditional, not factual
+// Forces: role semantics (standing vs obligation), typed mechanism chain,
+// enforcement ladder, epistemic granularity (grounded/inferred/unknown)
 // ---------------------------------------------------------------
 
-export const GNDP_PASS_3_PROMPT = `# COUNTERFACTUAL POWER TEST — Structured Scenario Analysis
+export const GNDP_PASS_3_PROMPT = `# COUNTERFACTUAL POWER TEST — Structured Scenario Analysis (v3)
 
-⚠️ ALL outputs from this analysis are SPECULATIVE REASONING.
-Frame every statement as conditional ("If X were required to..."), never as fact.
+⚠️ ALL outputs are SPECULATIVE REASONING. Frame every statement as conditional ("If X were given standing to..."), never as fact.
 
 ## Mission
-For each validated ghost node below, construct a structured counterfactual scenario answering:
+For each validated ghost node below, construct a structured counterfactual scenario:
 
-> If [actor] were formally included at a specific governance chokepoint, what structural consequences would follow?
+> If [actor] were given formal standing at a specific governance gate, and the relevant authority were obligated to respond, what structural consequences would follow?
 
 ## Candidates for Analysis
 {{CANDIDATE_BLOCKS}}
 
-## Available Governance Gates (from document extraction)
+## Available Governance Gates (OPPs from document extraction)
 {{OPP_BLOCKS}}
 
 ## For each candidate, produce SEVEN structured outputs:
 
-### 1) Chokepoint Identification
-Name the SPECIFIC governance gate (OPP) where inclusion would occur:
-- oppName: the gate name (from the OPP list above, or a reasonable gate)
+### 1) Chokepoint — Role Semantics
+Identify the SPECIFIC procedural mechanism (not a normative condition):
+- oppName: describe the procedure, e.g. "initiation of enforcement review for unsafe AI deployments", NOT "recall of unsafe systems"
 - oppType: conformity_assessment | deployment_approval | audit | enforcement | procurement | reporting | other
-- bindingDuty: what this actor would be REQUIRED to do (concrete, max 120 chars)
+- standingActor: who gains STANDING or RIGHTS (the ghost node / affected group)
+- obligatedActor: who bears the OBLIGATION (name the specific institution)
+- obligatedActorType: Authority | Provider | Deployer | Auditor | StandardSetter | MultiActor
+- obligationType: OpenReview | Investigate | RespondPublicly | NotifyAffected | RequireMitigationPlan | OrderCorrectiveAction | EscalateEnforcement | Suspend | WithdrawRecall
 
-### 2) Scenario Statement
-Write a full conditional statement (max 300 chars):
-"If [actor] were required to [specific duty] at [specific gate], then [consequence]."
-This must be concrete and anchored to the document.
+⚠️ CRITICAL: Do NOT put a "duty" on the affected group. The ghost node gains STANDING (right to trigger).
+The obligation falls on the authority/provider/deployer.
+WRONG: "Workers required to file complaints" — that's a right, not a duty.
+RIGHT: standingActor = "workers/unions", obligatedActor = "competent authority", obligationType = "Investigate"
 
-### 3) Estimated Impact (with qualifier)
+### 2) Scenario Statement (max 300 chars)
+"If [standingActor] had standing to [trigger] at [gate], and [obligatedActor] were required to [obligationType], then [consequence]."
+Must be concrete and anchored to the document.
+
+### 3) Estimated Impact + Enforcement Ladder
 - level: None | Moderate | Transformative
-- qualifier: the CONDITIONS under which this level holds (e.g., "if duties were binding and enforceable")
-Never state impact as categorical fact.
+- qualifier: CONDITIONS under which this level holds
+- enforcementLadder (ordered escalation, max 6 steps):
+  Each step: { step: CorrectiveAction | DisclosureOrder | AuditOrder | Fine | Suspension | WithdrawalRecall, note: optional context }
+  MUST show escalation from mild → severe. Recall/withdrawal is ONLY the last step, never the only option.
 
-### 4) Causal Mechanism Chain (2-6 ordered steps)
-Show HOW power shifts, not just THAT it shifts.
-Each step must follow from the previous.
-Example: ["Lenders assigned model risk audit duties", "Audit obligations expose vendor scoring algorithms", "Regulators gain secondary enforcement targets", "Borrowers gain appeal pathways through lender responsibility"]
-Each step max 120 chars.
+### 4) Typed Mechanism Chain (3-8 ordered steps)
+Each step has a kind and a description:
+- kind values: EvidenceCollection | Aggregation | Admissibility | ReviewInitiation | Notice | ResponseDueProcess | RemedyEnforcement | Deterrence
+- step: max 220 chars describing WHAT happens at this stage
+
+REQUIRED: chain MUST include at least one Admissibility step (threshold/eligibility) and at least one ResponseDueProcess step (target's right to respond, propose mitigations).
+If you believe due process does not exist in the policy, say so in confidence.unknown.
+
+Example:
+[
+  {"kind":"EvidenceCollection","step":"Workers document harms + generate evidence artifacts (logs, schedules, adverse action records)"},
+  {"kind":"Aggregation","step":"Union aggregates individual claims into standardized complaint format"},
+  {"kind":"Admissibility","step":"Complaint meets defined evidentiary threshold; authority accepts for review"},
+  {"kind":"ReviewInitiation","step":"Authority opens formal review and notifies deployer/provider"},
+  {"kind":"ResponseDueProcess","step":"Deployer/provider must respond within defined timeframe and propose mitigations"},
+  {"kind":"RemedyEnforcement","step":"Authority orders corrective actions; noncompliance escalates to suspension/withdrawal"},
+  {"kind":"Deterrence","step":"Employers/providers pre-emptively improve safeguards to reduce enforcement risk"}
+]
 
 ### 5) Beneficiary Mechanisms (max 5)
 For each actor that benefits from the ghost node's CURRENT ABSENCE:
 - actor: who benefits
-- mechanism: WHY they benefit (specific causal reason, max 120 chars)
-Do NOT list actors without explaining the mechanism.
+- mechanism: WHY they benefit — reference which chain step they exploit (max 160 chars)
+  Example: "absence of aggregated trigger at Admissibility step lets deployer avoid system-level review"
+Do NOT list actors without specific causal mechanism.
 
 ### 6) Shielded Actors (max 5, optional)
-For each actor shielded from scrutiny by the absence:
 - actor: who is shielded
-- mechanism: what scrutiny they avoid (max 120 chars)
+- mechanism: WHAT scrutiny they avoid, referencing which chain step is missing (max 160 chars)
 
 ### 7) Confidence Assessment
-- evidenceBase: Low | Medium | High — how grounded are the inputs?
-  - Low: based on limited excerpts, no explicit exclusion language
-  - Medium: based on structural framing (E3 evidence)
-  - High: based on explicit exclusion language (E4 evidence)
-- speculativeConfidence: Low | Medium | High — how confident is the scenario logic?
-  - Low: causal chain is plausible but largely speculative
-  - Medium: causal chain follows established governance patterns
-  - High: causal chain is near-certain given institutional context
+- evidenceBase: Low | Medium | High
+- speculativeConfidence: Low | Medium | High
 - caveat: one-sentence methodological caveat (max 160 chars)
+- grounded: what is textually grounded in the document (max 240 chars)
+- inferred: what is reasonably inferred but not stated (max 240 chars)
+- unknown: what cannot be determined from the text (max 240 chars)
+- assumptions: up to 4 explicit assumptions the scenario relies on (each max 140 chars)
+
+EPISTEMIC GATE: if grounded is empty, evidenceBase MUST be Low. If unknown mentions missing enforcement powers, do NOT claim enforcementLadder steps beyond CorrectiveAction.
 
 ## RULES
+- No paragraphs. No prose beyond max lengths. JSON only.
 - You may ONLY reference facts from the candidate data provided.
 - Do NOT introduce new evidence, quotes, or outside knowledge.
 - Every "mechanism" field must explain WHY, not just WHO.
 - Frame all outputs as conditional, not factual.
-- Return minified JSON only.
 - Max 6 candidates.
+- Do NOT silently upgrade inferred mechanisms into grounded ones. If you infer a recall power exists, it goes in confidence.inferred, NOT in oppName as fact.
 
 ## OUTPUT SCHEMA
-{"counterfactuals":[{"actorId":"Actor-ID","chokepoint":{"oppName":"gate name","oppType":"conformity_assessment","bindingDuty":"what they must do"},"scenario":"If [actor] were required to [duty] at [gate], then [consequence]...","estimatedImpact":{"level":"Moderate","qualifier":"if duties were binding and enforceable"},"mechanismChain":["step 1","step 2","step 3"],"beneficiaryMechanisms":[{"actor":"name","mechanism":"why they benefit"}],"shieldedActors":[{"actor":"name","mechanism":"what scrutiny they avoid"}],"confidence":{"evidenceBase":"Medium","speculativeConfidence":"Medium","caveat":"Based solely on excerpted text; no explicit exclusion language present."}}]}
+{"counterfactuals":[{"actorId":"Actor-ID","chokepoint":{"oppName":"initiation of enforcement review for unsafe deployments","oppType":"enforcement","standingActor":"unions/workers","obligatedActor":"competent authority","obligatedActorType":"Authority","obligationType":"Investigate"},"scenario":"If unions/workers had standing to submit collective complaints and the competent authority were required to investigate, then...","estimatedImpact":{"level":"Moderate","qualifier":"if authority has mandatory review obligations","enforcementLadder":[{"step":"CorrectiveAction","note":"mandatory mitigation plan"},{"step":"Fine"},{"step":"Suspension"},{"step":"WithdrawalRecall","note":"last resort for noncompliance"}]},"mechanismChain":[{"kind":"EvidenceCollection","step":"Workers document harms"},{"kind":"Aggregation","step":"Union aggregates claims"},{"kind":"Admissibility","step":"Complaint meets threshold"},{"kind":"ReviewInitiation","step":"Authority opens review"},{"kind":"ResponseDueProcess","step":"Deployer must respond"},{"kind":"RemedyEnforcement","step":"Authority orders corrections"},{"kind":"Deterrence","step":"Preemptive compliance increases"}],"beneficiaryMechanisms":[{"actor":"name","mechanism":"why they benefit, referencing chain step"}],"shieldedActors":[{"actor":"name","mechanism":"what scrutiny they avoid"}],"confidence":{"evidenceBase":"Medium","speculativeConfidence":"Medium","caveat":"Based on excerpted text.","grounded":"policy contains enforcement gate framed around inadequate safeguards","inferred":"gate includes review authority but trigger rules not specified","unknown":"whether workplace AI is within scope of enforcement provisions","assumptions":["recall powers exist but are not currently worker-triggered","competent authority has mandatory review obligations"]}}]}
 `;
+
 

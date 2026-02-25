@@ -151,7 +151,7 @@ export const GhostNodesPass2Schema = z.object({
     }))
 });
 
-// --- Pass 3: Counterfactual Schema (v2 — Structured Scenario Analysis) ---
+// --- Pass 3: Counterfactual Schema (v3 — Role Semantics + Typed Chains) ---
 
 const ConfidenceLevelSchema = z.enum(['Low', 'Medium', 'High']);
 const OppTypeSchema = z.enum([
@@ -159,25 +159,61 @@ const OppTypeSchema = z.enum([
     'enforcement', 'procurement', 'reporting', 'other'
 ]);
 
+// v3 enums — constrain role semantics and chain types
+const ObligatedActorTypeSchema = z.enum([
+    'Authority', 'Provider', 'Deployer', 'Auditor', 'StandardSetter', 'MultiActor'
+]);
+const ObligationTypeSchema = z.enum([
+    'OpenReview', 'Investigate', 'RespondPublicly', 'NotifyAffected',
+    'RequireMitigationPlan', 'OrderCorrectiveAction', 'EscalateEnforcement',
+    'Suspend', 'WithdrawRecall'
+]);
+const EnforcementStepSchema = z.enum([
+    'CorrectiveAction', 'DisclosureOrder', 'AuditOrder', 'Fine',
+    'Suspension', 'WithdrawalRecall'
+]);
+const MechanismStepKindSchema = z.enum([
+    'EvidenceCollection', 'Aggregation', 'Admissibility', 'ReviewInitiation',
+    'Notice', 'ResponseDueProcess', 'RemedyEnforcement', 'Deterrence'
+]);
+
 export const GhostNodesPass3Schema = z.object({
     schemaVersion: z.literal('GNDP-1.0').optional(),
     counterfactuals: z.array(z.object({
         actorId: z.string(),
-        // 1) Chokepoint identification
+        // 1) Chokepoint — role semantics
         chokepoint: z.object({
             oppName: z.string(),
             oppType: OppTypeSchema,
-            bindingDuty: z.string(),
+            // v3 role semantics
+            standingActor: z.string().optional(),
+            obligatedActor: z.string().optional(),
+            obligatedActorType: ObligatedActorTypeSchema.optional(),
+            obligationType: ObligationTypeSchema.optional(),
+            // v2 backward compat
+            bindingDuty: z.string().optional(),
         }),
         // 2) Full conditional scenario statement
         scenario: z.string(),
-        // 3) Impact with conditional qualifier
+        // 3) Impact with enforcement ladder
         estimatedImpact: z.object({
             level: CounterfactualImpactSchema,
             qualifier: z.string(),
+            enforcementLadder: z.array(z.object({
+                step: EnforcementStepSchema,
+                note: z.string().max(160).optional(),
+            })).max(6).optional(),
         }),
-        // 4) Causal mechanism chain (ordered steps)
-        mechanismChain: z.array(z.string()).min(2).max(6),
+        // 4) Typed causal mechanism chain (ordered steps)
+        mechanismChain: z.union([
+            // v3: typed steps
+            z.array(z.object({
+                kind: MechanismStepKindSchema,
+                step: z.string().max(220),
+            })).min(3).max(8),
+            // v2 backward compat: plain strings
+            z.array(z.string()).min(2).max(6),
+        ]),
         // 5) Mechanistic beneficiary claims
         beneficiaryMechanisms: z.array(z.object({
             actor: z.string(),
@@ -188,13 +224,17 @@ export const GhostNodesPass3Schema = z.object({
             actor: z.string(),
             mechanism: z.string(),
         })).max(5).optional(),
-        // 7) Confidence assessment
+        // 7) Confidence assessment (v3: grounded/inferred/unknown)
         confidence: z.object({
             evidenceBase: ConfidenceLevelSchema,
             speculativeConfidence: ConfidenceLevelSchema,
             caveat: z.string(),
+            grounded: z.string().max(240).optional(),
+            inferred: z.string().max(240).optional(),
+            unknown: z.string().max(240).optional(),
+            assumptions: z.array(z.string().max(140)).max(4).optional(),
         }),
-        // Backward compat (legacy)
+        // Backward compat (v1/v2 legacy)
         reasoning: z.string().optional(),
         counterfactualImpact: CounterfactualImpactSchema.optional(),
         territorialization: z.object({
