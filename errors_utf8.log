@@ -1,0 +1,6 @@
+﻿src/components/ontology/research/v2/StructuralAnalysisCard.tsx(10,5): error TS2300: Duplicate identifier 'excerptCount'.
+src/components/ontology/research/v2/StructuralAnalysisCard.tsx(11,5): error TS2300: Duplicate identifier 'excerptCount'.
+src/components/ontology/research/v2/StructuralAnalysisCard.tsx(19,5): error TS2300: Duplicate identifier 'excerptCount'.
+src/components/ontology/research/v2/StructuralAnalysisCard.tsx(20,5): error TS2300: Duplicate identifier 'excerptCount'.
+test-scp.ts(21,56): error TS2554: Expected 5-6 arguments, but got 4.
+test-scp.ts(40,56): error TS2554: Expected 5-6 arguments, but got 4.

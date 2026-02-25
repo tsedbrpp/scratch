@@ -1,0 +1,2 @@
+src/lib/ghost-nodes.ts(883,11): error TS1005: ';' expected.
+src/lib/ghost-nodes.ts(883,22): error TS1443: Module declaration names may only use ' or " quoted strings.
