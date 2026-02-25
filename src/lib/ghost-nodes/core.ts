@@ -417,9 +417,9 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         // Include all GNDP ghost nodes (E2 survived rescue, E3/E4 directly) + legacy heuristic nodes
         const validatedGhosts = ghostNodes.filter(gn => gn.evidenceGrade || (!gn.evidenceGrade && gn.absenceStrength && gn.absenceStrength >= 36));
         if (validatedGhosts.length > 0) {
-            console.warn(`[GHOST_NODES] Pass 3: Counterfactual power test for ${Math.min(validatedGhosts.length, 6)} ghost nodes...`);
+            console.warn(`[GHOST_NODES] Pass 3: Counterfactual power test for ${Math.min(validatedGhosts.length, 12)} ghost nodes...`);
             try {
-                const pass3Prompt = buildPass3Prompt(validatedGhosts.slice(0, 6), opps);
+                const pass3Prompt = buildPass3Prompt(validatedGhosts.slice(0, 12), opps);
                 const pass3Completion = await openai.chat.completions.create({
                     model: process.env.OPENAI_MODEL || "gpt-4o",
                     messages: [
@@ -428,7 +428,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                     ],
                     response_format: { type: "json_object" },
                     temperature: 0.4,
-                    max_completion_tokens: 12000,
+                    max_completion_tokens: 16000,
                 });
 
                 try {

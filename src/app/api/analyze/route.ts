@@ -17,7 +17,7 @@ export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
 // Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v45-cf-prefix-match';
+const PROMPT_VERSION = 'v46-cf-cap-12';
 // Invalidated to debug ghost node pipeline
 
 /**
