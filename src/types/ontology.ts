@@ -25,6 +25,7 @@ export interface OntologyNode {
     relationshipType: string;
     evidence: string;
   }>;
+  counterfactual?: any;
   institutionalLogics?: {
     market: number;
     state: number;

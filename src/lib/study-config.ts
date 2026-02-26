@@ -70,6 +70,7 @@ export interface StudyCase {
     claim?: GhostNodeClaim;
     evaluationConfig?: EvaluationConfig;
     structuralAnalysis?: any; // Reusing node-level any structure for port
+    counterfactual?: any;
 }
 
 export type InstitutionalLogicStrength = 'weak' | 'moderate' | 'dominant' | null;

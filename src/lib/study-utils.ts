@@ -84,6 +84,7 @@ export function generateCasesFromOntology(
                 claim: node.claim,
                 roster: mappedRoster,
                 structuralAnalysis: node.structuralAnalysis,
+                counterfactual: node.counterfactual,
                 missingSignals: mappedMissingSignals.length > 0 ? mappedMissingSignals : undefined,
                 evaluationConfig: {
                     presenceGateQuestion: `Based on the evidence, is the actor "${node.label}" materially excluded or marginalized in this document?`,
