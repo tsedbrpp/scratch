@@ -704,6 +704,16 @@ export default function OntologyPage() {
                         onClose={() => setSelectedNodeId(null)}
                         isStatic={!currentOntologyData}
                         sourceId={selectedSourceId}
+                        onNextCase={() => {
+                            if (!currentOntologyData || !selectedNodeId) return;
+                            const ghostNodes = currentOntologyData.nodes.filter(n => n.isGhost);
+                            const currentIndex = ghostNodes.findIndex(n => n.id === selectedNodeId);
+                            if (currentIndex >= 0 && currentIndex < ghostNodes.length - 1) {
+                                setSelectedNodeId(ghostNodes[currentIndex + 1].id);
+                            } else {
+                                setSelectedNodeId(null); // Close if it's the last one
+                            }
+                        }}
                     />
                 </DialogContent>
             </Dialog>

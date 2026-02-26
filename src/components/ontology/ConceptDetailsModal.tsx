@@ -4,21 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { OntologyNode } from '@/types/ontology';
 import { getColorForCategory } from '@/lib/ontology-utils';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, Clock, ArrowRight, Check, Search, AlertTriangle } from 'lucide-react';
+import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Clock, ArrowRight, Check, Search, AlertTriangle, Link as LinkIcon, Expand, Sparkles, Activity, ShieldAlert, MoveDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GhostNodeSurvey } from './research/GhostNodeSurvey';
 import { Card, CardContent } from '@/components/ui/card';
 import { StudyCase, GhostNodeSurveyResponse, StudyState, SurveyResponseData, EvidenceQuote } from '@/lib/study-config';
-import { GhostNode } from '@/types';
 import { QuoteHighlighter } from './QuoteHighlighter';
 import { useRouter } from 'next/navigation';
+import { EvaluationProvider } from './research/v2/EvaluationContext';
 
 // V2 Components
 import { CaseSummaryBar } from './research/v2/CaseSummaryBar';
 import { QuoteCardList } from './research/v2/QuoteCardList';
 import { MissingSignalsPanel } from './research/v2/MissingSignalsPanel';
 import { ClaimCard } from './research/v2/ClaimCard';
+import { SurveyInstructionsDialog } from './research/v2/SurveyInstructionsDialog';
 import { SearchDrawer } from './research/v2/SearchDrawer';
 import { GhostNodeEvaluationForm } from './research/v2/GhostNodeEvaluationForm';
 import { EvidenceLineageModal } from '../reflexivity/EvidenceLineageModal';
@@ -78,6 +81,7 @@ export function EvaluationInterface({
     onReset,
     onSuspend,
     onDebug, // [NEW]
+    onSave,
     studyState,
     currentCaseIndex,
     totalCases,
@@ -85,7 +89,6 @@ export function EvaluationInterface({
     sourceId
 }: ConceptDetailsModalProps) {
     const isDev = process.env.NODE_ENV === 'development';
-    const [activeTab, setActiveTab] = useState<'explore' | 'evaluate'>('explore');
     const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeQuoteContext, setActiveQuoteContext] = useState<EvidenceQuote | null>(null);
@@ -95,6 +98,9 @@ export function EvaluationInterface({
     const [highlightedExcerptIds, setHighlightedExcerptIds] = useState<string[]>([]);
     const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
     const [generatedStructuralAnalysis, setGeneratedStructuralAnalysis] = useState<StructuralConcernResult | null>(null);
+
+    // [NEW] Track if the bottom survey form is minimized
+    const [isFormMinimized, setIsFormMinimized] = useState(false);
 
     const handleSearchRequest = (query: string) => {
         setSearchQuery(query);
@@ -152,8 +158,6 @@ export function EvaluationInterface({
 
     useEffect(() => {
         if (isActive) {
-            // Only reset if not already 'explore' to avoid unnecessary re-renders
-            setActiveTab(prev => prev !== 'explore' ? 'explore' : prev);
             setHighlightedExcerptIds([]);
             setGeneratedStructuralAnalysis(null);
             setIsGeneratingAnalysis(false);
@@ -274,7 +278,10 @@ export function EvaluationInterface({
 
     return (
         <TooltipProvider>
-            <Card className="shadow-lg border-indigo-100 overflow-hidden bg-white flex flex-col max-w-6xl mx-auto w-full max-h-[90vh]">
+            <Card className={cn(
+                "shadow-lg overflow-hidden bg-white flex flex-col mx-auto",
+                isResearchTarget ? "w-[100vw] h-[100vh] max-w-none rounded-none border-0" : "w-11/12 max-w-[1600px] max-h-[95vh] border-indigo-100"
+            )}>
                 {/* Header */}
                 <div className="px-6 py-4 border-b shrink-0 select-none">
                     {/* Navigation Header for Research Mode */}
@@ -285,6 +292,8 @@ export function EvaluationInterface({
                             </div>
 
                             <div className="flex items-center gap-1">
+                                <SurveyInstructionsDialog />
+                                <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -346,14 +355,8 @@ export function EvaluationInterface({
                     )}
 
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={`rounded-full p-2 ${selectedNodeColors.bg}`}>
-                                <Brain className={`h-6 w-6 ${selectedNodeColors.text}`} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900 leading-tight">
-                                    {(isResearchTarget && currentCase) ? currentCase.title : selectedNode.label}
-                                </h3>
+                        <div className="flex items-center gap-3 w-full">
+                            <div className="w-full">
                                 <div className="mt-1 flex items-center justify-between">
                                     <div className="flex items-center">
                                         <Tooltip>
@@ -366,9 +369,49 @@ export function EvaluationInterface({
                                                 <p>Analytical category assigned by the ontology.</p>
                                             </TooltipContent>
                                         </Tooltip>
+                                        {/* Primary Status Pill (Always Visible) */}
+                                        {selectedNode.isGhost && (ghostData as any)?.nodeStanding && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Badge className={`ml-2 cursor-help ${(ghostData as any).nodeStanding === 'standing_candidate'
+                                                        ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                                        : (ghostData as any).nodeStanding === 'mention_only'
+                                                            ? 'bg-slate-50 text-slate-500 border-slate-300'
+                                                            : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                                        }`}>
+                                                        {(ghostData as any).nodeStanding === 'standing_candidate' ? 'Standing Candidate'
+                                                            : (ghostData as any).nodeStanding === 'mention_only' ? 'Mentioned · No Standing'
+                                                                : 'Standing Validated'}
+                                                    </Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-[280px]">
+                                                    <p>Primary AI evaluation of this actor's governance standing within the text.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
 
-                                        {selectedNode.isGhost && (
-                                            <>
+                                        {/* Current Study Case Badge */}
+                                        {isResearchTarget && (
+                                            <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200">
+                                                Current Study Case
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Phase 1: Collapsible Technical Metadata Drawer */}
+                                {selectedNode.isGhost && (
+                                    <Collapsible className="mt-2 text-left">
+                                        <div className="flex items-center">
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-500 hover:text-slate-800 p-0 -ml-2 mb-1">
+                                                    <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                                                    View AI Claim Details & Typologies
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                        </div>
+                                        <CollapsibleContent className="animate-in slide-in-from-top-2 duration-200 pt-1 pb-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Badge className="ml-2 bg-amber-100 text-amber-800 border-amber-200 cursor-help">
@@ -468,615 +511,557 @@ export function EvaluationInterface({
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 )}
-
-                                                {/* Epistemic standing badge — nodeStanding-aware */}
-                                                {ghostData.evidenceGrade === 'E1' && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Badge className="ml-2 bg-red-50 text-red-600 border-red-300 border-dashed cursor-help">
-                                                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                                                No Mention Evidence
-                                                            </Badge>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-[250px]">
-                                                            <p>Evidence grade E1: no textual evidence of this actor found in the document.</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                                {ghostData.evidenceGrade === 'E2' && ghostData.nodeStanding === 'mention_only' && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Badge className="ml-2 bg-slate-50 text-slate-500 border-slate-300 cursor-help">
-                                                                Mentioned · No Standing
-                                                            </Badge>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-[280px]">
-                                                            <p>This actor appears in the text as affected/rights-holder, but no governance standing evidence was found in the excerpts.</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                                {(ghostData as any).nodeStanding === 'standing_candidate' && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Badge className="ml-2 bg-amber-50 text-amber-600 border-amber-200 cursor-help">
-                                                                Standing Candidate
-                                                            </Badge>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-[280px]">
-                                                            <p>Some governance mechanism or OPP evidence exists, but full standing is not yet proven.</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                )}
-                                                {effectiveCase?.counterfactual?.confidence && (() => {
-                                                    const cf = effectiveCase.counterfactual;
-                                                    const levels = ['Low', 'Medium', 'High'];
-                                                    const cfLevel = cf.confidence ? levels[Math.min(
-                                                        levels.indexOf(cf.confidence.evidenceBase),
-                                                        levels.indexOf(cf.confidence.speculativeConfidence)
-                                                    )] : null;
-                                                    return cfLevel ? (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Badge className={`ml-2 cursor-help text-[9px] font-normal ${cfLevel === 'Low' ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                                                                    cfLevel === 'Medium' ? 'bg-slate-100 text-slate-600 border-slate-300' :
-                                                                        'bg-slate-200 text-slate-700 border-slate-300'
-                                                                    }`}>
-                                                                    CF: {cfLevel === 'Medium' ? 'Med' : cfLevel}
-                                                                </Badge>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="max-w-[250px]">
-                                                                <p className="font-medium mb-1">Counterfactual Confidence</p>
-                                                                <div className="text-[11px] space-y-0.5">
-                                                                    <div>Evidence base: {cf.confidence.evidenceBase}</div>
-                                                                    <div>Speculative confidence: {cf.confidence.speculativeConfidence}</div>
-                                                                </div>
-                                                                <p className="text-[10px] text-slate-400 mt-1 italic">Conservative estimate (min of both)</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    ) : null;
-                                                })()}
-                                                {effectiveCase?.counterfactual && !effectiveCase.counterfactual.confidence && (
-                                                    <Badge className="ml-2 text-[9px] font-normal bg-slate-50 text-slate-400 border-slate-200 border-dashed">
-                                                        CF: ?
-                                                    </Badge>
-                                                )}
-                                            </>
-                                        )}
-                                        {isResearchTarget && (
-                                            <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200">
-                                                Current Study Case
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
+                                            </div>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                )}
                             </div>
                         </div>
-                        {/* [NEW] Trace in Ecosystem Map Button */}
-                        {!isStatic && sourceId && selectedNode && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 ml-4 flex-shrink-0"
-                                onClick={() => {
-                                    const params = new URLSearchParams();
-                                    params.set('sourceId', sourceId);
-                                    params.set('trace', selectedNode.label);
-                                    router.push(`/ecosystem?${params.toString()}`);
-                                }}
-                            >
-                                <ArrowRight className="h-4 w-4" />
-                                Trace in Ecosystem Map
-                            </Button>
-                        )}
+                        {/* Removing Trace in Ecosystem Map Button per user request */}
                     </div>
 
-                    {/* Tabs Logic */}
-                    {isResearchTarget && (
-                        <div className="flex items-center gap-2 mt-4 border-b w-full">
-                            <button
-                                onClick={() => setActiveTab('explore')}
-                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'explore'
-                                    ? 'border-purple-600 text-purple-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <FileText className="h-4 w-4" />
-                                Explore Evidence
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('evaluate')}
-                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'evaluate'
-                                    ? 'border-purple-600 text-purple-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <ClipboardList className="h-4 w-4" />
-                                Evaluate
-                            </button>
-                        </div>
-                    )}
+                    {/* Tabs Logic removed for unified view */}
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                    {/* EXPLORE TAB */}
-                    {(activeTab === 'explore' || !isResearchTarget) && (
-                        <div className="space-y-6">
-                            {/* Evidence Rendering for Research Target OR any Ghost Node */}
-                            {effectiveCase && (
-                                <div className="space-y-4 mb-6 relative">
-                                    {effectiveCase.evidenceQuotes ? (
-                                        // V2 Grid Layout
-                                        <div className="w-full">
-                                            <CaseSummaryBar currentCase={effectiveCase} />
+                <div className="flex-1 overflow-y-auto relative flex flex-col min-h-0">
+                    <div className="w-full px-6 py-4 relative scroll-smooth">
+                        <EvaluationProvider caseData={effectiveCase}>
+                            <div className="space-y-6 flex flex-col">
+                                {/* Survey Questions overlay moved to the bottom based on user request */}
 
-                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                                {/* Left Column (8 cols) */}
-                                                <div className="lg:col-span-8">
-                                                    <QuoteCardList
-                                                        quotes={effectiveCase.evidenceQuotes}
-                                                        documentLabel={effectiveCase.title.includes(':') ? effectiveCase.title.split(':')[0].trim() : undefined}
-                                                        onContextRequest={handleContextRequest}
-                                                        onFullDocRequest={handleFullDocRequest}
-                                                        highlightedExcerptIds={highlightedExcerptIds}
-                                                    />
+                                {/* Evidence Rendering for Research Target OR any Ghost Node */}
+                                {effectiveCase && (
+                                    <div className="space-y-4 mb-6 relative">
+                                        {effectiveCase.evidenceQuotes ? (
+                                            // V2 Grid Layout
+                                            <div className="w-full">
+                                                <CaseSummaryBar currentCase={effectiveCase} />
 
-                                                    {/* [NEW] Structural Concern Deep Mapping */}
-                                                    <StructuralAnalysisCard
-                                                        actorName={effectiveCase.title}
-                                                        excerptCount={effectiveCase.evidenceQuotes?.length || 0}
-                                                        result={effectiveCase.structuralAnalysis}
-                                                        challengedResult={effectiveCase.antiStructuralAnalysis}
-                                                        escalation={effectiveCase.escalationAnalysis}
-                                                        onHighlightExcerpts={setHighlightedExcerptIds}
-                                                        onGenerate={handleGenerateAnalysis}
-                                                        isGenerating={isGeneratingAnalysis}
-                                                    />
-                                                </div>
+                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                                    {/* Left Column (8 cols): Anchored Evidence via Sticky Rail */}
+                                                    <div className="lg:col-span-8 relative">
+                                                        {/* Phase 2: Single Scroll + Sticky Evidence Rail */}
+                                                        {/* On lg screens this becomes a sticky sidebar within the scrolling modal container */}
+                                                        <div className="lg:sticky lg:top-4 max-h-[calc(100vh-[180px])] overflow-y-auto hide-scrollbar pb-6 pr-2 -mr-2">
+                                                            <QuoteCardList
+                                                                quotes={effectiveCase.evidenceQuotes}
+                                                                documentLabel={effectiveCase.title.includes(':') ? effectiveCase.title.split(':')[0].trim() : undefined}
+                                                                onContextRequest={handleContextRequest}
+                                                                onFullDocRequest={handleFullDocRequest}
+                                                                highlightedExcerptIds={highlightedExcerptIds}
+                                                                caseId={effectiveCase.id}
+                                                            />
 
-                                                {/* Right Column (4 cols) */}
-                                                <div className="lg:col-span-4 space-y-4">
-                                                    <MissingSignalsPanel
-                                                        signals={effectiveCase.missingSignals}
-                                                        onSearchRequest={handleSearchRequest}
-                                                    />
-                                                    <Card className="shadow-sm">
-                                                        <CardContent className="p-4">
-                                                            <h4 className="text-sm font-semibold text-slate-800 mb-2">Search Document</h4>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {(effectiveCase.searchChips || ['public', 'citizen', 'transparency']).map((chip: string) => (
-                                                                    <Badge
-                                                                        key={chip}
-                                                                        variant="secondary"
-                                                                        className="cursor-pointer hover:bg-slate-200 text-[10px]"
-                                                                        onClick={() => handleSearchRequest(chip)}
-                                                                    >
-                                                                        {chip}
-                                                                    </Badge>
-                                                                ))}
+                                                            {/* Structural Concern Deep Mapping */}
+                                                            <div className="mt-4">
+                                                                <StructuralAnalysisCard
+                                                                    actorName={effectiveCase.title}
+                                                                    excerptCount={effectiveCase.evidenceQuotes?.length || 0}
+                                                                    result={effectiveCase.structuralAnalysis}
+                                                                    challengedResult={effectiveCase.antiStructuralAnalysis}
+                                                                    escalation={effectiveCase.escalationAnalysis}
+                                                                    onHighlightExcerpts={setHighlightedExcerptIds}
+                                                                    onGenerate={handleGenerateAnalysis}
+                                                                    isGenerating={isGeneratingAnalysis}
+                                                                />
                                                             </div>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="w-full mt-3 h-8 text-xs gap-1"
-                                                                onClick={() => handleSearchRequest('')}
-                                                            >
-                                                                <Search className="h-3 w-3" /> Custom Search
-                                                            </Button>
-                                                        </CardContent>
-                                                    </Card>
+                                                        </div>
+                                                    </div>
 
-                                                    {/* CF panel moved to full-width below grid */}
-                                                    {/* GNDP Access Profile */}
-                                                    {(ghostData.oppAccess || ghostData.dataVisibility || ghostData.representationType || ghostData.sanctionPower) && (
+                                                    {/* Right Column (4 cols) */}
+                                                    <div className="lg:col-span-4 space-y-4">
+                                                        <MissingSignalsPanel
+                                                            signals={effectiveCase.missingSignals}
+                                                            onSearchRequest={handleSearchRequest}
+                                                        />
                                                         <Card className="shadow-sm">
                                                             <CardContent className="p-4">
-                                                                <h4 className="text-sm font-semibold text-slate-800 mb-2">GNDP Access Profile</h4>
-                                                                <div className="space-y-1.5 text-xs">
-                                                                    {ghostData.oppAccess && (
-                                                                        <div className="flex justify-between"><span className="text-slate-500">OPP Access</span><Badge variant="outline" className="text-[10px]">{ghostData.oppAccess}</Badge></div>
-                                                                    )}
-                                                                    {ghostData.sanctionPower && (
-                                                                        <div className="flex justify-between"><span className="text-slate-500">Sanction Power</span><Badge variant="outline" className="text-[10px]">{ghostData.sanctionPower}</Badge></div>
-                                                                    )}
-                                                                    {ghostData.dataVisibility && (
-                                                                        <div className="flex justify-between"><span className="text-slate-500">Data Visibility</span><Badge variant="outline" className="text-[10px]">{ghostData.dataVisibility}</Badge></div>
-                                                                    )}
-                                                                    {ghostData.representationType && (
-                                                                        <div className="flex justify-between"><span className="text-slate-500">Representation</span><Badge variant="outline" className="text-[10px]">{ghostData.representationType}</Badge></div>
-                                                                    )}
-                                                                    {ghostData.materialImpact && (
-                                                                        <div className="flex justify-between"><span className="text-slate-500">Material Impact</span><Badge variant="outline" className={`text-[10px] ${ghostData.materialImpact === 'High' ? 'border-red-300 text-red-700' : ghostData.materialImpact === 'Medium' ? 'border-amber-300 text-amber-700' : ''}`}>{ghostData.materialImpact}</Badge></div>
-                                                                    )}
+                                                                <h4 className="text-sm font-semibold text-slate-800 mb-2">Search Document</h4>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {(effectiveCase.searchChips || ['public', 'citizen', 'transparency']).map((chip: string) => (
+                                                                        <Badge
+                                                                            key={chip}
+                                                                            variant="secondary"
+                                                                            className="cursor-pointer hover:bg-slate-200 text-[10px]"
+                                                                            onClick={() => handleSearchRequest(chip)}
+                                                                        >
+                                                                            {chip}
+                                                                        </Badge>
+                                                                    ))}
                                                                 </div>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="w-full mt-3 h-8 text-xs gap-1"
+                                                                    onClick={() => handleSearchRequest('')}
+                                                                >
+                                                                    <Search className="h-3 w-3" /> Custom Search
+                                                                </Button>
                                                             </CardContent>
                                                         </Card>
-                                                    )}
+
+                                                        {/* CF panel moved to full-width below grid */}
+                                                        {/* GNDP Access Profile */}
+                                                        {(ghostData.oppAccess || ghostData.dataVisibility || ghostData.representationType || ghostData.sanctionPower) && (
+                                                            <Card className="shadow-sm">
+                                                                <CardContent className="p-4">
+                                                                    <h4 className="text-sm font-semibold text-slate-800 mb-2">GNDP Access Profile</h4>
+                                                                    <div className="space-y-1.5 text-xs">
+                                                                        {ghostData.oppAccess && (
+                                                                            <div className="flex justify-between"><span className="text-slate-500">OPP Access</span><Badge variant="outline" className="text-[10px]">{ghostData.oppAccess}</Badge></div>
+                                                                        )}
+                                                                        {ghostData.sanctionPower && (
+                                                                            <div className="flex justify-between"><span className="text-slate-500">Sanction Power</span><Badge variant="outline" className="text-[10px]">{ghostData.sanctionPower}</Badge></div>
+                                                                        )}
+                                                                        {ghostData.dataVisibility && (
+                                                                            <div className="flex justify-between"><span className="text-slate-500">Data Visibility</span><Badge variant="outline" className="text-[10px]">{ghostData.dataVisibility}</Badge></div>
+                                                                        )}
+                                                                        {ghostData.representationType && (
+                                                                            <div className="flex justify-between"><span className="text-slate-500">Representation</span><Badge variant="outline" className="text-[10px]">{ghostData.representationType}</Badge></div>
+                                                                        )}
+                                                                        {ghostData.materialImpact && (
+                                                                            <div className="flex justify-between"><span className="text-slate-500">Material Impact</span><Badge variant="outline" className={`text-[10px] ${ghostData.materialImpact === 'High' ? 'border-red-300 text-red-700' : ghostData.materialImpact === 'Medium' ? 'border-amber-300 text-amber-700' : ''}`}>{ghostData.materialImpact}</Badge></div>
+                                                                        )}
+                                                                    </div>
+                                                                </CardContent>
+                                                            </Card>
+                                                        )}
+                                                    </div>
                                                 </div>
+
+
+
+                                            </div>
+                                        ) : (
+                                            // V1 Legacy Layout
+                                            <>
+                                                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3 text-sm text-blue-800">
+                                                    <Info className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                    <p>
+                                                        <strong>Review Evidence:</strong> Please analyze the document evidence (Pane 1) and the interpretive claim (Pane 2) below.
+                                                        Address the survey evaluation questions above based on these points.
+                                                    </p>
+                                                </div>
+
+                                                <Card className="border-l-4 border-l-blue-500 shadow-sm">
+                                                    <CardContent className="pt-6">
+                                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">
+                                                            Pane 1: Document Evidence
+                                                        </h4>
+                                                        <ul className="list-disc pl-5 space-y-2 text-slate-700 text-sm leading-relaxed">
+                                                            {effectiveCase.pane1?.evidencePoints.map((pt: string, i: number) => (
+                                                                <li key={i}><QuoteHighlighter text={pt} /></li>
+                                                            ))}
+                                                        </ul>
+                                                    </CardContent>
+                                                </Card>
+
+                                                <Card className="border-l-4 border-l-purple-500 shadow-sm">
+                                                    <CardContent className="pt-6">
+                                                        <h4 className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-3">
+                                                            Pane 2: Interpretive Claim
+                                                        </h4>
+                                                        <div className="space-y-3 text-sm">
+                                                            <div>
+                                                                <span className="font-semibold text-slate-900 block mb-1">Hypothesis:</span>
+                                                                <p className="text-slate-700">{effectiveCase.pane2?.hypothesis}</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-semibold text-slate-900 block mb-1">Reasoning:</span>
+                                                                <p className="text-slate-700"><QuoteHighlighter text={effectiveCase.pane2?.reasoning || ''} /></p>
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            </>
+                                        )}
+
+                                    </div>
+                                )}
+                                {/* ====== FULL-WIDTH COUNTERFACTUAL PANEL (REDESIGNED) ====== */}
+                                {effectiveCase?.counterfactual && (() => {
+                                    const cf = effectiveCase.counterfactual;
+                                    const humanize = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                                    const isV3 = cf.mechanismChain && cf.mechanismChain.length > 0 && typeof cf.mechanismChain[0] === 'object' && 'kind' in (cf.mechanismChain[0] as any);
+                                    const impactLevel = cf.estimatedImpact?.level || cf.counterfactualImpact;
+
+                                    const kindColors: Record<string, string> = {
+                                        EvidenceCollection: 'bg-sky-50 text-sky-700 border-sky-200',
+                                        Aggregation: 'bg-violet-50 text-violet-700 border-violet-200',
+                                        Admissibility: 'bg-amber-50 text-amber-700 border-amber-200',
+                                        ReviewInitiation: 'bg-blue-50 text-blue-700 border-blue-200',
+                                        Notice: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+                                        ResponseDueProcess: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                        RemedyEnforcement: 'bg-red-50 text-red-700 border-red-200',
+                                        Deterrence: 'bg-orange-50 text-orange-700 border-orange-200',
+                                    };
+
+                                    return (
+                                        <Card className="shadow-sm border border-slate-200 bg-white overflow-hidden mt-6">
+
+                                            {/* 1. THE CATALYST (Hero Banner) */}
+                                            <div className="bg-amber-50/80 border-b border-amber-200 px-6 py-5">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Sparkles className="h-5 w-5 text-amber-500" />
+                                                    <TooltipProvider>
+                                                        <Tooltip delayDuration={300}>
+                                                            <TooltipTrigger asChild>
+                                                                <div className="flex items-center gap-1.5 cursor-help group">
+                                                                    <h3 className="text-sm font-bold text-amber-900 uppercase tracking-widest border-b border-dotted border-transparent group-hover:border-amber-900/40 transition-colors pb-0.5">The Catalyst (Counterfactual)</h3>
+                                                                    <Info className="h-4 w-4 text-amber-600/70 group-hover:text-amber-600 transition-colors" />
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                <p>A simulated change in rules, definitions, or procedural rights that tests how the current system would adapt if this actor were formally empowered.</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                                {cf.scenario ? (
+                                                    <p className="text-lg font-medium text-amber-950 leading-relaxed italic">"{cf.scenario}"</p>
+                                                ) : cf.reasoning ? (
+                                                    <p className="text-base text-amber-900 leading-relaxed">{cf.reasoning}</p>
+                                                ) : null}
                                             </div>
 
-                                            {/* ====== FULL-WIDTH COUNTERFACTUAL PANEL ====== */}
-                                            {effectiveCase?.counterfactual && (() => {
-                                                const cf = effectiveCase.counterfactual;
-                                                const humanize = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-                                                const isV3 = cf.mechanismChain && cf.mechanismChain.length > 0 && typeof cf.mechanismChain[0] === 'object' && 'kind' in (cf.mechanismChain[0] as any);
-                                                const isV2 = !isV3 && (!!cf.scenario || !!cf.mechanismChain);
-                                                const isLegacy = !isV3 && !isV2;
-                                                const impactLevel = cf.estimatedImpact?.level || cf.counterfactualImpact;
-                                                const impactClass = impactLevel === 'Transformative' ? 'bg-red-100 text-red-800 border-red-300' :
-                                                    impactLevel === 'Moderate' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                                                        'bg-gray-100 text-gray-700 border-gray-300';
-                                                const kindColors: Record<string, string> = {
-                                                    EvidenceCollection: 'bg-sky-50 text-sky-700 border-sky-200',
-                                                    Aggregation: 'bg-violet-50 text-violet-700 border-violet-200',
-                                                    Admissibility: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                    ReviewInitiation: 'bg-blue-50 text-blue-700 border-blue-200',
-                                                    Notice: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-                                                    ResponseDueProcess: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                    RemedyEnforcement: 'bg-red-50 text-red-700 border-red-200',
-                                                    Deterrence: 'bg-orange-50 text-orange-700 border-orange-200',
-                                                };
-                                                return (
-                                                    <Card className="shadow-md border-l-4 border-l-amber-400 border border-slate-200 bg-white">
-                                                        <CardContent className="p-8">
-                                                            {/* Header */}
-                                                            <div className="flex items-center justify-between mb-4">
-                                                                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                                                    <span className="text-amber-500 text-lg">{'\u26A0\uFE0F'}</span>
-                                                                    Counterfactual Scenario
-                                                                </h3>
-                                                                <div className="flex gap-2">
-                                                                    <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs">Speculative</Badge>
-                                                                    {isLegacy && <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-xs">Legacy</Badge>}
-                                                                </div>
-                                                            </div>
+                                            <CardContent className="p-0">
+                                                {/* 2. THE PROCESS (Flowchart) */}
+                                                {(cf.chokepoint || (cf.mechanismChain && cf.mechanismChain.length > 0)) && (
+                                                    <div className="px-6 py-8 bg-slate-50 border-b border-slate-100 flex flex-col items-center relative">
+                                                        <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 w-full text-center">Mechanism of Change</h4>
 
-                                                            {/* Scenario statement — hero */}
-                                                            {cf.scenario && (
-                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-5 py-4 mb-6">
-                                                                    <p className="text-base text-slate-700 leading-relaxed italic">"{cf.scenario}"</p>
-                                                                </div>
-                                                            )}
-                                                            {!cf.scenario && cf.reasoning && (
-                                                                <div className="bg-slate-50 border border-slate-200 rounded-lg px-5 py-4 mb-6">
-                                                                    <p className="text-base text-slate-700 leading-relaxed">{cf.reasoning}</p>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Two-column: Gate + Impact */}
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                                                {/* Gate (chokepoint) */}
-                                                                {cf.chokepoint && (
-                                                                    <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-5">
-                                                                        <h4 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2">Governance Gate</h4>
-                                                                        <p className="text-sm font-medium text-blue-900">{cf.chokepoint.oppName}</p>
-                                                                        <Badge variant="outline" className="text-[10px] border-blue-200 text-blue-600 mt-1">{cf.chokepoint.oppType.replace(/_/g, ' ')}</Badge>
-                                                                        {cf.chokepoint.standingActor && cf.chokepoint.obligatedActor ? (
-                                                                            <div className="mt-3 space-y-1.5">
-                                                                                <div className="flex items-baseline gap-2">
-                                                                                    <span className="text-xs font-semibold text-emerald-700 shrink-0">Standing:</span>
-                                                                                    <span className="text-xs text-slate-700">{cf.chokepoint.standingActor}</span>
-                                                                                </div>
-                                                                                <div className="flex items-baseline gap-2">
-                                                                                    <span className="text-xs font-semibold text-indigo-700 shrink-0">Obligation:</span>
-                                                                                    <span className="text-xs text-slate-700">
-                                                                                        {cf.chokepoint.obligatedActor}
-                                                                                        {cf.chokepoint.obligatedActorType && <span className="text-slate-400 ml-1">({cf.chokepoint.obligatedActorType})</span>}
-                                                                                        {cf.chokepoint.obligationType && <span className="text-slate-500 ml-1">{'\u2192'} {cf.chokepoint.obligationType.replace(/([A-Z])/g, ' $1').trim()}</span>}
-                                                                                    </span>
-                                                                                </div>
+                                                        {cf.mechanismChain && (cf.mechanismChain.length > 0) && (
+                                                            <div className="absolute top-6 right-6">
+                                                                <TooltipProvider>
+                                                                    <Tooltip delayDuration={300}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <div className="text-xs text-indigo-600 font-medium border border-indigo-100 bg-indigo-50 px-2 py-1 rounded-md cursor-help inline-flex">
+                                                                                {cf.mechanismChain.length} Steps Generated
                                                                             </div>
-                                                                        ) : cf.chokepoint.bindingDuty ? (
-                                                                            <p className="text-xs text-slate-600 mt-2">Duty: {cf.chokepoint.bindingDuty}</p>
-                                                                        ) : null}
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                            <p>Number of procedural or legal steps required for a system to escalate a challenge, dispute, or non-compliance issue under this counterfactual scenario.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Step 0: Gate */}
+                                                        {cf.chokepoint && (
+                                                            <div className="w-full max-w-sm">
+                                                                <div className="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm text-center relative z-10">
+                                                                    <div className="mx-auto bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center mb-2">
+                                                                        <Activity className="h-4 w-4" />
+                                                                    </div>
+                                                                    <div className="flex items-center justify-center gap-1.5 mb-1 group">
+                                                                        <TooltipProvider>
+                                                                            <Tooltip delayDuration={300}>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div className="flex items-center gap-1 cursor-help">
+                                                                                        <p className="text-xs font-bold text-blue-900 uppercase tracking-widest border-b border-dotted border-transparent group-hover:border-blue-900/40 transition-colors pb-0.5">Governance Gate</p>
+                                                                                        <Info className="h-3.5 w-3.5 text-blue-500/70 group-hover:text-blue-500 transition-colors" />
+                                                                                    </div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                                    <p>A procedural control point, decision mechanism, or formal process that dictates access, oversight, or enforcement within the system.</p>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    </div>
+                                                                    <p className="text-sm font-semibold text-slate-800">{cf.chokepoint.oppName}</p>
+                                                                    <Badge variant="outline" className="mt-2 text-[10px] text-blue-600 border-blue-200 bg-blue-50/50">
+                                                                        {cf.chokepoint.oppType.replace(/_/g, ' ')}
+                                                                    </Badge>
+                                                                    {cf.chokepoint.obligationType && (
+                                                                        <p className="text-xs text-slate-500 mt-2 border-t border-slate-100 pt-2 break-words">
+                                                                            <span className="font-semibold text-slate-700">Obligation:</span> {cf.chokepoint.obligationType.replace(/([A-Z])/g, ' $1').trim()}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                {cf.mechanismChain && cf.mechanismChain.length > 0 && (
+                                                                    <div className="flex justify-center -mt-2 -mb-2 relative z-0">
+                                                                        <div className="h-8 border-l-2 border-dashed border-slate-300"></div>
                                                                     </div>
                                                                 )}
+                                                            </div>
+                                                        )}
 
-                                                                {/* Impact + Escalation */}
-                                                                <div className="bg-slate-50/60 border border-slate-200 rounded-lg p-5">
-                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Impact Assessment</h4>
-                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                        <Badge className={`text-xs px-2 py-0.5 ${impactClass}`}>{impactLevel}</Badge>
+                                                        {/* Steps 1..N: Mechanism Chain */}
+                                                        {cf.mechanismChain && cf.mechanismChain.length > 0 && (
+                                                            <div className="w-full max-w-lg space-y-0 flex flex-col items-center relative z-10">
+                                                                {cf.mechanismChain.map((item: any, i: number) => {
+                                                                    const isTyped = typeof item === 'object' && item.kind;
+                                                                    const stepText = isTyped ? item.step : item;
+                                                                    const kindLabel = isTyped ? item.kind.replace(/([A-Z])/g, ' $1').trim() : (isV3 ? 'Process' : null);
+                                                                    const colorClasses = isTyped && kindColors[item.kind] ? kindColors[item.kind] : 'bg-white text-slate-700 border-slate-200';
+
+                                                                    return (
+                                                                        <React.Fragment key={i}>
+                                                                            <div className={`w-full bg-white border-2 rounded-lg p-3 shadow-sm flex items-center gap-3 transition-colors ${isTyped && kindColors[item.kind] ? kindColors[item.kind].replace('bg-', 'border-').split(' ')[2] : 'border-slate-200'}`}>
+                                                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${colorClasses}`}>
+                                                                                    {i + 1}
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    {kindLabel && <div className="text-[9px] uppercase tracking-widest font-bold opacity-60 mb-0.5">{kindLabel}</div>}
+                                                                                    <div className="text-sm font-medium leading-snug">{stepText}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            {i < cf.mechanismChain.length - 1 && (
+                                                                                <div className="flex justify-center py-1.5 opacity-40">
+                                                                                    <MoveDown className="h-4 w-4 text-slate-400" />
+                                                                                </div>
+                                                                            )}
+                                                                        </React.Fragment>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* 3. THE OUTCOME (Cards/Grid) */}
+                                                <div className="p-6 bg-slate-50/50 border-t border-slate-200">
+                                                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Projected Outcomes</h4>
+
+                                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                        {/* Impact Card */}
+                                                        {impactLevel && (
+                                                            <div className="bg-white border border-indigo-200 rounded-xl p-5 shadow-sm col-span-1 lg:col-span-3 flex flex-col md:flex-row md:items-center gap-4">
+                                                                <TooltipProvider>
+                                                                    <Tooltip delayDuration={300}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <div className="flex-shrink-0 bg-indigo-50 text-indigo-600 rounded-full h-8 w-8 flex items-center justify-center border border-indigo-100 cursor-help">
+                                                                                <Activity className="h-4 w-4" />
+                                                                            </div>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                            <p>The magnitude and nature of change caused by this counterfactual scenario.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                                <div className="flex-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">System Impact</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-sm font-semibold text-slate-800">{impactLevel}</span>
                                                                         {cf.estimatedImpact?.guidanceBindingness && (
-                                                                            <Badge variant="outline" className={`text-[10px] ${cf.estimatedImpact.guidanceBindingness === 'Binding' ? 'border-red-300 text-red-600 bg-red-50' :
-                                                                                cf.estimatedImpact.guidanceBindingness === 'QuasiBinding' ? 'border-amber-300 text-amber-600 bg-amber-50' :
-                                                                                    cf.estimatedImpact.guidanceBindingness === 'Nonbinding' ? 'border-sky-300 text-sky-600 bg-sky-50' :
-                                                                                        'border-slate-300 text-slate-500 bg-slate-50'
-                                                                                }`}>{cf.estimatedImpact.guidanceBindingness}</Badge>
+                                                                            <span className="text-xs text-slate-500">• {cf.estimatedImpact.guidanceBindingness}</span>
                                                                         )}
                                                                     </div>
                                                                     {cf.estimatedImpact?.qualifier && (
-                                                                        <p className="text-xs text-slate-500 italic mb-3">{cf.estimatedImpact.qualifier}</p>
-                                                                    )}
-                                                                    {cf.estimatedImpact?.enforcementLadder && cf.estimatedImpact.enforcementLadder.length > 0 && (
-                                                                        <div>
-                                                                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Enforcement Escalation</span>
-                                                                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                                                                                {cf.estimatedImpact.enforcementLadder.map((e: any, i: number) => (
-                                                                                    <span key={i} className="inline-flex items-center">
-                                                                                        {i > 0 && <span className="text-slate-300 mx-1 text-xs">{'\u2192'}</span>}
-                                                                                        <span className="text-[11px] font-medium text-slate-600">{e.step.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                                                                        {e.note && <span className="text-[10px] text-slate-400 ml-0.5">({e.note})</span>}
-                                                                                    </span>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
+                                                                        <p className="text-sm text-slate-600 mt-1">{cf.estimatedImpact.qualifier}</p>
                                                                     )}
                                                                 </div>
                                                             </div>
+                                                        )}
 
-                                                            {/* Mechanism Chain — timeline */}
-                                                            {cf.mechanismChain && cf.mechanismChain.length > 0 && (
-                                                                <div className="mb-5">
-                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Mechanism of Change</h4>
-                                                                    <div className="relative pl-4 border-l-2 border-slate-200 space-y-3">
-                                                                        {cf.mechanismChain.map((item: any, i: number) => {
-                                                                            const isTyped = typeof item === 'object' && item.kind;
-                                                                            const stepText = isTyped ? item.step : item;
-                                                                            const kindLabel = isTyped ? item.kind.replace(/([A-Z])/g, ' $1').trim() : null;
-                                                                            return (
-                                                                                <div key={i} className="relative flex items-start gap-3">
-                                                                                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white" />
-                                                                                    <span className="text-xs font-mono text-slate-400 shrink-0 w-5 text-right">{i + 1}.</span>
-                                                                                    {kindLabel && (
-                                                                                        <Badge variant="outline" className={`text-[10px] shrink-0 ${kindColors[item.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{kindLabel}</Badge>
-                                                                                    )}
-                                                                                    <span className="text-xs text-slate-700 leading-relaxed">{stepText}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            {/* v1: Power dynamics */}
-                                                            {!isV2 && cf.territorialization && (() => {
-                                                                const TERR_LABELS: Record<string, string> = { destabilizesPower: 'Shifts existing power dynamics', introducesAccountability: 'Introduces new accountability', reconfiguresData: 'Changes data collection obligations', altersEnforcement: 'Modifies enforcement mechanisms' };
-                                                                return (
-                                                                    <div className="mb-5">
-                                                                        <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Power Dynamics</h4>
-                                                                        <div className="space-y-1">
-                                                                            {Object.entries(cf.territorialization).map(([key, val]: [string, any]) => (
-                                                                                <div key={key} className="flex items-center gap-2">
-                                                                                    <span className={`text-sm font-bold ${val ? 'text-green-600' : 'text-gray-400'}`}>{val ? '\u2713' : '\u2717'}</span>
-                                                                                    <span className={`text-xs ${val ? 'text-slate-700' : 'text-slate-400'}`}>{TERR_LABELS[key] || key}</span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })()}
-
-                                                            {/* Beneficiaries + Shielded side-by-side */}
-                                                            {(cf.beneficiaryMechanisms?.length > 0 || cf.shieldedActors?.length > 0 || cf.riskRedistribution) && (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                                                                    {(cf.beneficiaryMechanisms?.length > 0 || cf.riskRedistribution?.beneficiariesOfAbsence?.length > 0) && (
-                                                                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                                                                            <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Who benefits from exclusion?</h4>
-                                                                            <div className="space-y-2">
-                                                                                {cf.beneficiaryMechanisms?.map((b: any, i: number) => (
-                                                                                    <div key={i}>
-                                                                                        <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-700 mb-0.5">{humanize(b.actor)}</Badge>
-                                                                                        <p className="text-xs text-slate-500 pl-2 border-l-2 border-slate-200">{b.mechanism}</p>
-                                                                                    </div>
-                                                                                ))}
-                                                                                {!isV2 && cf.riskRedistribution?.beneficiariesOfAbsence?.map((b: string) => (
-                                                                                    <Badge key={b} variant="outline" className="text-xs border-slate-300 text-slate-600">{humanize(b)}</Badge>
-                                                                                ))}
+                                                        {/* Shielded / Risk */}
+                                                        {(cf.shieldedActors?.length > 0 || cf.riskRedistribution?.shieldedActors?.length > 0) && (
+                                                            <div className="bg-white border border-rose-200 rounded-xl p-5 shadow-sm flex flex-col lg:col-span-1">
+                                                                <TooltipProvider>
+                                                                    <Tooltip delayDuration={300}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <div className="flex-shrink-0 bg-rose-50 text-rose-600 rounded-full h-8 w-8 flex items-center justify-center border border-rose-100 mb-3 cursor-help">
+                                                                                <ShieldAlert className="h-4 w-4" />
                                                                             </div>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                            <p>Actors or groups whose actions or responsibilities are obscured or protected from accountability in this scenario.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Shielded from Scrutiny</span>
+                                                                <div className="flex flex-col gap-1.5 mt-2">
+                                                                    {cf.shieldedActors?.map((s: any, i: number) => (
+                                                                        <div key={i} className="text-sm font-medium text-slate-800">
+                                                                            {humanize(s.actor)}
                                                                         </div>
-                                                                    )}
-                                                                    {(cf.shieldedActors?.length > 0 || cf.riskRedistribution?.shieldedActors?.length > 0) && (
-                                                                        <div className="bg-red-50/40 border border-red-100 rounded-lg p-4">
-                                                                            <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">Shielded from Scrutiny</h4>
-                                                                            <div className="space-y-2">
-                                                                                {cf.shieldedActors?.map((s: any, i: number) => (
-                                                                                    <div key={i}>
-                                                                                        <Badge variant="outline" className="text-[10px] border-red-200 text-red-700 mb-0.5">{humanize(s.actor)}</Badge>
-                                                                                        <p className="text-xs text-slate-500 pl-2 border-l-2 border-red-200">{s.mechanism}</p>
-                                                                                    </div>
-                                                                                ))}
-                                                                                {!isV2 && cf.riskRedistribution?.shieldedActors?.map((s: string) => (
-                                                                                    <Badge key={s} variant="outline" className="text-xs border-red-200 text-red-600">{humanize(s)}</Badge>
-                                                                                ))}
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Beneficiaries */}
+                                                        {(cf.beneficiaryMechanisms?.length > 0 || cf.riskRedistribution?.beneficiariesOfAbsence?.length > 0) && (
+                                                            <div className="bg-white border border-emerald-200 rounded-xl p-5 shadow-sm flex flex-col lg:col-span-2">
+                                                                <TooltipProvider>
+                                                                    <Tooltip delayDuration={300}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <div className="flex-shrink-0 bg-emerald-50 text-emerald-600 rounded-full h-8 w-8 flex items-center justify-center border border-emerald-100 mb-3 cursor-help">
+                                                                                <Check className="h-4 w-4" />
                                                                             </div>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                            <p>Actors or groups who gain structural, financial, or political advantages in this scenario.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Beneficiaries</span>
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                                                                    {cf.beneficiaryMechanisms?.map((b: any, i: number) => (
+                                                                        <div key={i} className="text-sm font-medium text-slate-800">
+                                                                            {humanize(b.actor)}
                                                                         </div>
-                                                                    )}
+                                                                    ))}
                                                                 </div>
-                                                            )}
-
-                                                            {/* Confidence assessment */}
-                                                            {cf.confidence && (
-                                                                <div className="border-t border-slate-200 pt-4 mb-4">
-                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Confidence Assessment</h4>
-                                                                    <div className="flex items-center gap-4 mb-2">
-                                                                        <div className="flex items-center gap-1.5">
-                                                                            <span className="text-xs text-slate-500">Evidence:</span>
-                                                                            <Badge variant="outline" className={`text-xs ${cf.confidence.evidenceBase === 'High' ? 'border-green-300 text-green-700 bg-green-50' : cf.confidence.evidenceBase === 'Medium' ? 'border-amber-300 text-amber-700 bg-amber-50' : 'border-slate-300 text-slate-500'}`}>{cf.confidence.evidenceBase}</Badge>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1.5">
-                                                                            <span className="text-xs text-slate-500">Speculative:</span>
-                                                                            <Badge variant="outline" className={`text-xs ${cf.confidence.speculativeConfidence === 'High' ? 'border-green-300 text-green-700 bg-green-50' : cf.confidence.speculativeConfidence === 'Medium' ? 'border-amber-300 text-amber-700 bg-amber-50' : 'border-slate-300 text-slate-500'}`}>{cf.confidence.speculativeConfidence}</Badge>
-                                                                        </div>
-                                                                    </div>
-                                                                    {cf.confidence.caveat && <p className="text-xs text-slate-400 italic mb-2">{cf.confidence.caveat}</p>}
-                                                                    {(cf.confidence.grounded || cf.confidence.inferred || cf.confidence.unknown) && (
-                                                                        <div className="border border-slate-100 rounded-lg overflow-hidden mb-2">
-                                                                            <table className="w-full text-xs">
-                                                                                <tbody>
-                                                                                    {cf.confidence.grounded && (
-                                                                                        <tr className="border-b border-slate-100">
-                                                                                            <td className="px-3 py-2 font-semibold text-green-700 bg-green-50/50 w-24">Grounded</td>
-                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.grounded}</td>
-                                                                                        </tr>
-                                                                                    )}
-                                                                                    {cf.confidence.inferred && (
-                                                                                        <tr className="border-b border-slate-100">
-                                                                                            <td className="px-3 py-2 font-semibold text-amber-700 bg-amber-50/50 w-24">Inferred</td>
-                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.inferred}</td>
-                                                                                        </tr>
-                                                                                    )}
-                                                                                    {cf.confidence.unknown && (
-                                                                                        <tr>
-                                                                                            <td className="px-3 py-2 font-semibold text-red-700 bg-red-50/50 w-24">Unknown</td>
-                                                                                            <td className="px-3 py-2 text-slate-600">{cf.confidence.unknown}</td>
-                                                                                        </tr>
-                                                                                    )}
-                                                                                </tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                    )}
-                                                                    {cf.confidence.assumptions && cf.confidence.assumptions.length > 0 && (
-                                                                        <div>
-                                                                            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Assumptions</span>
-                                                                            <div className="mt-1 space-y-1">
-                                                                                {cf.confidence.assumptions.map((a: string, i: number) => (
-                                                                                    <p key={i} className="text-xs text-slate-500 pl-3 border-l-2 border-slate-200">{a}</p>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-
-                                                            {/* Analytical challenges */}
-                                                            {cf.analyticalChallenges && cf.analyticalChallenges.length > 0 && (
-                                                                <div className="border-t border-slate-200 pt-4">
-                                                                    <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Analytical Challenges</h4>
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                                        {cf.analyticalChallenges.map((ch: any, i: number) => {
-                                                                            const challengeColors: Record<string, string> = {
-                                                                                StrategicGaming: 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                                CaptureRisk: 'bg-red-50 text-red-700 border-red-200',
-                                                                                CapacityBacklog: 'bg-amber-50 text-amber-700 border-amber-200',
-                                                                                UnintendedConsequence: 'bg-violet-50 text-violet-700 border-violet-200',
-                                                                                ScopeCreep: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-                                                                            };
-                                                                            return (
-                                                                                <div key={i} className="flex items-start gap-2 p-2 bg-slate-50 rounded-md">
-                                                                                    <Badge variant="outline" className={`text-[10px] shrink-0 mt-0.5 ${challengeColors[ch.kind] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>{ch.kind.replace(/([A-Z])/g, ' $1').trim()}</Badge>
-                                                                                    <span className="text-xs text-slate-600">{ch.description}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                );
-                                            })()}
-
-                                            <ClaimCard claim={effectiveCase.claim} />
-                                        </div>
-                                    ) : (
-                                        // V1 Legacy Layout
-                                        <>
-                                            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3 text-sm text-blue-800">
-                                                <Info className="h-5 w-5 flex-shrink-0 text-blue-600" />
-                                                <p>
-                                                    <strong>Review Evidence:</strong> Please analyze the document evidence (Pane 1) and the interpretive claim (Pane 2) below.
-                                                    You will assessing the strength of this absence in the <strong>Evaluate</strong> tab.
-                                                </p>
-                                            </div>
-
-                                            <Card className="border-l-4 border-l-blue-500 shadow-sm">
-                                                <CardContent className="pt-6">
-                                                    <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">
-                                                        Pane 1: Document Evidence
-                                                    </h4>
-                                                    <ul className="list-disc pl-5 space-y-2 text-slate-700 text-sm leading-relaxed">
-                                                        {effectiveCase.pane1?.evidencePoints.map((pt: string, i: number) => (
-                                                            <li key={i}><QuoteHighlighter text={pt} /></li>
-                                                        ))}
-                                                    </ul>
-                                                </CardContent>
-                                            </Card>
-
-                                            <Card className="border-l-4 border-l-purple-500 shadow-sm">
-                                                <CardContent className="pt-6">
-                                                    <h4 className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-3">
-                                                        Pane 2: Interpretive Claim
-                                                    </h4>
-                                                    <div className="space-y-3 text-sm">
-                                                        <div>
-                                                            <span className="font-semibold text-slate-900 block mb-1">Hypothesis:</span>
-                                                            <p className="text-slate-700">{effectiveCase.pane2?.hypothesis}</p>
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-semibold text-slate-900 block mb-1">Reasoning:</span>
-                                                            <p className="text-slate-700"><QuoteHighlighter text={effectiveCase.pane2?.reasoning || ''} /></p>
-                                                        </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </CardContent>
-                                            </Card>
-                                        </>
-                                    )}
 
-                                    {/* Only show evaluation prompt in research mode */}
-                                    {isResearchTarget && (
-                                        <div className="flex justify-center pt-8 border-t mt-8">
-                                            <Button onClick={() => setActiveTab('evaluate')} size="lg" className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
-                                                Proceed to Evaluation <ClipboardList className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                                    {/* Confidence Footer */}
+                                                    {cf.confidence && (
+                                                        <div className="mt-4 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                                                            <div className="flex flex-wrap items-center gap-4 text-sm mb-4 pb-4 border-b border-slate-100">
+                                                                <TooltipProvider>
+                                                                    <Tooltip delayDuration={300}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <span className="font-semibold text-slate-700 cursor-help border-b border-dotted border-slate-400">Confidence</span>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                            <p>Overall assessment of certainty for the generated outcome based on the source text.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
 
-                    {/* EVALUATE TAB */}
-                    {activeTab === 'evaluate' && isResearchTarget && currentCase && (
-                        <div className="max-w-2xl mx-auto pb-8">
-                            <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-100 flex gap-3 text-sm text-purple-800">
-                                <Info className="h-5 w-5 flex-shrink-0" />
-                                <p>
-                                    Please evaluate based on the evidence provided in the &quot;Explore&quot; tab.
-                                    Your response is auto-saved.
-                                </p>
+                                                                <div className="flex items-center gap-3 text-slate-600 ml-auto mr-auto lg:mx-0">
+                                                                    <TooltipProvider>
+                                                                        <Tooltip delayDuration={300}>
+                                                                            <TooltipTrigger asChild>
+                                                                                <span className="cursor-help border-b border-dotted border-slate-400">
+                                                                                    Evidence: <span className="font-medium text-slate-800">{cf.confidence.evidenceBase}</span>
+                                                                                </span>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                                <p>Amount and directness of textual or structural support for the outcome.</p>
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    </TooltipProvider>
+
+                                                                    <span className="text-slate-300">|</span>
+
+                                                                    <TooltipProvider>
+                                                                        <Tooltip delayDuration={300}>
+                                                                            <TooltipTrigger asChild>
+                                                                                <span className="cursor-help border-b border-dotted border-slate-400">
+                                                                                    Speculative: <span className="font-medium text-slate-800">{cf.confidence.speculativeConfidence}</span>
+                                                                                </span>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent side="top" className="text-xs max-w-xs shadow-md">
+                                                                                <p>Degree to which the outcome relies on logical leaps or unstated assumptions.</p>
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    </TooltipProvider>
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                {cf.confidence.caveat && (
+                                                                    <p className="text-sm text-slate-600 leading-relaxed mb-4">{cf.confidence.caveat}</p>
+                                                                )}
+
+                                                                {(cf.confidence.grounded || cf.confidence.inferred || cf.confidence.unknown) && (
+                                                                    <div className="flex flex-col gap-3 text-sm">
+                                                                        {cf.confidence.grounded && (
+                                                                            <div className="flex gap-4 items-start">
+                                                                                <span className="text-emerald-600 font-semibold w-20 shrink-0">Grounded</span>
+                                                                                <span className="text-slate-600 leading-relaxed">{cf.confidence.grounded}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {cf.confidence.inferred && (
+                                                                            <div className="flex gap-4 items-start">
+                                                                                <span className="text-amber-600 font-semibold w-20 shrink-0">Inferred</span>
+                                                                                <span className="text-slate-600 leading-relaxed">{cf.confidence.inferred}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {cf.confidence.unknown && (
+                                                                            <div className="flex gap-4 items-start">
+                                                                                <span className="text-slate-400 font-semibold w-20 shrink-0">Unknown</span>
+                                                                                <span className="text-slate-600 leading-relaxed">{cf.confidence.unknown}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })()}
+
+                                {/* We'll re-structure the wrapper entirely to avoid stickiness limiting height */}
+                                {isResearchTarget && currentCase && (
+                                    <div className="w-full mx-auto mt-8 border-t border-purple-100 flex-shrink-0 rounded-t-xl overflow-visible pb-4 transition-all duration-300">
+                                        <Card className="border-purple-200 shadow-lg bg-white overflow-visible flex flex-col rounded-b-none border-b-0">
+                                            <div
+                                                className="bg-purple-50 px-6 py-3 border-b border-purple-100 flex items-center justify-between flex-shrink-0 cursor-pointer hover:bg-purple-100/80 transition-colors"
+                                                onClick={() => setIsFormMinimized(!isFormMinimized)}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <ClipboardList className="h-5 w-5 text-purple-600" />
+                                                    <h3 className="text-sm font-bold text-purple-900 uppercase tracking-wider">Complete Survey Questions</h3>
+                                                </div>
+                                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-purple-200/50 text-purple-700">
+                                                    {isFormMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
+                                            {!isFormMinimized && (
+                                                <div className="flex-1 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                                                    <CardContent className="p-6">
+                                                        {currentCase.evaluationConfig ? (
+                                                            <GhostNodeEvaluationForm
+                                                                config={currentCase.evaluationConfig}
+                                                                initialData={existingResponse}
+                                                                surveyTitle={currentCase.title}
+                                                                onChange={handleSurveyChange}
+                                                            />
+                                                        ) : (
+                                                            <GhostNodeSurvey
+                                                                config={currentCase.config!}
+                                                                initialData={existingResponse}
+                                                                onChange={handleSurveyChange}
+                                                            />
+                                                        )}
+                                                        <div className="mt-8 flex justify-end items-center border-t border-slate-100 pt-6 w-full">
+                                                            <Button
+                                                                size="lg"
+                                                                className="bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white gap-2 shadow-sm transition-colors"
+                                                                disabled={
+                                                                    currentCase.evaluationConfig
+                                                                        ? !(existingResponse &&
+                                                                            (existingResponse as any).absenceGate &&
+                                                                            (existingResponse as any).groundingGate &&
+                                                                            (existingResponse as any).euAiActOmissionAgreement &&
+                                                                            (existingResponse as any).counterfactualFeasibility &&
+                                                                            (existingResponse as any).scenarioConfidence)
+                                                                        : !!(currentCase.config?.requireReflexivity && (!(existingResponse as any)?.reflexivity || String((existingResponse as any).reflexivity).length < 15))
+                                                                }
+                                                                onClick={() => {
+                                                                    if (onSave) {
+                                                                        onSave();
+                                                                    }
+                                                                    if (onNextCase) {
+                                                                        onNextCase();
+                                                                    } else {
+                                                                        onClose();
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {isLastCase ? "Finish Study" : "Finish & Next Case"}
+                                                                {!isLastCase && <ArrowRight className="h-4 w-4" />}
+                                                                {isLastCase && <Check className="h-4 w-4" />}
+                                                            </Button>
+                                                        </div>
+                                                    </CardContent>
+                                                </div>
+                                            )}
+                                        </Card>
+                                    </div>
+                                )}
                             </div>
-
-                            {currentCase.evaluationConfig ? (
-                                <GhostNodeEvaluationForm
-                                    config={currentCase.evaluationConfig}
-                                    initialData={existingResponse}
-                                    onChange={handleSurveyChange}
-                                />
-                            ) : (
-                                <GhostNodeSurvey
-                                    config={currentCase.config!}
-                                    initialData={existingResponse}
-                                    onChange={handleSurveyChange}
-                                />
-                            )}
-
-                            <div className="mt-8 flex justify-end items-center border-t pt-6 w-full">
-
-                                <div className="flex gap-2 ml-auto">
-                                    <Button
-                                        size="lg"
-                                        className="bg-purple-600 hover:bg-purple-700 text-white gap-2 shadow-sm"
-                                        disabled={
-                                            (currentCase.config?.requireReflexivity && (!existingResponse?.reflexivity || existingResponse.reflexivity.length < 15)) ||
-                                            (currentCase.evaluationConfig && (existingResponse?.absenceGate === undefined || existingResponse?.absenceGate === 'unsure')) ||
-                                            (existingResponse?.strength === null || existingResponse?.strength === undefined)
-                                        }
-                                        onClick={() => {
-                                            if (onNextCase) {
-                                                onNextCase();
-                                            } else {
-                                                onClose();
-                                            }
-                                        }}
-                                    >
-                                        {isLastCase ? "Finish Study" : "Finish & Next Case"}
-                                        {!isLastCase && <ArrowRight className="h-4 w-4" />}
-                                        {isLastCase && <Check className="h-4 w-4" />}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                        </EvaluationProvider>
+                    </div>
                 </div>
 
                 {/* V2 UI Overlays */}
@@ -1089,22 +1074,24 @@ export function EvaluationInterface({
                 />
 
                 {/* Evidence Lineage Modal for Context */}
-                {activeQuoteContext && (
-                    <EvidenceLineageModal
-                        isOpen={!!activeQuoteContext}
-                        onClose={() => setActiveQuoteContext(null)}
-                        title="Excerpt Context"
-                        description="This is the exact quote extracted from the document."
-                        quotes={[{
-                            text: activeQuoteContext.text,
-                            source: researchCurrentCase?.title,
-                            context: activeQuoteContext.context || "Contextual surrounding paragraphs are currently limited in this view. Use 'Full Doc' to jump to the document text."
-                        }]}
-                        sourceType="Trace"
-                    />
-                )}
-            </Card>
-        </TooltipProvider>
+                {
+                    activeQuoteContext && (
+                        <EvidenceLineageModal
+                            isOpen={!!activeQuoteContext}
+                            onClose={() => setActiveQuoteContext(null)}
+                            title="Excerpt Context"
+                            description="This is the exact quote extracted from the document."
+                            quotes={[{
+                                text: activeQuoteContext.text,
+                                source: researchCurrentCase?.title,
+                                context: activeQuoteContext.context || "Contextual surrounding paragraphs are currently limited in this view. Use 'Full Doc' to jump to the document text."
+                            }]}
+                            sourceType="Trace"
+                        />
+                    )
+                }
+            </Card >
+        </TooltipProvider >
     );
 }
 

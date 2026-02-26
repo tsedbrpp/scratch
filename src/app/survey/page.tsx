@@ -326,10 +326,10 @@ export default function OntologyPage() {
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-                            <Network className="h-8 w-8 text-indigo-600" />
+                        <h3 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                            <Network className="h-6 w-6 text-indigo-600" />
                             Survey & Validation
-                        </h2>
+                        </h3>
                     </div>
                 </div>
 

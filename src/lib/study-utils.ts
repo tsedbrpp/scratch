@@ -89,7 +89,7 @@ export function generateCasesFromOntology(
                 evaluationConfig: {
                     presenceGateQuestion: `Based on the evidence, is the actor "${node.label}" materially excluded or marginalized in this document?`,
                     presenceGateOptions: [
-                        "Yes - clearly excluded/marginalized",
+                        "Yes - excluded/marginalized",
                         "No - adequately represented",
                         "Unsure/Depends"
                     ],

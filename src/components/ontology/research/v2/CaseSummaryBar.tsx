@@ -8,14 +8,19 @@ interface CaseSummaryBarProps {
 }
 
 export function CaseSummaryBar({ currentCase }: CaseSummaryBarProps) {
-    const { title, documentLabel, scope, disambiguationBanner } = currentCase;
+    const { title, documentLabel, scope, disambiguationBanner, claim } = currentCase;
 
     return (
         <div className="flex flex-col gap-3 mb-6">
             <div className="flex items-start justify-between">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-                    {documentLabel && <p className="text-slate-500 text-sm mt-1">Document: {documentLabel}</p>}
+                    {claim?.fullReasoning && (
+                        <p className="text-slate-700 text-sm mt-2 font-medium max-w-4xl leading-relaxed bg-slate-50 border border-slate-200 p-3 rounded-md">
+                            {claim.fullReasoning}
+                        </p>
+                    )}
+                    {documentLabel && <p className="text-slate-500 text-sm mt-2">Document: {documentLabel}</p>}
                 </div>
                 {scope && (
                     <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200" title={scope.scopeTooltip}>

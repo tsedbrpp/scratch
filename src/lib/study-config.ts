@@ -82,7 +82,7 @@ export interface InstitutionalLogicsMap {
     community: InstitutionalLogicStrength;
 }
 
-export interface GhostNodeSurveyResponse {
+export interface GhostNodeSurveyResponseBase {
     // Provenance
     evaluatorId: string; // Hashed/Pseudonymous
     studyId: string;
@@ -92,7 +92,6 @@ export interface GhostNodeSurveyResponse {
     submittedAt: number; // Timestamp
     timeOnCaseMs: number;
 
-    // Assessment
     // Assessment
     strength: number | null; // 0-100, null if not evaluated yet
     confidence: 'low' | 'medium' | 'high' | null;
@@ -111,7 +110,136 @@ export interface GhostNodeSurveyResponse {
     feasibilityNotes?: string;
 }
 
-export const GhostNodeSurveyResponseSchema = z.object({
+// ============================================================================
+// SURVEY V3 - ENUMS & STRUCTURED TYPES
+// ============================================================================
+
+export const LikertScale5Schema = z.enum(['1', '2', '3', '4', '5']).nullable();
+
+export const PerceivedGapSchema = z.enum([
+    'integration_sustainability_risk',
+    'ngo_roles_oversight',
+    'resource_impact_assessments',
+    'eu_framework_links',
+    'enforcement_mechanisms',
+    'global_harmonization'
+]);
+
+export const EnforcementEscalationSchema = z.enum([
+    'disclosure_orders',
+    'audits',
+    'fines',
+    'suspensions_withdrawals'
+]);
+
+export const AnalyticalChallengeSchema = z.enum([
+    'capacity_backlog',
+    'strategic_gaming',
+    'capture_risk',
+    'indirect_impact_measurement'
+]);
+
+export const MechanismStepSchema = z.enum([
+    'evidence_collection',
+    'aggregation',
+    'admissibility',
+    'review_initiation',
+    'response_due_process',
+    'remedy_enforcement',
+    'deterrence'
+]);
+
+export const ImpactCategorySchema = z.enum([
+    'environmental',
+    'economic',
+    'social',
+    'legal_regulatory'
+]);
+
+export const TableRowStatusSchema = z.enum(['answered', 'cannot_tell', 'not_applicable']).default('answered');
+
+export const MechanismRowSchema = z.object({
+    status: TableRowStatusSchema,
+    effectiveness: LikertScale5Schema.optional(),
+    improvements: z.string().optional(),
+    risks: z.string().optional(),
+});
+
+export const ImpactRowSchema = z.object({
+    status: TableRowStatusSchema,
+    direction: z.enum(['Positive', 'Negative', 'Neutral']).nullable().optional(),
+    severity: LikertScale5Schema.optional(),
+    examples: z.string().optional(),
+});
+
+export type MechanismRow = z.infer<typeof MechanismRowSchema>;
+export type ImpactRow = z.infer<typeof ImpactRowSchema>;
+
+export const GhostNodeSurveyV3DataSchema = z.object({
+    surveyVersion: z.literal('v3'),
+
+    // Grounding Gate
+    groundingGate: z.enum(['yes', 'partially', 'no']).nullable().optional(),
+    evidenceAnchor: z.string().optional(), // quote ID or reference
+
+    // Section 3: EU AI Act
+    euAiActOmissionAgreement: LikertScale5Schema.optional(),
+    euAiActOmissionEvidence: z.string().optional(),
+    perceivedGaps: z.array(PerceivedGapSchema).optional(),
+    perceivedGapsOtherText: z.string().optional(),
+    perceivedGapsNuance: z.string().optional(), // kept for general thoughts, though not primary
+    broaderImplications: z.string().optional(),
+
+    // Section 4: Counterfactuals
+    counterfactualFeasibility: LikertScale5Schema.optional(),
+    counterfactualFactorsTechnical: z.string().optional(),
+    counterfactualFactorsLegal: z.string().optional(),
+    counterfactualFactorsSocial: z.string().optional(),
+    counterfactualFactorsEconomic: z.string().optional(),
+
+    // Flattened Mechanism Table (Stable Keys)
+    mechanismEval_evidence_collection: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_aggregation: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_admissibility: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_review_initiation: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_response_due_process: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_remedy_enforcement: MechanismRowSchema.default({ status: 'answered' }).optional(),
+    mechanismEval_deterrence: MechanismRowSchema.default({ status: 'answered' }).optional(),
+
+    enforcementEscalation: z.array(EnforcementEscalationSchema).optional(),
+    enforcementEscalationOtherText: z.string().optional(),
+    enforcementNuance: z.string().optional(),
+
+    // Section 5: Impacts and Challenges
+    beneficiariesExclusion: LikertScale5Schema.optional(),
+    beneficiariesNuance: z.string().optional(),
+
+    // Flattened Impacts Table (Stable Keys)
+    impact_environmental: ImpactRowSchema.default({ status: 'answered' }).optional(),
+    impact_economic: ImpactRowSchema.default({ status: 'answered' }).optional(),
+    impact_social: ImpactRowSchema.default({ status: 'answered' }).optional(),
+    impact_legal_regulatory: ImpactRowSchema.default({ status: 'answered' }).optional(),
+
+    analyticalChallenges: z.array(AnalyticalChallengeSchema).optional(),
+    analyticalChallengesOtherText: z.string().optional(),
+    analyticalChallengesMitigations: z.string().optional(),
+
+    scenarioConfidence: LikertScale5Schema.optional(),
+    scenarioConfidenceNuance: z.string().optional(),
+
+    // Section 6: Open-Ended Suggestions
+    innovativeIdeas: z.string().optional(),
+    crossDisciplinaryInsights: z.string().optional(),
+    finalComments: z.string().optional(),
+});
+
+
+export type GhostNodeSurveyResponseV2 = GhostNodeSurveyResponseBase & { surveyVersion?: 'v2' };
+export type GhostNodeSurveyResponseV3 = GhostNodeSurveyResponseBase & z.infer<typeof GhostNodeSurveyV3DataSchema>;
+export type GhostNodeSurveyResponse = GhostNodeSurveyResponseV2 | GhostNodeSurveyResponseV3;
+
+
+export const GhostNodeSurveyResponseBaseSchema = z.object({
     evaluatorId: z.string(),
     studyId: z.string(),
     caseId: z.string(),
@@ -142,6 +270,11 @@ export const GhostNodeSurveyResponseSchema = z.object({
     feasibleMechanisms: z.array(z.string()).optional(),
     feasibilityNotes: z.string().optional(),
 });
+
+export const GhostNodeSurveyResponseSchema = z.union([
+    GhostNodeSurveyResponseBaseSchema.extend({ surveyVersion: z.literal('v2').optional() }),
+    GhostNodeSurveyResponseBaseSchema.merge(GhostNodeSurveyV3DataSchema)
+]);
 
 export type SurveyResponseData = Omit<GhostNodeSurveyResponse, 'studyId' | 'evaluatorId' | 'caseId' | 'caseIndex' | 'submittedAt'>;
 

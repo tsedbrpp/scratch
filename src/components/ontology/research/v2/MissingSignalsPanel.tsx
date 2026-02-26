@@ -14,9 +14,12 @@ export function MissingSignalsPanel({ signals, onSearchRequest }: MissingSignals
     return (
         <Card className="shadow-sm border-amber-100 bg-amber-50">
             <CardHeader className="pb-3 border-b border-amber-100">
-                <CardTitle className="text-sm font-semibold text-amber-900">What&apos;s missing (in this cited section)</CardTitle>
+                <CardTitle className="text-sm font-semibold text-amber-900">Signals not observed in provided excerpts</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
+                <div className="bg-amber-100/50 p-2.5 text-xs text-amber-800 rounded-md mb-4 border border-amber-200/50 leading-relaxed font-medium">
+                    This observation is limited to the provided excerpt set, not the full document.
+                </div>
                 <ul className="space-y-3">
                     {signals.map(signal => (
                         <li key={signal.id} className="flex items-start gap-2">
