@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert, CheckCircle2, AlertTriangle, BookOpen, Brain } from 'lucide-react';
+import { Loader2, ShieldAlert, CheckCircle2, AlertTriangle, BookOpen, Brain, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { StructuralConcernResult } from '@/lib/structural-concern-service';
 
@@ -137,6 +137,16 @@ export function StructuralAnalysisCard({
                                     </Badge>
                                 ))}
                             </div>
+                        </div>
+                    )}
+                    {/* UI label explaining why anti-structural challenge is skipped */}
+                    {isImpactOnly && (
+                        <div className="mt-4 flex items-start gap-2 bg-slate-50/80 p-3 rounded-md border border-slate-200 shadow-sm">
+                            <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-slate-500 leading-snug">
+                                <strong className="text-slate-600 block mb-0.5 text-xs">Anti-Structural Challenge Skipped</strong>
+                                Since there are no governance signals to establish a base structural exclusion, the pipeline skips the opposing challenge phase.
+                            </p>
                         </div>
                     )}
                 </CardContent>
