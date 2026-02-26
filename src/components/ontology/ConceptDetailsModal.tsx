@@ -180,8 +180,30 @@ export function EvaluationInterface({
     const currentCase = researchCurrentCase;
     const existingResponse = researchResponse;
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const ghostData = selectedNode as any;
+    // Define extended type for ghost data to replace 'any' casting (Code Smell Fix)
+    type GhostDataExt = OntologyNode & {
+        evidenceQuotes?: any[];
+        structuralAnalysis?: any;
+        antiStructuralAnalysis?: any;
+        escalation?: any;
+        claim?: any;
+        roster?: any;
+        missingSignals?: any[];
+        potentialConnections?: any[];
+        ghostType?: string | null;
+        evidenceGrade?: string | null;
+        absenceScore?: number | null;
+        scoreBreakdown?: any;
+        counterfactual?: any;
+        materialImpact?: string | null;
+        oppAccess?: string | null;
+        sanctionPower?: string | null;
+        dataVisibility?: string | null;
+        representationType?: string | null;
+        nodeStanding?: 'structural_ghost' | 'standing_candidate' | 'mention_only';
+    };
+
+    const ghostData = selectedNode as unknown as GhostDataExt;
 
     // [NEW] Synthetic case for general ghost nodes to reuse evidence components
     const baseCase = (isResearchTarget && currentCase) ? currentCase : (selectedNode?.isGhost ? {
@@ -246,7 +268,6 @@ export function EvaluationInterface({
             discourseThreats: baseCase.claim?.discourseThreats || baseCase.discourseThreats || ghostData.discourseThreats || []
         }
     } : null;
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const displayCaseNumber = (currentCaseIndex !== undefined ? currentCaseIndex : (studyState ? studyState.currentCaseIndex : -1)) + 1;
     const displayTotalCases = totalCases !== undefined ? totalCases : (studyState && studyState.playlist ? studyState.playlist.length : 0);
@@ -462,7 +483,7 @@ export function EvaluationInterface({
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 )}
-                                                {ghostData.evidenceGrade === 'E2' && (ghostData as any).nodeStanding === 'mention_only' && (
+                                                {ghostData.evidenceGrade === 'E2' && ghostData.nodeStanding === 'mention_only' && (
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Badge className="ml-2 bg-slate-50 text-slate-500 border-slate-300 cursor-help">

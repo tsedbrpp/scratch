@@ -12,7 +12,7 @@ import { GhostNodesPass1Schema, GhostNodesPass1ASchema, GhostNodesPass1BSchema, 
 import { DISCOURSE_TAXONOMY } from './constants';
 import { parseDocumentSections, formatSectionsForPrompt } from './parser';
 import { detectExplicitExclusions } from './negex';
-import { buildPass1Prompt, buildPass2Prompt, buildPass1APrompt, buildPass1BPrompt, buildGndpPass2Prompt, buildPass3Prompt } from './prompt-builders';
+import { buildPass1APrompt, buildPass1BPrompt, buildGndpPass2Prompt, buildPass3Prompt } from './prompt-builders';
 import { normalizeCounterfactualResult } from './normalizeCounterfactual';
 import { validateGhostNodeResponse, bestTrigramSimilarity } from './validation';
 import {
