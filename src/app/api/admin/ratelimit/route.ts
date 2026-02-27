@@ -5,17 +5,7 @@ import { getCredits, addCredits } from '@/lib/redis-scripts';
 import { redis } from '@/lib/redis';
 import { createClerkClient } from '@clerk/nextjs/server';
 
-// Helper to check if user is admin
-async function isAdmin(userId: string) {
-    const adminIds = process.env.ADMIN_USER_IDS?.split(',') || [];
-    const isAuthorized = adminIds.includes(userId);
-
-    if (!isAuthorized) {
-        console.log(`[Admin Access Attempt] Blocked user: ${userId}. To authorize, add this ID to ADMIN_USER_IDS in .env.local`);
-    }
-
-    return isAuthorized;
-}
+import { isAdmin } from '@/lib/auth-helper';
 
 // Initialize Clerk Client
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
