@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, RefreshCw, ShieldAlert, RotateCcw, Settings, Coins, History, Plus, Minus } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 interface UserRateLimit {
     userId: string;
@@ -40,6 +41,7 @@ export default function AdminPage() {
     const [history, setHistory] = useState<Transaction[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [adjustAmount, setAdjustAmount] = useState("");
+    const { userId: clientUserId, isLoaded: clerkLoaded } = useAuth();
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -162,8 +164,9 @@ export default function AdminPage() {
                     You do not have permission to view this page.
                     Please add your User ID to the <code>ADMIN_USER_IDS</code> environment variable.
                 </p>
-                <div className="p-4 bg-slate-100 rounded-md font-mono text-sm">
-                    Check server logs for your User ID
+                <div className="p-4 bg-slate-100 rounded-md font-mono text-sm space-y-2">
+                    <div><strong>Server Status:</strong> Access Denied (401)</div>
+                    <div><strong>Client Clerk ID:</strong> {clerkLoaded ? (clientUserId || "Not Signed In") : "Loading..."}</div>
                 </div>
             </div>
         );
