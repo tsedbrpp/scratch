@@ -21,6 +21,7 @@ if (!globalAny.Path2D) {
 
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
+import { isContentFlagged } from '@/lib/moderation-service';
 
 export async function POST(request: NextRequest) {
     try {
@@ -67,9 +68,21 @@ export async function POST(request: NextRequest) {
         // Clean up whitespace
         text = text.replace(/\s+/g, ' ').trim();
 
+        // Optional: you can run moderation before truncation to catch everything, or after to save tokens.
+        // We'll run it after truncation so we don't blow up the moderation API with massive books,
+        // assuming bad actors usually put the bad stuff early on or a random sample is enough.
+        // But for tighter security, run it on the whole text (in chunks if needed).
+
         // Limit length
         if (text.length > 50000) {
             text = text.substring(0, 50000) + '... (truncated)';
+        }
+
+        // --- CONTENT MODERATION CHECK ---
+        const flagged = await isContentFlagged(text);
+        if (flagged) {
+            console.warn(`[MODERATION] File upload rejected due to inappropriate content: ${file.name}`);
+            return NextResponse.json({ error: "Inappropriate content detected. Upload rejected." }, { status: 400 });
         }
 
         return NextResponse.json({ success: true, text });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSources, addSource } from '@/lib/store';
 import { getAuthenticatedUserId, isReadOnlyAccess } from '@/lib/auth-helper';
 import { validateWorkspaceAccess } from '@/lib/auth-middleware';
+import { isContentFlagged } from '@/lib/moderation-service';
 
 // Helper to resolve effective context
 async function getEffectiveContext(req: NextRequest, userId: string) {
@@ -57,6 +58,18 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
+
+        // Check content moderation
+        if (body.content) {
+            // Run moderation on up to the first 50000 characters to align with extract-file
+            const textToModerate = body.content.substring(0, 50000);
+            const flagged = await isContentFlagged(textToModerate);
+            if (flagged) {
+                console.warn(`[MODERATION] Source rejected due to inappropriate content. Title: ${body.title}`);
+                return NextResponse.json({ error: "Inappropriate content detected. Source rejected." }, { status: 400 });
+            }
+        }
+
         // Pass contextId where userId used to go
         const newSource = await addSource(contextId, body);
         return NextResponse.json(newSource);

@@ -4,10 +4,10 @@ const sourceUserId = 'user_3AGYapfYb074sI6PJoTsbkhaYUA';
 const targetUserId = 'user_demo_instanttea';
 const redisUrl = 'redis://default:065Kh9HnAEPBld7mjXdEtBJbofiRWGXh@redis-13524.c60.us-west-1-2.ec2.cloud.redislabs.com:13524';
 
-async function pipeData() {
+async function copyDataManual() {
     const redis = new Redis(redisUrl);
 
-    // Scan for all source keys
+    // 1. Scan for all source keys
     let cursor = '0';
     let keysFound = [];
     do {
@@ -16,41 +16,60 @@ async function pipeData() {
         keysFound.push(...result[1]);
     } while (cursor !== '0');
 
-    console.log(`Piping ${keysFound.length} items to Demo user...`);
+    console.log(`Found ${keysFound.length} Admin items to duplicate to Demo user...`);
 
-    // Send them in batches of 50 to avoid timing out the remote connection
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < keysFound.length; i += BATCH_SIZE) {
-        const batch = keysFound.slice(i, i + BATCH_SIZE);
-        const pipeline = redis.pipeline();
+    let copiedCount = 0;
 
-        for (const sourceKey of batch) {
-            const targetKey = sourceKey.replace(sourceUserId, targetUserId);
-            pipeline.dump(sourceKey);
-        }
+    // 2. Loop through and copy each one by exact type (to avoid DUMP payload version errors)
+    for (const sourceKey of keysFound) {
+        const targetKey = sourceKey.replace(sourceUserId, targetUserId);
+        const type = await redis.type(sourceKey);
 
-        const dumps = await pipeline.exec();
+        try {
+            // Always delete the target key first to prevent merging sets/hashes
+            await redis.del(targetKey);
 
-        const restorePipeline = redis.pipeline();
-        for (let j = 0; j < batch.length; j++) {
-            const sourceKey = batch[j];
-            const targetKey = sourceKey.replace(sourceUserId, targetUserId);
-            const err = dumps[j][0];
-            const dumpData = dumps[j][1];
-
-            if (!err && dumpData) {
-                restorePipeline.restore(targetKey, 0, dumpData, 'REPLACE');
+            if (type === 'string') {
+                const val = await redis.get(sourceKey);
+                if (val !== null) await redis.set(targetKey, val);
+            } else if (type === 'hash') {
+                const val = await redis.hgetall(sourceKey);
+                if (Object.keys(val).length > 0) await redis.hset(targetKey, val);
+            } else if (type === 'set') {
+                const val = await redis.smembers(sourceKey);
+                if (val.length > 0) await redis.sadd(targetKey, ...val);
+            } else if (type === 'list') {
+                const val = await redis.lrange(sourceKey, 0, -1);
+                if (val.length > 0) await redis.rpush(targetKey, ...val);
+            } else if (type === 'zset') {
+                const val = await redis.zrange(sourceKey, 0, -1, 'WITHSCORES');
+                const args = [];
+                for (let i = 0; i < val.length; i += 2) args.push(val[i + 1], val[i]);
+                if (args.length > 0) await redis.zadd(targetKey, ...args);
+            } else {
+                continue;
             }
+
+            // Re-apply TTL if necessary
+            const ttl = await redis.ttl(sourceKey);
+            if (ttl > 0) {
+                await redis.expire(targetKey, ttl);
+            }
+
+            copiedCount++;
+            if (copiedCount % 50 === 0) {
+                console.log(`Copied ${copiedCount} items so far...`);
+            }
+        } catch (e) {
+            console.error(`Failed to copy ${sourceKey} of type ${type}:`, e.message);
         }
-        await restorePipeline.exec();
-        console.log(`Processed batch ${i} to ${i + BATCH_SIZE}`);
     }
 
-    console.log(`Complete!`);
+    console.log(`\nSuccessfully duplicated ${copiedCount} records to the Demo user!`);
     process.exit(0);
 }
 
-pipeData().catch(err => {
+copyDataManual().catch(err => {
     console.error(err);
     process.exit(1);
 });
