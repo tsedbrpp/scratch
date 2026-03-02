@@ -527,7 +527,7 @@ ${text}
 
           // 2. Strict provenance check against source text
           if (!validateProvenance(validMachine, text)) {
-            throw new Error("Provenance validation failed: More than 10% of quotes could not be verified verbatim against the source text. Ensure all quotes match identically.");
+            throw new Error(`Provenance validation failed: More than 60% of quotes could not be verified verbatim against the source text. Expected quotes to match identically.`);
           }
 
           console.log(`[ABSTRACT MACHINE] Extraction successful on attempt ${attempt}.`);

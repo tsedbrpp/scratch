@@ -293,6 +293,19 @@ function AnalysisPageContent() {
                             </Button>
                         )}
 
+                        {activeSection === 'abstract_machine' && (
+                            <Button
+                                size="sm"
+                                variant={source.analysis.abstract_machine ? "outline" : "default"}
+                                onClick={() => handleAnalyze('abstract_machine')}
+                                disabled={isAnalyzing}
+                                className={!source.analysis.abstract_machine ? "bg-violet-600 text-white hover:bg-violet-700" : ""}
+                            >
+                                {isAnalyzing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Sparkles className="mr-2 h-3 w-3" />}
+                                {source.analysis.abstract_machine ? "Re-Run Extraction" : "Extract Abstract Machine"}
+                            </Button>
+                        )}
+
                         {(activeSection === 'audit' || activeSection === 'stress') && (
                             <Button
                                 size="sm"
@@ -338,7 +351,15 @@ function AnalysisPageContent() {
                         )}
 
                         {activeSection === 'abstract_machine' && (
-                            <AbstractMachinePanel analysis={source.analysis.abstract_machine!} />
+                            source.analysis.abstract_machine ? (
+                                <AbstractMachinePanel analysis={source.analysis.abstract_machine} />
+                            ) : (
+                                <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                                    <Sparkles className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                                    <h3 className="text-slate-500 font-medium">No Abstract Machine Extracted</h3>
+                                    <p className="text-sm text-slate-400 mt-2">Run the Abstract Machine Extraction to reveal the diagram and double articulations governing the assemblage.</p>
+                                </div>
+                            )
                         )}
 
                         {activeSection === 'legitimacy' && (
