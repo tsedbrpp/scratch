@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GitMerge, GitPullRequest, AlertCircle, FileDown, CheckCircle2, Sparkles, Brain, Network, Loader2, RefreshCw, Radio } from "lucide-react";
-import { generateSynthesisPDF } from "@/utils/generateSynthesisPDF";
 import { AssemblageSankey } from "@/components/AssemblageSankey";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Info } from "lucide-react";
@@ -157,7 +156,7 @@ export default function SynthesisPage() {
         }
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (isReadOnly) {
             alert("Export disabled in Demo Mode");
             return;
@@ -176,7 +175,10 @@ export default function SynthesisPage() {
 
         setIsExporting(true);
         try {
-            generateSynthesisPDF(
+            // Lazy load the heavy PDF generation library only when the user explicitly clicks Export
+            const { generateSynthesisPDF } = await import("@/utils/generateSynthesisPDF");
+
+            await generateSynthesisPDF(
                 comparisonResult,
                 sourceA?.title || "Source A",
                 sourceB?.title || "Source B"
@@ -185,7 +187,7 @@ export default function SynthesisPage() {
             console.error("Error generating PDF:", error);
             alert("Failed to generate PDF. Please try again.");
         } finally {
-            setTimeout(() => setIsExporting(false), 1000);
+            setIsExporting(false);
         }
     };
 

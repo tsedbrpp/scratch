@@ -3,7 +3,6 @@
 
 
 import { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
 import { AiAbsenceAnalysis } from "@/types/ecosystem";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
@@ -38,7 +37,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
 import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
-import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
 import { Loader2, Upload, Plus, Search, Filter, Download, FileText, Database, Share2, Trash2, ExternalLink } from "lucide-react";
 import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
 import { ReportSectionSelection } from "@/types/report";
@@ -525,6 +523,9 @@ function PolicyDocumentsPageContent() {
             // Use the shared snapshot function to gather all data
             const reportData = await getFullReportSnapshot();
 
+            // Lazy Load the huge DOCX generator
+            const { generateFullReportDOCX } = await import("@/utils/generateFullReportDOCX");
+
             // Generate the report
             await generateFullReportDOCX(reportData, selection);
             alert("✅ Report generated successfully! Check your Downloads folder.");
@@ -577,16 +578,19 @@ function PolicyDocumentsPageContent() {
         const images: Record<string, string> = {};
 
         try {
+            const { default: html2canvas } = await import("html2canvas");
             const compassEl = document.getElementById('governance-compass-chart');
             if (compassEl) images.governanceCompass = (await html2canvas(compassEl, { scale: 2, useCORS: true, logging: false })).toDataURL('image/png');
         } catch (e) { console.warn("Compass capture failed", e); }
 
         try {
+            const { default: html2canvas } = await import("html2canvas");
             const riskEl = document.getElementById('risk-heatmap-chart');
             if (riskEl) images.riskHeatmap = (await html2canvas(riskEl, { scale: 2, logging: false })).toDataURL('image/png');
         } catch (e) { console.warn("Risk heatmap capture failed", e); }
 
         try {
+            const { default: html2canvas } = await import("html2canvas");
             const ecoEl = document.getElementById('ecosystem-map-canvas');
             if (ecoEl) images.ecosystemMap = (await html2canvas(ecoEl, { scale: 2, logging: false })).toDataURL('image/png');
         } catch (e) { console.warn("Ecosystem map capture failed", e); }
@@ -744,6 +748,9 @@ function PolicyDocumentsPageContent() {
 
             // Inject the new synthesis into the report data
             reportData.theoreticalSynthesis = theoreticalSynthesis;
+
+            // Lazy Load the huge DOCX generator
+            const { generateFullReportDOCX } = await import("@/utils/generateFullReportDOCX");
 
             await generateFullReportDOCX(reportData, theorySelection, `Theoretical_Analysis_${new Date().toISOString().split('T')[0]}.docx`);
 

@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns']
+  },
   async headers() {
     return [
       {
@@ -51,11 +54,10 @@ const nextConfig: NextConfig = {
 };
 
 
-/*
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+import NextBundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = NextBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
 export default withBundleAnalyzer(nextConfig);
-*/
-export default nextConfig;
