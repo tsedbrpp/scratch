@@ -1,6 +1,6 @@
 import { AnalysisResult, Source, PositionalityData } from "@/types";
 
-export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'resistance_synthesis' | 'stress_test';
+export type AnalysisMode = 'dsf' | 'cultural_framing' | 'institutional_logics' | 'resistance' | 'ecosystem' | 'ontology' | 'comparison' | 'generate_resistance' | 'cultural_holes' | 'legitimacy' | 'comparative_synthesis' | 'assemblage_extraction' | 'abstract_machine' | 'resistance_synthesis' | 'stress_test';
 
 interface AnalyzeRequest {
     text: string;
@@ -64,7 +64,7 @@ export const analyzeDocument = async (
     }
 };
 
- 
+
 export const synthesizeComparison = async (documents: Source[], lens: string = "assemblage", force: boolean = false): Promise<AnalysisResult> => {
     try {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };

@@ -181,16 +181,28 @@ export function DocumentCard({
                     )}
 
                     {hasAnalysis && (
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="w-full text-xs h-6 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
-                            onClick={() => onAnalyze(source.id, 'stress_test')}
-                            disabled={isAnalyzing || isReadOnly}
-                        >
-                            <Zap className="mr-2 h-3 w-3" />
-                            Run Stress Test
-                        </Button>
+                        <div className="flex flex-col gap-1 mt-1">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="w-full text-xs h-6 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                                onClick={() => onAnalyze(source.id, 'stress_test')}
+                                disabled={isAnalyzing || isReadOnly}
+                            >
+                                <Zap className="mr-2 h-3 w-3" />
+                                Run Stress Test
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="w-full text-xs h-6 text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+                                onClick={() => onAnalyze(source.id, 'abstract_machine')}
+                                disabled={isAnalyzing || isReadOnly}
+                            >
+                                <Sparkles className="mr-2 h-3 w-3" />
+                                Extract Abstract Machine
+                            </Button>
+                        </div>
                     )}
                 </div>
 

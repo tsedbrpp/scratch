@@ -25,6 +25,7 @@ import { GHOST_NODES_COMBINED_PASS_1_PROMPT, GHOST_NODES_PASS_2_PROMPT } from '.
 import { STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './structural-concern';
 import { ANTI_STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './anti-structural-concern';
 import { STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE } from './structural-escalation';
+import { ABSTRACT_MACHINE_PROMPT } from './abstract-machine';
 
 export interface PromptDefinition {
     id: string;
@@ -493,6 +494,20 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         lastUpdated: '2026-02-24',
         changelog: ['Added escalation evaluation prompt'],
         outputSchema: { format: 'json' }
+    },
+    'abstract_machine_extraction': {
+        id: 'abstract_machine_extraction',
+        name: 'Abstract Machine Extraction',
+        description: 'Extracts the underlying Deleuzo-Guattarian operations, double articulations, and affective capacities from a policy text.',
+        category: 'Extraction',
+        defaultValue: ABSTRACT_MACHINE_PROMPT,
+        version: '1.0.0',
+        lastUpdated: '2026-03-01',
+        changelog: ['Initial version tracked in registry'],
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['diagram', 'double_articulation', 'affective_capacities', 'limits']
+        }
     }
 };
 

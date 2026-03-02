@@ -17,6 +17,56 @@ export interface UserRebuttal {
     user: string;
 }
 
+// Abstract Machine Schema (Deleuzo-Guattarian Assemblage Theory)
+export interface AbstractMachineAnalysis {
+    version: '1.0';
+    diagram: {
+        operators: {
+            id: string;
+            name: string;
+            definition: string;
+            inputs: string[];
+            outputs: string[];
+            constraints: string[];
+            supporting_quotes: { quote: string; source: string }[];
+            interpretive_link: string;
+            confidence: number;
+        }[];
+        constraints: {
+            id: string;
+            rule: string;
+            supporting_quotes: { quote: string; source: string }[];
+            interpretive_link: string;
+            confidence: number;
+        }[];
+        transformations: {
+            from: string;
+            to: string;
+            trigger: string;
+            supporting_quotes: { quote: string; source: string }[];
+            confidence: number;
+        }[];
+    };
+    double_articulation: {
+        content_strata: { id: string; description: string; quotes: string[] }[];
+        expression_strata: { id: string; description: string; quotes: string[] }[];
+        resonances: { content_id: string; expression_id: string; description: string }[];
+        clashes: { content_id: string; expression_id: string; description: string }[];
+    };
+    affective_capacities: {
+        capacity: string;
+        mechanism: string;
+        note: string;
+        supporting_quotes: { quote: string; source: string }[];
+        confidence: number;
+    }[];
+    limits: string[];
+    metadata: {
+        overall_confidence: number;
+        extraction_timestamp: string;
+    };
+}
+
 // Blind Spot Type System (Progressive Enhancement: Tier 0-3)
 
 /** Tier 1: Basic structured blind spot with severity and category */
@@ -106,6 +156,7 @@ export interface AnalysisResult {
         deterritorialization: string;
         coding: string;
     };
+    abstract_machine?: AbstractMachineAnalysis;
     // Cultural Framing fields
     state_market_society?: string;
     technology_role?: string;

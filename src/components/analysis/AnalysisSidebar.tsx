@@ -1,7 +1,7 @@
 import React from "react";
 import {
     LayoutDashboard, GitBranch, Layers, ShieldAlert, BadgeCheck,
-    Activity, Scale, Zap, LucideIcon
+    Activity, Scale, Zap, LucideIcon, Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ export type AnalysisSection =
     | 'tensions'
     | 'dimensions'
     | 'assemblage_dynamics'
+    | 'abstract_machine'
     | 'legitimacy'
     | 'reflexivity'
     | 'stress'
@@ -129,6 +130,13 @@ export function AnalysisSidebar({
                     sub="Territorialization & Deterritorialization"
                     active={activeSection === 'assemblage_dynamics'}
                     onClick={() => onSectionChange('assemblage_dynamics')}
+                />
+                <NavButton
+                    icon={Sparkles}
+                    label="Abstract Machine"
+                    sub="Diagram, Operators, & Articulations"
+                    active={activeSection === 'abstract_machine'}
+                    onClick={() => onSectionChange('abstract_machine')}
                 />
             </div>
 

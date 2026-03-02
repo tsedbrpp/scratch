@@ -9,6 +9,7 @@ import { TensionsView } from "@/components/analysis/TensionsView";
 import { StructuralDimensionsView } from "@/components/analysis/StructuralDimensionsView";
 import { AssemblageDynamicsView } from "@/components/analysis/AssemblageDynamicsView";
 import { LegitimacyClaimsView } from "@/components/analysis/LegitimacyClaimsView";
+import { AbstractMachinePanel } from "@/components/analysis/AbstractMachinePanel";
 import { SystemCritiqueSection } from "@/components/common/SystemCritiqueSection";
 import { VerifiedEvidenceSection } from "@/components/policy/analysis/VerifiedEvidenceSection";
 import { StressTestSection } from "@/components/policy/analysis/StressTestSection";
@@ -334,6 +335,10 @@ function AnalysisPageContent() {
 
                         {activeSection === 'assemblage_dynamics' && (
                             <AssemblageDynamicsView analysis={source.analysis} sourceId={source.id} />
+                        )}
+
+                        {activeSection === 'abstract_machine' && (
+                            <AbstractMachinePanel analysis={source.analysis.abstract_machine!} />
                         )}
 
                         {activeSection === 'legitimacy' && (

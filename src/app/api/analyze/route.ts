@@ -473,6 +473,79 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // [Feature] Abstract Machine Extraction Mode
+    if (analysisMode === 'abstract_machine') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for Abstract Machine Extraction" }, { status: 500 });
+      }
+
+      console.log('[ANALYSIS] Mode is ABSTRACT MACHINE.');
+      const { ABSTRACT_MACHINE_PROMPT } = await import('@/lib/prompts/abstract-machine');
+      const { AbstractMachineSchema, validateProvenance } = await import('@/lib/validation/abstract-machine');
+
+      const promptText = `
+${ABSTRACT_MACHINE_PROMPT}
+
+Text to analyze:
+${text}
+      `;
+
+      let attempt = 0;
+      const maxAttempts = 3;
+      let lastError = null;
+
+      while (attempt < maxAttempts) {
+        attempt++;
+        console.log(`[ABSTRACT MACHINE] Attempt ${attempt}/${maxAttempts}...`);
+
+        try {
+          const completion = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o",
+            messages: [
+              { role: "system", content: "You are a Deleuze-Guattarian cartographer. You must strictly output JSON matching the requested schema." },
+              { role: "user", content: promptText + (lastError ? `\n\nPREVIOUS ERROR MUST BE FIXED: ${lastError}` : '') }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.1,
+          });
+
+          const rawJson = completion.choices[0].message.content || "{}";
+          let parsed;
+          try {
+            parsed = JSON.parse(rawJson);
+          } catch (e) {
+            throw new Error("Invalid JSON format");
+          }
+
+          // 1. Zod schema check (types, verbs, structure)
+          const validationResult = AbstractMachineSchema.safeParse(parsed);
+          if (!validationResult.success) {
+            throw new Error(`Schema validation failed: ${validationResult.error.message}`);
+          }
+
+          const validMachine = validationResult.data;
+
+          // 2. Strict provenance check against source text
+          if (!validateProvenance(validMachine, text)) {
+            throw new Error("Provenance validation failed: More than 10% of quotes could not be verified verbatim against the source text. Ensure all quotes match identically.");
+          }
+
+          console.log(`[ABSTRACT MACHINE] Extraction successful on attempt ${attempt}.`);
+          return NextResponse.json({
+            success: true,
+            analysis: { abstract_machine: validMachine }
+          });
+
+        } catch (err: any) {
+          console.error(`[ABSTRACT MACHINE] Attempt ${attempt} failed: ${err.message}`);
+          lastError = err.message;
+          if (attempt === maxAttempts) {
+            return NextResponse.json({ error: "Could not produce a valid, text-grounded abstract machine after retries.", details: lastError }, { status: 500 });
+          }
+        }
+      }
+    }
+
     // [Feature] Theoretical Synthesis Mode
     if (analysisMode === 'theoretical_synthesis') {
       if (!openai) {
