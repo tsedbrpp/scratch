@@ -20,6 +20,7 @@ import { AnalysisResult } from "@/types";
 import { useEscalation } from "@/hooks/useEscalation";
 import { ResolutionDrawer } from "@/components/governance/ResolutionDrawer";
 import { useTeam } from "@/hooks/useTeam";
+import { useDemoMode } from "@/hooks/useDemoMode";
 
 function AnalysisPageContent() {
     const params = useParams();
@@ -30,6 +31,7 @@ function AnalysisPageContent() {
 
     // [New] Role Check
     const { currentUserRole } = useTeam();
+    const { isReadOnly } = useDemoMode();
 
     // We reuse the global sources state for now
     const { sources, isLoading: isSourcesLoading, updateSource } = useSources();
@@ -298,7 +300,7 @@ function AnalysisPageContent() {
                                 size="sm"
                                 variant={source.analysis.abstract_machine ? "outline" : "default"}
                                 onClick={() => handleAnalyze('abstract_machine')}
-                                disabled={isAnalyzing}
+                                disabled={isAnalyzing || isReadOnly}
                                 className={!source.analysis.abstract_machine ? "bg-violet-600 text-white hover:bg-violet-700" : ""}
                             >
                                 {isAnalyzing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Sparkles className="mr-2 h-3 w-3" />}

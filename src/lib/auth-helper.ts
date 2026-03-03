@@ -9,6 +9,14 @@ export async function getAuthenticatedUserId(request: NextRequest): Promise<stri
     const { userId } = await auth();
 
     if (userId) {
+        // Local Dev Sync Logic
+        if (process.env.NODE_ENV === 'development') {
+            const syncUserId = process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+            if (syncUserId && syncUserId.length > 0) {
+                // Return the alias instead of the real Clerk local user ID
+                return syncUserId;
+            }
+        }
         return userId;
     }
 
@@ -17,10 +25,28 @@ export async function getAuthenticatedUserId(request: NextRequest): Promise<stri
         const demoUserId = request.headers.get('x-demo-user-id');
         const validDemoId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
 
-        // Robust check: Matches env var OR is default 'demo-user' if header matches or env is missing
-        if (demoUserId === validDemoId || (!demoUserId && !process.env.NEXT_PUBLIC_DEMO_USER_ID)) {
-            // Optional: Log successful demo auth for debugging (verbose)
-            // console.log('[AUTH] Authorized as Demo User:', validDemoId);
+        const getSyncUserId = () => {
+            if (process.env.NODE_ENV === 'development') {
+                return process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+            }
+            // In Production Demo Mode, default to reading from the primary Admin's namespace
+            const adminId = process.env.ADMIN_USER_IDS?.split(',')[0];
+            return adminId ? adminId.replace(/^["']|["']$/g, '').trim() : null;
+        };
+
+        const syncUserId = getSyncUserId();
+
+        // Robust check: Matches env var OR is the Global Sync ID OR is default 'demo-user'
+        if (
+            demoUserId === validDemoId ||
+            (syncUserId && demoUserId === syncUserId) ||
+            (!demoUserId && !process.env.NEXT_PUBLIC_DEMO_USER_ID)
+        ) {
+            // Global Sync Logic for Demo Mode fallback
+            if (syncUserId && syncUserId.length > 0) {
+                return syncUserId;
+            }
+
             return validDemoId;
         }
     }
@@ -37,6 +63,14 @@ export async function isReadOnlyAccess(): Promise<boolean> {
     const { userId } = await auth();
     // If user is logged in (Clerk), they are NOT read-only (even in demo mode, they are a 'real' user or admin)
     if (userId) return false;
+
+    // Local Dev Sync Override: dev syncing acts as logged in
+    if (process.env.NODE_ENV === 'development') {
+        const syncUserId = process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+        if (syncUserId && syncUserId.length > 0) {
+            return false;
+        }
+    }
 
     // If not logged in, they are read-only ONLY if demo mode is enabled (otherwise they are just unauthorized)
     return process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true';

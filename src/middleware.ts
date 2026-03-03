@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 // 1. Define Routes that MUST be protected
 const isProtectedRoute = createRouteMatcher([
@@ -40,7 +41,44 @@ export default clerkMiddleware(async (auth, request) => {
         const { userId } = await auth();
         // If user is NOT logged in, bypass auth so they can see the demo
         if (!userId) {
-            console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode');
+            // console.log('[MIDDLEWARE] Bypassing auth due to Demo Mode');
+
+            // Global Sync Override: Intercept frontend demo requests and map to real user
+            const getSyncUserId = () => {
+                if (process.env.NODE_ENV === 'development') {
+                    return process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+                }
+                const adminId = process.env.ADMIN_USER_IDS?.split(',')[0];
+                return adminId ? adminId.replace(/^["']|["']$/g, '').trim() : null;
+            };
+
+            const syncUserId = getSyncUserId();
+
+            if (syncUserId) {
+                const demoId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
+
+                let modified = false;
+                const requestHeaders = new Headers(request.headers);
+
+                if (requestHeaders.get('x-demo-user-id') === demoId) {
+                    requestHeaders.set('x-demo-user-id', syncUserId);
+                    modified = true;
+                }
+
+                if (requestHeaders.get('x-workspace-id') === demoId) {
+                    requestHeaders.set('x-workspace-id', syncUserId);
+                    modified = true;
+                }
+
+                if (modified) {
+                    return NextResponse.next({
+                        request: {
+                            headers: requestHeaders,
+                        },
+                    });
+                }
+            }
+
             return;
         }
     }

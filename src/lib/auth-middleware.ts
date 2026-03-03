@@ -69,6 +69,15 @@ export async function validateWorkspaceAccess(
         if (contextId === userId) {
             return { allowed: true, scope: 'PERSONAL', role: 'OWNER', statusCode: 200 };
         } else {
+            // Local Dev Sync Demo Override
+            // If the local frontend requests the demo workspace, but the backend resolves the sync alias
+            if (process.env.NODE_ENV === 'development' && contextId === process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                const syncUserId = process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+                if (syncUserId && syncUserId === userId) {
+                    return { allowed: true, scope: 'PERSONAL', role: 'OWNER', statusCode: 200, reason: 'Dev Sync Alias' };
+                }
+            }
+
             return { allowed: false, scope: 'PERSONAL', reason: 'Access Denied', statusCode: 403 };
         }
     }
