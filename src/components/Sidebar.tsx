@@ -93,6 +93,12 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Analyze (The Thinking)",
         items: [
             {
+                name: "Abstract Machines",
+                href: "/compare-machines",
+                icon: ArrowLeftRight,
+                description: "Compare abstract machines, double articulations, and state capture."
+            },
+            {
                 name: "Dynamics & Mobilities",
                 href: "/comparison",
                 icon: ArrowLeftRight,

@@ -83,7 +83,32 @@ export default clerkMiddleware(async (auth, request) => {
         }
     }
 
-    // C. Protected Routes: Enforce Login
+    // C. Development Sync Logic
+    // In local development, the backend auth-helper forces the user identity to LOCAL_SYNC_USER_ID.
+    // However, the frontend WorkspaceProvider still sends the true local Clerk ID as the x-workspace-id.
+    // We intercept and rewrite personal workspace requests to the sync ID to prevent 403 Access Denied.
+    if (process.env.NODE_ENV === 'development') {
+        const { userId } = await auth();
+        if (userId) {
+            const syncUserId = process.env.LOCAL_SYNC_USER_ID?.replace(/^["']|["']$/g, '');
+            if (syncUserId && syncUserId.length > 0) {
+                const requestHeaders = new Headers(request.headers);
+                const currentWorkspaceId = requestHeaders.get('x-workspace-id');
+
+                // If requesting a personal workspace (not a team), rewrite it to the sync identity
+                if (currentWorkspaceId && !currentWorkspaceId.startsWith('team_')) {
+                    requestHeaders.set('x-workspace-id', syncUserId);
+                    return NextResponse.next({
+                        request: {
+                            headers: requestHeaders,
+                        },
+                    });
+                }
+            }
+        }
+    }
+
+    // D. Protected Routes: Enforce Login
     if (isProtectedRoute(request)) {
         await auth.protect();
     }

@@ -1,8 +1,11 @@
 export const ABSTRACT_MACHINE_PROMPT = `
-You are a Deleuze-Guattarian cartographer. Extract ONE abstract machine from the provided policy/legal text.
+You are a Deleuze-Guattarian cartographer. Extract ONE comprehensive abstract machine from the provided policy/legal text.
 
 STRICT INVARIANTS (violation = invalid output):
 1. operators: verb-centric only, kebab-case, NO proper nouns, NO institutions ("classify-risk", "territorialize-bodies", "decode-signs").
+   - CRITICAL: Do NOT stop at the primary classification! You MUST perform a deep, exhaustive extraction of ALL functional mechanisms framing the architecture.
+   - You MUST actively hunt for and extract operators related to: enforcement workflows ("sanction-noncompliance"), monitoring/audits ("audit-systems"), registries/inventories ("inventory-assets"), incident reporting ("report-failures"), and sandboxing/development ("sandbox-innovation").
+   - A robust extraction should typically yield 5-15 distinct operators mapping the entire policy lifecycle. Do not under-extract.
 2. Every operator, constraint, transformation MUST be accompanied by:
    - supporting_quotes: array of { quote, source } objects containing verbatim strings from the source (minimum 1, max 5).
    - interpretive_link: 1-2 sentence bridge showing how the quote actualizes the operator/constraint.
