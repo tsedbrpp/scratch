@@ -3,11 +3,15 @@
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AbstractMachineCompareD3, ViewMode } from "./AbstractMachineCompareD3";
+import { AbstractMachineCompareD3 } from "./AbstractMachineCompareD3";
 import { AbstractMachineAnalysis } from "@/types";
-import { AlertCircle, ArrowLeftRight, ChevronRight, Layers, Network } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, ChevronRight, Layers, Network, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { z } from "zod";
+import { normalizeAbstractMachine } from "./abstractMachineNormalize";
+import { diffAbstractMachines } from "./abstractMachineDiff";
+import type { AICompareAbstractMachinesResponse } from "@/lib/prompts/compare-machines";
+import { ComparisonDashboard } from "./ComparisonDashboard";
 
 interface LightweightSource {
     id: string;
@@ -17,7 +21,7 @@ interface LightweightSource {
 const urlSchema = z.object({
     left: z.string().optional(),
     right: z.string().optional(),
-    view: z.enum(["machine", "strata", "state"]).catch("machine"),
+    view: z.enum(["dashboard", "machine", "strata", "state", "diff", "ai"]).catch("machine"),
 });
 
 export function CompareMachinesClient() {
@@ -39,6 +43,19 @@ export function CompareMachinesClient() {
     const [sourcesList, setSourcesList] = useState<LightweightSource[]>([]);
     const [fullMachines, setFullMachines] = useState<Record<string, AbstractMachineAnalysis>>({});
     const [status, setStatus] = useState<"loading" | "error" | "ready" | "empty">("loading");
+
+    // AI Analysis State
+    const [aiReport, setAiReport] = useState<{ timestamp: number, comparison: AICompareAbstractMachinesResponse, model_name: string, schema_version?: number } | null>(null);
+    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const [analyzedIds, setAnalyzedIds] = useState<{ left?: string, right?: string }>({ left: leftId, right: rightId });
+
+    // Sync AI Report state when the selected documents change
+    if (analyzedIds.left !== leftId || analyzedIds.right !== rightId) {
+        setAiReport(null);
+        setAiError(null);
+        setAnalyzedIds({ left: leftId, right: rightId });
+    }
 
     const getHeaders = useCallback((base: HeadersInit = {}) => {
         const headers = { ...base } as Record<string, string>;
@@ -105,7 +122,7 @@ export function CompareMachinesClient() {
     // Fetch actual machine payloads when selection changes
     useEffect(() => {
         const idsToFetch = [leftId, rightId].filter(Boolean) as string[];
-        const missingIds = idsToFetch.filter(id => !fullMachines[id]);
+        const missingIds = idsToFetch.filter(id => fullMachines[id] === undefined);
 
         if (missingIds.length === 0) return; // Already have them cached
 
@@ -123,8 +140,9 @@ export function CompareMachinesClient() {
                 if (mounted) {
                     setFullMachines(prev => {
                         const next = { ...prev };
-                        data.forEach(item => {
-                            next[item.id] = item.abstract_machine;
+                        missingIds.forEach(id => {
+                            const found = data.find(item => item.id === id);
+                            next[id] = found ? found.abstract_machine : (null as any);
                         });
                         return next;
                     });
@@ -139,12 +157,76 @@ export function CompareMachinesClient() {
         return () => { mounted = false; };
     }, [leftId, rightId, fullMachines, getHeaders]);
 
+    // Optional: Auto-fetch AI report if we mount/switch to AI view and have both IDs
+    const fetchAiAnalysis = React.useCallback(async (force = false) => {
+        if (!leftId || !rightId) return;
+        setIsGeneratingAi(true);
+        setAiError(null);
+        try {
+            const isForce = force === true; // Enforce strict boolean so Zod doesn't fail on React Event objects
+            const res = await fetch(`/api/analyze/compare-machines`, {
+                method: "POST",
+                headers: { ...getHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify({ leftId, rightId, force: isForce })
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to generate AI analysis");
+            }
+            const data = await res.json();
+            setAiReport(data);
+        } catch (err: unknown) {
+            setAiError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setIsGeneratingAi(false);
+        }
+    }, [leftId, rightId, getHeaders]);
+
+    // Refetch AI Analysis if we explicitly switch to the View and haven't fetched it yet
+    React.useEffect(() => {
+        let mounted = true;
+
+        if ((viewMode === "ai" || viewMode === "dashboard") && leftId && rightId && !aiReport && !isGeneratingAi && !aiError) {
+            // Prevent duplicate triggers by eagerly setting the loading state
+            setIsGeneratingAi(true);
+
+            fetchAiAnalysis().finally(() => {
+                if (mounted) {
+                    setIsGeneratingAi(false);
+                }
+            });
+        }
+
+        return () => { mounted = false; };
+        // We INTENTIONALLY exclude `isGeneratingAi`, `aiReport`, `aiError` and `fetchAiAnalysis` from this hook's dependency array.
+        // Including them causes React to infinitely cycle as the state resolves and triggers re-evaluations.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewMode, leftId, rightId]);
+
     const handleParamChange = (key: "left" | "right" | "view", value: string) => {
         const params = new URLSearchParams(searchParams.toString());
         if (value) params.set(key, value);
         else params.delete(key);
         router.push(`?${params.toString()}`, { scroll: false });
     };
+
+    // Prepare data directly for the renderer (Moved above conditional returns to satisfy Hooks rules)
+    const leftMachine = leftId ? fullMachines[leftId] || null : null;
+    const rightMachine = rightId ? fullMachines[rightId] || null : null;
+
+    const leftTitle = sourcesList.find(s => s.id === leftId)?.title || "Unknown Document";
+    const rightTitle = sourcesList.find(s => s.id === rightId)?.title || "Unknown Document";
+
+    // Normalize and compute diff before conditionally returning
+    const leftNorm = React.useMemo(() => (leftMachine ? normalizeAbstractMachine(leftMachine) : null), [leftMachine]);
+    const rightNorm = React.useMemo(() => (rightMachine ? normalizeAbstractMachine(rightMachine) : null), [rightMachine]);
+
+    const computedDiff = React.useMemo(() => {
+        if (!leftNorm?.normalized || !rightNorm?.normalized) return null;
+        return diffAbstractMachines(leftNorm.normalized, rightNorm.normalized);
+    }, [leftNorm, rightNorm]);
+
+    const canRender = Boolean(leftNorm?.normalized && rightNorm?.normalized);
 
     if (status === "loading") {
         return (
@@ -187,13 +269,6 @@ export function CompareMachinesClient() {
         );
     }
 
-    // Prepare data directly for the renderer
-    const leftMachine = leftId ? fullMachines[leftId] || null : null;
-    const rightMachine = rightId ? fullMachines[rightId] || null : null;
-
-    const leftTitle = sourcesList.find(s => s.id === leftId)?.title || "Unknown Document";
-    const rightTitle = sourcesList.find(s => s.id === rightId)?.title || "Unknown Document";
-
     return (
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
             {/* Header Controls */}
@@ -208,18 +283,21 @@ export function CompareMachinesClient() {
                     </div>
                 </div>
 
-                <div className="flex flex-col flex-1 gap-4 lg:flex-row lg:items-center min-w-0">
+                <div className="flex flex-wrap flex-1 gap-4 items-center min-w-0">
                     {/* View Switcher */}
-                    <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shrink-0">
+                    <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto shrink-0 max-w-full">
                         {([
+                            ["dashboard", "Visualizations"],
                             ["machine", "Machine"],
                             ["strata", "Strata"],
-                            ["state", "State Capture"]
+                            ["state", "State Capture"],
+                            ["diff", "Computed Diff"],
+                            ["ai", "AI Analysis"]
                         ] as const).map(([val, label]) => (
                             <button
                                 key={val}
                                 onClick={() => handleParamChange("view", val)}
-                                className={`px-4 py-2 text-xs font-medium transition-colors ${viewMode === val
+                                className={`px-4 py-2 text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0 ${viewMode === val
                                     ? "bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400"
                                     : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                                     }`}
@@ -229,11 +307,9 @@ export function CompareMachinesClient() {
                         ))}
                     </div>
 
-                    <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden lg:block mx-2"></div>
-
                     {/* Source Selectors */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="flex items-center flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden min-w-[200px]">
+                    <div className="flex items-center gap-2 flex-1 min-w-[300px]">
+                        <div className="flex items-center flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden min-w-[150px]">
                             <select
                                 value={leftId || ""}
                                 onChange={e => handleParamChange("left", e.target.value)}
@@ -329,15 +405,211 @@ export function CompareMachinesClient() {
                 </div>
             )}
 
-            {/* D3 Payload */}
-            <div className="flex-1 w-full min-h-0 relative">
-                <AbstractMachineCompareD3
-                    leftMachine={leftMachine}
-                    rightMachine={rightMachine}
-                    leftTitle={leftTitle}
-                    rightTitle={rightTitle}
-                    viewMode={viewMode}
-                />
+            {/* Main Content Area */}
+            <div className="flex-1 w-full min-h-0 relative overflow-y-auto">
+                {viewMode === "diff" ? (
+                    <div className="p-6 max-w-7xl mx-auto space-y-8">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Computed Structural Diff</h2>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
+                                A deterministic set-based comparison of operators, constraints, and transformations between the two abstract machines.
+                            </p>
+                        </div>
+
+                        {!canRender && (
+                            <div className="text-sm text-slate-500 italic p-8 border border-dashed border-slate-300 rounded-xl text-center">
+                                Please select both a Left and Right document to compute the diff.
+                            </div>
+                        )}
+
+                        {canRender && computedDiff && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <section className="p-5 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 rounded-xl shadow-sm">
+                                    <div className="font-bold text-emerald-800 dark:text-emerald-400 mb-3 flex items-center gap-2 border-b border-emerald-100 dark:border-emerald-900/30 pb-2">
+                                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                        Shared Spine
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                                        {computedDiff.textRepresentation.sharedSpine.length === 0 ? <li className="text-slate-400 italic text-xs">No shared elements found.</li> : null}
+                                        {computedDiff.textRepresentation.sharedSpine.map((x: string) => (
+                                            <li key={x} className="flex gap-2"><span className="text-emerald-500">•</span> <span>{x}</span></li>
+                                        ))}
+                                    </ul>
+                                </section>
+
+                                <section className="p-5 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/50 rounded-xl shadow-sm">
+                                    <div className="font-bold text-blue-800 dark:text-blue-400 mb-3 flex items-center gap-2 border-b border-blue-100 dark:border-blue-900/30 pb-2">
+                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        Only in Left ({leftTitle})
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                                        {computedDiff.textRepresentation.onlyInLeft.length === 0 ? <li className="text-slate-400 italic text-xs">No unique elements on left.</li> : null}
+                                        {computedDiff.textRepresentation.onlyInLeft.map((x: string) => (
+                                            <li key={x} className="flex gap-2"><span className="text-blue-500">•</span> <span>{x}</span></li>
+                                        ))}
+                                    </ul>
+                                </section>
+
+                                <section className="p-5 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/50 rounded-xl shadow-sm">
+                                    <div className="font-bold text-purple-800 dark:text-purple-400 mb-3 flex items-center gap-2 border-b border-purple-100 dark:border-purple-900/30 pb-2">
+                                        <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                        Only in Right ({rightTitle})
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                                        {computedDiff.textRepresentation.onlyInRight.length === 0 ? <li className="text-slate-400 italic text-xs">No unique elements on right.</li> : null}
+                                        {computedDiff.textRepresentation.onlyInRight.map((x: string) => (
+                                            <li key={x} className="flex gap-2"><span className="text-purple-500">•</span> <span>{x}</span></li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            </div>
+                        )}
+                    </div>
+                ) : viewMode === "dashboard" ? (
+                    <div className="flex-1 w-full p-4 h-full bg-slate-100 dark:bg-black/20">
+                        <ComparisonDashboard
+                            leftMachine={(leftNorm?.normalized as AbstractMachineAnalysis) || null}
+                            rightMachine={(rightNorm?.normalized as AbstractMachineAnalysis) || null}
+                            leftSource={sourcesList.find(s => s.id === leftId) as any}
+                            rightSource={sourcesList.find(s => s.id === rightId) as any}
+                            aiReport={aiReport as any}
+                            onRegenerate={() => fetchAiAnalysis(true)}
+                            isRegenerating={isGeneratingAi}
+                        />
+                    </div>
+                ) : viewMode === "ai" ? (
+                    <div className="p-6 max-w-4xl mx-auto space-y-8 pb-32">
+                        <div className="flex items-center gap-4 justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-indigo-500" />
+                                    AI Structural Analysis
+                                </h2>
+                                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                                    Deleuzian Assemblage comparison generated by {aiReport?.model_name || "AI"}.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => fetchAiAnalysis(true)}
+                                disabled={isGeneratingAi || !canRender}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white shadow-sm rounded-lg text-sm font-medium transition-colors"
+                            >
+                                {isGeneratingAi ? "Analyzing..." : aiReport ? "Regenerate" : "Generate Report"}
+                            </button>
+                        </div>
+
+                        {!canRender && (
+                            <div className="text-sm text-slate-500 italic p-8 border border-dashed border-slate-300 rounded-xl text-center">
+                                Please select both a Left and Right document to generate an AI analysis.
+                            </div>
+                        )}
+
+                        {isGeneratingAi && (
+                            <div className="flex flex-col items-center justify-center p-12 text-indigo-600 dark:text-indigo-400">
+                                <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                                <p className="text-sm font-medium">Extracting theoretical comparisons...</p>
+                            </div>
+                        )}
+
+                        {aiError && !isGeneratingAi && (
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm border border-red-200 dark:border-red-900">
+                                <AlertCircle className="w-4 h-4 inline mr-2" />
+                                {aiError}
+                            </div>
+                        )}
+
+                        {aiReport && !isGeneratingAi && (
+                            <div className="space-y-10">
+                                {/* Shared Spine */}
+                                <section>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 border-l-4 border-emerald-500 pl-3">
+                                        Shared Spine (Obligatory Passage Points)
+                                    </h3>
+                                    <p className="text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">{aiReport.comparison.shared_spine.explanation}</p>
+                                    <ul className="space-y-3 pl-4">
+                                        {aiReport.comparison.shared_spine.items.map((item, i) => (
+                                            <li key={i} className="text-sm bg-white dark:bg-slate-900 p-3 rounded shadow-sm border border-slate-100 dark:border-slate-800">
+                                                <span className="font-bold text-emerald-700 dark:text-emerald-400">{item.element_name}</span>: {item.significance}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+
+                                {/* Differences */}
+                                <section>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 border-l-4 border-amber-500 pl-3">
+                                        Fundamental Divergences
+                                    </h3>
+                                    <p className="text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">{aiReport.comparison.differences.explanation}</p>
+                                    <ul className="space-y-3 pl-4">
+                                        {aiReport.comparison.differences.items.map((item, i) => (
+                                            <li key={i} className="text-sm bg-white dark:bg-slate-900 p-3 rounded shadow-sm border border-slate-100 dark:border-slate-800">
+                                                <span className="font-bold text-amber-700 dark:text-amber-400">{item.element_name}</span>: {item.description}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+
+                                {/* Double Articulation */}
+                                <section>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 border-l-4 border-blue-500 pl-3">
+                                        Double Articulation
+                                    </h3>
+                                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-4">{aiReport.comparison.double_articulation.explanation}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                                            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{leftTitle}</div>
+                                            {aiReport.schema_version === 2 ? (
+                                                <div className="text-sm text-slate-800 dark:text-slate-300">
+                                                    <div className="font-semibold mb-1">Content:</div>
+                                                    <ul className="list-disc pl-4 mb-3">{aiReport.comparison.double_articulation.left_content_items?.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
+                                                    <div className="font-semibold mb-1">Expression:</div>
+                                                    <ul className="list-disc pl-4">{aiReport.comparison.double_articulation.left_expression_items?.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-slate-800 dark:text-slate-300">{(aiReport.comparison.double_articulation as any).left_tension}</p>
+                                            )}
+                                        </div>
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                                            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{rightTitle}</div>
+                                            {aiReport.schema_version === 2 ? (
+                                                <div className="text-sm text-slate-800 dark:text-slate-300">
+                                                    <div className="font-semibold mb-1">Content:</div>
+                                                    <ul className="list-disc pl-4 mb-3">{aiReport.comparison.double_articulation.right_content_items?.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
+                                                    <div className="font-semibold mb-1">Expression:</div>
+                                                    <ul className="list-disc pl-4">{aiReport.comparison.double_articulation.right_expression_items?.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-slate-800 dark:text-slate-300">{(aiReport.comparison.double_articulation as any).right_tension}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Conclusion */}
+                                <section className="bg-indigo-50 dark:bg-indigo-900/10 p-6 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
+                                    <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-3">
+                                        Synthesis
+                                    </h3>
+                                    <p className="text-indigo-950 dark:text-indigo-100 leading-relaxed italic">
+                                        &quot;{aiReport.comparison.conclusion}&quot;
+                                    </p>
+                                    <div className="mt-4 text-[10px] text-indigo-400 uppercase tracking-wider text-right">
+                                        Generated by {aiReport.model_name}
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <AbstractMachineCompareD3
+                        leftMachine={(leftNorm?.normalized as AbstractMachineAnalysis) || null}
+                        rightMachine={(rightNorm?.normalized as AbstractMachineAnalysis) || null}
+                        leftTitle={leftTitle}
+                        rightTitle={rightTitle}
+                        viewMode={viewMode as "machine" | "strata" | "state"}
+                    />
+                )}
             </div>
         </div>
     );

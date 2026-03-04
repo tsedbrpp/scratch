@@ -182,6 +182,15 @@ export function StructuralAnalysisCard({
         });
     };
 
+    const cleanEscalationText = (text: string) => {
+        if (!text) return text;
+        // Strip raw excerpt IDs (like q-ghost-[hash], [uuid], etc.) that the LLM might have outputted.
+        // Matches (q-ghost-abcd...), (ghost-abcd...), q-abcd..., or just abcd... if it's a long UUID/hash.
+        return text
+            .replace(/\(?(?:q-)?(?:ghost-)?[a-fA-F0-9\-]{30,}\)?/g, '[Excerpt]')
+            .replace(/\[Excerpt\](?:,\s*\[Excerpt\])+/g, '[Excerpts]');
+    };
+
     return (
         <Card className="border border-slate-200 shadow-sm mt-6 overflow-hidden bg-white">
             <CardHeader className="pb-4 border-b bg-slate-50/80">
@@ -300,19 +309,19 @@ export function StructuralAnalysisCard({
                             </div>
                             <div>
                                 <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Reasoning & Context</h4>
-                                <p className="text-sm text-slate-800 leading-relaxed italic">{escalation.methodologicalCritique.notes}</p>
+                                <p className="text-sm text-slate-800 leading-relaxed italic">{cleanEscalationText(escalation.methodologicalCritique.notes)}</p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
                                 <div>
                                     <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> Tier 1: Proven</h4>
-                                    <p className="text-sm text-slate-700">{escalation.tier1Proven.text}</p>
+                                    <p className="text-sm text-slate-700">{cleanEscalationText(escalation.tier1Proven.text)}</p>
                                 </div>
                                 <div>
                                     <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                         <AlertTriangle className="h-3.5 w-3.5" />
                                         {result?.evidenceScope === 'impact_only' ? 'Tier 2: Affected — Standing Unproven' : 'Tier 2: Mentioned — Standing Unproven'}
                                     </h4>
-                                    <p className="text-sm text-slate-700">{escalation.tier2Unproven.text}</p>
+                                    <p className="text-sm text-slate-700">{cleanEscalationText(escalation.tier2Unproven.text)}</p>
                                 </div>
                             </div>
                         </div>

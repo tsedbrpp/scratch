@@ -10,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.39",
     "@clerk/nextjs": "^6.37.1",
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -33,6 +34,7 @@
     "@stripe/stripe-js": "^8.6.1",
     "@types/d3": "^7.4.3",
     "@types/html2canvas": "^1.0.0",
+    "ai": "^6.0.111",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

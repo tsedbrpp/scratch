@@ -75,7 +75,6 @@ function AnalysisPageContent() {
         }
 
         setIsAnalyzing(true);
-        console.log(`Starting analysis: Mode=${mode}, SourceID=${source.id}`);
         try {
             const result = await analyzeDocument(
                 source.extractedText || "",
@@ -388,7 +387,7 @@ function AnalysisPageContent() {
                                     <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
                                         <ShieldCheck className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                                         <h3 className="text-slate-500 font-medium">No Reflexivity Analysis Found</h3>
-                                        <p className="text-sm text-slate-400 mt-2">Run the "Devil's Advocate" protocol to generate one.</p>
+                                        <p className="text-sm text-slate-400 mt-2">Run the &quot;Devil&apos;s Advocate&quot; protocol to generate one.</p>
                                     </div>
                                 )}
 

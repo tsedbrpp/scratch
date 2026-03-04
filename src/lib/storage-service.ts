@@ -85,11 +85,37 @@ export class StorageService {
             pipeline.set(metaKey, now.toString()); // Persist timestamp
             await pipeline.exec();
 
+            // [NEW] Smart Cache Invalidation for Controversy Mapping
+            this.invalidateControversyMapIfDependent(contextId, key).catch(e => logger.error("Failed to invalidate controversy map", e));
+
             return now; // Return new version ID
         } catch (error) {
             if (error instanceof ConflictError) throw error;
             logger.error(`StorageService Set Error [${key}]:`, error);
             throw error;
+        }
+    }
+
+    private static async invalidateControversyMapIfDependent(contextId: string, key: string) {
+        const relevantPrefixes = [
+            'cultural_framing_',
+            'institutional_logics_',
+            'resistance_analysis_',
+            'ai_compare_v2_machines_',
+            'ecosystem_actors_',
+            'ghost_nodes_',
+            'ecosystem_configurations_',
+            'assemblage_export_'
+        ];
+
+        for (const prefix of relevantPrefixes) {
+            if (key.startsWith(prefix)) {
+                const policyId = key.substring(prefix.length);
+                if (policyId) {
+                    await this.delete(contextId, `controversy_mapping_${policyId}`);
+                }
+                break;
+            }
         }
     }
 
@@ -163,6 +189,9 @@ export class StorageService {
         try {
             const redisKey = this.getContextKey(contextId, key, 'cache');
             await redis.set(redisKey, JSON.stringify(value), 'EX', ttlSeconds);
+
+            // Allow cache updates to also invalidate
+            this.invalidateControversyMapIfDependent(contextId, key).catch(e => logger.error("Failed to invalidate controversy map via cache", e));
         } catch (error) {
             logger.error(`StorageService Cache Set Error [${key}]:`, error);
             throw error;

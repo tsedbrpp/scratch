@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3";
 import { AbstractMachineAnalysis } from "@/types";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, ZoomIn, ZoomOut, Focus } from "lucide-react";
 
 export type ViewMode = "machine" | "strata" | "state";
 
@@ -31,30 +31,64 @@ export function AbstractMachineCompareD3({
 
     const [maximizedPane, setMaximizedPane] = useState<"left" | "right" | null>(null);
 
+    // Store references to the d3 zoom instances so buttons can trigger them outside the React useEffect
+    const zoomRefs = useRef<{ left: d3.ZoomBehavior<Element, unknown> | null, right: d3.ZoomBehavior<Element, unknown> | null }>({ left: null, right: null });
+
     useEffect(() => {
         let simLeft: d3.Simulation<d3.SimulationNodeDatum, undefined> | null = null;
         let simRight: d3.Simulation<d3.SimulationNodeDatum, undefined> | null = null;
 
-        if (leftMachine && leftSvgRef.current) {
-            simLeft = renderToSvg(leftSvgRef.current, leftMachine, "left", viewMode, CANVAS_W, CANVAS_H, tooltipRef.current);
-        } else if (leftSvgRef.current) {
-            d3.select(leftSvgRef.current).selectAll("*").remove();
+        const leftNode = leftSvgRef.current;
+        const rightNode = rightSvgRef.current;
+
+        if (leftMachine && leftNode) {
+            const { sim, zoom } = renderToSvg(leftNode, leftMachine, "left", viewMode, CANVAS_W, CANVAS_H, tooltipRef.current);
+            simLeft = sim;
+            zoomRefs.current.left = zoom;
+        } else if (leftNode) {
+            d3.select(leftNode).selectAll("*").remove();
+            zoomRefs.current.left = null;
         }
 
-        if (rightMachine && rightSvgRef.current) {
-            simRight = renderToSvg(rightSvgRef.current, rightMachine, "right", viewMode, CANVAS_W, CANVAS_H, tooltipRef.current);
-        } else if (rightSvgRef.current) {
-            d3.select(rightSvgRef.current).selectAll("*").remove();
+        if (rightMachine && rightNode) {
+            const { sim, zoom } = renderToSvg(rightNode, rightMachine, "right", viewMode, CANVAS_W, CANVAS_H, tooltipRef.current);
+            simRight = sim;
+            zoomRefs.current.right = zoom;
+        } else if (rightNode) {
+            d3.select(rightNode).selectAll("*").remove();
+            zoomRefs.current.right = null;
         }
 
         return () => {
             if (simLeft) simLeft.stop();
             if (simRight) simRight.stop();
             // Clear SVGs on unmount/re-render to prevent duplicate layers
-            if (leftSvgRef.current) d3.select(leftSvgRef.current).selectAll("*").remove();
-            if (rightSvgRef.current) d3.select(rightSvgRef.current).selectAll("*").remove();
+            if (leftNode) d3.select(leftNode).selectAll("*").remove();
+            if (rightNode) d3.select(rightNode).selectAll("*").remove();
         };
-    }, [leftMachine, rightMachine, viewMode]);
+    }, [leftMachine, rightMachine, viewMode, maximizedPane]);
+
+    const handleZoom = useCallback((pane: "left" | "right", dir: "in" | "out") => {
+        const svg = pane === "left" ? leftSvgRef.current : rightSvgRef.current;
+        const zoomFn = pane === "left" ? zoomRefs.current.left : zoomRefs.current.right;
+        if (!svg || !zoomFn) return;
+
+        const svgSelection = d3.select(svg);
+        const factor = dir === "in" ? 1.2 : 0.8;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        zoomFn.scaleBy(svgSelection.transition().duration(250) as any, factor);
+    }, []);
+
+    const handleReset = useCallback((pane: "left" | "right") => {
+        const svg = pane === "left" ? leftSvgRef.current : rightSvgRef.current;
+        const zoomFn = pane === "left" ? zoomRefs.current.left : zoomRefs.current.right;
+        if (!svg || !zoomFn) return;
+
+        const svgSelection = d3.select(svg);
+        const transform = d3.zoomIdentity.translate(50, 50).scale(0.8);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        zoomFn.transform(svgSelection.transition().duration(500) as any, transform);
+    }, []);
 
     return (
         <div className="flex flex-col h-full w-full relative bg-slate-50 dark:bg-slate-950">
@@ -76,19 +110,46 @@ export function AbstractMachineCompareD3({
                                     {leftMachine ? `Ops: ${leftMachine.diagram.operators.length} | Cons: ${leftMachine.diagram.constraints.length}` : 'No machine selected'}
                                 </span>
                             </div>
-                            <button
-                                onClick={() => setMaximizedPane(maximizedPane === "left" ? null : "left")}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors ml-2 shrink-0"
-                                title={maximizedPane === "left" ? "Restore split view" : "Maximize left panel"}
-                            >
-                                {maximizedPane === "left" ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                            </button>
+                            <div className="flex items-center">
+                                <button
+                                    onClick={() => handleReset("left")}
+                                    disabled={!leftMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30 mr-1"
+                                    title="Reset Graph"
+                                >
+                                    <Focus className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleZoom("left", "out")}
+                                    disabled={!leftMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30"
+                                    title="Zoom Out"
+                                >
+                                    <ZoomOut className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleZoom("left", "in")}
+                                    disabled={!leftMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30"
+                                    title="Zoom In"
+                                >
+                                    <ZoomIn className="w-4 h-4" />
+                                </button>
+                                <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+                                <button
+                                    onClick={() => setMaximizedPane(maximizedPane === "left" ? null : "left")}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0"
+                                    title={maximizedPane === "left" ? "Restore split view" : "Maximize left panel"}
+                                >
+                                    {maximizedPane === "left" ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
-                        <div className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-auto cursor-grab active:cursor-grabbing">
+                        <div className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-hidden cursor-grab active:cursor-grabbing">
                             {!leftMachine && (
                                 <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic pointer-events-none">Select a document</div>
                             )}
-                            <svg ref={leftSvgRef} className="block" style={{ width: CANVAS_W, height: CANVAS_H }} />
+                            <svg ref={leftSvgRef} className="block w-full h-full" />
                         </div>
                     </section>
                 )}
@@ -103,19 +164,46 @@ export function AbstractMachineCompareD3({
                                     {rightMachine ? `Ops: ${rightMachine.diagram.operators.length} | Cons: ${rightMachine.diagram.constraints.length}` : 'No machine selected'}
                                 </span>
                             </div>
-                            <button
-                                onClick={() => setMaximizedPane(maximizedPane === "right" ? null : "right")}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors ml-2 shrink-0"
-                                title={maximizedPane === "right" ? "Restore split view" : "Maximize right panel"}
-                            >
-                                {maximizedPane === "right" ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                            </button>
+                            <div className="flex items-center">
+                                <button
+                                    onClick={() => handleReset("right")}
+                                    disabled={!rightMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30 mr-1"
+                                    title="Reset Graph"
+                                >
+                                    <Focus className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleZoom("right", "out")}
+                                    disabled={!rightMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30"
+                                    title="Zoom Out"
+                                >
+                                    <ZoomOut className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleZoom("right", "in")}
+                                    disabled={!rightMachine}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0 disabled:opacity-30"
+                                    title="Zoom In"
+                                >
+                                    <ZoomIn className="w-4 h-4" />
+                                </button>
+                                <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+                                <button
+                                    onClick={() => setMaximizedPane(maximizedPane === "right" ? null : "right")}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors shrink-0"
+                                    title={maximizedPane === "right" ? "Restore split view" : "Maximize right panel"}
+                                >
+                                    {maximizedPane === "right" ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
-                        <div className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-auto cursor-grab active:cursor-grabbing">
+                        <div className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-hidden cursor-grab active:cursor-grabbing">
                             {!rightMachine && (
                                 <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic pointer-events-none">Select a document</div>
                             )}
-                            <svg ref={rightSvgRef} className="block" style={{ width: CANVAS_W, height: CANVAS_H }} />
+                            <svg ref={rightSvgRef} className="block w-full h-full" />
                         </div>
                     </section>
                 )}
@@ -367,6 +455,20 @@ function renderToSvg(
     const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
 
     const defs = svg.append("defs");
+    const zoomGroup = svg.append("g").attr("class", "d3-zoom-group");
+
+    // Initialize Zoom Behavior
+    const zoomBehavior = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", (e) => {
+            zoomGroup.attr("transform", e.transform);
+        });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    svg.call(zoomBehavior as any);
+
+    // Fit to available space by default
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    svg.call((zoomBehavior as any).transform, d3.zoomIdentity.translate(50, 50).scale(0.8));
 
     // Aesthetic Drop Shadow
     const filter = defs.append("filter")
@@ -416,7 +518,7 @@ function renderToSvg(
         svg.append("text").attr("class", "text-xs font-bold").attr("fill", labelColor).attr("x", 14).attr("y", 26).text("State transformations");
     }
 
-    const link = svg.append("g")
+    const link = zoomGroup.append("g")
         .attr("stroke", strokeColor)
         .attr("stroke-opacity", 0.65)
         .selectAll("path")
@@ -430,7 +532,7 @@ function renderToSvg(
         })
         .attr("marker-end", `url(#${regimeKey}-${viewKind}-arrow)`);
 
-    const g = svg.append("g").selectAll("g")
+    const g = zoomGroup.append("g").selectAll("g")
         .data(nodes)
         .join("g")
         .attr("class", "cursor-pointer transition-opacity duration-200");
@@ -597,7 +699,7 @@ function renderToSvg(
             if (tooltipEl) {
                 // Ensure tooltip stays on screen
                 let left = event.clientX + 15;
-                let top = event.clientY + 15;
+                const top = event.clientY + 15;
                 if (left + 300 > window.innerWidth) left = window.innerWidth - 320;
                 tooltipEl.style.left = left + "px";
                 tooltipEl.style.top = top + "px";
@@ -619,5 +721,5 @@ function renderToSvg(
         g.attr("transform", d => `translate(${(d as any).x},${(d as any).y})`);
     });
 
-    return sim;
+    return { sim, zoom: zoomBehavior };
 }

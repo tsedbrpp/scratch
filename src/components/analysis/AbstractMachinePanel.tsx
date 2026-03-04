@@ -2,7 +2,7 @@ import React from "react";
 import { AbstractMachineAnalysis } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Sparkles, AlertCircle, Quote } from "lucide-react";
+import { Download, Sparkles, AlertCircle, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AbstractMachinePanelProps {
@@ -12,8 +12,18 @@ interface AbstractMachinePanelProps {
 export function AbstractMachinePanel({ analysis }: AbstractMachinePanelProps) {
     if (!analysis) return null;
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(JSON.stringify(analysis, null, 2));
+    const saveAsJson = () => {
+        const dataStr = JSON.stringify(analysis, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        // Use a descriptive filename based on the current date
+        link.download = `abstract_machine_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -36,9 +46,9 @@ export function AbstractMachinePanel({ analysis }: AbstractMachinePanelProps) {
                         </div>
                     )}
                 </div>
-                <Button variant="outline" size="sm" onClick={copyToClipboard} className="flex gap-2">
-                    <Copy className="h-4 w-4" />
-                    Copy JSON
+                <Button variant="outline" size="sm" onClick={saveAsJson} className="flex gap-2">
+                    <Download className="h-4 w-4" />
+                    Save JSON
                 </Button>
             </div>
 

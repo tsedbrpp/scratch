@@ -11,7 +11,7 @@ async function run() {
         ]
     };
 
-    let res = await fetch('http://localhost:3000/api/analyze', {
+    const res = await fetch('http://localhost:3000/api/analyze', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

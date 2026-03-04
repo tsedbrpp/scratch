@@ -136,6 +136,12 @@ const NAV_GROUPS: NavGroup[] = [
                 icon: Users,
                 description: "Analyze counter-conduct and resistance.",
                 advancedOnly: true // [PD]
+            },
+            {
+                name: "Controversy Map",
+                href: "/controversies",
+                icon: Activity,
+                description: "Meta-Synthesis of consensus and active friction across all lenses."
             }
         ]
     },

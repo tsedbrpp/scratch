@@ -536,9 +536,10 @@ ${text}
             analysis: { abstract_machine: validMachine }
           });
 
-        } catch (err: any) {
-          console.error(`[ABSTRACT MACHINE] Attempt ${attempt} failed: ${err.message}`);
-          lastError = err.message;
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          console.error(`[ABSTRACT MACHINE] Attempt ${attempt} failed: ${errorMessage}`);
+          lastError = errorMessage;
           if (attempt === maxAttempts) {
             return NextResponse.json({ error: "Could not produce a valid, text-grounded abstract machine after retries.", details: lastError }, { status: 500 });
           }
@@ -644,7 +645,7 @@ ${text}
 
       // 1. Generate Global Hash from Excerpts + Actor
       // This ensures all users on the survey page get the identical cached analysis for the same data
-      const excerptNames = requestData.excerpts.map((e: any) => e.id).sort().join(',');
+      const excerptNames = requestData.excerpts.map((e: Record<string, unknown>) => typeof e.id === 'string' ? e.id : '').sort().join(',');
       const signaturePayload = `${requestData.actorName}:${requestData.title}:${excerptNames}:${requestData.challengeMode ? 'challenge' : 'standard'}`;
 
       const encoder = new TextEncoder();

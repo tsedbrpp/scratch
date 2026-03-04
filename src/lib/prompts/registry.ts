@@ -26,6 +26,7 @@ import { STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './structural-concern'
 import { ANTI_STRUCTURAL_CONCERN_SYSTEM_PROMPT_TEMPLATE } from './anti-structural-concern';
 import { STRUCTURAL_ESCALATION_SYSTEM_PROMPT_TEMPLATE } from './structural-escalation';
 import { ABSTRACT_MACHINE_PROMPT } from './abstract-machine';
+import { CONTROVERSY_MAPPING_SYSTEM_PROMPT_TEMPLATE } from './controversy-mapping';
 
 export interface PromptDefinition {
     id: string;
@@ -507,6 +508,20 @@ export const PROMPT_DEFINITIONS: Record<string, PromptDefinition> = {
         outputSchema: {
             format: 'json',
             requiredKeys: ['diagram', 'double_articulation', 'affective_capacities', 'limits']
+        }
+    },
+    'controversy_mapping': {
+        id: 'controversy_mapping',
+        name: 'Controversy Mapping',
+        description: 'Synthesizes points of consensus, friction, and structural contradictions across all 7 analytical strata.',
+        category: 'Analysis',
+        defaultValue: CONTROVERSY_MAPPING_SYSTEM_PROMPT_TEMPLATE,
+        version: '1.0.0',
+        lastUpdated: '2026-03-04',
+        changelog: ['Initial implementation of the 7-lens meta-synthesis prompt.'],
+        outputSchema: {
+            format: 'json',
+            requiredKeys: ['consensus_zones', 'active_frictions', 'structural_contradictions']
         }
     }
 };
