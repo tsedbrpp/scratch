@@ -67,6 +67,7 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
     // Draggable Logic
     // ... (unchanged) ...
     const [position, setPosition] = React.useState({ x: 0, y: 0 });
+    const [isDraggingUI, setIsDraggingUI] = React.useState(false);
     const isDragging = React.useRef(false);
     const dragStart = React.useRef({ x: 0, y: 0 });
     const startPos = React.useRef({ x: 0, y: 0 });
@@ -83,6 +84,7 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
         };
         const handleMouseUp = () => {
             isDragging.current = false;
+            setIsDraggingUI(false);
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -97,6 +99,7 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
         e.preventDefault();
         e.stopPropagation();
         isDragging.current = true;
+        setIsDraggingUI(true);
         dragStart.current = { x: e.clientX, y: e.clientY };
         startPos.current = { ...position };
     };
@@ -122,7 +125,7 @@ export const TranslationChain = React.memo(function TranslationChain({ actors = 
                 className="absolute bottom-4 left-4 w-[320px] bg-white/95 backdrop-blur-sm shadow-xl border-slate-200 z-20 overflow-hidden"
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px)`,
-                    transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+                    transition: isDraggingUI ? 'none' : 'transform 0.1s ease-out',
                     cursor: 'default'
                 }}
             >

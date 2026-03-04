@@ -67,7 +67,7 @@ export const EcosystemMap3D = ({
     const [isOverlayPinned, setIsOverlayPinned] = useState(false);
     const [performanceMode, setPerformanceMode] = useState(false);
     const frameTimes = useRef<number[]>([]);
-    const lastFrameTime = useRef<number>(Date.now());
+    const lastFrameTime = useRef<number>(0);
 
     // 1. Unified Links Memo
     const links = useMemo(() => {
@@ -167,7 +167,7 @@ export const EcosystemMap3D = ({
         } else {
             if (!isOverlayPinned) setSelectedNode(null);
         }
-    }, [selectedActorId, graphData.nodes]);
+    }, [selectedActorId, graphData.nodes, isOverlayPinned]);
 
     // 4. Data Mapping Effect
     useEffect(() => {
@@ -241,9 +241,10 @@ export const EcosystemMap3D = ({
     useEffect(() => {
         let animationFrameId: number;
         let bloomPass: any = null;
+        const fgInstance = fgRef.current;
 
-        if (isPresentationMode && !performanceMode && fgRef.current) {
-            const fg = fgRef.current;
+        if (isPresentationMode && !performanceMode && fgInstance) {
+            const fg = fgInstance;
             const scene = fg.scene();
             scene.fog = new THREE.FogExp2(0x0F172A, 0.002);
 
@@ -309,8 +310,8 @@ export const EcosystemMap3D = ({
         animate();
         return () => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            if (bloomPass && fgRef.current) {
-                const fg = fgRef.current;
+            if (bloomPass && fgInstance) {
+                const fg = fgInstance;
                 if (fg.postProcessingComposer) fg.postProcessingComposer().removePass(bloomPass);
             }
         };

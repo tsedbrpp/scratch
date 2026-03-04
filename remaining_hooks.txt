@@ -1,0 +1,63 @@
+C:\Users\mount\.gemini\antigravity\scratch\src\components\comparison\RhizomeNetwork.tsx
+  Line 250: React Hook useMemo has an unnecessary dependency: 'antMode'. Either exclude it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap3D.tsx
+  Line 70: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap3D.tsx:70:42
+  68 |     const [performanceMode, setPerformanceMode] = useState(false);
+  69 |     const frameTimes = useRef<number[]>([]);
+> 70 |     const lastFrameTime = useRef<number>(Date.now());
+     |                                          ^^^^^^^^^^ Cannot call impure function
+  71 |
+  72 |     // 1. Unified Links Memo
+  73 |     const links = useMemo(() => { (react-hooks/purity)
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx
+  Line 42: Error: Cannot access variable before it is declared
+
+`handleMouseUp` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx:42:49
+  40 |     const handleMouseUp = useCallback(() => {
+  41 |         document.removeEventListener('mousemove', handleMouseMove);
+> 42 |         document.removeEventListener('mouseup', handleMouseUp);
+     |                                                 ^^^^^^^^^^^^^ `handleMouseUp` accessed before it is declared
+  43 |         document.body.style.cursor = 'default';
+  44 |     }, [handleMouseMove]);
+  45 |
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx:40:5
+  38 |     }, []);
+  39 |
+> 40 |     const handleMouseUp = useCallback(() => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 41 |         document.removeEventListener('mousemove', handleMouseMove);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         document.removeEventListener('mouseup', handleMouseUp);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |         document.body.style.cursor = 'default';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |     }, [handleMouseMove]);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `handleMouseUp` is declared here
+  45 |
+  46 |     const handleMouseDown = (e: React.MouseEvent) => {
+  47 |         if (e.button !== 0) return; // Only left click (react-hooks/immutability)
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\v2\GhostNodeEvaluationForm.tsx
+  Line 37: React Hook "useEvaluationContext" is called conditionally. React Hooks must be called in the exact same order in every component render. (react-hooks/rules-of-hooks)
+  Line 43: The 'setActiveFieldId' logical expression could make the dependencies of useEffect Hook (at line 57) change on every render. To fix this, wrap the initialization of 'setActiveFieldId' in its own useMemo() Hook. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\components\resistance\VectorsForceGraph.tsx
+  Line 447: React Hook useEffect has a missing dependency: 'getLabel'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useCredits.ts
+  Line 38: React Hook useEffect has a missing dependency: 'fetchCredits'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useResistanceArtifacts.ts
+  Line 43: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+  Line 64: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+  Line 83: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useServerStorage.ts
+  Line 60: React Hook useEffect has a missing dependency: 'initialValue'. Either include it or remove the dependency array. If 'setStoredValue' needs the current value of 'initialValue', you can also switch to useReducer instead of useState and read 'initialValue' in the reducer. (react-hooks/exhaustive-deps)
+  Line 101: React Hook useCallback has an unnecessary dependency: 'currentWorkspaceId'. Either exclude it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useTeam.ts
+  Line 123: React Hook useEffect has a missing dependency: 'fetchTeamDetails'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+C:\Users\mount\.gemini\antigravity\scratch\src\providers\WorkspaceProvider.tsx
+  Line 114: React Hook useEffect has a missing dependency: 'fetchTeams'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)

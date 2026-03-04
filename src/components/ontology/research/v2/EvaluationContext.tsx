@@ -31,7 +31,7 @@ export interface EvaluationContextValue {
     jumpToTarget: (direction?: 'next' | 'first') => void;
 }
 
-const EvaluationContext = createContext<EvaluationContextValue | undefined>(undefined);
+export const EvaluationContext = createContext<EvaluationContextValue | undefined>(undefined);
 
 export function EvaluationProvider({
     children,

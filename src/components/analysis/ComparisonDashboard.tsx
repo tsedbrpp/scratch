@@ -31,6 +31,27 @@ interface ComparisonDashboardProps {
 
 export function ComparisonDashboard({ leftMachine, rightMachine, leftSource, rightSource, aiReport, onRegenerate, isRegenerating }: ComparisonDashboardProps) {
 
+    // 0. Process Data (Rules of Hooks require this before early returns)
+    const capacitiesData = useMemo(() => {
+        return aiReport?.comparison?.affective_capacities?.scores?.map((item: any) => ({
+            name: item.stakeholder,
+            Left: item.left_score,
+            Right: item.right_score,
+            confidence: item.confidence,
+            rationale: item.rationale
+        })) || [];
+    }, [aiReport?.comparison?.affective_capacities]);
+
+    const monteCarloData = useMemo(() => {
+        return (aiReport?.comparison as any)?.scenario_assessments?.simulations?.map((item: any) => ({
+            name: item.scenario,
+            Left: item.left_likelihood,
+            Right: item.right_likelihood,
+            confidence: item.confidence,
+            rationale: item.rationale
+        })) || [];
+    }, [aiReport?.comparison]);
+
     // 1. Loading State
     if (!aiReport && isRegenerating) {
         return (
@@ -76,26 +97,7 @@ export function ComparisonDashboard({ leftMachine, rightMachine, leftSource, rig
 
     // 4. Dashboard View
 
-    // Memoized Recharts Data Mapping
-    const capacitiesData = useMemo(() => {
-        return aiReport.comparison.affective_capacities?.scores?.map((item: any) => ({
-            name: item.stakeholder,
-            Left: item.left_score,
-            Right: item.right_score,
-            confidence: item.confidence,
-            rationale: item.rationale
-        })) || [];
-    }, [aiReport.comparison.affective_capacities]);
 
-    const monteCarloData = useMemo(() => {
-        return (aiReport.comparison as any).scenario_assessments?.simulations?.map((item: any) => ({
-            name: item.scenario,
-            Left: item.left_likelihood,
-            Right: item.right_likelihood,
-            confidence: item.confidence,
-            rationale: item.rationale
-        })) || [];
-    }, [aiReport.comparison]);
 
     const da = aiReport.comparison.double_articulation;
 
@@ -118,7 +120,7 @@ export function ComparisonDashboard({ leftMachine, rightMachine, leftSource, rig
         );
     };
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    const renderCustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
@@ -231,7 +233,7 @@ export function ComparisonDashboard({ leftMachine, rightMachine, leftSource, rig
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#334155" : "#e2e8f0"} />
                                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
                                 <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
-                                <RechartsTooltip position={{ y: 0 }} content={<CustomTooltip />} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
+                                <RechartsTooltip position={{ y: 0 }} content={renderCustomTooltip} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
                                 <Legend wrapperStyle={{ fontSize: '11px', color: isDarkMode ? '#cbd5e1' : '#475569' }} />
                                 <Bar dataKey="Left" name={leftSource?.title?.slice(0, 15) || "Left"} fill={L_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={100} isAnimationActive={false} />
                                 <Bar dataKey="Right" name={rightSource?.title?.slice(0, 15) || "Right"} fill={R_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={100} isAnimationActive={false} />
@@ -265,7 +267,7 @@ export function ComparisonDashboard({ leftMachine, rightMachine, leftSource, rig
                                     tickFormatter={(v: string) => v.length > 25 ? v.slice(0, 25) + '...' : v}
                                 />
                                 <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
-                                <RechartsTooltip position={{ y: 0 }} content={<CustomTooltip />} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
+                                <RechartsTooltip position={{ y: 0 }} content={renderCustomTooltip} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
                                 <Bar dataKey="Left" name={leftSource?.title?.slice(0, 15) || "Left"} fill={L_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={80} isAnimationActive={false} />
                                 <Bar dataKey="Right" name={rightSource?.title?.slice(0, 15) || "Right"} fill={R_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={80} isAnimationActive={false} />
                             </BarChart>

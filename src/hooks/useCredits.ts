@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDemoMode } from './useDemoMode';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 
@@ -8,7 +8,7 @@ export function useCredits() {
     const [loading, setLoading] = useState(true);
     const { isReadOnly } = useDemoMode();
 
-    const fetchCredits = async () => {
+    const fetchCredits = useCallback(async () => {
         if (isReadOnly) {
             setCredits(0);
             setLoading(false);
@@ -31,11 +31,11 @@ export function useCredits() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [isReadOnly, currentWorkspaceId]);
 
     useEffect(() => {
         fetchCredits();
-    }, [isReadOnly, currentWorkspaceId]);
+    }, [fetchCredits]);
 
     return {
         credits,

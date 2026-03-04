@@ -247,7 +247,7 @@ export function RhizomeNetwork({ network }: RhizomeNetworkProps) {
         });
 
         return { nodes, links };
-    }, [network, filterColor, antMode]); // Added antMode to force re-evaluation of data/props
+    }, [network, filterColor]);
 
     // Apply Radial Forces
     useEffect(() => {

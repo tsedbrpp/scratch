@@ -57,6 +57,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         return () => {
             isMounted = false;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, currentWorkspaceId, getHeaders, isReadOnly]);
 
     // Return a wrapped version of useState's setter function that ...
@@ -98,7 +99,7 @@ export function useServerStorage<T>(key: string, initialValue: T): [T, (value: T
         } catch (error) {
             console.error(`Error setting value for key "${key}":`, error);
         }
-    }, [key, currentWorkspaceId, getHeaders, isReadOnly, isDemoEnabled, isAuthLoaded]);
+    }, [key, getHeaders, isReadOnly, isDemoEnabled, isAuthLoaded]);
 
 
     return [storedValue, setValue, isLoading];

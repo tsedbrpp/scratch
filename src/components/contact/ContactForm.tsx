@@ -21,6 +21,7 @@ export function ContactForm() {
     useEffect(() => {
         if (state.success) {
             toast.success("Message sent successfully!");
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsSuccess(true);
         } else if (state.error) {
             toast.error(state.error);

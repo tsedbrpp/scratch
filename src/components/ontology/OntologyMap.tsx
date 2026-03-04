@@ -401,7 +401,7 @@ export function OntologyMap({
     return () => {
       simulation.stop();
     };
-  }, [d3Nodes, d3Links, selectedNodeId, onSelectNode, isFullScreen]); // Re-run when full screen toggles
+  }, [d3Nodes, d3Links, selectedNodeId, onSelectNode, isFullScreen, highlightNodeId]); // Re-run when full screen toggles
 
   // Helper to render the content (avoids code duplication between card and full screen)
   const renderMapContent = (containerClass: string, isFull: boolean) => (

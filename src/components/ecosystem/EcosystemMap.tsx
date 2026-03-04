@@ -420,7 +420,7 @@ export function EcosystemMap({
             const data = await response.json();
             if (data.analysis) { setExplanation(data.analysis); refetchCredits(); setIsLegendOpen(false); }
         } catch (error) { console.error("Explanation failed:", error); } finally { setIsExplaining(false); }
-    }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode, isReadOnly, creditsLoading, hasCredits, refetchCredits]);
+    }, [analysisMode, configurations, filteredActors, links, isNestedMode, is3DMode, isReadOnly, creditsLoading, hasCredits, refetchCredits, currentWorkspaceId]);
 
     const isActorRelevant = (actor: EcosystemActor, stageId: string | null) => {
         if (!stageId) return true;

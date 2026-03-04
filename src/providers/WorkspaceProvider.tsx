@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
@@ -79,7 +79,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, [isLoaded, userId, currentWorkspaceId]);
 
     // 2. Fetch Teams
-    const fetchTeams = async () => {
+    const fetchTeams = useCallback(async () => {
         if (!userId) return;
         setIsLoading(true);
         try {
@@ -105,13 +105,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [userId]);
 
     useEffect(() => {
         if (userId) {
             fetchTeams();
         }
-    }, [userId]);
+    }, [userId, fetchTeams]);
 
     // 3. Actions
     const switchWorkspace = (id: string) => {

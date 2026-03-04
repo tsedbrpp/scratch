@@ -16,6 +16,7 @@ export function RelationshipDetail({ relationship, onClose }: RelationshipDetail
 
     // [NEW] Draggable Logic
     const [offset, setOffset] = React.useState({ x: 0, y: 0 });
+    const [isDraggingUI, setIsDraggingUI] = React.useState(false);
     const isDragging = React.useRef(false);
     const startPos = React.useRef({ x: 0, y: 0 });
     const initialOffset = React.useRef({ x: 0, y: 0 });
@@ -32,6 +33,7 @@ export function RelationshipDetail({ relationship, onClose }: RelationshipDetail
         };
         const handleMouseUp = () => {
             isDragging.current = false;
+            setIsDraggingUI(false);
         };
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
@@ -44,6 +46,7 @@ export function RelationshipDetail({ relationship, onClose }: RelationshipDetail
     const handleMouseDown = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('button')) return; // Prevent drag when clicking close button
         isDragging.current = true;
+        setIsDraggingUI(true);
         startPos.current = { x: e.clientX, y: e.clientY };
         initialOffset.current = { ...offset };
         e.preventDefault();
@@ -52,7 +55,7 @@ export function RelationshipDetail({ relationship, onClose }: RelationshipDetail
     return (
         <div
             className="absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 animate-in slide-in-from-right-4 duration-300"
-            style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: isDragging.current ? 'none' : 'transform 0.1s ease-out' }}
+            style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: isDraggingUI ? 'none' : 'transform 0.1s ease-out' }}
         >
 
             {/* Header */}

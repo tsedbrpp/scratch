@@ -37,9 +37,9 @@ export function StudyNavigator({
         });
     }, []);
 
-    const handleMouseUp = useCallback(() => {
+    const handleMouseUp = useCallback(function handleMouseUpFn() {
         document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mouseup', handleMouseUpFn);
         document.body.style.cursor = 'default';
     }, [handleMouseMove]);
 

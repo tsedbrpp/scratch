@@ -430,6 +430,7 @@ export function GalaxyGraph({ highResistanceCount = 0 }: { highResistanceCount?:
         return () => {
             simulation.stop();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run ONCE on mount
 
     // Apply Display Classes and Filters Reactively

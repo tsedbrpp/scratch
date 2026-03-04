@@ -398,6 +398,7 @@ export function Sidebar() {
 
     // Handle hydration mismatch
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
 
         // [Task] Collapse on survey page entry

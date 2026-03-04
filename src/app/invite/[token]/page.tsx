@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
@@ -35,21 +35,7 @@ export default function AcceptInvitePage({ params }: PageProps) {
         params.then(p => setToken(p.token));
     }, [params]);
 
-    useEffect(() => {
-        if (!token) return;
-
-        // Redirect to login if not authenticated
-        if (isLoaded && !userId) {
-            router.push(`/sign-in?redirect_url=/invite/${token}`);
-            return;
-        }
-
-        if (isLoaded && userId) {
-            fetchInviteDetails();
-        }
-    }, [isLoaded, userId, token]);
-
-    const fetchInviteDetails = async () => {
+    const fetchInviteDetails = useCallback(async () => {
         if (!token) return;
 
         try {
@@ -74,7 +60,21 @@ export default function AcceptInvitePage({ params }: PageProps) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        if (!token) return;
+
+        // Redirect to login if not authenticated
+        if (isLoaded && !userId) {
+            router.push(`/sign-in?redirect_url=/invite/${token}`);
+            return;
+        }
+
+        if (isLoaded && userId) {
+            fetchInviteDetails();
+        }
+    }, [isLoaded, userId, token, router, fetchInviteDetails]);
 
     const handleAcceptInvite = async () => {
         if (!token) return;

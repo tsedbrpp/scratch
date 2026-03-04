@@ -90,7 +90,7 @@ export const AssemblageSuggester = React.memo(function AssemblageSuggester({ act
         } finally {
             setIsCalculating(false);
         }
-    }, [actors, edges]);
+    }, [actors, edges, configurations]);
 
     useEffect(() => {
         if (isOpen) {

@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Crosshair, Target, EyeOff, CheckSquare, AlertCircle, Circle, CircleDashed, CheckCircle2, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useEvaluationContext } from './EvaluationContext';
+import { EvaluationContext } from './EvaluationContext';
 
 interface GhostNodeEvaluationFormProps {
     config?: EvaluationConfig;
@@ -32,15 +32,11 @@ export function GhostNodeEvaluationForm({ config, initialData, surveyTitle, onCh
         feasibility: { min: 0, max: 100, anchors: [{ value: 0, label: "Not feasible" }, { value: 100, label: "Highly feasible" }], mechanismGateThreshold: 40, mechanismOptions: ["Public Hearings", "Citizen Suit"] }
     };
 
-    let contextVals;
-    try {
-        contextVals = useEvaluationContext();
-    } catch (e) {
-        contextVals = null;
-    }
+    const contextVals = React.useContext(EvaluationContext);
 
+    const defaultSetActive = React.useCallback(() => { }, []);
     const activeFieldId = contextVals?.activeFieldId || 'presenceGate';
-    const setActiveFieldId = contextVals?.setActiveFieldId || (() => { });
+    const setActiveFieldId = contextVals?.setActiveFieldId || defaultSetActive;
     const resolvedTargets = contextVals?.resolvedTargets || [];
     const jumpToTarget = contextVals?.jumpToTarget || (() => { });
     const focusMode = contextVals?.focusMode || null;

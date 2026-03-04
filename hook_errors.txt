@@ -1,0 +1,286 @@
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\app\invite\[token]\page.tsx ---
+Line 50: React Hook useEffect has missing dependencies: 'fetchInviteDetails' and 'router'. Either include them or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\Dashboard.tsx ---
+Line 30: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\Dashboard.tsx:30:9
+  28 |
+  29 |     useEffect(() => {
+> 30 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  31 |         fetch('/api/credits')
+  32 |             .then(res => res.json())
+  33 |             .then(data => setCredits(data.credits)) (react-hooks/set-state-in-effect)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\Sidebar.tsx ---
+Line 401: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\Sidebar.tsx:401:9
+  399 |     // Handle hydration mismatch
+  400 |     useEffect(() => {
+> 401 |         setIsMounted(true);
+      |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  402 |
+  403 |         // [Task] Collapse on survey page entry
+  404 |         if (pathname === '/survey') { (react-hooks/set-state-in-effect)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparativeAssemblageD3.tsx ---
+Line 456: The ref value 'svgRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'svgRef.current' to a variable inside the effect, and use that variable in the cleanup function. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx ---
+Line 80: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return? (react-hooks/rules-of-hooks)
+Line 90: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return? (react-hooks/rules-of-hooks)
+Line 234: Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx:234:80
+  232 |                                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
+  233 |                                 <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
+> 234 |                                 <RechartsTooltip position={{ y: 0 }} content={<CustomTooltip />} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
+      |                                                                                ^^^^^^^^^^^^^ This component is created during render
+  235 |                                 <Legend wrapperStyle={{ fontSize: '11px', color: isDarkMode ? '#cbd5e1' : '#475569' }} />
+  236 |                                 <Bar dataKey="Left" name={leftSource?.title?.slice(0, 15) || "Left"} fill={L_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={100} isAnimationActive={false} />
+  237 |                                 <Bar dataKey="Right" name={rightSource?.title?.slice(0, 15) || "Right"} fill={R_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={100} isAnimationActive={false} />
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx:121:27
+  119 |     };
+  120 |
+> 121 |     const CustomTooltip = ({ active, payload, label }: any) => {
+      |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 122 |         if (active && payload && payload.length) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 123 |             const data = payload[0].payload;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 148 |         return null;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 149 |     };
+      | ^^^^^^ The component is created during render here
+  150 |
+  151 |     return (
+  152 |         <div className="flex flex-col h-full overflow-y-auto space-y-6 pb-[400px]"> (react-hooks/static-components)
+Line 268: Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx:268:80
+  266 |                                 />
+  267 |                                 <YAxis domain={[0, 1]} tick={{ fontSize: 10, fill: isDarkMode ? "#94a3b8" : "#64748b" }} axisLine={false} tickLine={false} />
+> 268 |                                 <RechartsTooltip position={{ y: 0 }} content={<CustomTooltip />} cursor={{ fill: isDarkMode ? '#1e293b' : '#f1f5f9' }} wrapperStyle={{ zIndex: 1000, pointerEvents: "auto" }} />
+      |                                                                                ^^^^^^^^^^^^^ This component is created during render
+  269 |                                 <Bar dataKey="Left" name={leftSource?.title?.slice(0, 15) || "Left"} fill={L_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={80} isAnimationActive={false} />
+  270 |                                 <Bar dataKey="Right" name={rightSource?.title?.slice(0, 15) || "Right"} fill={R_BAR} radius={[2, 2, 0, 0]} label={renderCustomBarLabel} maxBarSize={80} isAnimationActive={false} />
+  271 |                             </BarChart>
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx:121:27
+  119 |     };
+  120 |
+> 121 |     const CustomTooltip = ({ active, payload, label }: any) => {
+      |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 122 |         if (active && payload && payload.length) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 123 |             const data = payload[0].payload;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 148 |         return null;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 149 |     };
+      | ^^^^^^ The component is created during render here
+  150 |
+  151 |     return (
+  152 |         <div className="flex flex-col h-full overflow-y-auto space-y-6 pb-[400px]"> (react-hooks/static-components)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\comparison\RhizomeNetwork.tsx ---
+Line 250: React Hook useMemo has an unnecessary dependency: 'antMode'. Either exclude it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\contact\ContactForm.tsx ---
+Line 24: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\contact\ContactForm.tsx:24:13
+  22 |         if (state.success) {
+  23 |             toast.success("Message sent successfully!");
+> 24 |             setIsSuccess(true);
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |         } else if (state.error) {
+  26 |             toast.error(state.error);
+  27 |         } (react-hooks/set-state-in-effect)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\AssemblageAnalysisView.tsx ---
+Line 460: React Hook "React.useState" is called conditionally. React Hooks must be called in the exact same order in every component render. (react-hooks/rules-of-hooks)
+Line 463: React Hook "React.useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. (react-hooks/rules-of-hooks)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\AssemblageSuggester.tsx ---
+Line 93: React Hook React.useCallback has a missing dependency: 'configurations'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap.tsx ---
+Line 423: React Hook React.useCallback has a missing dependency: 'currentWorkspaceId'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap3D.tsx ---
+Line 70: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap3D.tsx:70:42
+  68 |     const [performanceMode, setPerformanceMode] = useState(false);
+  69 |     const frameTimes = useRef<number[]>([]);
+> 70 |     const lastFrameTime = useRef<number>(Date.now());
+     |                                          ^^^^^^^^^^ Cannot call impure function
+  71 |
+  72 |     // 1. Unified Links Memo
+  73 |     const links = useMemo(() => { (react-hooks/purity)
+Line 170: React Hook useEffect has a missing dependency: 'isOverlayPinned'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+Line 313: The ref value 'fgRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'fgRef.current' to a variable inside the effect, and use that variable in the cleanup function. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\RelationshipDetail.tsx ---
+Line 55: Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\RelationshipDetail.tsx:55:88
+  53 |         <div
+  54 |             className="absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 animate-in slide-in-from-right-4 duration-300"
+> 55 |             style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, transition: isDragging.current ? 'none' : 'transform 0.1s ease-out' }}
+     |                                                                                        ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  56 |         >
+  57 |
+  58 |             {/* Header */} (react-hooks/refs)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\TranslationChain.tsx ---
+Line 125: Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\TranslationChain.tsx:125:33
+  123 |                 style={{
+  124 |                     transform: `translate(${position.x}px, ${position.y}px)`,
+> 125 |                     transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+      |                                 ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  126 |                     cursor: 'default'
+  127 |                 }}
+  128 |             > (react-hooks/refs)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\landing\GalaxyGraph.tsx ---
+Line 433: React Hook useEffect has missing dependencies: 'gravityStrength' and 'showLabels'. Either include them or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\landing\HeroGraph.tsx ---
+Line 32: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\landing\HeroGraph.tsx:32:9
+  30 |
+  31 |     useEffect(() => {
+> 32 |         setIsMounted(true);
+     |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |
+  34 |         // Generate "Assemblage" Clusters
+  35 |         // distinct territories (clusters) that have internal density but loose external couplings (react-hooks/set-state-in-effect)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\OntologyMap.tsx ---
+Line 404: React Hook useEffect has a missing dependency: 'highlightNodeId'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx ---
+Line 42: Error: Cannot access variable before it is declared
+
+`handleMouseUp` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx:42:49
+  40 |     const handleMouseUp = useCallback(() => {
+  41 |         document.removeEventListener('mousemove', handleMouseMove);
+> 42 |         document.removeEventListener('mouseup', handleMouseUp);
+     |                                                 ^^^^^^^^^^^^^ `handleMouseUp` accessed before it is declared
+  43 |         document.body.style.cursor = 'default';
+  44 |     }, [handleMouseMove]);
+  45 |
+
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\StudyNavigator.tsx:40:5
+  38 |     }, []);
+  39 |
+> 40 |     const handleMouseUp = useCallback(() => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 41 |         document.removeEventListener('mousemove', handleMouseMove);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         document.removeEventListener('mouseup', handleMouseUp);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |         document.body.style.cursor = 'default';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |     }, [handleMouseMove]);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `handleMouseUp` is declared here
+  45 |
+  46 |     const handleMouseDown = (e: React.MouseEvent) => {
+  47 |         if (e.button !== 0) return; // Only left click (react-hooks/immutability)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\v2\GhostNodeEvaluationForm.tsx ---
+Line 37: React Hook "useEvaluationContext" is called conditionally. React Hooks must be called in the exact same order in every component render. (react-hooks/rules-of-hooks)
+Line 43: The 'setActiveFieldId' logical expression could make the dependencies of useEffect Hook (at line 57) change on every render. To fix this, wrap the initialization of 'setActiveFieldId' in its own useMemo() Hook. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\components\resistance\VectorsForceGraph.tsx ---
+Line 447: React Hook useEffect has a missing dependency: 'getLabel'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useCredits.ts ---
+Line 38: React Hook useEffect has a missing dependency: 'fetchCredits'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useForceGraph.ts ---
+Line 286: React Hook useEffect has missing dependencies: 'links' and 'nodes'. Either include them or remove the dependency array. You can also do a functional update 'setNodes(n => ...)' if you only need 'nodes' in the 'setNodes' call. (react-hooks/exhaustive-deps)
+Line 310: Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useForceGraph.ts:310:12
+  308 |     }
+  309 |
+> 310 |     return { nodes, simulation: simulationRef.current, drag };
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  311 | }
+  312 | (react-hooks/refs)
+Line 310: Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useForceGraph.ts:310:33
+  308 |     }
+  309 |
+> 310 |     return { nodes, simulation: simulationRef.current, drag };
+      |                                 ^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  311 | }
+  312 | (react-hooks/refs)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useResistanceArtifacts.ts ---
+Line 43: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+Line 64: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+Line 83: React Hook useCallback has a missing dependency: 'getHeaders'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useServerStorage.ts ---
+Line 60: React Hook useEffect has a missing dependency: 'initialValue'. Either include it or remove the dependency array. If 'setStoredValue' needs the current value of 'initialValue', you can also switch to useReducer instead of useState and read 'initialValue' in the reducer. (react-hooks/exhaustive-deps)
+Line 101: React Hook useCallback has an unnecessary dependency: 'currentWorkspaceId'. Either exclude it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useTeam.ts ---
+Line 123: React Hook useEffect has a missing dependency: 'fetchTeamDetails'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)
+
+--- C:\Users\mount\.gemini\antigravity\scratch\src\providers\WorkspaceProvider.tsx ---
+Line 114: React Hook useEffect has a missing dependency: 'fetchTeams'. Either include it or remove the dependency array. (react-hooks/exhaustive-deps)

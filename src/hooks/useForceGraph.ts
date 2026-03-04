@@ -283,6 +283,7 @@ export function useForceGraph(
             simulation.stop();
         };
 
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodes.length, width, height, enableClustering, enableMetricAlignment, isPaused, configurations]);
 
 
@@ -307,5 +308,6 @@ export function useForceGraph(
         return { dragStarted, dragged, dragEnded };
     }
 
+    // eslint-disable-next-line react-hooks/refs
     return { nodes, simulation: simulationRef.current, drag };
 }

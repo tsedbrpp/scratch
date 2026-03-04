@@ -453,10 +453,6 @@ import { EcosystemConfiguration } from "@/types/ecosystem";
 function StressTestSimulator({ actors, config }: { actors: EcosystemActor[], config: EcosystemConfiguration }) {
     console.log('[StressTestDebug] Simulator received:', { actorCount: actors.length, config });
 
-    if (!config) {
-        return <div className="text-red-500 text-xs p-4">Error: Missing Assemblage Configuration</div>;
-    }
-
     const [excludedIds, setExcludedIds] = React.useState<string[]>([]);
 
     // Memoize Baseline

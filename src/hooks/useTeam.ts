@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
@@ -34,7 +34,7 @@ export const useTeam = () => {
     const currentUserRole = teamDetails?.members.find(m => m.userId === userId)?.role;
 
     // Fetch team details and members
-    const fetchTeamDetails = async () => {
+    const fetchTeamDetails = useCallback(async () => {
         if (!isTeamWorkspace || !currentWorkspaceId) {
             setTeamDetails(null);
             return;
@@ -64,7 +64,7 @@ export const useTeam = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isTeamWorkspace, currentWorkspaceId]);
 
     // Invite member
     const inviteMember = async (email: string, role: 'OWNER' | 'EDITOR' | 'VOTER' = 'EDITOR') => {
@@ -120,7 +120,7 @@ export const useTeam = () => {
     // Auto-fetch when workspace changes
     useEffect(() => {
         fetchTeamDetails();
-    }, [currentWorkspaceId, workspaceType]);
+    }, [fetchTeamDetails]);
 
     return {
         teamDetails,

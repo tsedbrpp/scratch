@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import * as d3 from "d3";
 import { Badge } from "@/components/ui/badge";
 import { Crosshair, FileText, Target, Zap, Maximize2, Minimize2, X, Activity, CheckCircle2, Download } from "lucide-react";
@@ -125,10 +125,10 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
         });
     }, [normalizedVectors, executiveSummary, narrativeContext]);
 
-    const getSnippet = (id: string) => vectorData.find(v => v.id === id)?.snippet || "";
-    const getLabel = (id: string) => vectorData.find(v => v.id === id)?.shortLabel || id.substring(0, 15) + "...";
-    const getSpecificIntensity = (id: string) => vectorData.find(v => v.id === id)?.intensityLabel || "Unknown";
-    const getSpecificTension = (id: string) => vectorData.find(v => v.id === id)?.tension || 0.5;
+    const getSnippet = useCallback((id: string) => vectorData.find(v => v.id === id)?.snippet || "", [vectorData]);
+    const getLabel = useCallback((id: string) => vectorData.find(v => v.id === id)?.shortLabel || id.substring(0, 15) + "...", [vectorData]);
+    const getSpecificIntensity = useCallback((id: string) => vectorData.find(v => v.id === id)?.intensityLabel || "Unknown", [vectorData]);
+    const getSpecificTension = useCallback((id: string) => vectorData.find(v => v.id === id)?.tension || 0.5, [vectorData]);
 
     const handleExport = () => {
         if (!svgRef.current) return;
@@ -444,7 +444,7 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
         drawGraph();
 
         return () => resizeObserver.disconnect();
-    }, [isFullScreen, normalizedVectors, selectedVector, monitoredVectors, vectorData]); // Added vectorData dependency
+    }, [isFullScreen, normalizedVectors, selectedVector, monitoredVectors, vectorData, getLabel]); // Added vectorData and getLabel dependency
 
     // Get selected vector data for sidebar
     const selectedData = selectedVector ? vectorData.find(v => v.id === selectedVector) : null;

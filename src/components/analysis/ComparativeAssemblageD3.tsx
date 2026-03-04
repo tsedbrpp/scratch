@@ -340,7 +340,7 @@ function renderMergedGraphSvg(
         }).iterations(3))
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .force("x", d3.forceX(d => ((d as any).xTargetFrac ?? 0.5) * W).strength(0.3))
-         
+
         .force("y", d3.forceY(d => laneY(d)).strength(0.6))
         .alphaDecay(0.02);
 
@@ -445,15 +445,16 @@ export function ComparativeAssemblageD3({ leftMachine, rightMachine }: { leftMac
     });
 
     useEffect(() => {
+        const svgElement = svgRef.current;
         let sim: d3.Simulation<d3.SimulationNodeDatum, undefined> | null = null;
-        if (svgRef.current && leftMachine && rightMachine) {
-            const out = renderMergedGraphSvg(svgRef.current, leftMachine, rightMachine, CANVAS_W, CANVAS_H, tooltipRef.current, filters);
+        if (svgElement && leftMachine && rightMachine) {
+            const out = renderMergedGraphSvg(svgElement, leftMachine, rightMachine, CANVAS_W, CANVAS_H, tooltipRef.current, filters);
             sim = out.sim;
             zoomFnRef.current = out.zoom;
         }
         return () => {
             if (sim) sim.stop();
-            if (svgRef.current) d3.select(svgRef.current).selectAll("*").remove();
+            if (svgElement) d3.select(svgElement).selectAll("*").remove();
         };
     }, [leftMachine, rightMachine, filters]);
 

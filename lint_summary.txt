@@ -1,13 +1,87 @@
-C:\Users\mount\.gemini\antigravity\scratch\scripts\migrate-ghost-nodes.ts
-34: Unexpected any. Specify a different type.
-36: Unexpected any. Specify a different type.
-55: Unexpected any. Specify a different type.
-104: Unexpected any. Specify a different type.
-C:\Users\mount\.gemini\antigravity\scratch\src\app\api\analyze\route.ts
-702: Unexpected any. Specify a different type.
-C:\Users\mount\.gemini\antigravity\scratch\src\app\ecosystem\page.tsx
-234: Unexpected any. Specify a different type.
-244: 'headers' is never reassigned. Use 'const' instead.
-251: Unexpected any. Specify a different type.
-271: Unexpected any. Specify a different type.
-604: Unexpected any. Specify a different type.
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\analyze\controversy-mapping\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\ecosystem\trajectory\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\enrich-actor\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\extract-file\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\governance\proposals\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\prompts\test\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\risk-summary\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\simulation\deterritorialization\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\simulation\territorialization\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\sources\[id]\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\api\webhooks\stripe\route.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\app\data\page.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\app\reflexivity\page.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\app\results\page.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\app\settings\prompts\page.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\AnalysisResults.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\AbstractMachineCompareD3.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\BlindSpotRenderer.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparativeAssemblageD3.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\CompareMachinesClient.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ComparisonDashboard.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\ControversyDashboard.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\FrictionGraph.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\abstractMachineDiff.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\components\analysis\abstractMachineNormalize.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\ActorCard.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\AssemblageAnalysisView.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\AssemblagePanel.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\AssociationDirectory.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\CodingView.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemMap3D.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemTable.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\EcosystemToolbar.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\GraphVisuals.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\OverlayDetails.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ecosystem\ReflexiveLog.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\governance\FrameworkRadar.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\governance\resolution-drawer\ActionStep.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\landing\GalaxyGraph.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\landing\HeroGraph.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\onboarding\OnboardingWizard.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\ConceptDetailsModal.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\v2\GhostNodeEvaluationForm.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\ontology\research\v2\StructuralAnalysisCard.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\LogicsVisualizer.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\MaterializeDialog.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\PolicyComparisonView.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\policy\analysis\VerifiedEvidenceSection.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\reflexivity\MultiLensAnalysis.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\resistance\ResistanceArtifactView.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\components\resistance\ResistanceVisualization.tsx
+C:\Users\mount\.gemini\antigravity\scratch\src\hooks\useForceGraph.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\audit.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\cache-utils.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\controversy-compression.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\ecosystem-utils.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\ghost-node-csv-export.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\ghost-nodes\__tests__\gndp-schemas.test.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\ghost-nodes\core.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\ghost-nodes\types.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\governance\escalation-service.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\governance\escalationRules.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\graph-utils.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\liberatory-calculator.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\link_merge_utils.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\logger.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\risk-calculator.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\search-service.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\storage-keys.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\store.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\structural-concern-service.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\study-config.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\survey\path-update.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\lib\transparency-utils.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\scripts\test-link-merge.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\services\mediatorAnalysis.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\services\transparency-service.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\types\ant.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\types\ontology.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\types\pdf-parse-fork.d.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\types\provenance.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\types\provisional.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\utils\blindSpotHelpers.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\utils\generateSynthesisPDF.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\utils\report\generator.ts
+C:\Users\mount\.gemini\antigravity\scratch\src\utils\report\sections\ecosystem.ts

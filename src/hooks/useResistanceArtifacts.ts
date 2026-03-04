@@ -8,7 +8,7 @@ export function useResistanceArtifacts() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const getHeaders = (base: HeadersInit = {}) => {
+    const getHeaders = useCallback((base: HeadersInit = {}) => {
         const headers = { ...base } as Record<string, string>;
         if (currentWorkspaceId) {
             headers['x-workspace-id'] = currentWorkspaceId;
@@ -17,7 +17,7 @@ export function useResistanceArtifacts() {
             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'demo-user';
         }
         return headers;
-    };
+    }, [currentWorkspaceId]);
 
     const loadArtifacts = useCallback(async () => {
         if (!currentWorkspaceId) return;
@@ -40,7 +40,7 @@ export function useResistanceArtifacts() {
         } finally {
             setIsLoading(false);
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, getHeaders]);
 
     const addArtifact = useCallback(async (artifactData: Omit<ResistanceArtifact, 'id' | 'uploaded_at' | 'uploaded_by'>) => {
         try {
@@ -61,7 +61,7 @@ export function useResistanceArtifacts() {
             console.error('Failed to add artifact:', err);
             throw err;
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, getHeaders]);
 
     const deleteArtifact = useCallback(async (id: string) => {
         try {
@@ -80,7 +80,7 @@ export function useResistanceArtifacts() {
             console.error('Failed to delete artifact:', err);
             throw err;
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, getHeaders]);
 
     // Initial load
     useEffect(() => {
