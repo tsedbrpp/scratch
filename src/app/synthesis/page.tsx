@@ -178,10 +178,54 @@ export default function SynthesisPage() {
             // Lazy load the heavy PDF generation library only when the user explicitly clicks Export
             const { generateSynthesisPDF } = await import("@/utils/generateSynthesisPDF");
 
+            let abstractMachines = null;
+            let controversyA = null;
+            let controversyB = null;
+
+            try {
+                const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                if (isReadOnly && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+                    headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+                } else if (localStorage.getItem('x-workspace-id')) {
+                    headers['x-workspace-id'] = localStorage.getItem('x-workspace-id') || '';
+                }
+
+                // 1. Fetch Abstract Machines Comparison
+                const amKey = `ai_compare_v2.1:${sourceA?.id}:${sourceB?.id}`;
+                const amResponse = await fetch(`/api/storage?key=${encodeURIComponent(amKey)}`, { headers });
+                if (amResponse.ok) {
+                    const data = await amResponse.json();
+                    if (data && data.value) abstractMachines = data.value;
+                }
+
+                // 2. Fetch Controversy Map A
+                if (sourceA?.id) {
+                    const contARes = await fetch(`/api/storage?key=${encodeURIComponent(`controversy_mapping_${sourceA.id}`)}`, { headers });
+                    if (contARes.ok) {
+                        const data = await contARes.json();
+                        if (data && data.value) controversyA = data.value;
+                    }
+                }
+
+                // 3. Fetch Controversy Map B
+                if (sourceB?.id) {
+                    const contBRes = await fetch(`/api/storage?key=${encodeURIComponent(`controversy_mapping_${sourceB.id}`)}`, { headers });
+                    if (contBRes.ok) {
+                        const data = await contBRes.json();
+                        if (data && data.value) controversyB = data.value;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch additional report data:", e);
+            }
+
             await generateSynthesisPDF(
                 comparisonResult,
                 sourceA?.title || "Source A",
-                sourceB?.title || "Source B"
+                sourceB?.title || "Source B",
+                abstractMachines,
+                controversyA,
+                controversyB
             );
         } catch (error) {
             console.error("Error generating PDF:", error);

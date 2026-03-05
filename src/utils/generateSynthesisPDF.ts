@@ -1,7 +1,14 @@
 import { jsPDF } from "jspdf";
 import { SynthesisComparisonResult } from "@/types/synthesis";
 
-export function generateSynthesisPDF(data: SynthesisComparisonResult, sourceA: string, sourceB: string) {
+export function generateSynthesisPDF(
+    data: SynthesisComparisonResult,
+    sourceA: string,
+    sourceB: string,
+    abstractMachines?: any,
+    controversyA?: any,
+    controversyB?: any
+) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -136,7 +143,77 @@ export function generateSynthesisPDF(data: SynthesisComparisonResult, sourceA: s
         });
     }
 
-    // 5. Verified Quotes
+    // 5. Abstract Machines Comparison
+    if (abstractMachines?.comparison?.double_articulation) {
+        addSection("Abstract Machines Comparison");
+
+        abstractMachines.comparison.double_articulation.forEach((art: any, index: number) => {
+            checkPageBreak(30);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 41, 59); // Slate-900
+            doc.text(`${index + 1}. ${art.stratum_name}`, margin, y);
+            y += 8;
+
+            addBox("Convergence", art.convergence, [220, 252, 231]);
+            addBox("Divergence", art.divergence, [219, 234, 254]);
+            addBox("Coloniality", art.colonial_asymmetry, [254, 226, 226]);
+            addBox("Resistance", art.resistance_potential, [243, 232, 255]);
+            addBox("Synthesis", art.synthesis, [248, 250, 252]);
+        });
+    }
+
+    // Helper: Add Controversy Map
+    const addControversyMap = (controversy: any, sourceName: string) => {
+        if (!controversy?.core_controversy) return;
+
+        addSection(`Controversy Map: ${sourceName}`);
+
+        // Overview
+        addBox("Core Dispute", controversy.core_controversy.description, [254, 243, 199]); // Amber-100
+        addBox("Stakes", controversy.core_controversy.stakes, [255, 255, 255]);
+
+        // Top Frictions
+        if (controversy.frictions && controversy.frictions.length > 0) {
+            y += 5;
+            checkPageBreak(15);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(50, 50, 50);
+            doc.text("High-Intensity Frictions:", margin, y);
+            y += 8;
+
+            controversy.frictions
+                .filter((f: any) => f.intensity === 'High')
+                .forEach((fric: any) => {
+                    checkPageBreak(25);
+
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(185, 28, 28); // Red-700
+                    doc.text(`• ${fric.name}`, margin + 2, y);
+                    y += 5;
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9);
+                    doc.setTextColor(71, 85, 105);
+                    const actorsText = `Primary Actors: ${fric.primary_actors.join(", ")}`;
+                    doc.text(doc.splitTextToSize(actorsText, contentWidth - 10), margin + 6, y);
+                    y += doc.splitTextToSize(actorsText, contentWidth - 10).length * 4 + 2;
+
+                    doc.setTextColor(15, 23, 42);
+                    const descText = fric.description;
+                    doc.text(doc.splitTextToSize(descText, contentWidth - 10), margin + 6, y);
+                    y += doc.splitTextToSize(descText, contentWidth - 10).length * 4 + 4;
+                });
+        }
+    };
+
+    // 6. Controversy Maps
+    addControversyMap(controversyA, sourceA);
+    addControversyMap(controversyB, sourceB);
+
+    // 7. Verified Quotes
     if (data.verified_quotes && data.verified_quotes.length > 0) {
         addSection("Verified Canonical Evidence");
         data.verified_quotes.forEach(quote => {
