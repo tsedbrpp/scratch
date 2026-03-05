@@ -1,43 +1,84 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Network, Globe, Users, BookOpen, Lightbulb, Microscope } from "lucide-react";
+import { Network, Globe, Users, BookOpen, Lightbulb, Microscope, FileText, Calendar } from "lucide-react";
+import { getAllPosts } from "@/lib/mdx";
+import Link from "next/link";
 
-export default function LiteraturePage() {
+// 1. Force Next.js to re-evaluate the page structure to find MDX files daily (or instantly on new deploys)
+export const revalidate = 86400;
+
+export default async function LiteraturePage() {
+    // 2. Fetch all published MDX articles
+    const posts = await getAllPosts("literature");
+
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-8">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-slate-900">Theoretical Framework & Literature Review</h1>
+                <h1 className="text-3xl font-bold text-slate-900">Theoretical Framework & Literature</h1>
                 <p className="text-slate-600 max-w-3xl">
-                    This module maps the theoretical underpinnings of the research, grounding the application's methodology in Assemblage Theory, Actor-Network Theory, hermeneutic design science, and decolonial computing.
+                    Explore our in-depth articles on methodology, or review the core theoretical underpinnings framing the InstantTea architecture.
                 </p>
             </div>
 
-            <Tabs defaultValue="assemblage" className="w-full">
-                <TabsList className="grid w-full grid-cols-6 bg-slate-100 p-1 rounded-lg">
+            <Tabs defaultValue="articles" className="w-full">
+                <TabsList className="grid w-full grid-cols-7 bg-slate-100 p-1 rounded-lg overflow-x-auto overflow-y-hidden">
+                    <TabsTrigger value="articles" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <FileText size={16} className="mr-2" /> Articles
+                    </TabsTrigger>
                     <TabsTrigger value="assemblage" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Network size={16} className="mr-2" /> Assemblage
+                        <Network size={16} className="mr-2 hidden sm:block" /> Assemblage
                     </TabsTrigger>
                     <TabsTrigger value="ant" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Microscope size={16} className="mr-2" /> ANT
+                        <Microscope size={16} className="mr-2 hidden sm:block" /> ANT
                     </TabsTrigger>
                     <TabsTrigger value="decolonial" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Globe size={16} className="mr-2" /> Decolonial
+                        <Globe size={16} className="mr-2 hidden sm:block" /> Decolonial
                     </TabsTrigger>
                     <TabsTrigger value="resistance" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Users size={16} className="mr-2" /> Resistance
+                        <Users size={16} className="mr-2 hidden sm:block" /> Resistance
                     </TabsTrigger>
                     <TabsTrigger value="hermeneutic" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Lightbulb size={16} className="mr-2" /> Hermeneutic
+                        <Lightbulb size={16} className="mr-2 hidden sm:block" /> Hermeneutic
                     </TabsTrigger>
                     <TabsTrigger value="policy" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <BookOpen size={16} className="mr-2" /> Policy
+                        <BookOpen size={16} className="mr-2 hidden sm:block" /> Policy
                     </TabsTrigger>
                 </TabsList>
 
                 <div className="mt-6 space-y-6">
+                    {/* DYNAMIC CMS ARTICLES */}
+                    <TabsContent value="articles" className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {posts.length === 0 ? (
+                                <div className="col-span-full p-8 border-2 border-dashed rounded-lg text-center text-slate-500">
+                                    No articles published yet. Add .mdx files to src/content/literature.
+                                </div>
+                            ) : (
+                                posts.map((post) => (
+                                    <Link href={`/literature/${post.slug}`} key={post.slug} className="group">
+                                        <Card className="h-full hover:shadow-md transition-shadow cursor-pointer bg-white border-slate-200">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {post.frontmatter.date}</span>
+                                                    <Badge variant="outline" className="font-normal text-slate-500">{post.frontmatter.author}</Badge>
+                                                </div>
+                                                <CardTitle className="group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
+                                                    {post.frontmatter.title}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <CardDescription className="line-clamp-3 text-slate-600">
+                                                    {post.frontmatter.description}
+                                                </CardDescription>
+                                            </CardContent>
+                                        </Card>
+                                    </Link>
+                                ))
+                            )}
+                        </div>
+                    </TabsContent>
+
                     {/* Assemblage Theory */}
                     <TabsContent value="assemblage" className="space-y-6">
                         <Card>

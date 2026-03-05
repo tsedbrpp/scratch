@@ -1,7 +1,8 @@
 
 import { MetadataRoute } from 'next';
+import { getAllPosts } from '@/lib/mdx';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://instanttea.com';
 
     // Only include publicly accessible pages (no auth required)
@@ -20,12 +21,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
             { path: '/pricing', changeFrequency: 'monthly', priority: 0.8 },
             { path: '/login', changeFrequency: 'monthly', priority: 0.4 },
             { path: '/sign-up', changeFrequency: 'monthly', priority: 0.6 },
+            { path: '/literature', changeFrequency: 'weekly', priority: 0.8 },
         ];
 
-    return routes.map((route) => ({
-        url: `${baseUrl}${route.path}`,
-        lastModified: new Date(),
-        changeFrequency: route.changeFrequency,
-        priority: route.priority,
+    const literaturePosts = await getAllPosts('literature');
+    const dynamicRoutes: MetadataRoute.Sitemap = literaturePosts.map((post) => ({
+        url: `${baseUrl}/literature/${post.slug}`,
+        lastModified: new Date(post.frontmatter.date),
+        changeFrequency: 'monthly',
+        priority: 0.7,
     }));
+
+    return [
+        ...routes.map((route) => ({
+            url: `${baseUrl}${route.path}`,
+            lastModified: new Date(),
+            changeFrequency: route.changeFrequency,
+            priority: route.priority,
+        })),
+        ...dynamicRoutes
+    ];
 }
