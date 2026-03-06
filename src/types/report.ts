@@ -31,13 +31,14 @@ export interface ReportData {
     };
     cultural?: CulturalAnalysisResult | null;
     theoreticalSynthesis?: string;
+    teaAnalysis?: import('./index').TEAAnalysis;
     logs?: MethodLog[];
     resistanceArtifacts?: ResistanceArtifact[];
     images?: {
         governanceCompass?: string;
         ecosystemMap?: string;
         ontologyMap?: string;
-        riskHeatmap?: string;
+        teaDiagram?: string;
         // visualNetwork?: string; // Add more as needed
     };
 }

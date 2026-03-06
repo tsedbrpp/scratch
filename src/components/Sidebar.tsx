@@ -99,10 +99,10 @@ const NAV_GROUPS: NavGroup[] = [
                 description: "Compare abstract machines, double articulations, and state capture."
             },
             {
-                name: "Dynamics & Mobilities",
-                href: "/comparison",
-                icon: ArrowLeftRight,
-                description: "Trace policy translations and mobilities."
+                name: "Translation-Embedding Account (TEA)",
+                href: "/tea-analysis",
+                icon: Network,
+                description: "Map how portable vocabularies embed into durable institutional infrastructures."
             },
             {
                 name: "Cultural Framing",

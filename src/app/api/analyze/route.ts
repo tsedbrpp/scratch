@@ -67,10 +67,8 @@ export async function POST(request: NextRequest) {
     const { text, sourceType, analysisMode, sourceA, sourceB, sourceC, force, documents, documentId, title, positionality, lens, mode, checkCacheOnly, assemblageId } = requestData;
     console.log(`[ANALYSIS] Received request. Context: ${contextId}, Text length: ${text?.length || 0}, Mode: ${analysisMode}, TheoryMode: ${mode}, Force: ${force}, DocID: ${documentId}, AssemblageID: ${assemblageId}, Positionality: ${!!positionality}, CheckCacheOnly: ${!!checkCacheOnly}`);
 
-    // [NEW] BLOCK READ-ONLY DEMO USERS (unless they're only checking cache)
-    if (!checkCacheOnly && await isReadOnlyAccess()) {
-      return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate analysis." }, { status: 403 });
-    }
+    // We removed early block for Read-Only Demo users here so they can hit the cache.
+    // It is enforced below on cache misses.
 
     // --- CACHING LOGIC HOP (Moved Up) ---
     console.log('[ANALYSIS] Starting cache check...');
@@ -170,8 +168,12 @@ export async function POST(request: NextRequest) {
       console.warn('Redis cache read failed:', cacheError);
     }
 
-    // --- PAYWALL / RATE LIMIT (Only if Cache Miss) ---
-    if (!cachedAnalysis) { // Should always be true here if we didn't return above
+    // --- PAYWALL / RATE LIMIT / DEMO BLOCK (Only if Cache Miss) ---
+    if (!cachedAnalysis) {
+      if (await isReadOnlyAccess()) {
+        return NextResponse.json({ error: "Demo Mode is Read-Only. Sign in to generate new analysis." }, { status: 403 });
+      }
+
       // Rate limit check uses Real User ID (UserId), not ContextId, as quotas are per-user
       const rateLimit = await checkRateLimit(userId);
       if (!rateLimit.success) {
@@ -419,7 +421,7 @@ export async function POST(request: NextRequest) {
 
 
 
-    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis' && analysisMode !== 'escalation_evaluation' && analysisMode !== 'structural_concern') {
+    if ((!text || text.length < 50) && analysisMode !== 'comparative_synthesis' && analysisMode !== 'resistance_synthesis' && analysisMode !== 'comparison' && analysisMode !== 'ontology_comparison' && analysisMode !== 'critique' && analysisMode !== 'assemblage_explanation' && analysisMode !== 'theoretical_synthesis' && analysisMode !== 'escalation_evaluation' && analysisMode !== 'structural_concern' && analysisMode !== 'tea_analysis') {
       console.warn(`[ANALYSIS] Rejected request with insufficient text length: ${text?.length || 0}`);
       return NextResponse.json(
         { error: 'Insufficient text content. Please ensure the document has text (not just images) and try again.' },
@@ -585,20 +587,84 @@ ${text}
         `;
 
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o", // Strong model for theory
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "You are a senior STS (Science and Technology Studies) scholar." },
           { role: "user", content: prompt }
         ],
-        max_completion_tokens: 4000
+        max_tokens: 4000
       });
 
-      const resultText = completion.choices[0].message.content || "Failed to generate synthesis.";
+      const choice = completion.choices[0];
+      const resultText = choice.message?.content || `Failed to generate synthesis. (Reason: ${choice.finish_reason || 'unknown'})`;
+
+      console.log("THEORETICAL SYNTHESIS COMPLETION:", JSON.stringify(choice));
+      console.log("THEORETICAL SYNTHESIS RESULT TEXT:", resultText);
 
       return NextResponse.json({
         success: true,
         analysis: { theoretical_synthesis: resultText }
       });
+    }
+
+    // [Feature] Translation-Embedding Account (TEA) Extraction
+    if (analysisMode === 'tea_analysis') {
+      if (!openai) {
+        return NextResponse.json({ error: "OpenAI API Key required for TEA Analysis" }, { status: 500 });
+      }
+
+      console.log('[ANALYSIS] Mode is TEA.');
+      const reportContext = requestData.reportContext || JSON.stringify(requestData.docText || "").substring(0, 10000);
+
+      const prompt = `
+        You are an expert socio-technical theorist specializing in the Translation-Embedding Account (TEA).
+        Your task is to analyze the provided Policy Analysis Findings and extract the TEA diagram structure.
+        
+        INPUT DATA:
+        ${reportContext}
+        
+        INSTRUCTIONS:
+        CRITICAL: The INPUT DATA contains a "ant_assemblage_synthesis_report". You MUST read this theoretical synthesis narrative first, and use its conclusions as the primary foundational logic for mapping the TEA Diagram below.
+        CRITICAL: You MUST explicitly EXCLUDE any analysis of the United States (US). You MUST focus ONLY on the jurisdictions of Brazil, the European Union (EU), and India. Ensure local translations exist explicitly for these three jurisdictions.
+        
+        Output a strict JSON object mapping the text to the TEA framework:
+        1. "vocabularies": Array of objects { id, term, description } (Portable Governance Vocabularies like "risk", "impact assessment")
+        2. "translations": Array of objects { id, jurisdiction, referential_drift: string[], description }
+        3. "embedding_infrastructures": Array of objects { id, name, description } (Embedding Infrastructures like "audits", "standards")
+        4. "apex_nodes": Array of objects { id, name, function: string[] } (e.g. "AI Office")
+        5. "contestations": Array of objects { id, type: "counter_translation" | "sedimentation", description, examples: string[] }. CRITICAL: You MUST extract instances of "sedimentation" (where categories become normalized/entrenched) as well as "counter_translation".
+        6. "stratified_legibility": Object { highly_legible: string[], weakly_legible: string[], description }
+        7. "short_summary": A very brief 2-sentence executive summary of the TEA dynamics suitable for a UI header.
+        8. "propositions": Array of objects { id, proposition, evidence, support_level }. Evaluate the text against these 5 TEA Propositions:
+           - Prop 1: The more portable a governance term is, the more likely it is to diffuse transnationally, but the less likely it is to retain a stable substantive referent across jurisdictions.
+           - Prop 2: Jurisdictions adopting the same governance vocabulary may nonetheless construct different governance objects when local translation anchors those terms in different political rationalities, legal traditions, or administrative priorities.
+           - Prop 3: Translated governance categories become institutionally durable when they are embedded in compliance infrastructures such as standards, audits, registries, certification systems, and reporting routines.
+           - Prop 4: The more governance is mediated through embedded compliance infrastructures, the more likely it is that authority and visibility will shift toward actors capable of defining, interpreting, and satisfying infrastructural requirements.
+           - Prop 5: Counter-translation is most likely to emerge where embedded governance infrastructures systematically fail to render certain actors, harms, or claims legible within prevailing categories.
+           For each, define support_level as: "strong", "moderate", "weak", or "insufficient".
+        9. "raw_synthesis_text": A concise paragraph explaining the full TEA dynamics.
+      `;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You output strict JSON following the TEA schema exactly." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 4000
+      });
+
+      const content = completion.choices[0].message?.content;
+      if (!content) throw new Error("Blank response from OpenAI");
+
+      try {
+        const teaData = JSON.parse(content);
+        return NextResponse.json({ tea_analysis: teaData }, { status: 200 });
+      } catch (e) {
+        console.error("Failed to parse TEA JSON", e);
+        return NextResponse.json({ error: "Failed to parse TEA JSON" }, { status: 500 });
+      }
     }
 
     // [New] Pattern Sentinel (Escalation Evaluation)

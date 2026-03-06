@@ -156,7 +156,7 @@ export interface AnalysisResult {
         deterritorialization: string;
         coding: string;
     };
-    abstract_machine?: AbstractMachineAnalysis;
+    tea_analysis?: import('./tea').TEAAnalysis;
     // Cultural Framing fields
     state_market_society?: string;
     technology_role?: string;
@@ -505,3 +505,5 @@ export interface ResistanceSynthesisResult {
     implications_for_policy?: string; // Legacy optional
     emerging_themes?: string[]; // Legacy optional
 }
+
+export * from './tea';

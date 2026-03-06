@@ -31,8 +31,15 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
 import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
 import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
 import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
+import { HiddenExportVisuals } from "@/components/data/HiddenExportVisuals";
+import {
+    Dialog,
+    DialogContent,
+} from "@/components/ui/dialog";
 
 import { PolicyFocusView } from "@/components/policy/PolicyFocusView";
+import { TEADiagram } from "@/components/policy/TEADiagram";
+import { TEAAnalysis } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
@@ -56,7 +63,7 @@ function PolicyDocumentsPageContent() {
     // 1. Hooks & State
     // ----------------------------------------------------------------------
     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
-    const { isReadOnly } = useDemoMode();
+    const { isReadOnly, isDemoEnabled } = useDemoMode();
     const { hasCredits } = useCredits();
     const { currentUserRole } = useTeam();
 
@@ -76,6 +83,7 @@ function PolicyDocumentsPageContent() {
         dsf: null, cultural_framing: null, institutional_logics: null, legitimacy: null
     });
     const [multiLensText] = useServerStorage<string>("multi_lens_text", "");
+    const [teaAnalysis, setTeaAnalysis] = useServerStorage<TEAAnalysis | null>("tea_analysis_result", null);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -87,6 +95,7 @@ function PolicyDocumentsPageContent() {
 
     const [isUploading, setIsUploading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [reportDataForExport, setReportDataForExport] = useState<any | null>(null);
     const [isGeneratingTheory, setIsGeneratingTheory] = useState(false);
     const [viewingSource, setViewingSource] = useState<Source | null>(null);
     const [editingSource, setEditingSource] = useState<Source | null>(null);
@@ -96,6 +105,7 @@ function PolicyDocumentsPageContent() {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
+    const [theoreticalSynthesis, setTheoreticalSynthesis] = useServerStorage<string | null>("theoretical_synthesis", null);
     const [showTopUp, setShowTopUp] = useState(false);
 
     // Deep Linking Support
@@ -505,18 +515,7 @@ function PolicyDocumentsPageContent() {
     };
 
     const handleGenerateReport = async (selection: ReportSectionSelection) => {
-        if (isReadOnly) {
-            alert("Report generation is disabled in Demo Mode.");
-            return;
-        }
-
-        // Check credits before starting
-        if (!hasCredits) {
-            setIsExportReportDialogOpen(false); // Close export dialog first
-            alert("⚠️ You have no credits remaining.\n\nReport generation requires credits for AI analysis. Please add credits to continue.");
-            setShowTopUp(true);
-            return;
-        }
+        /* [REMOVED] Demo mode and credit checks for testing purposes */
 
         setIsExporting(true);
         try {
@@ -574,28 +573,8 @@ function PolicyDocumentsPageContent() {
         const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
         const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
 
-        // Capture Charts if visible
-        const images: Record<string, string> = {};
-
-        try {
-            const { default: html2canvas } = await import("html2canvas");
-            const compassEl = document.getElementById('governance-compass-chart');
-            if (compassEl) images.governanceCompass = (await html2canvas(compassEl, { scale: 2, useCORS: true, logging: false })).toDataURL('image/png');
-        } catch (e) { console.warn("Compass capture failed", e); }
-
-        try {
-            const { default: html2canvas } = await import("html2canvas");
-            const riskEl = document.getElementById('risk-heatmap-chart');
-            if (riskEl) images.riskHeatmap = (await html2canvas(riskEl, { scale: 2, logging: false })).toDataURL('image/png');
-        } catch (e) { console.warn("Risk heatmap capture failed", e); }
-
-        try {
-            const { default: html2canvas } = await import("html2canvas");
-            const ecoEl = document.getElementById('ecosystem-map-canvas');
-            if (ecoEl) images.ecosystemMap = (await html2canvas(ecoEl, { scale: 2, logging: false })).toDataURL('image/png');
-        } catch (e) { console.warn("Ecosystem map capture failed", e); }
-
-        return {
+        // 1. Temporarily save the data so the hidden charts can render it
+        const buildData = {
             sources: sources,
             resistance: resistanceSynthesis,
             ecosystem: {
@@ -618,10 +597,66 @@ function PolicyDocumentsPageContent() {
             },
             cultural: culturalAnalysis,
             resistanceArtifacts: resistanceArtifacts,
+            logs: methodLogs,
+            teaAnalysis: teaAnalysis || undefined,
+            theoreticalSynthesis: theoreticalSynthesis || undefined
+        };
+        setReportDataForExport(buildData);
+
+        // 2. WAIT briefly to allow React, Recharts, and D3 to mount their SVGs into the off-screen DOM
+        await new Promise(r => setTimeout(r, 2500));
+
+        // 3. Capture Charts natively using html-to-image (fully supports modern CSS and OKLCH)
+        const images: Record<string, string> = {};
+
+        try {
+            const htmlToImage = await import("html-to-image");
+            const compassEl = document.getElementById('governance-compass-chart');
+            if (compassEl) {
+                images.governanceCompass = await htmlToImage.toPng(compassEl, { pixelRatio: 2, backgroundColor: '#ffffff' });
+            }
+        } catch (e) {
+            console.warn("Compass capture failed", e);
+        }
+
+        try {
+            const htmlToImage = await import("html-to-image");
+            const ecoEl = document.getElementById('ecosystem-map-canvas');
+            if (ecoEl) {
+                images.ecosystemMap = await htmlToImage.toPng(ecoEl, { pixelRatio: 2, backgroundColor: '#ffffff' });
+            }
+        } catch (e) {
+            console.warn("Ecosystem map capture failed", e);
+        }
+
+        try {
+            const htmlToImage = await import("html-to-image");
+            const ontEl = document.getElementById('ontology-map-canvas');
+            if (ontEl) {
+                images.ontologyMap = await htmlToImage.toPng(ontEl, { pixelRatio: 2, backgroundColor: '#ffffff' });
+            }
+        } catch (e) {
+            console.warn("Ontology map capture failed", e);
+        }
+
+        try {
+            const htmlToImage = await import("html-to-image");
+            const teaEl = document.getElementById('tea-diagram-export');
+            if (teaEl) {
+                images.teaDiagram = await htmlToImage.toPng(teaEl, { pixelRatio: 2, backgroundColor: '#ffffff' });
+            }
+        } catch (e) {
+            console.warn("TEA Diagram capture failed", e);
+        }
+
+        setReportDataForExport(null); // Clear the big tree from memory
+
+        return {
             images: images,
-            logs: methodLogs
+            ...buildData
         };
     };
+
     const handleGenerateTheory = async () => {
         // Check credits before starting
         if (!hasCredits) {
@@ -691,9 +726,12 @@ function PolicyDocumentsPageContent() {
             const hasStructuralData = contextForAI.synthesis || (contextForAI.resistance?.dominant_strategies?.length > 0);
 
             if (!hasStructuralData) {
-                console.log("No synthesis found in full snapshot, falling back to individual summaries");
-                // Need to filter sources from reportData
-                const fallbackData = reportData.sources.filter(s => s.analysis).map(s => ({
+                // Filter sources by user selection if any are checked
+                const activeSources = selectedIds.length > 0
+                    ? reportData.sources.filter(s => selectedIds.includes(s.id))
+                    : reportData.sources;
+
+                const fallbackData = activeSources.filter(s => s.analysis).map(s => ({
                     title: s.title,
                     key_insight: s.analysis?.key_insight,
                     governance_style: s.analysis?.governance_scores
@@ -706,28 +744,46 @@ function PolicyDocumentsPageContent() {
                 });
             }
 
-            // 3. Call API
+            // 3. Call APIs in Parallel
             let theoreticalSynthesis = null;
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    analysisMode: 'theoretical_synthesis',
-                    reportContext: context
-                })
-            });
+            let teaAnalysisData = null;
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log("Theoretical synthesis received:", data.analysis?.theoretical_synthesis?.substring(0, 50) + "...");
-                theoreticalSynthesis = data.analysis?.theoretical_synthesis;
-            } else {
-                const errorText = await response.text();
-                console.error("API Error Details:", response.status, errorText);
-                throw new Error(`API failed (${response.status}): ${errorText.substring(0, 200)}`);
+            const [theoryResponse, teaResponse] = await Promise.all([
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ analysisMode: 'theoretical_synthesis', reportContext: context })
+                }),
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ analysisMode: 'tea_analysis', reportContext: context })
+                })
+            ]);
+
+            if (!theoryResponse.ok) {
+                console.error("Theory API Error:", await theoryResponse.text());
+                throw new Error(`Theory API failed (${theoryResponse.status})`);
+            }
+            if (!teaResponse.ok) {
+                console.error("TEA API Error:", await teaResponse.text());
+                throw new Error(`TEA API failed (${teaResponse.status})`);
             }
 
-            if (!theoreticalSynthesis) throw new Error("No synthesis returned");
+            const theoryData = await theoryResponse.json();
+            const teaData = await teaResponse.json();
+
+            theoreticalSynthesis = theoryData.analysis?.theoretical_synthesis;
+            teaAnalysisData = teaData.tea_analysis;
+
+            console.log("Theoretical synthesis received:", theoreticalSynthesis?.substring(0, 50) + "...");
+            console.log("TEA synthesis received:", teaAnalysisData?.raw_synthesis_text?.substring(0, 50) + "...");
+
+            // Note: The DOCX generator will now need both of these.
+            setTeaAnalysis(teaAnalysisData);
+            setTheoreticalSynthesis(theoreticalSynthesis);
+
+            if (!theoreticalSynthesis && !teaAnalysisData) throw new Error("No synthesis returned");
 
             // 4. Generate Report (Only Theory)
             const theorySelection: ReportSectionSelection = {
@@ -746,8 +802,27 @@ function PolicyDocumentsPageContent() {
                 theoreticalSynthesis: true
             };
 
-            // Inject the new synthesis into the report data
+            // Inject the new synthesis into the report data (using the structured object)
             reportData.theoreticalSynthesis = theoreticalSynthesis;
+            reportData.teaAnalysis = teaAnalysisData;
+
+            // --- IMAGE CAPTURE ROUTINE ---
+            setReportDataForExport(reportData);
+            await new Promise(r => setTimeout(r, 2000)); // Wait for render
+
+            const images: Record<string, string> = { ...reportData.images };
+            try {
+                const htmlToImage = await import("html-to-image");
+                const teaEl = document.getElementById('tea-diagram-export');
+                if (teaEl) {
+                    images.teaDiagram = await htmlToImage.toPng(teaEl, { pixelRatio: 2, backgroundColor: '#ffffff' });
+                }
+            } catch (e) {
+                console.warn("TEA Diagram capture failed", e);
+            }
+            reportData.images = images;
+            setReportDataForExport(null);
+            // -----------------------------
 
             // Lazy Load the huge DOCX generator
             const { generateFullReportDOCX } = await import("@/utils/generateFullReportDOCX");
@@ -836,6 +911,24 @@ function PolicyDocumentsPageContent() {
                         </FileDropZone>
                     )}
                 </TabsContent>
+
+                <TabsContent value="resistance" className="space-y-4 h-full">
+                    {selectedArtifact ? (
+                        <ResistanceArtifactView
+                            artifact={selectedArtifact}
+                            onBack={() => setSelectedArtifact(null)}
+                            onUpdate={(updated) => setSelectedArtifact(updated)}
+                        />
+                    ) : (
+                        <ArtifactRepository
+                            onSelectArtifact={(artifact) => setSelectedArtifact(artifact)}
+                        />
+                    )}
+                </TabsContent>
+
+                <TabsContent value="compare" className="space-y-4">
+                    <PolicyComparisonView sources={selectedSources} />
+                </TabsContent>
             </Tabs>
 
             {/* Dialogs */}
@@ -843,6 +936,11 @@ function PolicyDocumentsPageContent() {
                 open={isAddDialogOpen}
                 onOpenChange={setIsAddDialogOpen}
                 onAdd={handleAddSource}
+            />
+
+            <HiddenExportVisuals
+                data={reportDataForExport as any}
+                isExporting={isExporting || isGeneratingTheory}
             />
 
             <AddUrlDialog

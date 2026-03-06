@@ -219,13 +219,30 @@ export default function SynthesisPage() {
                 console.error("Failed to fetch additional report data:", e);
             }
 
+            let amChartImage = null;
+
+            // Attempt to screenshot the Abstract Machine D3 graphic
+            const amChartElement = document.getElementById("abstract-machine-d3-container");
+            if (amChartElement) {
+                try {
+                    const htmlToImage = await import("html-to-image");
+                    amChartImage = await htmlToImage.toPng(amChartElement, {
+                        pixelRatio: 2, // High resolution for PDF
+                        backgroundColor: "#ffffff",
+                    });
+                } catch (e) {
+                    console.error("Failed to capture Abstract Machine chart:", e);
+                }
+            }
+
             await generateSynthesisPDF(
                 comparisonResult,
                 sourceA?.title || "Source A",
                 sourceB?.title || "Source B",
                 abstractMachines,
                 controversyA,
-                controversyB
+                controversyB,
+                amChartImage
             );
         } catch (error) {
             console.error("Error generating PDF:", error);

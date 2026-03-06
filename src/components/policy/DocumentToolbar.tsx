@@ -101,8 +101,8 @@ export function DocumentToolbar({
                 <Button
                     onClick={onExportReport}
                     disabled={isExporting || isReadOnly}
-                    title={isReadOnly ? "Export disabled in Demo Mode" : ""}
                     variant="outline"
+                    title={isReadOnly ? "Export disabled in Demo Mode" : ""}
                     className="border-slate-200 hover:bg-slate-100 text-slate-700"
                 >
                     <FileDown className="mr-2 h-4 w-4" />
@@ -111,8 +111,7 @@ export function DocumentToolbar({
                 {onGenerateTheory && (
                     <Button
                         onClick={onGenerateTheory}
-                        disabled={isGeneratingTheory || isExporting || isReadOnly}
-                        title={isReadOnly ? "Export disabled in Demo Mode" : ""}
+                        disabled={isGeneratingTheory || isExporting}
                         variant="outline"
                         className="bg-indigo-50 border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-medium"
                     >

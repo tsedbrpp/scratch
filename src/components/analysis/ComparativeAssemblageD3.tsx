@@ -496,7 +496,7 @@ export function ComparativeAssemblageD3({ leftMachine, rightMachine }: { leftMac
                 ><Focus className="w-4 h-4" /></button>
             </div>
 
-            <div className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-hidden cursor-grab active:cursor-grabbing">
+            <div id="abstract-machine-d3-container" className="relative flex-1 bg-slate-50/50 dark:bg-slate-900/20 overflow-hidden cursor-grab active:cursor-grabbing">
                 <svg ref={svgRef} className="block w-full h-full" />
             </div>
         </div>

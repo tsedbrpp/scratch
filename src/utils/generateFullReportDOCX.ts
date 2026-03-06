@@ -63,13 +63,6 @@ export async function generateFullReportDOCX(
                 generator.addImage(data.images.governanceCompass, 500, 350, "Figure 1: Comparative Governance Compass");
                 generator.addSpacer();
             }
-
-            // [VISUAL] Risk Heatmap
-            if (data.images?.riskHeatmap) {
-                generator.addSubHeader("Visual: Risk & Resistance Heatmap");
-                generator.addImage(data.images.riskHeatmap, 500, 300, "Figure 2: Risk Intensity vs. Liberatory Capacity");
-                generator.addSpacer();
-            }
         }
     }
 
@@ -142,9 +135,9 @@ export async function generateFullReportDOCX(
         renderMethodologicalLogs(generator, data.logs);
     }
 
-    // 10. Theoretical Synthesis (ANT/Assemblage)
-    if (show.theoreticalSynthesis && data.theoreticalSynthesis) {
-        renderTheoreticalSynthesis(generator, data.theoreticalSynthesis);
+    // 10. Theoretical Synthesis (ANT/Assemblage + TEA)
+    if (show.theoreticalSynthesis && (data.theoreticalSynthesis || data.teaAnalysis)) {
+        renderTheoreticalSynthesis(generator, data.theoreticalSynthesis, data.teaAnalysis, data.images?.teaDiagram);
     }
 
     // Generate and download

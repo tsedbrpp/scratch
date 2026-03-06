@@ -140,6 +140,48 @@ const TERMS = [
         scholar: "Peck & Theodore (2010)",
         category: "Policy Studies",
         url: "https://doi.org/10.1068/a4272"
+    },
+    {
+        term: "Translation-Embedding Account (TEA)",
+        definition: "A mid-range theory of transnational digital governance formation explaining how portable governance vocabularies circulate, translate, and become institutionally durable through embedding in compliance infrastructures.",
+        scholar: "InstantTEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Portable Governance Vocabulary",
+        definition: "Codes like 'risk' or 'impact' that circulate cleanly across jurisdictions.",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Local Translation",
+        definition: "The process of jurisdictions reframing portable codes into distinct localized objects.",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Referential Drift",
+        definition: "The semantic shift that happens during local translation.",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Embedding",
+        definition: "Vocabularies anchoring into compliance infrastructures (audits, registries).",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Stratified Legibility",
+        definition: "Infrastructures making certain actors highly legible while obscuring others.",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
+    },
+    {
+        term: "Counter-Translation",
+        definition: "Contestation that reopens categories infrastructure attempts to close.",
+        scholar: "TEA Framework",
+        category: "TEA Framework"
     }
 ];
 

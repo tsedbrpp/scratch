@@ -1,0 +1,2790 @@
+﻿commit b7048e222c9f89ac7f91c168f2d8078e42cc1271
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sun Mar 1 17:14:45 2026 -0700
+
+    chore: optimize bundles with dynamic imports and tree-shaking
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index add623ca..ff397a30 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -3,7 +3,6 @@
+ 
+ 
+ import { useState, useRef, useEffect } from "react";
+-import html2canvas from "html2canvas";
+ import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
+@@ -38,7 +37,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { Button } from "@/components/ui/button";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+-import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
+ import { Loader2, Upload, Plus, Search, Filter, Download, FileText, Database, Share2, Trash2, ExternalLink } from "lucide-react";
+ import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
+ import { ReportSectionSelection } from "@/types/report";
+@@ -525,6 +523,9 @@ function PolicyDocumentsPageContent() {
+             // Use the shared snapshot function to gather all data
+             const reportData = await getFullReportSnapshot();
+ 
++            // Lazy Load the huge DOCX generator
++            const { generateFullReportDOCX } = await import("@/utils/generateFullReportDOCX");
++
+             // Generate the report
+             await generateFullReportDOCX(reportData, selection);
+             alert("Γ£à Report generated successfully! Check your Downloads folder.");
+@@ -577,16 +578,19 @@ function PolicyDocumentsPageContent() {
+         const images: Record<string, string> = {};
+ 
+         try {
++            const { default: html2canvas } = await import("html2canvas");
+             const compassEl = document.getElementById('governance-compass-chart');
+             if (compassEl) images.governanceCompass = (await html2canvas(compassEl, { scale: 2, useCORS: true, logging: false })).toDataURL('image/png');
+         } catch (e) { console.warn("Compass capture failed", e); }
+ 
+         try {
++            const { default: html2canvas } = await import("html2canvas");
+             const riskEl = document.getElementById('risk-heatmap-chart');
+             if (riskEl) images.riskHeatmap = (await html2canvas(riskEl, { scale: 2, logging: false })).toDataURL('image/png');
+         } catch (e) { console.warn("Risk heatmap capture failed", e); }
+ 
+         try {
++            const { default: html2canvas } = await import("html2canvas");
+             const ecoEl = document.getElementById('ecosystem-map-canvas');
+             if (ecoEl) images.ecosystemMap = (await html2canvas(ecoEl, { scale: 2, logging: false })).toDataURL('image/png');
+         } catch (e) { console.warn("Ecosystem map capture failed", e); }
+@@ -745,6 +749,9 @@ function PolicyDocumentsPageContent() {
+             // Inject the new synthesis into the report data
+             reportData.theoreticalSynthesis = theoreticalSynthesis;
+ 
++            // Lazy Load the huge DOCX generator
++            const { generateFullReportDOCX } = await import("@/utils/generateFullReportDOCX");
++
+             await generateFullReportDOCX(reportData, theorySelection, `Theoretical_Analysis_${new Date().toISOString().split('T')[0]}.docx`);
+ 
+         } catch (err) {
+
+commit 02cce7d41a008ada26b4a02bdbec0b8724ea4c33
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sat Feb 7 10:23:11 2026 -0700
+
+    feat: Rebrand to InstantTEA, update credit/pricing, refactor features
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 0914848b..add623ca 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -2,13 +2,14 @@
+ // Force cache refresh
+ 
+ 
+-import { useState, useRef } from "react";
++import { useState, useRef, useEffect } from "react";
+ import html2canvas from "html2canvas";
+ import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
+ import { useDemoMode } from "@/hooks/useDemoMode";
+ import { useTeam } from "@/hooks/useTeam";
++import { useSearchParams } from "next/navigation";
+ import { ReportData, LensType } from "@/types/report";
+ import {
+     ResistanceSynthesisResult,
+@@ -38,7 +39,7 @@ import { Button } from "@/components/ui/button";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+ import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
+-import { Loader2 } from "lucide-react";
++import { Loader2, Upload, Plus, Search, Filter, Download, FileText, Database, Share2, Trash2, ExternalLink } from "lucide-react";
+ import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
+ import { ReportSectionSelection } from "@/types/report";
+ import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
+@@ -50,7 +51,9 @@ import { FileDropZone } from "@/components/ui/FileDropZone";
+ import { extractTextFromDOCX } from "@/utils/docxExtractor";
+ import { MethodLog } from "@/types/logs";
+ 
+-export default function PolicyDocumentsPage() {
++import { Suspense } from 'react';
++
++function PolicyDocumentsPageContent() {
+     // ----------------------------------------------------------------------
+     // 1. Hooks & State
+     // ----------------------------------------------------------------------
+@@ -97,6 +100,19 @@ export default function PolicyDocumentsPage() {
+     const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
+     const [showTopUp, setShowTopUp] = useState(false);
+ 
++    // Deep Linking Support
++    const searchParams = useSearchParams();
++    const sourceIdParam = searchParams.get('sourceId');
++
++    useEffect(() => {
++        if (sourceIdParam && sources.length > 0) {
++            const match = sources.find(s => s.id === sourceIdParam);
++            if (match) {
++                setFocusedSourceId(match.id);
++            }
++        }
++    }, [sourceIdParam, sources]);
++
+     // ----------------------------------------------------------------------
+     // 2. Computed Values
+     // ----------------------------------------------------------------------
+@@ -812,40 +828,6 @@ export default function PolicyDocumentsPage() {
+                             </div>
+                         </FileDropZone>
+                     )}
+-
+-                    {/* Focus Mode View */}
+-                    {focusedSourceId && (() => {
+-                        const focusedSource = sources.find(s => s.id === focusedSourceId);
+-                        if (!focusedSource) return null;
+-
+-                        return (
+-                            <PolicyFocusView
+-                                source={focusedSource}
+-                                onUpdateSource={async (updates) => {
+-                                    await updateSource(focusedSource.id, updates);
+-                                }}
+-                                onClose={() => setFocusedSourceId(null)}
+-                            />
+-                        );
+-                    })()}
+-                </TabsContent>
+-
+-                <TabsContent value="resistance" className="mt-0">
+-                    {selectedArtifact ? (
+-                        <ResistanceArtifactView
+-                            artifact={selectedArtifact}
+-                            onBack={() => setSelectedArtifact(null)}
+-                            onUpdate={setSelectedArtifact}
+-                        />
+-                    ) : (
+-                        <ArtifactRepository
+-                            onSelectArtifact={setSelectedArtifact}
+-                        />
+-                    )}
+-                </TabsContent>
+-
+-                <TabsContent value="compare">
+-                    <PolicyComparisonView sources={selectedSources} />
+                 </TabsContent>
+             </Tabs>
+ 
+@@ -900,3 +882,12 @@ export default function PolicyDocumentsPage() {
+         </div>
+     );
+ }
++
++
++export default function PolicyDocumentsPage() {
++    return (
++        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>}>
++            <PolicyDocumentsPageContent />
++        </Suspense>
++    );
++}
+
+commit 05e435921cd451d9461eddb0ee09588bc74adbda
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Fri Feb 6 17:19:54 2026 -0700
+
+    feat: implement proposal deletion and sync risk stats
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9dfc37dc..0914848b 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -8,6 +8,7 @@ import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
+ import { useDemoMode } from "@/hooks/useDemoMode";
++import { useTeam } from "@/hooks/useTeam";
+ import { ReportData, LensType } from "@/types/report";
+ import {
+     ResistanceSynthesisResult,
+@@ -56,6 +57,7 @@ export default function PolicyDocumentsPage() {
+     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
+     const { isReadOnly } = useDemoMode();
+     const { hasCredits } = useCredits();
++    const { currentUserRole } = useTeam();
+ 
+     // Data for Full Report Aggregation
+     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+@@ -130,6 +132,10 @@ export default function PolicyDocumentsPage() {
+             alert('Document uploads are disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot upload documents.');
++            return;
++        }
+ 
+         setIsUploading(true);
+         let successCount = 0;
+@@ -212,6 +218,10 @@ export default function PolicyDocumentsPage() {
+             alert('Adding content from URL is disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot add content.');
++            return;
++        }
+ 
+         const headers: HeadersInit = { 'Content-Type': 'application/json' };
+         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+@@ -252,6 +262,10 @@ export default function PolicyDocumentsPage() {
+             alert('Adding documents is disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot add documents.');
++            return;
++        }
+         const source: Source = {
+             id: Date.now().toString(),
+             title,
+@@ -277,6 +291,10 @@ export default function PolicyDocumentsPage() {
+             alert('Analysis is disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot run new analysis.');
++            return;
++        }
+ 
+         const source = sources.find(s => s.id === sourceId);
+         if (!source || !source.extractedText) {
+@@ -370,6 +388,10 @@ export default function PolicyDocumentsPage() {
+             alert('Trace search is disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot search for traces.');
++            return;
++        }
+ 
+         if (!source.extractedText) {
+             alert('Please upload a PDF or add text first before finding traces.');
+@@ -441,6 +463,10 @@ export default function PolicyDocumentsPage() {
+             alert('Deleting documents is disabled in Demo Mode.');
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot delete documents.');
++            return;
++        }
+         if (confirm('Are you sure you want to delete this source?')) {
+             await deleteSource(sourceId);
+         }
+@@ -583,6 +609,10 @@ export default function PolicyDocumentsPage() {
+             setShowTopUp(true);
+             return;
+         }
++        if (currentUserRole === 'VOTER') {
++            alert('Voter role is read-only for analysis. You cannot generate theory.');
++            return;
++        }
+ 
+         setIsGeneratingTheory(true);
+         try {
+
+commit b63547f1725e7efa0138126951225ff5b5e86986
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sat Jan 24 13:00:41 2026 -0700
+
+    refactor: improve report generation, dialog UX, and error handling
+    
+    - Consolidated report generation logic into shared getFullReportSnapshot() helper
+    - Eliminated ~100 lines of duplicate code between handleGenerateReport and handleGenerateTheory
+    - Fixed dialog overlay opacity (80% -> 50%) for better readability with multiple dialogs
+    - Added credit validation before report generation with automatic top-up dialog
+    - Improved chart capture error handling with isolated try/catch blocks
+    - Enhanced admin credit management dialog layout (vertical instead of grid)
+    - Added success/error feedback for report generation
+    - Optimized theoretical synthesis payload to stay under 128k token limit
+    - Fixed overlapping dialog issues by closing export dialog before opening credit dialog
+    - Improved error messages with detailed API response information
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9d97d7f0..9dfc37dc 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -3,6 +3,7 @@
+ 
+ 
+ import { useState, useRef } from "react";
++import html2canvas from "html2canvas";
+ import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
+@@ -83,6 +84,7 @@ export default function PolicyDocumentsPage() {
+ 
+     const [isUploading, setIsUploading] = useState(false);
+     const [isExporting, setIsExporting] = useState(false);
++    const [isGeneratingTheory, setIsGeneratingTheory] = useState(false);
+     const [viewingSource, setViewingSource] = useState<Source | null>(null);
+     const [editingSource, setEditingSource] = useState<Source | null>(null);
+     const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
+@@ -467,75 +469,26 @@ export default function PolicyDocumentsPage() {
+             alert("Report generation is disabled in Demo Mode.");
+             return;
+         }
+-        setIsExporting(true);
+-        try {
+-            // Determine Context for Ecosystem Data
+-            // Priority:
+-            // 1. First selected document (if comparing or selecting)
+-            // 2. Focused document
+-            // 3. Fallback to global/temp keys (current behavior)
+-
+-            const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
+-
+-            let finalActors = ecosystemActors;
+-            let finalConfigs = ecosystemConfigs;
+-
+-            let finalAbsence = absenceAnalysis;
+-
+-            if (contextId) {
+-                console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
+-                const [actorsData, configsData, absenceData] = await Promise.all([
+-                    fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
+-                    fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
+-                    fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
+-                ]);
+-
+-                if (actorsData) finalActors = actorsData;
+-                if (configsData) finalConfigs = configsData;
+-                if (absenceData) finalAbsence = absenceData;
+ 
+-                console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
+-            } else {
+-                console.warn('No contextId found for ecosystem data - using global state (likely empty)');
+-            }
++        // Check credits before starting
++        if (!hasCredits) {
++            setIsExportReportDialogOpen(false); // Close export dialog first
++            alert("ΓÜá∩╕Å You have no credits remaining.\n\nReport generation requires credits for AI analysis. Please add credits to continue.");
++            setShowTopUp(true);
++            return;
++        }
+ 
+-            // Fetch methodological logs
+-            const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
+-
+-            // Fetch resistance artifacts
+-            const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
+-
+-            const reportData: ReportData = {
+-                sources: sources, // Or just selectedSources? The generator filters internally based on 'analyzedSources' logic anyway.
+-                resistance: resistanceSynthesis,
+-                ecosystem: {
+-                    actors: finalActors,
+-                    configurations: finalConfigs,
+-
+-                    absenceAnalysis: finalAbsence,
+-                    assemblage: finalAbsence as unknown as undefined
+-                },
+-                synthesis: {
+-                    comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
+-                    ecosystemImpacts: synthesisImpacts
+-                },
+-                ontology: {
+-                    maps: ontologyMaps,
+-                    comparison: ontologyComparison
+-                },
+-                multiLens: {
+-                    results: multiLensResults as Record<LensType, AnalysisResult | null>,
+-                    text: multiLensText
+-                },
+-                cultural: culturalAnalysis,
+-                logs: methodLogs,
+-                resistanceArtifacts: resistanceArtifacts
+-            };
++        setIsExporting(true);
++        try {
++            // Use the shared snapshot function to gather all data
++            const reportData = await getFullReportSnapshot();
+ 
++            // Generate the report
+             await generateFullReportDOCX(reportData, selection);
++            alert("Γ£à Report generated successfully! Check your Downloads folder.");
+         } catch (error) {
+             console.error("Export error:", error);
+-            alert("Failed to generate report.");
++            alert(`Γ¥î Failed to generate report.\n\nError: ${error instanceof Error ? error.message : String(error)}\n\nCheck the console for more details.`);
+         } finally {
+             setIsExporting(false);
+         }
+@@ -552,6 +505,210 @@ export default function PolicyDocumentsPage() {
+         );
+     }
+ 
++    // Shared helper to gather full report data
++    const getFullReportSnapshot = async (): Promise<ReportData> => {
++        // Determine Context for Ecosystem Data
++        const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
++
++        let finalActors = ecosystemActors;
++        let finalConfigs = ecosystemConfigs;
++        let finalAbsence = absenceAnalysis;
++
++        if (contextId) {
++            console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
++            const [actorsData, configsData, absenceData] = await Promise.all([
++                fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
++                fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
++                fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
++            ]);
++
++            if (actorsData) finalActors = actorsData;
++            if (configsData) finalConfigs = configsData;
++            if (absenceData) finalAbsence = absenceData;
++        }
++
++        // Fetch methodological logs & artifacts
++        const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
++        const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
++
++        // Capture Charts if visible
++        const images: Record<string, string> = {};
++
++        try {
++            const compassEl = document.getElementById('governance-compass-chart');
++            if (compassEl) images.governanceCompass = (await html2canvas(compassEl, { scale: 2, useCORS: true, logging: false })).toDataURL('image/png');
++        } catch (e) { console.warn("Compass capture failed", e); }
++
++        try {
++            const riskEl = document.getElementById('risk-heatmap-chart');
++            if (riskEl) images.riskHeatmap = (await html2canvas(riskEl, { scale: 2, logging: false })).toDataURL('image/png');
++        } catch (e) { console.warn("Risk heatmap capture failed", e); }
++
++        try {
++            const ecoEl = document.getElementById('ecosystem-map-canvas');
++            if (ecoEl) images.ecosystemMap = (await html2canvas(ecoEl, { scale: 2, logging: false })).toDataURL('image/png');
++        } catch (e) { console.warn("Ecosystem map capture failed", e); }
++
++        return {
++            sources: sources,
++            resistance: resistanceSynthesis,
++            ecosystem: {
++                actors: finalActors,
++                configurations: finalConfigs,
++                absenceAnalysis: finalAbsence,
++                assemblage: finalAbsence as unknown as undefined
++            },
++            synthesis: {
++                comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
++                ecosystemImpacts: synthesisImpacts
++            },
++            ontology: {
++                maps: ontologyMaps,
++                comparison: ontologyComparison
++            },
++            multiLens: {
++                results: multiLensResults as Record<LensType, AnalysisResult | null>,
++                text: multiLensText
++            },
++            cultural: culturalAnalysis,
++            resistanceArtifacts: resistanceArtifacts,
++            images: images,
++            logs: methodLogs
++        };
++    };
++    const handleGenerateTheory = async () => {
++        // Check credits before starting
++        if (!hasCredits) {
++            alert("ΓÜá∩╕Å You have no credits remaining.\n\nTheoretical synthesis requires credits for AI analysis. Please add credits to continue.");
++            setShowTopUp(true);
++            return;
++        }
++
++        setIsGeneratingTheory(true);
++        try {
++            // 1. Gather FULL Report Data
++            const reportData = await getFullReportSnapshot();
++
++            // 2. Serialize for AI Context
++            // [OPTIMIZATION] Aggressively summarize to avoid 128k token limit (currently ~360k)
++            const contextForAI: any = {
++                // Synthesis: Keep summary and themes, drop raw evidence lists
++                synthesis: reportData.synthesis?.comparison ? {
++                    synthesis_summary: (reportData.synthesis.comparison as any).synthesis_summary,
++                    key_divergences: (reportData.synthesis.comparison as any).key_divergences?.map((d: any) => ({
++                        theme: d.theme,
++                        description: d.description
++                    })),
++                    stabilization_mechanisms: (reportData.synthesis.comparison as any).stabilization_mechanisms
++                } : null,
++
++                // Resistance: Drop evidence quotes, keep strategies and interpretations
++                resistance: reportData.resistance ? {
++                    executive_summary: reportData.resistance.executive_summary,
++                    dominant_strategies: reportData.resistance.dominant_strategies?.map(s => ({
++                        strategy: s.strategy,
++                        description: s.description,
++                        frequency: s.frequency
++                    })),
++                    lines_of_flight: reportData.resistance.lines_of_flight
++                } : null,
++
++                // Ecosystem: Keep high-level configs, drop absence details
++                ecosystem_configs: reportData.ecosystem?.configurations?.map((c: any) => ({
++                    name: c.name,
++                    description: c.description,
++                    dynamics: c.dynamics
++                })),
++
++                // Cultural: Keep high-level summary fields only
++                cultural: reportData.cultural ? {
++                    executive_summary: (reportData.cultural as any).executive_summary,
++                    dominant_logic: (reportData.cultural as any).dominant_logic,
++                    state_market_society: (reportData.cultural as any).state_market_society
++                } : null,
++
++                // Ontology: Keep high-level comparison
++                ontology: reportData.ontology?.comparison ? {
++                    distances: (reportData.ontology.comparison as any).distances,
++                    implications: (reportData.ontology.comparison as any).implications
++                } : null
++            };
++
++            let context = JSON.stringify(contextForAI);
++
++            // [FIX] Fallback if no synthesis exists yet
++            // If main structural analyses are empty, use individual summaries
++            const hasStructuralData = contextForAI.synthesis || (contextForAI.resistance?.dominant_strategies?.length > 0);
++
++            if (!hasStructuralData) {
++                console.log("No synthesis found in full snapshot, falling back to individual summaries");
++                // Need to filter sources from reportData
++                const fallbackData = reportData.sources.filter(s => s.analysis).map(s => ({
++                    title: s.title,
++                    key_insight: s.analysis?.key_insight,
++                    governance_style: s.analysis?.governance_scores
++                }));
++
++                context = JSON.stringify({
++                    note: "No cross-case synthesis available. Using individual summaries.",
++                    individual_summaries: fallbackData,
++                    ...contextForAI // Include whatever fragments exist
++                });
++            }
++
++            // 3. Call API
++            let theoreticalSynthesis = null;
++            const response = await fetch('/api/analyze', {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify({
++                    analysisMode: 'theoretical_synthesis',
++                    reportContext: context
++                })
++            });
++
++            if (response.ok) {
++                const data = await response.json();
++                console.log("Theoretical synthesis received:", data.analysis?.theoretical_synthesis?.substring(0, 50) + "...");
++                theoreticalSynthesis = data.analysis?.theoretical_synthesis;
++            } else {
++                const errorText = await response.text();
++                console.error("API Error Details:", response.status, errorText);
++                throw new Error(`API failed (${response.status}): ${errorText.substring(0, 200)}`);
++            }
++
++            if (!theoreticalSynthesis) throw new Error("No synthesis returned");
++
++            // 4. Generate Report (Only Theory)
++            const theorySelection: ReportSectionSelection = {
++                documentAnalysis: false,
++                comparisonMatrix: false,
++                synthesis: false,
++                resistance: false,
++                ecosystem: false,
++                cultural: false,
++                ontology: false,
++                multiLens: false,
++                scenarios: false,
++                logs: false,
++                configurations: false,
++                resistanceArtifacts: false,
++                theoreticalSynthesis: true
++            };
++
++            // Inject the new synthesis into the report data
++            reportData.theoreticalSynthesis = theoreticalSynthesis;
++
++            await generateFullReportDOCX(reportData, theorySelection, `Theoretical_Analysis_${new Date().toISOString().split('T')[0]}.docx`);
++
++        } catch (err) {
++            console.error("Theory generation failed:", err);
++            alert("Failed to generate theoretical translation.");
++        } finally {
++            setIsGeneratingTheory(false);
++        }
++    };
++
+     return (
+         <div className="container mx-auto p-6 max-w-7xl animate-in fade-in duration-500">
+             {/* Header Area */}
+@@ -572,6 +729,8 @@ export default function PolicyDocumentsPage() {
+                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
+                         onExportReport={() => setIsExportReportDialogOpen(true)}
+                         isExporting={isExporting}
++                        onGenerateTheory={handleGenerateTheory}
++                        isGeneratingTheory={isGeneratingTheory}
+                         isReadOnly={isReadOnly}
+                     />
+                 </div>
+
+commit 9d256718afc783a2ea9f3706c50ce6db5874a6ea
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Wed Jan 21 15:59:29 2026 -0700
+
+    feat: add Word doc support, drag-and-drop, and refactor report generation
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 7c37e869..9d97d7f0 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -29,7 +29,7 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+ import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
+-import { AnalysisResults } from "@/components/policy/AnalysisResults";
++
+ import { PolicyFocusView } from "@/components/policy/PolicyFocusView";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { Button } from "@/components/ui/button";
+@@ -44,6 +44,9 @@ import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifa
+ import { ResistanceArtifact } from "@/types/resistance";
+ import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
+ import { useCredits } from "@/hooks/useCredits";
++import { FileDropZone } from "@/components/ui/FileDropZone";
++import { extractTextFromDOCX } from "@/utils/docxExtractor";
++import { MethodLog } from "@/types/logs";
+ 
+ export default function PolicyDocumentsPage() {
+     // ----------------------------------------------------------------------
+@@ -120,48 +123,85 @@ export default function PolicyDocumentsPage() {
+         }
+     };
+ 
+-    const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
++    const handleFiles = async (files: File[]) => {
+         if (isReadOnly) {
+             alert('Document uploads are disabled in Demo Mode.');
+-            if (fileInputRef.current) fileInputRef.current.value = '';
+-            return;
+-        }
+-        const file = e.target.files?.[0];
+-        if (!file) return;
+-
+-        // Enforce 10MB Limit
+-        const MAX_SIZE_MB = 10;
+-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+-            alert(`File is too large. Maximum size is ${MAX_SIZE_MB}MB.`);
+-            if (fileInputRef.current) fileInputRef.current.value = '';
+             return;
+         }
+ 
+         setIsUploading(true);
++        let successCount = 0;
++        const errors: string[] = [];
++
+         try {
+-            const extractionResult = await extractTextFromPDF(file);
+-            const text = typeof extractionResult === 'string' ? extractionResult : extractionResult.text;
+-            const newDoc: Source = {
+-                id: Date.now().toString(),
+-                title: file.name.replace('.pdf', ''),
+-                description: `Uploaded ${new Date().toLocaleDateString()} `,
+-                type: "PDF",
+-                addedDate: new Date().toLocaleDateString(),
+-                status: "Active Case",
+-                colorClass: "bg-purple-100",
+-                iconClass: "text-purple-600",
+-                extractedText: text
+-            };
+-            await addSource(newDoc);
+-            alert('PDF uploaded successfully!');
+-        } catch (error) {
+-            console.error('PDF upload error:', error);
+-            alert('Failed to upload PDF. Please try again.');
++            for (const file of files) {
++                // Enforce 10MB Limit
++                const MAX_SIZE_MB = 10;
++                if (file.size > MAX_SIZE_MB * 1024 * 1024) {
++                    errors.push(`${file.name}: File too large (Max ${MAX_SIZE_MB}MB)`);
++                    continue;
++                }
++
++                try {
++                    let text = "";
++                    let type: "PDF" | "Word" = "PDF";
++                    let iconClass = "text-purple-600";
++                    let colorClass = "bg-purple-100";
++
++                    const ext = file.name.split('.').pop()?.toLowerCase();
++
++                    if (ext === 'pdf') {
++                        const result = await extractTextFromPDF(file);
++                        text = typeof result === 'string' ? result : result.text;
++                        type = "PDF";
++                        iconClass = "text-red-500";
++                        colorClass = "bg-red-50";
++                    } else if (ext === 'docx' || ext === 'doc') {
++                        const result = await extractTextFromDOCX(file);
++                        text = result.text;
++                        type = "Word";
++                        iconClass = "text-blue-600";
++                        colorClass = "bg-blue-50";
++                    } else {
++                        throw new Error("Unsupported file type");
++                    }
++
++                    const newDoc: Source = {
++                        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
++                        title: file.name.replace(/\.[^/.]+$/, ""),
++                        description: `Uploaded ${new Date().toLocaleDateString()} (${type}) `,
++                        type: type, // "PDF" | "Word"
++                        addedDate: new Date().toLocaleDateString(),
++                        status: "Active Case",
++                        colorClass,
++                        iconClass,
++                        extractedText: text
++                    };
++                    await addSource(newDoc);
++                    successCount++;
++                } catch (err: unknown) {
++                    const errorMessage = err instanceof Error ? err.message : String(err);
++                    console.error(`Error processing ${file.name}:`, err);
++                    errors.push(`${file.name}: ${errorMessage}`);
++                }
++            }
++
++            if (successCount > 0) {
++                // alert(`Successfully uploaded ${successCount} document(s)!`);
++            }
++            if (errors.length > 0) {
++                alert(`Some files failed:\n${errors.join('\n')}`);
++            }
++
+         } finally {
+             setIsUploading(false);
+-            if (fileInputRef.current) {
+-                fileInputRef.current.value = '';
+-            }
++            if (fileInputRef.current) fileInputRef.current.value = '';
++        }
++    };
++
++    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
++        if (e.target.files && e.target.files.length > 0) {
++            handleFiles(Array.from(e.target.files));
+         }
+     };
+ 
+@@ -460,7 +500,7 @@ export default function PolicyDocumentsPage() {
+             }
+ 
+             // Fetch methodological logs
+-            const methodLogs = await fetchServerStorage<any[]>('methodological_logs') || [];
++            const methodLogs = await fetchServerStorage<MethodLog[]>('methodological_logs') || [];
+ 
+             // Fetch resistance artifacts
+             const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
+@@ -473,10 +513,10 @@ export default function PolicyDocumentsPage() {
+                     configurations: finalConfigs,
+ 
+                     absenceAnalysis: finalAbsence,
+-                    assemblage: finalAbsence as any
++                    assemblage: finalAbsence as unknown as undefined
+                 },
+                 synthesis: {
+-                    comparison: (comparativeSynthesisResults['assemblage'] as any) || synthesisComparison,
++                    comparison: (comparativeSynthesisResults['assemblage'] as unknown as SynthesisComparisonResult) || synthesisComparison,
+                     ecosystemImpacts: synthesisImpacts
+                 },
+                 ontology: {
+@@ -525,7 +565,7 @@ export default function PolicyDocumentsPage() {
+                     <DocumentToolbar
+                         searchQuery={searchQuery}
+                         onSearchChange={setSearchQuery}
+-                        onUpload={handlePDFUpload}
++                        onUpload={handleFileUpload}
+                         isUploading={isUploading}
+                         fileInputRef={fileInputRef}
+                         onAddClick={() => setIsAddDialogOpen(true)}
+@@ -559,27 +599,29 @@ export default function PolicyDocumentsPage() {
+                             <p className="text-slate-500 text-sm mt-1">Upload a PDF or add a URL to get started.</p>
+                         </div>
+                     ) : (
+-                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
+-                            {filteredSources.map((source) => (
+-                                <DocumentCard
+-                                    key={source.id}
+-                                    source={source}
+-                                    isAnalyzing={analyzingId === source.id}
+-                                    isSearching={searchingId === source.id}
+-                                    isSelected={selectedIds.includes(source.id)}
+-                                    onSelect={(selected) => toggleSelection(source.id, selected)}
+-                                    onAnalyze={handleAnalyze}
+-                                    onDelete={handleDelete}
+-                                    onEdit={(s) => { setEditingSource(s); }}
+-                                    onFindTraces={handleFindTraces}
+-                                    onView={(s) => setViewingSource(s)}
+-                                    onUpdateSource={handleEditSource}
+-                                    isFocused={focusedSourceId === source.id}
+-                                    onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
+-                                    isReadOnly={isReadOnly}
+-                                />
+-                            ))}
+-                        </div>
++                        <FileDropZone isReadOnly={isReadOnly} onFilesDropped={handleFiles}>
++                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
++                                {filteredSources.map((source) => (
++                                    <DocumentCard
++                                        key={source.id}
++                                        source={source}
++                                        isAnalyzing={analyzingId === source.id}
++                                        isSearching={searchingId === source.id}
++                                        isSelected={selectedIds.includes(source.id)}
++                                        onSelect={(selected) => toggleSelection(source.id, selected)}
++                                        onAnalyze={handleAnalyze}
++                                        onDelete={handleDelete}
++                                        onEdit={(s) => { setEditingSource(s); }}
++                                        onFindTraces={handleFindTraces}
++                                        onView={(s) => setViewingSource(s)}
++                                        onUpdateSource={handleEditSource}
++                                        isFocused={focusedSourceId === source.id}
++                                        onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
++                                        isReadOnly={isReadOnly}
++                                    />
++                                ))}
++                            </div>
++                        </FileDropZone>
+                     )}
+ 
+                     {/* Focus Mode View */}
+
+commit cfc271d8711c0f7a94207a8e9fdf0b1626ef4ac9
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Thu Jan 15 16:52:51 2026 -0700
+
+    Refactor landing page and fix lint errors
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index bd0543f6..7c37e869 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
+ import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
++import { useDemoMode } from "@/hooks/useDemoMode";
+ import { ReportData, LensType } from "@/types/report";
+ import {
+     ResistanceSynthesisResult,
+@@ -41,12 +42,16 @@ import { ReportSectionSelection } from "@/types/report";
+ import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
+ import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifactView";
+ import { ResistanceArtifact } from "@/types/resistance";
++import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
++import { useCredits } from "@/hooks/useCredits";
+ 
+ export default function PolicyDocumentsPage() {
+     // ----------------------------------------------------------------------
+     // 1. Hooks & State
+     // ----------------------------------------------------------------------
+     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
++    const { isReadOnly } = useDemoMode();
++    const { hasCredits } = useCredits();
+ 
+     // Data for Full Report Aggregation
+     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+@@ -83,6 +88,7 @@ export default function PolicyDocumentsPage() {
+ 
+     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+     const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
++    const [showTopUp, setShowTopUp] = useState(false);
+ 
+     // ----------------------------------------------------------------------
+     // 2. Computed Values
+@@ -115,9 +121,22 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
++        if (isReadOnly) {
++            alert('Document uploads are disabled in Demo Mode.');
++            if (fileInputRef.current) fileInputRef.current.value = '';
++            return;
++        }
+         const file = e.target.files?.[0];
+         if (!file) return;
+ 
++        // Enforce 10MB Limit
++        const MAX_SIZE_MB = 10;
++        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
++            alert(`File is too large. Maximum size is ${MAX_SIZE_MB}MB.`);
++            if (fileInputRef.current) fileInputRef.current.value = '';
++            return;
++        }
++
+         setIsUploading(true);
+         try {
+             const extractionResult = await extractTextFromPDF(file);
+@@ -147,6 +166,11 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleUrlAdd = async (url: string) => {
++        if (isReadOnly) {
++            alert('Adding content from URL is disabled in Demo Mode.');
++            return;
++        }
++
+         const headers: HeadersInit = { 'Content-Type': 'application/json' };
+         if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
+             headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
+@@ -182,6 +206,10 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleAddSource = async (title: string, description: string, pageCount: string, publicationDate: string, version: string) => {
++        if (isReadOnly) {
++            alert('Adding documents is disabled in Demo Mode.');
++            return;
++        }
+         const source: Source = {
+             id: Date.now().toString(),
+             title,
+@@ -203,6 +231,11 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleAnalyze = async (sourceId: string, mode: AnalysisMode) => {
++        if (isReadOnly) {
++            alert('Analysis is disabled in Demo Mode.');
++            return;
++        }
++
+         const source = sources.find(s => s.id === sourceId);
+         if (!source || !source.extractedText) {
+             alert('No text available to analyze. Please upload a PDF or add text first.');
+@@ -230,6 +263,12 @@ export default function PolicyDocumentsPage() {
+ 
+     const proceedWithAnalysis = async (positionalityData: PositionalityData) => {
+         if (!pendingAnalysis) return;
++        if (isReadOnly) {
++            alert('Analysis is disabled in Demo Mode.');
++            setIsPositionalityDialogOpen(false);
++            setPendingAnalysis(null);
++            return;
++        }
+         const { sourceId, mode, force } = pendingAnalysis;
+         const source = sources.find(s => s.id === sourceId);
+ 
+@@ -269,7 +308,15 @@ export default function PolicyDocumentsPage() {
+             }
+         } catch (error: unknown) {
+             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+-            alert(`Analysis failed: ${errorMessage} `);
++
++            // Check for Insufficient Credits (402)
++            // Error usually comes as "Error: Insufficient Credits..."
++            if (errorMessage.includes("Insufficient Credits") || errorMessage.includes("Payment Required") || errorMessage.includes("402")) {
++                console.log("Triggering Top Up Dialog due to error:", errorMessage);
++                setShowTopUp(true);
++            } else {
++                alert(`Analysis failed: ${errorMessage} `);
++            }
+         } finally {
+             setAnalyzingId(null);
+             setPendingAnalysis(null);
+@@ -277,6 +324,11 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleFindTraces = async (source: Source) => {
++        if (isReadOnly) {
++            alert('Trace search is disabled in Demo Mode.');
++            return;
++        }
++
+         if (!source.extractedText) {
+             alert('Please upload a PDF or add text first before finding traces.');
+             return;
+@@ -343,6 +395,10 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleDelete = async (sourceId: string) => {
++        if (isReadOnly) {
++            alert('Deleting documents is disabled in Demo Mode.');
++            return;
++        }
+         if (confirm('Are you sure you want to delete this source?')) {
+             await deleteSource(sourceId);
+         }
+@@ -367,6 +423,10 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleGenerateReport = async (selection: ReportSectionSelection) => {
++        if (isReadOnly) {
++            alert("Report generation is disabled in Demo Mode.");
++            return;
++        }
+         setIsExporting(true);
+         try {
+             // Determine Context for Ecosystem Data
+@@ -472,6 +532,7 @@ export default function PolicyDocumentsPage() {
+                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
+                         onExportReport={() => setIsExportReportDialogOpen(true)}
+                         isExporting={isExporting}
++                        isReadOnly={isReadOnly}
+                     />
+                 </div>
+             </div>
+@@ -515,6 +576,7 @@ export default function PolicyDocumentsPage() {
+                                     onUpdateSource={handleEditSource}
+                                     isFocused={focusedSourceId === source.id}
+                                     onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
++                                    isReadOnly={isReadOnly}
+                                 />
+                             ))}
+                         </div>
+@@ -594,6 +656,16 @@ export default function PolicyDocumentsPage() {
+                 onGenerate={handleGenerateReport}
+                 isGenerating={isExporting}
+             />
++
++            <CreditTopUpDialog
++                open={showTopUp}
++                onOpenChange={setShowTopUp}
++                onSuccess={() => {
++                    // Refresh is handled by Dashboard component or page reload if needed
++                    // But let's alert user success
++                    alert("Credits added! Please try running the analysis again.");
++                }}
++            />
+         </div>
+     );
+ }
+
+commit ebdfe415db39f35070b95ff8a11050b0540ca623
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Tue Jan 13 16:17:21 2026 -0700
+
+    feat: Add AI Explain to Resonance Graph, fix key_insight bug, refactor
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9ee01661..bd0543f6 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -16,7 +16,7 @@ import {
+     ComparativeSynthesis,
+     PositionalityData
+ } from "@/types";
+-import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
++import { EcosystemActor, EcosystemConfiguration } from "@/types/ecosystem";
+ import { CulturalAnalysisResult } from "@/types/cultural";
+ import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
+ import { SynthesisComparisonResult } from "@/types/synthesis";
+@@ -25,7 +25,7 @@ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
+ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+-// import { EditSourceDialog } from "@/components/policy/EditSourceDialog"; // Unused currently
++import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
+ import { AnalysisResults } from "@/components/policy/AnalysisResults";
+@@ -52,7 +52,7 @@ export default function PolicyDocumentsPage() {
+     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+     const [ecosystemActors, setEcosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
+-    const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
++
+     const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
+     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
+     const [comparativeSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
+@@ -309,6 +309,7 @@ export default function PolicyDocumentsPage() {
+                     title: `[Trace] ${item.title} `,
+                     description: item.snippet || 'No description available',
+                     type: "Trace" as const,
++                    traceType: "provenance" as const, // Explicitly mark as provenance
+                     extractedText: `${item.snippet} \n\nSource: ${item.link} \n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'} `,
+                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                     status: "Active Case" as const,
+@@ -378,21 +379,19 @@ export default function PolicyDocumentsPage() {
+ 
+             let finalActors = ecosystemActors;
+             let finalConfigs = ecosystemConfigs;
+-            let finalHoles = culturalHoles;
++
+             let finalAbsence = absenceAnalysis;
+ 
+             if (contextId) {
+                 console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
+-                const [actorsData, configsData, holesData, absenceData] = await Promise.all([
++                const [actorsData, configsData, absenceData] = await Promise.all([
+                     fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
+                     fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
+-                    fetchServerStorage<CulturalHolesAnalysisResult>(`ecosystem_cultural_holes_${contextId}`),
+                     fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
+                 ]);
+ 
+                 if (actorsData) finalActors = actorsData;
+                 if (configsData) finalConfigs = configsData;
+-                if (holesData) finalHoles = holesData;
+                 if (absenceData) finalAbsence = absenceData;
+ 
+                 console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
+@@ -412,7 +411,7 @@ export default function PolicyDocumentsPage() {
+                 ecosystem: {
+                     actors: finalActors,
+                     configurations: finalConfigs,
+-                    culturalHoles: finalHoles,
++
+                     absenceAnalysis: finalAbsence,
+                     assemblage: finalAbsence as any
+                 },
+@@ -576,7 +575,12 @@ export default function PolicyDocumentsPage() {
+             />
+ 
+             {/* Edit Source Dialog (if you have one, or remove if unused) */}
+-            {/* <EditSourceDialog ... /> */}
++            <EditSourceDialog
++                source={editingSource}
++                open={!!editingSource}
++                onOpenChange={(open: boolean) => !open && setEditingSource(null)}
++                onSave={handleEditSource}
++            />
+ 
+             <PositionalityDialog
+                 isOpen={isPositionalityDialogOpen}
+
+commit 2ce36ec1de03c2d28caf53546eb8d80fda7689fc
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Mon Jan 5 15:34:22 2026 -0700
+
+    feat: Artifact Deletion, PDF Support, and Refactoring
+    
+    - Added DELETE endpoint for resistance artifacts
+    - Implemented frontend deletion UI (Trash icon)
+    - Added PDF text extraction support via pdf-parse
+    - Refactored content extraction logic to shared service
+    - Hardened import fallback for empty texts
+    - Linting and cleanup
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 6a196e35..9ee01661 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -13,9 +13,11 @@ import {
+     AnalysisResult,
+     Source,
+     LegitimacyAnalysis,
++    ComparativeSynthesis,
+     PositionalityData
+ } from "@/types";
+ import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
++import { CulturalAnalysisResult } from "@/types/cultural";
+ import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
+ import { SynthesisComparisonResult } from "@/types/synthesis";
+ import { analyzeDocument, AnalysisMode } from "@/services/analysis";
+@@ -27,12 +29,18 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
+ import { AnalysisResults } from "@/components/policy/AnalysisResults";
++import { PolicyFocusView } from "@/components/policy/PolicyFocusView";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { Button } from "@/components/ui/button";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+ import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
+ import { Loader2 } from "lucide-react";
++import { ExportReportDialog } from "@/components/policy/ExportReportDialog";
++import { ReportSectionSelection } from "@/types/report";
++import { ArtifactRepository } from "@/components/resistance/ArtifactRepository";
++import { ResistanceArtifactView } from "@/components/resistance/ResistanceArtifactView";
++import { ResistanceArtifact } from "@/types/resistance";
+ 
+ export default function PolicyDocumentsPage() {
+     // ----------------------------------------------------------------------
+@@ -42,11 +50,13 @@ export default function PolicyDocumentsPage() {
+ 
+     // Data for Full Report Aggregation
+     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+-    const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
++    const [ecosystemActors, setEcosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
+     const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
+     const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
+     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
++    const [comparativeSynthesisResults] = useServerStorage<Record<string, ComparativeSynthesis>>("comparison_synthesis_results_v2", {});
++    const [culturalAnalysis] = useServerStorage<CulturalAnalysisResult | null>("cultural_analysis_result_v5", null);
+     const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
+     const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
+     const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
+@@ -58,6 +68,7 @@ export default function PolicyDocumentsPage() {
+     const [searchQuery, setSearchQuery] = useState("");
+     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
++    const [isExportReportDialogOpen, setIsExportReportDialogOpen] = useState(false);
+     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+     const [searchingId, setSearchingId] = useState<string | null>(null);
+     const [focusedSourceId, setFocusedSourceId] = useState<string | null>(null);
+@@ -71,6 +82,7 @@ export default function PolicyDocumentsPage() {
+     const fileInputRef = useRef<HTMLInputElement | null>(null);
+ 
+     const [selectedIds, setSelectedIds] = useState<string[]>([]);
++    const [selectedArtifact, setSelectedArtifact] = useState<ResistanceArtifact | null>(null);
+ 
+     // ----------------------------------------------------------------------
+     // 2. Computed Values
+@@ -335,20 +347,77 @@ export default function PolicyDocumentsPage() {
+         }
+     };
+ 
+-    const handleExportReport = async () => {
++    // Helper to manually fetch storage data (since hooks can't be used inside the handler)
++    const fetchServerStorage = async <T,>(key: string): Promise<T | null> => {
++        try {
++            const headers: HeadersInit = { 'Content-Type': 'application/json' };
++            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
++                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
++            }
++            const response = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, { headers });
++            if (response.ok) {
++                const data = await response.json();
++                return data.value as T;
++            }
++        } catch (error) {
++            console.error(`Failed to fetch storage key "${key}":`, error);
++        }
++        return null;
++    };
++
++    const handleGenerateReport = async (selection: ReportSectionSelection) => {
+         setIsExporting(true);
+         try {
++            // Determine Context for Ecosystem Data
++            // Priority:
++            // 1. First selected document (if comparing or selecting)
++            // 2. Focused document
++            // 3. Fallback to global/temp keys (current behavior)
++
++            const contextId = selectedIds.length > 0 ? selectedIds[0] : (focusedSourceId || null);
++
++            let finalActors = ecosystemActors;
++            let finalConfigs = ecosystemConfigs;
++            let finalHoles = culturalHoles;
++            let finalAbsence = absenceAnalysis;
++
++            if (contextId) {
++                console.log(`Fetching Ecosystem Context for Policy ID: ${contextId}`);
++                const [actorsData, configsData, holesData, absenceData] = await Promise.all([
++                    fetchServerStorage<EcosystemActor[]>(`ecosystem_actors_${contextId}`),
++                    fetchServerStorage<EcosystemConfiguration[]>(`ecosystem_configurations_${contextId}`),
++                    fetchServerStorage<CulturalHolesAnalysisResult>(`ecosystem_cultural_holes_${contextId}`),
++                    fetchServerStorage<AiAbsenceAnalysis>(`ecosystem_absence_analysis_${contextId}`)
++                ]);
++
++                if (actorsData) finalActors = actorsData;
++                if (configsData) finalConfigs = configsData;
++                if (holesData) finalHoles = holesData;
++                if (absenceData) finalAbsence = absenceData;
++
++                console.log(`Ecosystem Data Fetched - Actors: ${finalActors?.length || 0}, Configs: ${finalConfigs?.length || 0}`);
++            } else {
++                console.warn('No contextId found for ecosystem data - using global state (likely empty)');
++            }
++
++            // Fetch methodological logs
++            const methodLogs = await fetchServerStorage<any[]>('methodological_logs') || [];
++
++            // Fetch resistance artifacts
++            const resistanceArtifacts = await fetchServerStorage<ResistanceArtifact[]>('resistance_artifacts') || [];
++
+             const reportData: ReportData = {
+-                sources: sources,
++                sources: sources, // Or just selectedSources? The generator filters internally based on 'analyzedSources' logic anyway.
+                 resistance: resistanceSynthesis,
+                 ecosystem: {
+-                    actors: ecosystemActors,
+-                    configurations: ecosystemConfigs,
+-                    culturalHoles: culturalHoles,
+-                    absenceAnalysis: absenceAnalysis
++                    actors: finalActors,
++                    configurations: finalConfigs,
++                    culturalHoles: finalHoles,
++                    absenceAnalysis: finalAbsence,
++                    assemblage: finalAbsence as any
+                 },
+                 synthesis: {
+-                    comparison: synthesisComparison,
++                    comparison: (comparativeSynthesisResults['assemblage'] as any) || synthesisComparison,
+                     ecosystemImpacts: synthesisImpacts
+                 },
+                 ontology: {
+@@ -358,10 +427,13 @@ export default function PolicyDocumentsPage() {
+                 multiLens: {
+                     results: multiLensResults as Record<LensType, AnalysisResult | null>,
+                     text: multiLensText
+-                }
++                },
++                cultural: culturalAnalysis,
++                logs: methodLogs,
++                resistanceArtifacts: resistanceArtifacts
+             };
+ 
+-            await generateFullReportDOCX(reportData);
++            await generateFullReportDOCX(reportData, selection);
+         } catch (error) {
+             console.error("Export error:", error);
+             alert("Failed to generate report.");
+@@ -399,7 +471,7 @@ export default function PolicyDocumentsPage() {
+                         fileInputRef={fileInputRef}
+                         onAddClick={() => setIsAddDialogOpen(true)}
+                         onAddUrlClick={() => setIsUrlDialogOpen(true)}
+-                        onExportReport={handleExportReport}
++                        onExportReport={() => setIsExportReportDialogOpen(true)}
+                         isExporting={isExporting}
+                     />
+                 </div>
+@@ -410,6 +482,7 @@ export default function PolicyDocumentsPage() {
+                 <div className="flex items-center justify-between mb-6">
+                     <TabsList className="bg-slate-100 p-1">
+                         <TabsTrigger value="documents" className="uppercase text-xs font-bold px-4">My Documents</TabsTrigger>
++                        <TabsTrigger value="resistance" className="uppercase text-xs font-bold px-4">Resistance</TabsTrigger>
+                         <TabsTrigger value="compare" className="uppercase text-xs font-bold px-4">
+                             Compare <span className="ml-2 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px]">{selectedIds.length}</span>
+                         </TabsTrigger>
+@@ -449,49 +522,33 @@ export default function PolicyDocumentsPage() {
+                     )}
+ 
+                     {/* Focus Mode View */}
+-                    {focusedSourceId && (
+-                        <div className="fixed inset-0 z-50 bg-white p-6 overflow-auto animate-in slide-in-from-bottom-10">
+-                            <div className="container mx-auto max-w-6xl">
+-                                <div className="flex items-center justify-between mb-6">
+-                                    <h2 className="text-2xl font-bold">Focus Mode</h2>
+-                                    <Button variant="outline" onClick={() => setFocusedSourceId(null)}>Close Focus</Button>
+-                                </div>
+-                                <div className="grid grid-cols-1 gap-8">
+-                                    <div className="">
+-                                        {/* Render the actual Analysis Results Dashboard */}
+-                                        {(() => {
+-                                            const focusedSource = sources.find(s => s.id === focusedSourceId);
+-                                            if (focusedSource?.analysis) {
+-                                                return (
+-                                                    <AnalysisResults
+-                                                        analysis={focusedSource.analysis}
+-                                                        sourceTitle={focusedSource.title}
+-                                                        onUpdate={async (updates) => {
+-                                                            await updateSource(focusedSource.id, {
+-                                                                analysis: { ...focusedSource.analysis!, ...updates }
+-                                                            });
+-                                                        }}
+-                                                    />
+-                                                );
+-                                            } else {
+-                                                return (
+-                                                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+-                                                        <p className="text-slate-500 italic">No analysis data available for this document yet.</p>
+-                                                        <Button
+-                                                            variant="default"
+-                                                            className="mt-4"
+-                                                            onClick={() => setFocusedSourceId(null)}
+-                                                        >
+-                                                            Go back and run analysis
+-                                                        </Button>
+-                                                    </div>
+-                                                );
+-                                            }
+-                                        })()}
+-                                    </div>
+-                                </div>
+-                            </div>
+-                        </div>
++                    {focusedSourceId && (() => {
++                        const focusedSource = sources.find(s => s.id === focusedSourceId);
++                        if (!focusedSource) return null;
++
++                        return (
++                            <PolicyFocusView
++                                source={focusedSource}
++                                onUpdateSource={async (updates) => {
++                                    await updateSource(focusedSource.id, updates);
++                                }}
++                                onClose={() => setFocusedSourceId(null)}
++                            />
++                        );
++                    })()}
++                </TabsContent>
++
++                <TabsContent value="resistance" className="mt-0">
++                    {selectedArtifact ? (
++                        <ResistanceArtifactView
++                            artifact={selectedArtifact}
++                            onBack={() => setSelectedArtifact(null)}
++                            onUpdate={setSelectedArtifact}
++                        />
++                    ) : (
++                        <ArtifactRepository
++                            onSelectArtifact={setSelectedArtifact}
++                        />
+                     )}
+                 </TabsContent>
+ 
+@@ -526,6 +583,13 @@ export default function PolicyDocumentsPage() {
+                 onClose={() => setIsPositionalityDialogOpen(false)}
+                 onConfirm={proceedWithAnalysis}
+             />
++
++            <ExportReportDialog
++                open={isExportReportDialogOpen}
++                onOpenChange={setIsExportReportDialogOpen}
++                onGenerate={handleGenerateReport}
++                isGenerating={isExporting}
++            />
+         </div>
+     );
+ }
+
+commit 5f23be8544c3fb570bed6aa5605b9b39b6a23d5c
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sat Jan 3 14:10:44 2026 -0700
+
+    Refactor Redis implementation to use StorageService across all API routes
+    
+    - Standardized caching in cultural-analysis, search-traces, simulate, log, and analyze routes
+    - Fixed clear-cache route to match StorageService key patterns
+    - Resolved lint errors in refactored files
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 5de76fa5..6a196e35 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -1,9 +1,12 @@
+ "use client";
++// Force cache refresh
++
+ 
+ import { useState, useRef } from "react";
++import { AiAbsenceAnalysis } from "@/types/ecosystem";
+ import { useSources } from "@/hooks/useSources";
+ import { useServerStorage } from "@/hooks/useServerStorage";
+-import { ReportData } from "@/types/report";
++import { ReportData, LensType } from "@/types/report";
+ import {
+     ResistanceSynthesisResult,
+     EcosystemImpact,
+@@ -20,40 +23,44 @@ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
+ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+-import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
++// import { EditSourceDialog } from "@/components/policy/EditSourceDialog"; // Unused currently
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
++import { PolicyComparisonView } from "@/components/policy/PolicyComparisonView";
++import { AnalysisResults } from "@/components/policy/AnalysisResults";
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { Button } from "@/components/ui/button";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+ import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
+ import { Loader2 } from "lucide-react";
+ 
+ export default function PolicyDocumentsPage() {
++    // ----------------------------------------------------------------------
++    // 1. Hooks & State
++    // ----------------------------------------------------------------------
+     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
+ 
+     // Data for Full Report Aggregation
+     const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
+-
+     const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
+     const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
+     const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
+-
++    const [absenceAnalysis] = useServerStorage<AiAbsenceAnalysis | null>("ecosystem_absence_analysis", null);
+     const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
+     const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
+-
+     const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
+     const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
+-
+     const [multiLensResults] = useServerStorage<Record<string, AnalysisResult | null>>("multi_lens_results", {
+         dsf: null, cultural_framing: null, institutional_logics: null, legitimacy: null
+     });
+     const [multiLensText] = useServerStorage<string>("multi_lens_text", "");
+ 
+-
+     const [searchQuery, setSearchQuery] = useState("");
+     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+     const [searchingId, setSearchingId] = useState<string | null>(null);
++    const [focusedSourceId, setFocusedSourceId] = useState<string | null>(null);
+ 
+     const [isUploading, setIsUploading] = useState(false);
+     const [isExporting, setIsExporting] = useState(false);
+@@ -63,12 +70,38 @@ export default function PolicyDocumentsPage() {
+     const [pendingAnalysis, setPendingAnalysis] = useState<{ sourceId: string, mode: AnalysisMode, force: boolean } | null>(null);
+     const fileInputRef = useRef<HTMLInputElement | null>(null);
+ 
++    const [selectedIds, setSelectedIds] = useState<string[]>([]);
++
++    // ----------------------------------------------------------------------
++    // 2. Computed Values
++    // ----------------------------------------------------------------------
+     const filteredSources = sources.filter(source =>
+         source.type !== 'Trace' &&
+         (source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             source.description.toLowerCase().includes(searchQuery.toLowerCase()))
+     );
+ 
++    const selectedSources = sources.filter(s => selectedIds.includes(s.id));
++
++    // ----------------------------------------------------------------------
++    // 3. Handlers
++    // ----------------------------------------------------------------------
++    const toggleSelection = (id: string, selected: boolean) => {
++        if (selected) {
++            setSelectedIds(prev => [...prev, id]);
++        } else {
++            setSelectedIds(prev => prev.filter(sid => sid !== id));
++        }
++    };
++
++    const handleSelectAll = () => {
++        if (selectedIds.length === filteredSources.length) {
++            setSelectedIds([]);
++        } else {
++            setSelectedIds(filteredSources.map(s => s.id));
++        }
++    };
++
+     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+         const file = e.target.files?.[0];
+         if (!file) return;
+@@ -80,7 +113,7 @@ export default function PolicyDocumentsPage() {
+             const newDoc: Source = {
+                 id: Date.now().toString(),
+                 title: file.name.replace('.pdf', ''),
+-                description: `Uploaded ${new Date().toLocaleDateString()}`,
++                description: `Uploaded ${new Date().toLocaleDateString()} `,
+                 type: "PDF",
+                 addedDate: new Date().toLocaleDateString(),
+                 status: "Active Case",
+@@ -122,7 +155,7 @@ export default function PolicyDocumentsPage() {
+         const newDoc: Source = {
+             id: Date.now().toString(),
+             title: data.title || url,
+-            description: `Fetched from ${new URL(url).hostname}`,
++            description: `Fetched from ${new URL(url).hostname} `,
+             type: "Web",
+             addedDate: new Date().toLocaleDateString(),
+             status: "Active Case",
+@@ -164,7 +197,6 @@ export default function PolicyDocumentsPage() {
+             return;
+         }
+ 
+-        // Check if analysis already exists
+         let force = false;
+         const hasAnalysis =
+             (mode === 'dsf' && source.analysis) ||
+@@ -189,7 +221,7 @@ export default function PolicyDocumentsPage() {
+         const { sourceId, mode, force } = pendingAnalysis;
+         const source = sources.find(s => s.id === sourceId);
+ 
+-        setIsPositionalityDialogOpen(false);
++        setIsPositionalityDialogOpen(false); // Close dialog immediately
+ 
+         if (!source || !source.extractedText) return;
+ 
+@@ -225,7 +257,7 @@ export default function PolicyDocumentsPage() {
+             }
+         } catch (error: unknown) {
+             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+-            alert(`Analysis failed: ${errorMessage}`);
++            alert(`Analysis failed: ${errorMessage} `);
+         } finally {
+             setAnalyzingId(null);
+             setPendingAnalysis(null);
+@@ -262,14 +294,15 @@ export default function PolicyDocumentsPage() {
+                 // Create trace sources from search results
+                 const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string; strategy?: string; explanation?: string }) => ({
+                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+-                    title: `[Trace] ${item.title}`,
++                    title: `[Trace] ${item.title} `,
+                     description: item.snippet || 'No description available',
+                     type: "Trace" as const,
+-                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'}`,
++                    extractedText: `${item.snippet} \n\nSource: ${item.link} \n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'} `,
+                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                     status: "Active Case" as const,
+                     colorClass: "bg-blue-100",
+                     iconClass: "text-blue-600",
++                    policyId: source.id, // Linked to the policy document
+                     resistance_analysis: item.strategy ? {
+                         strategy_detected: item.strategy,
+                         evidence_quote: item.snippet,
+@@ -283,14 +316,14 @@ export default function PolicyDocumentsPage() {
+                     await addSource(trace);
+                 }
+ 
+-                alert(`Γ£à Found ${newTraces.length} empirical traces!\n\nSearch query: "${result.searchQuery}"\n\nTraces have been added to your sources. Go to the Resistance page to analyze them.`);
++                alert(`Γ£à Found ${newTraces.length} empirical traces! Added to sources.`);
+             } else {
+-                alert(`No traces found. ${result.error || 'Try analyzing the document first or check your Google Search API configuration.'}`);
++                alert(`No traces found.${result.error || 'Try analyzing the document first or check your Google Search API configuration.'} `);
+             }
+         } catch (error: unknown) {
+             console.error('Search error:', error);
+             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+-            alert(`Failed to search for traces: ${errorMessage}\n\nMake sure your Google Search API credentials are configured in .env.local`);
++            alert(`Failed to search for traces: ${errorMessage} \n\nMake sure your Google Search API credentials are configured in .env.local`);
+         } finally {
+             setSearchingId(null);
+         }
+@@ -302,14 +335,6 @@ export default function PolicyDocumentsPage() {
+         }
+     };
+ 
+-    if (isSourcesLoading) {
+-        return (
+-            <div className="flex items-center justify-center h-64">
+-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+-            </div>
+-        );
+-    }
+-
+     const handleExportReport = async () => {
+         setIsExporting(true);
+         try {
+@@ -319,7 +344,8 @@ export default function PolicyDocumentsPage() {
+                 ecosystem: {
+                     actors: ecosystemActors,
+                     configurations: ecosystemConfigs,
+-                    culturalHoles: culturalHoles
++                    culturalHoles: culturalHoles,
++                    absenceAnalysis: absenceAnalysis
+                 },
+                 synthesis: {
+                     comparison: synthesisComparison,
+@@ -330,7 +356,7 @@ export default function PolicyDocumentsPage() {
+                     comparison: ontologyComparison
+                 },
+                 multiLens: {
+-                    results: multiLensResults as any,
++                    results: multiLensResults as Record<LensType, AnalysisResult | null>,
+                     text: multiLensText
+                 }
+             };
+@@ -344,37 +370,137 @@ export default function PolicyDocumentsPage() {
+         }
+     };
+ 
+-    return (
+-        <div className="space-y-8">
+-            <DocumentToolbar
+-                searchQuery={searchQuery}
+-                onSearchChange={setSearchQuery}
+-                onUpload={handlePDFUpload}
+-                isUploading={isUploading}
+-                fileInputRef={fileInputRef}
+-                onAddClick={() => setIsAddDialogOpen(true)}
+-                onAddUrlClick={() => setIsUrlDialogOpen(true)}
+-                onExportReport={handleExportReport}
+-                isExporting={isExporting}
+-            />
++    // ----------------------------------------------------------------------
++    // 4. Render
++    // ----------------------------------------------------------------------
++    if (isSourcesLoading) {
++        return (
++            <div className="flex items-center justify-center h-64">
++                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
++            </div>
++        );
++    }
+ 
+-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+-                {filteredSources.map((source) => (
+-                    <DocumentCard
+-                        key={source.id}
+-                        source={source}
+-                        isAnalyzing={analyzingId === source.id}
+-                        isSearching={searchingId === source.id}
+-                        onAnalyze={handleAnalyze}
+-                        onDelete={handleDelete}
+-                        onEdit={(source) => setEditingSource(source)}
+-                        onFindTraces={handleFindTraces}
+-                        onView={(source) => setViewingSource(source)}
+-                        onUpdateSource={updateSource}
++    return (
++        <div className="container mx-auto p-6 max-w-7xl animate-in fade-in duration-500">
++            {/* Header Area */}
++            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
++                <div>
++                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Data & Policy Analysis</h1>
++                    <p className="text-slate-500 mt-1">Manage documents, run diagnostics, and compare frameworks.</p>
++                </div>
++
++                <div className="flex items-center gap-3 w-full md:w-auto">
++                    <DocumentToolbar
++                        searchQuery={searchQuery}
++                        onSearchChange={setSearchQuery}
++                        onUpload={handlePDFUpload}
++                        isUploading={isUploading}
++                        fileInputRef={fileInputRef}
++                        onAddClick={() => setIsAddDialogOpen(true)}
++                        onAddUrlClick={() => setIsUrlDialogOpen(true)}
++                        onExportReport={handleExportReport}
++                        isExporting={isExporting}
+                     />
+-                ))}
++                </div>
+             </div>
+ 
++            {/* Main Content Tabs */}
++            <Tabs defaultValue="documents" className="w-full">
++                <div className="flex items-center justify-between mb-6">
++                    <TabsList className="bg-slate-100 p-1">
++                        <TabsTrigger value="documents" className="uppercase text-xs font-bold px-4">My Documents</TabsTrigger>
++                        <TabsTrigger value="compare" className="uppercase text-xs font-bold px-4">
++                            Compare <span className="ml-2 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px]">{selectedIds.length}</span>
++                        </TabsTrigger>
++                    </TabsList>
++                </div>
++
++                <TabsContent value="documents" className="space-y-4">
++                    {filteredSources.length === 0 ? (
++                        <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
++                            <div className="bg-white p-4 rounded-full w-16 h-16 mx-auto mb-4 shadow-sm flex items-center justify-center">
++                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
++                            </div>
++                            <h3 className="text-lg font-bold text-slate-700">No documents found</h3>
++                            <p className="text-slate-500 text-sm mt-1">Upload a PDF or add a URL to get started.</p>
++                        </div>
++                    ) : (
++                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${focusedSourceId ? 'hidden' : ''}`}>
++                            {filteredSources.map((source) => (
++                                <DocumentCard
++                                    key={source.id}
++                                    source={source}
++                                    isAnalyzing={analyzingId === source.id}
++                                    isSearching={searchingId === source.id}
++                                    isSelected={selectedIds.includes(source.id)}
++                                    onSelect={(selected) => toggleSelection(source.id, selected)}
++                                    onAnalyze={handleAnalyze}
++                                    onDelete={handleDelete}
++                                    onEdit={(s) => { setEditingSource(s); }}
++                                    onFindTraces={handleFindTraces}
++                                    onView={(s) => setViewingSource(s)}
++                                    onUpdateSource={handleEditSource}
++                                    isFocused={focusedSourceId === source.id}
++                                    onToggleFocus={() => setFocusedSourceId(focusedSourceId === source.id ? null : source.id)}
++                                />
++                            ))}
++                        </div>
++                    )}
++
++                    {/* Focus Mode View */}
++                    {focusedSourceId && (
++                        <div className="fixed inset-0 z-50 bg-white p-6 overflow-auto animate-in slide-in-from-bottom-10">
++                            <div className="container mx-auto max-w-6xl">
++                                <div className="flex items-center justify-between mb-6">
++                                    <h2 className="text-2xl font-bold">Focus Mode</h2>
++                                    <Button variant="outline" onClick={() => setFocusedSourceId(null)}>Close Focus</Button>
++                                </div>
++                                <div className="grid grid-cols-1 gap-8">
++                                    <div className="">
++                                        {/* Render the actual Analysis Results Dashboard */}
++                                        {(() => {
++                                            const focusedSource = sources.find(s => s.id === focusedSourceId);
++                                            if (focusedSource?.analysis) {
++                                                return (
++                                                    <AnalysisResults
++                                                        analysis={focusedSource.analysis}
++                                                        sourceTitle={focusedSource.title}
++                                                        onUpdate={async (updates) => {
++                                                            await updateSource(focusedSource.id, {
++                                                                analysis: { ...focusedSource.analysis!, ...updates }
++                                                            });
++                                                        }}
++                                                    />
++                                                );
++                                            } else {
++                                                return (
++                                                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
++                                                        <p className="text-slate-500 italic">No analysis data available for this document yet.</p>
++                                                        <Button
++                                                            variant="default"
++                                                            className="mt-4"
++                                                            onClick={() => setFocusedSourceId(null)}
++                                                        >
++                                                            Go back and run analysis
++                                                        </Button>
++                                                    </div>
++                                                );
++                                            }
++                                        })()}
++                                    </div>
++                                </div>
++                            </div>
++                        </div>
++                    )}
++                </TabsContent>
++
++                <TabsContent value="compare">
++                    <PolicyComparisonView sources={selectedSources} />
++                </TabsContent>
++            </Tabs>
++
++            {/* Dialogs */}
+             <AddDocumentDialog
+                 open={isAddDialogOpen}
+                 onOpenChange={setIsAddDialogOpen}
+@@ -392,12 +518,8 @@ export default function PolicyDocumentsPage() {
+                 onOpenChange={(open) => !open && setViewingSource(null)}
+             />
+ 
+-            <EditSourceDialog
+-                source={editingSource}
+-                open={!!editingSource}
+-                onOpenChange={(open) => !open && setEditingSource(null)}
+-                onSave={handleEditSource}
+-            />
++            {/* Edit Source Dialog (if you have one, or remove if unused) */}
++            {/* <EditSourceDialog ... /> */}
+ 
+             <PositionalityDialog
+                 isOpen={isPositionalityDialogOpen}
+
+commit b3f08ca6eff73ce4938c92990850d2b18cb15c41
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Mon Dec 15 10:04:33 2025 -0700
+
+    feat: complete full report integration (DOCX), refactor cultural page UI, and fix multilens errors
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 4b483e30..5de76fa5 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -2,7 +2,19 @@
+ 
+ import { useState, useRef } from "react";
+ import { useSources } from "@/hooks/useSources";
+-import { Source, LegitimacyAnalysis, PositionalityData, AnalysisResult } from "@/types";
++import { useServerStorage } from "@/hooks/useServerStorage";
++import { ReportData } from "@/types/report";
++import {
++    ResistanceSynthesisResult,
++    EcosystemImpact,
++    AnalysisResult,
++    Source,
++    LegitimacyAnalysis,
++    PositionalityData
++} from "@/types";
++import { EcosystemActor, EcosystemConfiguration, CulturalHolesAnalysisResult } from "@/types/ecosystem";
++import { ComparisonResult as OntologyComparisonResult, OntologyData } from "@/types/ontology";
++import { SynthesisComparisonResult } from "@/types/synthesis";
+ import { analyzeDocument, AnalysisMode } from "@/services/analysis";
+ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+@@ -12,16 +24,39 @@ import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
++import { generateFullReportDOCX } from "@/utils/generateFullReportDOCX";
+ import { Loader2 } from "lucide-react";
+ 
+ export default function PolicyDocumentsPage() {
+     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
++
++    // Data for Full Report Aggregation
++    const [resistanceSynthesis] = useServerStorage<ResistanceSynthesisResult | null>("resistance_synthesis_result", null);
++
++    const [ecosystemActors] = useServerStorage<EcosystemActor[]>("ecosystem_actors", []);
++    const [ecosystemConfigs] = useServerStorage<EcosystemConfiguration[]>("ecosystem_configurations", []);
++    const [culturalHoles] = useServerStorage<CulturalHolesAnalysisResult | null>("ecosystem_cultural_holes", null);
++
++    const [synthesisComparison] = useServerStorage<SynthesisComparisonResult | null>("synthesis_comparison_result", null);
++    const [synthesisImpacts] = useServerStorage<EcosystemImpact[]>("synthesis_ecosystem_impacts", []);
++
++    const [ontologyMaps] = useServerStorage<Record<string, OntologyData>>("ontology_maps", {});
++    const [ontologyComparison] = useServerStorage<OntologyComparisonResult | null>("ontology_comparison_result", null);
++
++    const [multiLensResults] = useServerStorage<Record<string, AnalysisResult | null>>("multi_lens_results", {
++        dsf: null, cultural_framing: null, institutional_logics: null, legitimacy: null
++    });
++    const [multiLensText] = useServerStorage<string>("multi_lens_text", "");
++
++
+     const [searchQuery, setSearchQuery] = useState("");
+     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+     const [searchingId, setSearchingId] = useState<string | null>(null);
++
+     const [isUploading, setIsUploading] = useState(false);
++    const [isExporting, setIsExporting] = useState(false);
+     const [viewingSource, setViewingSource] = useState<Source | null>(null);
+     const [editingSource, setEditingSource] = useState<Source | null>(null);
+     const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
+@@ -275,6 +310,40 @@ export default function PolicyDocumentsPage() {
+         );
+     }
+ 
++    const handleExportReport = async () => {
++        setIsExporting(true);
++        try {
++            const reportData: ReportData = {
++                sources: sources,
++                resistance: resistanceSynthesis,
++                ecosystem: {
++                    actors: ecosystemActors,
++                    configurations: ecosystemConfigs,
++                    culturalHoles: culturalHoles
++                },
++                synthesis: {
++                    comparison: synthesisComparison,
++                    ecosystemImpacts: synthesisImpacts
++                },
++                ontology: {
++                    maps: ontologyMaps,
++                    comparison: ontologyComparison
++                },
++                multiLens: {
++                    results: multiLensResults as any,
++                    text: multiLensText
++                }
++            };
++
++            await generateFullReportDOCX(reportData);
++        } catch (error) {
++            console.error("Export error:", error);
++            alert("Failed to generate report.");
++        } finally {
++            setIsExporting(false);
++        }
++    };
++
+     return (
+         <div className="space-y-8">
+             <DocumentToolbar
+@@ -285,6 +354,8 @@ export default function PolicyDocumentsPage() {
+                 fileInputRef={fileInputRef}
+                 onAddClick={() => setIsAddDialogOpen(true)}
+                 onAddUrlClick={() => setIsUrlDialogOpen(true)}
++                onExportReport={handleExportReport}
++                isExporting={isExporting}
+             />
+ 
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+commit 97cf8f6170e8d91228ecd6709aadb7928f997047
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Fri Dec 12 09:16:33 2025 -0700
+
+    chore: update prompts and types
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 15e014a2..4b483e30 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -216,24 +216,31 @@ export default function PolicyDocumentsPage() {
+                 headers: headers,
+                 body: JSON.stringify({
+                     policyText: source.extractedText.substring(0, 3000),
+-                    maxResults: 5
++                    maxResults: 10
+                 })
+             });
+ 
+             const result = await response.json();
+ 
+             if (result.success && Array.isArray(result.results) && result.results.length > 0) {
++                console.log("DEBUG: Data Page Search Results:", result.results);
+                 // Create trace sources from search results
+-                const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string }) => ({
++                const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string; strategy?: string; explanation?: string }) => ({
+                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                     title: `[Trace] ${item.title}`,
+                     description: item.snippet || 'No description available',
+                     type: "Trace" as const,
+-                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"`,
++                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"\n\nInitial Classification: ${item.strategy || 'None'}`,
+                     addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                     status: "Active Case" as const,
+                     colorClass: "bg-blue-100",
+-                    iconClass: "text-blue-600"
++                    iconClass: "text-blue-600",
++                    resistance_analysis: item.strategy ? {
++                        strategy_detected: item.strategy,
++                        evidence_quote: item.snippet,
++                        interpretation: item.explanation || "ΓÜá∩╕Å NO INTERPRETATION RECEIVED",
++                        confidence: "Medium" // Start with medium confidence until verified
++                    } : undefined
+                 }));
+ 
+                 // Add all traces to the store
+
+commit 7a2a11f4d8bdcf24dfbf61ae8d0657c75087e24f
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Wed Dec 10 19:53:03 2025 -0700
+
+    Fix Synthesis UI, API 400 errors, and Ontology defects
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9455ca8e..15e014a2 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -2,8 +2,8 @@
+ 
+ import { useState, useRef } from "react";
+ import { useSources } from "@/hooks/useSources";
+-import { Source, LegitimacyAnalysis, PositionalityData } from "@/types";
+-import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
++import { Source, LegitimacyAnalysis, PositionalityData, AnalysisResult } from "@/types";
++import { analyzeDocument, AnalysisMode } from "@/services/analysis";
+ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
+@@ -135,7 +135,8 @@ export default function PolicyDocumentsPage() {
+             (mode === 'dsf' && source.analysis) ||
+             (mode === 'cultural_framing' && source.cultural_framing) ||
+             (mode === 'institutional_logics' && source.institutional_logics) ||
+-            (mode === 'legitimacy' && source.legitimacy_analysis);
++            (mode === 'legitimacy' && source.legitimacy_analysis) ||
++            (mode === 'stress_test' && source.analysis?.stress_test_report);
+ 
+         if (hasAnalysis) {
+             if (!confirm('Analysis already exists for this document. Click OK to FORCE a re-run (bypassing cache), or Cancel to abort.')) {
+@@ -166,7 +167,8 @@ export default function PolicyDocumentsPage() {
+                 force,
+                 sourceId,
+                 source.title,
+-                positionalityData
++                positionalityData,
++                source.analysis // Pass existing analysis to avoid re-running it during stress test
+             );
+ 
+             const updates: Partial<Source> = {};
+@@ -174,11 +176,15 @@ export default function PolicyDocumentsPage() {
+             if (mode === 'cultural_framing') updates.cultural_framing = result;
+             if (mode === 'institutional_logics') updates.institutional_logics = result;
+             if (mode === 'legitimacy') updates.legitimacy_analysis = result as unknown as LegitimacyAnalysis;
++            if (mode === 'stress_test') {
++                // The API returns a full analysis object including standard DSF fields AND stress_test_report
++                updates.analysis = result;
++            }
+ 
+             await updateSource(sourceId, updates);
+ 
+-            if (mode === 'dsf') {
+-                alert('Analysis complete! Scroll down to see results.');
++            if (mode === 'dsf' || mode === 'stress_test') {
++                alert('Analysis complete! Scroll down to see results inside the document card.');
+             } else {
+                 alert(`Γ£à ${mode === 'cultural_framing' ? 'Cultural framing' : mode === 'institutional_logics' ? 'Institutional logics' : 'Legitimacy'} analysis complete! Go to Comparison page to view results.`);
+             }
+
+commit d5779ebb53f43d4acf522935007bff6ba4126fe7
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Tue Dec 9 15:19:12 2025 -0700
+
+    Update landing page with video and system description, refine demo page data
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9019b872..9455ca8e 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useState, useRef } from "react";
+ import { useSources } from "@/hooks/useSources";
+-import { Source, LegitimacyAnalysis } from "@/types";
++import { Source, LegitimacyAnalysis, PositionalityData } from "@/types";
+ import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
+ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+@@ -11,6 +11,7 @@ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+ import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
++import { PositionalityDialog } from "@/components/reflexivity/PositionalityDialog";
+ import { Loader2 } from "lucide-react";
+ 
+ export default function PolicyDocumentsPage() {
+@@ -23,6 +24,8 @@ export default function PolicyDocumentsPage() {
+     const [isUploading, setIsUploading] = useState(false);
+     const [viewingSource, setViewingSource] = useState<Source | null>(null);
+     const [editingSource, setEditingSource] = useState<Source | null>(null);
++    const [isPositionalityDialogOpen, setIsPositionalityDialogOpen] = useState(false);
++    const [pendingAnalysis, setPendingAnalysis] = useState<{ sourceId: string, mode: AnalysisMode, force: boolean } | null>(null);
+     const fileInputRef = useRef<HTMLInputElement | null>(null);
+ 
+     const filteredSources = sources.filter(source =>
+@@ -64,9 +67,14 @@ export default function PolicyDocumentsPage() {
+     };
+ 
+     const handleUrlAdd = async (url: string) => {
++        const headers: HeadersInit = { 'Content-Type': 'application/json' };
++        if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
++            headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
++        }
++
+         const response = await fetch('/api/fetch-url', {
+             method: 'POST',
+-            headers: { 'Content-Type': 'application/json' },
++            headers: headers,
+             body: JSON.stringify({ url })
+         });
+ 
+@@ -134,13 +142,21 @@ export default function PolicyDocumentsPage() {
+                 return;
+             }
+             force = true;
+-        } else {
+-            // Even if no analysis exists in UI, allow forcing if user holds Shift (optional, but good for debugging)
+-            // For now, let's just rely on the fact that if they click analyze, they probably want to analyze.
+-            // But if the cache is bad, we need a way to force it.
+-            // Let's add a small "Force" checkbox in the UI later, but for now, let's just log it.
+         }
+ 
++        setPendingAnalysis({ sourceId, mode, force });
++        setIsPositionalityDialogOpen(true);
++    };
++
++    const proceedWithAnalysis = async (positionalityData: PositionalityData) => {
++        if (!pendingAnalysis) return;
++        const { sourceId, mode, force } = pendingAnalysis;
++        const source = sources.find(s => s.id === sourceId);
++
++        setIsPositionalityDialogOpen(false);
++
++        if (!source || !source.extractedText) return;
++
+         setAnalyzingId(sourceId);
+         try {
+             const result = await analyzeDocument(
+@@ -149,7 +165,8 @@ export default function PolicyDocumentsPage() {
+                 'Policy Document',
+                 force,
+                 sourceId,
+-                source.title
++                source.title,
++                positionalityData
+             );
+ 
+             const updates: Partial<Source> = {};
+@@ -170,6 +187,7 @@ export default function PolicyDocumentsPage() {
+             alert(`Analysis failed: ${errorMessage}`);
+         } finally {
+             setAnalyzingId(null);
++            setPendingAnalysis(null);
+         }
+     };
+ 
+@@ -182,9 +200,14 @@ export default function PolicyDocumentsPage() {
+         setSearchingId(source.id);
+         try {
+             // Generate search terms from the document text
++            const headers: HeadersInit = { 'Content-Type': 'application/json' };
++            if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
++                headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
++            }
++
+             const response = await fetch('/api/search', {
+                 method: 'POST',
+-                headers: { 'Content-Type': 'application/json' },
++                headers: headers,
+                 body: JSON.stringify({
+                     policyText: source.extractedText.substring(0, 3000),
+                     maxResults: 5
+@@ -263,6 +286,7 @@ export default function PolicyDocumentsPage() {
+                         onEdit={(source) => setEditingSource(source)}
+                         onFindTraces={handleFindTraces}
+                         onView={(source) => setViewingSource(source)}
++                        onUpdateSource={updateSource}
+                     />
+                 ))}
+             </div>
+@@ -290,6 +314,12 @@ export default function PolicyDocumentsPage() {
+                 onOpenChange={(open) => !open && setEditingSource(null)}
+                 onSave={handleEditSource}
+             />
++
++            <PositionalityDialog
++                isOpen={isPositionalityDialogOpen}
++                onClose={() => setIsPositionalityDialogOpen(false)}
++                onConfirm={proceedWithAnalysis}
++            />
+         </div>
+     );
+ }
+
+commit 822d048713222b776ba18de72729046a007dc76c
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sat Nov 29 14:52:09 2025 -0700
+
+    Backup: Implemented Ontology Comparison and fixed API validation
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 9fed3cea..9019b872 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -26,8 +26,9 @@ export default function PolicyDocumentsPage() {
+     const fileInputRef = useRef<HTMLInputElement | null>(null);
+ 
+     const filteredSources = sources.filter(source =>
+-        source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+-        source.description.toLowerCase().includes(searchQuery.toLowerCase())
++        source.type !== 'Trace' &&
++        (source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
++            source.description.toLowerCase().includes(searchQuery.toLowerCase()))
+     );
+ 
+     const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+commit 19a25456726836d3fefb59fe8c153fb17b842e66
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sat Nov 29 07:11:20 2025 -0700
+
+    Fix analysis bugs, style results card, disable AI guide popup
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 2ee5417b..9fed3cea 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -143,10 +143,12 @@ export default function PolicyDocumentsPage() {
+         setAnalyzingId(sourceId);
+         try {
+             const result = await analyzeDocument(
+-                source.extractedText.substring(0, 25000),
++                source.extractedText.substring(0, 150000),
+                 mode,
+                 'Policy Document',
+-                force
++                force,
++                sourceId,
++                source.title
+             );
+ 
+             const updates: Partial<Source> = {};
+
+commit 5c006f440ec8007c6cb4bca3dab5dea2d850ca02
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Fri Nov 28 14:06:43 2025 -0700
+
+    Fix API route timeout and JSON parsing issues
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 3797264e..2ee5417b 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -129,10 +129,15 @@ export default function PolicyDocumentsPage() {
+             (mode === 'legitimacy' && source.legitimacy_analysis);
+ 
+         if (hasAnalysis) {
+-            if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
++            if (!confirm('Analysis already exists for this document. Click OK to FORCE a re-run (bypassing cache), or Cancel to abort.')) {
+                 return;
+             }
+             force = true;
++        } else {
++            // Even if no analysis exists in UI, allow forcing if user holds Shift (optional, but good for debugging)
++            // For now, let's just rely on the fact that if they click analyze, they probably want to analyze.
++            // But if the cache is bad, we need a way to force it.
++            // Let's add a small "Force" checkbox in the UI later, but for now, let's just log it.
+         }
+ 
+         setAnalyzingId(sourceId);
+
+commit a29f8dbaa802846a67c30092b79bb2eed65510c5
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Fri Nov 28 10:44:07 2025 -0700
+
+    feat: Implement Legitimacy Analysis, Comparative Synthesis, and URL fetching
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index d28ec19d..3797264e 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { useState, useRef } from "react";
+ import { useSources } from "@/hooks/useSources";
+-import { Source } from "@/types";
++import { Source, LegitimacyAnalysis } from "@/types";
+ import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
+ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+@@ -10,12 +10,14 @@ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
+ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
+ import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
++import { AddUrlDialog } from "@/components/policy/AddUrlDialog";
+ import { Loader2 } from "lucide-react";
+ 
+ export default function PolicyDocumentsPage() {
+     const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
+     const [searchQuery, setSearchQuery] = useState("");
+     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
++    const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+     const [searchingId, setSearchingId] = useState<string | null>(null);
+     const [isUploading, setIsUploading] = useState(false);
+@@ -60,6 +62,36 @@ export default function PolicyDocumentsPage() {
+         }
+     };
+ 
++    const handleUrlAdd = async (url: string) => {
++        const response = await fetch('/api/fetch-url', {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ url })
++        });
++
++        const data = await response.json();
++
++        if (!response.ok) {
++            throw new Error(data.error || 'Failed to fetch URL');
++        }
++
++        const newDoc: Source = {
++            id: Date.now().toString(),
++            title: data.title || url,
++            description: `Fetched from ${new URL(url).hostname}`,
++            type: "Web",
++            addedDate: new Date().toLocaleDateString(),
++            status: "Active Case",
++            colorClass: "bg-emerald-100",
++            iconClass: "text-emerald-600",
++            extractedText: data.content,
++            url: data.url
++        };
++
++        await addSource(newDoc);
++        alert('Website content added successfully!');
++    };
++
+     const handleAddSource = async (title: string, description: string, pageCount: string, publicationDate: string, version: string) => {
+         const source: Source = {
+             id: Date.now().toString(),
+@@ -93,7 +125,8 @@ export default function PolicyDocumentsPage() {
+         const hasAnalysis =
+             (mode === 'dsf' && source.analysis) ||
+             (mode === 'cultural_framing' && source.cultural_framing) ||
+-            (mode === 'institutional_logics' && source.institutional_logics);
++            (mode === 'institutional_logics' && source.institutional_logics) ||
++            (mode === 'legitimacy' && source.legitimacy_analysis);
+ 
+         if (hasAnalysis) {
+             if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
+@@ -115,13 +148,14 @@ export default function PolicyDocumentsPage() {
+             if (mode === 'dsf') updates.analysis = result;
+             if (mode === 'cultural_framing') updates.cultural_framing = result;
+             if (mode === 'institutional_logics') updates.institutional_logics = result;
++            if (mode === 'legitimacy') updates.legitimacy_analysis = result as unknown as LegitimacyAnalysis;
+ 
+             await updateSource(sourceId, updates);
+ 
+             if (mode === 'dsf') {
+                 alert('Analysis complete! Scroll down to see results.');
+             } else {
+-                alert(`Γ£à ${mode === 'cultural_framing' ? 'Cultural framing' : 'Institutional logics'} analysis complete! Go to Comparison page to view results.`);
++                alert(`Γ£à ${mode === 'cultural_framing' ? 'Cultural framing' : mode === 'institutional_logics' ? 'Institutional logics' : 'Legitimacy'} analysis complete! Go to Comparison page to view results.`);
+             }
+         } catch (error: unknown) {
+             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+@@ -206,6 +240,7 @@ export default function PolicyDocumentsPage() {
+                 isUploading={isUploading}
+                 fileInputRef={fileInputRef}
+                 onAddClick={() => setIsAddDialogOpen(true)}
++                onAddUrlClick={() => setIsUrlDialogOpen(true)}
+             />
+ 
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+@@ -230,6 +265,12 @@ export default function PolicyDocumentsPage() {
+                 onAdd={handleAddSource}
+             />
+ 
++            <AddUrlDialog
++                open={isUrlDialogOpen}
++                onOpenChange={setIsUrlDialogOpen}
++                onAdd={handleUrlAdd}
++            />
++
+             <ViewSourceDialog
+                 source={viewingSource}
+                 onOpenChange={(open) => !open && setViewingSource(null)}
+
+commit 8ccb5171528681090e9ce644669180b613fae258
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Thu Nov 27 11:44:29 2025 -0700
+
+    fix: Mobile visibility, re-analysis, large docs, and JSON parsing
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 757854e0..d28ec19d 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -88,12 +88,27 @@ export default function PolicyDocumentsPage() {
+             return;
+         }
+ 
++        // Check if analysis already exists
++        let force = false;
++        const hasAnalysis =
++            (mode === 'dsf' && source.analysis) ||
++            (mode === 'cultural_framing' && source.cultural_framing) ||
++            (mode === 'institutional_logics' && source.institutional_logics);
++
++        if (hasAnalysis) {
++            if (!confirm('Analysis already exists for this document. Do you want to re-run it? This will overwrite the existing analysis.')) {
++                return;
++            }
++            force = true;
++        }
++
+         setAnalyzingId(sourceId);
+         try {
+             const result = await analyzeDocument(
+-                source.extractedText.substring(0, 4000),
++                source.extractedText.substring(0, 25000),
+                 mode,
+-                'Policy Document'
++                'Policy Document',
++                force
+             );
+ 
+             const updates: Partial<Source> = {};
+
+commit 9323d464258c283cfaa874e0c2a5d69c734ece45
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Tue Nov 25 09:45:48 2025 -0700
+
+    refactor: Replace `onSubmit` prop with `onSend` in `ChatInput` component and stories.
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+index 600a15e2..757854e0 100644
+--- a/src/app/data/page.tsx
++++ b/src/app/data/page.tsx
+@@ -8,6 +8,7 @@ import { extractTextFromPDF } from "@/utils/pdfExtractor";
+ import { DocumentCard } from "@/components/policy/DocumentCard";
+ import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
+ import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
++import { EditSourceDialog } from "@/components/policy/EditSourceDialog";
+ import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
+ import { Loader2 } from "lucide-react";
+ 
+@@ -19,6 +20,7 @@ export default function PolicyDocumentsPage() {
+     const [searchingId, setSearchingId] = useState<string | null>(null);
+     const [isUploading, setIsUploading] = useState(false);
+     const [viewingSource, setViewingSource] = useState<Source | null>(null);
++    const [editingSource, setEditingSource] = useState<Source | null>(null);
+     const fileInputRef = useRef<HTMLInputElement | null>(null);
+ 
+     const filteredSources = sources.filter(source =>
+@@ -75,6 +77,10 @@ export default function PolicyDocumentsPage() {
+         await addSource(source);
+     };
+ 
++    const handleEditSource = async (sourceId: string, updates: Partial<Source>) => {
++        await updateSource(sourceId, updates);
++    };
++
+     const handleAnalyze = async (sourceId: string, mode: AnalysisMode) => {
+         const source = sources.find(s => s.id === sourceId);
+         if (!source || !source.extractedText) {
+@@ -102,8 +108,9 @@ export default function PolicyDocumentsPage() {
+             } else {
+                 alert(`Γ£à ${mode === 'cultural_framing' ? 'Cultural framing' : 'Institutional logics'} analysis complete! Go to Comparison page to view results.`);
+             }
+-        } catch (error: any) {
+-            alert(`Analysis failed: ${error.message || 'Unknown error'}`);
++        } catch (error: unknown) {
++            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
++            alert(`Analysis failed: ${errorMessage}`);
+         } finally {
+             setAnalyzingId(null);
+         }
+@@ -131,7 +138,7 @@ export default function PolicyDocumentsPage() {
+ 
+             if (result.success && Array.isArray(result.results) && result.results.length > 0) {
+                 // Create trace sources from search results
+-                const newTraces: Source[] = result.results.map((item: any) => ({
++                const newTraces: Source[] = result.results.map((item: { title: string; snippet: string; link: string }) => ({
+                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                     title: `[Trace] ${item.title}`,
+                     description: item.snippet || 'No description available',
+@@ -152,9 +159,10 @@ export default function PolicyDocumentsPage() {
+             } else {
+                 alert(`No traces found. ${result.error || 'Try analyzing the document first or check your Google Search API configuration.'}`);
+             }
+-        } catch (error: any) {
++        } catch (error: unknown) {
+             console.error('Search error:', error);
+-            alert(`Failed to search for traces: ${error.message || 'Unknown error'}\n\nMake sure your Google Search API credentials are configured in .env.local`);
++            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
++            alert(`Failed to search for traces: ${errorMessage}\n\nMake sure your Google Search API credentials are configured in .env.local`);
+         } finally {
+             setSearchingId(null);
+         }
+@@ -194,8 +202,9 @@ export default function PolicyDocumentsPage() {
+                         isSearching={searchingId === source.id}
+                         onAnalyze={handleAnalyze}
+                         onDelete={handleDelete}
++                        onEdit={(source) => setEditingSource(source)}
+                         onFindTraces={handleFindTraces}
+-                        onView={setViewingSource}
++                        onView={(source) => setViewingSource(source)}
+                     />
+                 ))}
+             </div>
+@@ -210,6 +219,13 @@ export default function PolicyDocumentsPage() {
+                 source={viewingSource}
+                 onOpenChange={(open) => !open && setViewingSource(null)}
+             />
++
++            <EditSourceDialog
++                source={editingSource}
++                open={!!editingSource}
++                onOpenChange={(open) => !open && setEditingSource(null)}
++                onSave={handleEditSource}
++            />
+         </div>
+     );
+ }
+
+commit 9f9ef1a67877fb598a3a8900261cdcd2e3527b64
+Author: tsedbrpp <58303545+tsedbrpp@users.noreply.github.com>
+Date:   Sun Nov 23 08:24:13 2025 -0700
+
+    first push
+
+diff --git a/src/app/data/page.tsx b/src/app/data/page.tsx
+new file mode 100644
+index 00000000..600a15e2
+--- /dev/null
++++ b/src/app/data/page.tsx
+@@ -0,0 +1,215 @@
++"use client";
++
++import { useState, useRef } from "react";
++import { useSources } from "@/hooks/useSources";
++import { Source } from "@/types";
++import { analyzeDocument, generateSearchTerms, AnalysisMode } from "@/services/analysis";
++import { extractTextFromPDF } from "@/utils/pdfExtractor";
++import { DocumentCard } from "@/components/policy/DocumentCard";
++import { AddDocumentDialog } from "@/components/policy/AddDocumentDialog";
++import { ViewSourceDialog } from "@/components/policy/ViewSourceDialog";
++import { DocumentToolbar } from "@/components/policy/DocumentToolbar";
++import { Loader2 } from "lucide-react";
++
++export default function PolicyDocumentsPage() {
++    const { sources, isLoading: isSourcesLoading, addSource, updateSource, deleteSource } = useSources();
++    const [searchQuery, setSearchQuery] = useState("");
++    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
++    const [analyzingId, setAnalyzingId] = useState<string | null>(null);
++    const [searchingId, setSearchingId] = useState<string | null>(null);
++    const [isUploading, setIsUploading] = useState(false);
++    const [viewingSource, setViewingSource] = useState<Source | null>(null);
++    const fileInputRef = useRef<HTMLInputElement | null>(null);
++
++    const filteredSources = sources.filter(source =>
++        source.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
++        source.description.toLowerCase().includes(searchQuery.toLowerCase())
++    );
++
++    const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
++        const file = e.target.files?.[0];
++        if (!file) return;
++
++        setIsUploading(true);
++        try {
++            const extractionResult = await extractTextFromPDF(file);
++            const text = typeof extractionResult === 'string' ? extractionResult : extractionResult.text;
++            const newDoc: Source = {
++                id: Date.now().toString(),
++                title: file.name.replace('.pdf', ''),
++                description: `Uploaded ${new Date().toLocaleDateString()}`,
++                type: "PDF",
++                addedDate: new Date().toLocaleDateString(),
++                status: "Active Case",
++                colorClass: "bg-purple-100",
++                iconClass: "text-purple-600",
++                extractedText: text
++            };
++            await addSource(newDoc);
++            alert('PDF uploaded successfully!');
++        } catch (error) {
++            console.error('PDF upload error:', error);
++            alert('Failed to upload PDF. Please try again.');
++        } finally {
++            setIsUploading(false);
++            if (fileInputRef.current) {
++                fileInputRef.current.value = '';
++            }
++        }
++    };
++
++    const handleAddSource = async (title: string, description: string, pageCount: string, publicationDate: string, version: string) => {
++        const source: Source = {
++            id: Date.now().toString(),
++            title,
++            description,
++            type: "Text",
++            pageCount: pageCount ? parseInt(pageCount) : undefined,
++            publicationDate: publicationDate || undefined,
++            version: version || undefined,
++            addedDate: new Date().toLocaleDateString(),
++            status: "Active Case",
++            colorClass: "bg-blue-100",
++            iconClass: "text-blue-600"
++        };
++        await addSource(source);
++    };
++
++    const handleAnalyze = async (sourceId: string, mode: AnalysisMode) => {
++        const source = sources.find(s => s.id === sourceId);
++        if (!source || !source.extractedText) {
++            alert('No text available to analyze. Please upload a PDF or add text first.');
++            return;
++        }
++
++        setAnalyzingId(sourceId);
++        try {
++            const result = await analyzeDocument(
++                source.extractedText.substring(0, 4000),
++                mode,
++                'Policy Document'
++            );
++
++            const updates: Partial<Source> = {};
++            if (mode === 'dsf') updates.analysis = result;
++            if (mode === 'cultural_framing') updates.cultural_framing = result;
++            if (mode === 'institutional_logics') updates.institutional_logics = result;
++
++            await updateSource(sourceId, updates);
++
++            if (mode === 'dsf') {
++                alert('Analysis complete! Scroll down to see results.');
++            } else {
++                alert(`Γ£à ${mode === 'cultural_framing' ? 'Cultural framing' : 'Institutional logics'} analysis complete! Go to Comparison page to view results.`);
++            }
++        } catch (error: any) {
++            alert(`Analysis failed: ${error.message || 'Unknown error'}`);
++        } finally {
++            setAnalyzingId(null);
++        }
++    };
++
++    const handleFindTraces = async (source: Source) => {
++        if (!source.extractedText) {
++            alert('Please upload a PDF or add text first before finding traces.');
++            return;
++        }
++
++        setSearchingId(source.id);
++        try {
++            // Generate search terms from the document text
++            const response = await fetch('/api/search', {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify({
++                    policyText: source.extractedText.substring(0, 3000),
++                    maxResults: 5
++                })
++            });
++
++            const result = await response.json();
++
++            if (result.success && Array.isArray(result.results) && result.results.length > 0) {
++                // Create trace sources from search results
++                const newTraces: Source[] = result.results.map((item: any) => ({
++                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
++                    title: `[Trace] ${item.title}`,
++                    description: item.snippet || 'No description available',
++                    type: "Trace" as const,
++                    extractedText: `${item.snippet}\n\nSource: ${item.link}\n\nFound via search for: "${result.searchQuery || 'policy analysis'}"`,
++                    addedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
++                    status: "Active Case" as const,
++                    colorClass: "bg-blue-100",
++                    iconClass: "text-blue-600"
++                }));
++
++                // Add all traces to the store
++                for (const trace of newTraces) {
++                    await addSource(trace);
++                }
++
++                alert(`Γ£à Found ${newTraces.length} empirical traces!\n\nSearch query: "${result.searchQuery}"\n\nTraces have been added to your sources. Go to the Resistance page to analyze them.`);
++            } else {
++                alert(`No traces found. ${result.error || 'Try analyzing the document first or check your Google Search API configuration.'}`);
++            }
++        } catch (error: any) {
++            console.error('Search error:', error);
++            alert(`Failed to search for traces: ${error.message || 'Unknown error'}\n\nMake sure your Google Search API credentials are configured in .env.local`);
++        } finally {
++            setSearchingId(null);
++        }
++    };
++
++    const handleDelete = async (sourceId: string) => {
++        if (confirm('Are you sure you want to delete this source?')) {
++            await deleteSource(sourceId);
++        }
++    };
++
++    if (isSourcesLoading) {
++        return (
++            <div className="flex items-center justify-center h-64">
++                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
++            </div>
++        );
++    }
++
++    return (
++        <div className="space-y-8">
++            <DocumentToolbar
++                searchQuery={searchQuery}
++                onSearchChange={setSearchQuery}
++                onUpload={handlePDFUpload}
++                isUploading={isUploading}
++                fileInputRef={fileInputRef}
++                onAddClick={() => setIsAddDialogOpen(true)}
++            />
++
++            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
++                {filteredSources.map((source) => (
++                    <DocumentCard
++                        key={source.id}
++                        source={source}
++                        isAnalyzing={analyzingId === source.id}
++                        isSearching={searchingId === source.id}
++                        onAnalyze={handleAnalyze}
++                        onDelete={handleDelete}
++                        onFindTraces={handleFindTraces}
++                        onView={setViewingSource}
++                    />
++                ))}
++            </div>
++
++            <AddDocumentDialog
++                open={isAddDialogOpen}
++                onOpenChange={setIsAddDialogOpen}
++                onAdd={handleAddSource}
++            />
++
++            <ViewSourceDialog
++                source={viewingSource}
++                onOpenChange={(open) => !open && setViewingSource(null)}
++            />
++        </div>
++    );
++}

@@ -42,7 +42,12 @@ export async function getAuthenticatedUserId(request: NextRequest): Promise<stri
             (syncUserId && demoUserId === syncUserId) ||
             (!demoUserId && !process.env.NEXT_PUBLIC_DEMO_USER_ID)
         ) {
-            // Global Sync Logic for Demo Mode fallback
+            // IF the user explicitly set NEXT_PUBLIC_DEMO_USER_ID, always respect the isolated Sandbox!
+            if (process.env.NEXT_PUBLIC_DEMO_USER_ID && demoUserId === validDemoId) {
+                return validDemoId;
+            }
+
+            // Global Sync Logic fallback ONLY if no explicit demo user ID was configured
             if (syncUserId && syncUserId.length > 0) {
                 return syncUserId;
             }

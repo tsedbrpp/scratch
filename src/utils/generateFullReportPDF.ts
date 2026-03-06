@@ -261,11 +261,28 @@ class ReportGenerator {
             );
         }
     }
+
+    public addImage(base64Image: string, expectedHeightMm: number = 0) {
+        if (!base64Image) return;
+
+        // Roughly calculate aspect ratio height
+        const imgWidth = this.contentWidth;
+        const imgHeight = expectedHeightMm > 0 ? expectedHeightMm : (this.contentWidth / 1200) * 630; // ~2:1 widescreen fallback
+
+        this.checkPageBreak(imgHeight + 10);
+
+        try {
+            this.doc.addImage(base64Image, "PNG", STYLE.margin, this.y, imgWidth, imgHeight);
+            this.y += imgHeight + 10;
+        } catch (e) {
+            console.error("Failed to add image to PDF:", e);
+        }
+    }
 }
 
 // --- Main Export ---
 
-export function generateFullReportPDF(sources: Source[]) {
+export function generateFullReportPDF(sources: Source[], mapImages?: Record<string, string>) {
     const generator = new ReportGenerator();
 
     // 1. Title Page
@@ -290,6 +307,11 @@ export function generateFullReportPDF(sources: Source[]) {
 
         // Source Header
         generator.addSourceHeader(index + 1, source);
+
+        // Map Image (if provided)
+        if (mapImages && mapImages[source.id]) {
+            generator.addImage(mapImages[source.id]);
+        }
 
         // 1. Cultural Framing
         if (source.cultural_framing) {

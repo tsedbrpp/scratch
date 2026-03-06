@@ -295,25 +295,80 @@ export function OntologyMap({
         return "none";
       });
 
-    // Node Label (ForeignObject for wrapping text)
+    // Node Label (SVG text with manual wrapping)
     node
-      .append("foreignObject")
-      .attr("x", -35)
-      .attr("y", -35)
-      .attr("width", 70)
-      .attr("height", 70)
-      .append("xhtml:div")
-      .style("height", "100%")
-      .style("width", "100%")
-      .style("display", "flex")
-      .style("align-items", "center")
-      .style("justify-content", "center")
-      .style("text-align", "center")
-      .style("pointer-events", "none")
-      .html(
-        (d) =>
-          `<span class="text-xs font-medium text-slate-800 line-clamp-3 leading-tight px-1">${d.label}</span>`,
-      );
+      .append("text") // Append text directly to each node group
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .attr("pointer-events", "none")
+      .style("font-size", "10px")
+      .style("font-weight", "500")
+      .style("fill", "#1e293b")
+      .style("font-family", "Inter, sans-serif")
+      .each(function (d: D3Node) { // Use D3Node type for d
+        // Simple manual word wrap for SVG text since foreignObject doesn't export well
+        const text = d.label || "";
+        const words = text.split(/\s+/);
+        let line: string[] = [];
+        let lineNumber = 0;
+        const lineHeight = 1.1; // ems
+        const maxCharsPerLine = 12; // Max characters per line
+        const maxLines = 3; // Max lines to display
+        const el = d3.select(this);
+
+        // Clear existing tspans if any (though join should handle this)
+        el.text("");
+
+        let currentLineLength = 0;
+        let currentLineWords: string[] = [];
+
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const potentialLine = currentLineWords.concat(word).join(" ");
+
+          if (potentialLine.length > maxCharsPerLine && currentLineWords.length > 0) {
+            // If adding the word exceeds max chars and we already have words in current line,
+            // finalize current line and start a new one.
+            if (lineNumber < maxLines) {
+              el.append("tspan")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("dy", `${lineNumber * lineHeight}em`)
+                .text(currentLineWords.join(" "));
+              lineNumber++;
+            } else {
+              // If max lines reached, add ellipsis to the last line
+              const lastTspan = el.select(`tspan:nth-child(${maxLines})`);
+              if (!lastTspan.empty()) {
+                lastTspan.text(lastTspan.text() + "...");
+              }
+              break; // Stop processing words
+            }
+            currentLineWords = [word];
+            currentLineLength = word.length;
+          } else {
+            // Otherwise, add word to current line
+            currentLineWords.push(word);
+            currentLineLength = potentialLine.length;
+          }
+        }
+
+        // Add the last line if it has content and max lines not exceeded
+        if (currentLineWords.length > 0 && lineNumber < maxLines) {
+          el.append("tspan")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("dy", `${lineNumber * lineHeight}em`)
+            .text(currentLineWords.join(" "));
+          lineNumber++;
+        }
+
+        // Vertically center the entire block
+        const totalHeight = lineNumber * lineHeight;
+        el.selectAll("tspan").attr("y", function (d, i, nodes) {
+          return `${(i - (lineNumber - 1) / 2) * lineHeight}em`;
+        });
+      });
 
     // Click handler
     node.on("click", (event, d) => {
@@ -439,7 +494,7 @@ export function OntologyMap({
         </div>
       </CardHeader>
       <div className="flex-1 bg-slate-50 relative overflow-hidden">
-        <svg ref={svgRef} className="w-full h-full cursor-move">
+        <svg id="ontology-map-canvas" ref={svgRef} className="w-full h-full cursor-move">
           <g ref={containerRef} />
         </svg>
 

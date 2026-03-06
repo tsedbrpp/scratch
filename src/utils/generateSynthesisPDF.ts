@@ -7,7 +7,8 @@ export function generateSynthesisPDF(
     sourceB: string,
     abstractMachines?: any,
     controversyA?: any,
-    controversyB?: any
+    controversyB?: any,
+    amChartImage?: string | null
 ) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -146,6 +147,17 @@ export function generateSynthesisPDF(
     // 5. Abstract Machines Comparison
     if (abstractMachines?.comparison?.double_articulation) {
         addSection("Abstract Machines Comparison");
+
+        if (amChartImage) {
+            checkPageBreak(120);
+
+            // Calculate a 100% width proportional image size
+            const imgWidth = contentWidth;
+            const imgHeight = (contentWidth / 1200) * 630; // Assuming ~2:1 widescreen aspect from the DOM
+
+            doc.addImage(amChartImage, "PNG", margin, y, imgWidth, imgHeight);
+            y += imgHeight + 10;
+        }
 
         abstractMachines.comparison.double_articulation.forEach((art: any, index: number) => {
             checkPageBreak(30);
