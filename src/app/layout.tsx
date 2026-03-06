@@ -62,7 +62,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "G-X5H4YK2J0G"} />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "G-P2NYG967XZ"} />
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
           suppressHydrationWarning

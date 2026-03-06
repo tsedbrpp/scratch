@@ -23,7 +23,7 @@ export function StepByStep() {
                             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100">
                                 <Upload className="h-8 w-8 text-indigo-600" />
                             </div>
-                            <dt className="text-xl font-bold leading-7 text-slate-900">
+                            <dt className="text-2xl font-extrabold leading-7 text-slate-900">
                                 1. Upload Documents
                             </dt>
                             <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600">
@@ -39,7 +39,7 @@ export function StepByStep() {
                             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100">
                                 <Search className="h-8 w-8 text-emerald-600" />
                             </div>
-                            <dt className="text-xl font-bold leading-7 text-slate-900">
+                            <dt className="text-2xl font-extrabold leading-7 text-slate-900">
                                 2. Select Your Lenses
                             </dt>
                             <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600">
@@ -55,7 +55,7 @@ export function StepByStep() {
                             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 border border-purple-100">
                                 <Share2 className="h-8 w-8 text-purple-600" />
                             </div>
-                            <dt className="text-xl font-bold leading-7 text-slate-900">
+                            <dt className="text-2xl font-extrabold leading-7 text-slate-900">
                                 3. Visualize & Export
                             </dt>
                             <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600">

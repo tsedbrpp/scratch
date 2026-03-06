@@ -1,10 +1,14 @@
 
-
 import React from "react";
 
 export function TheoreticalGrounding() {
     return (
-        <div className="bg-slate-950 py-16 border-b border-slate-900 relative">
+        <div className="bg-slate-950 py-24 sm:py-32 border-b border-slate-900 relative mt-16 sm:mt-24">
+            {/* Slanted Section Divider */}
+            <svg className="absolute top-0 left-0 w-full h-12 sm:h-24 -mt-12 sm:-mt-24 text-slate-950" preserveAspectRatio="none" viewBox="0 0 100 100" fill="currentColor">
+                <polygon points="0,100 100,0 100,100" />
+            </svg>
+
             {/* Subtle background glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>

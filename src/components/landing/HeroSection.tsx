@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Activity } from "lucide-react";
+import { Activity, Sparkles, Users, Eye, Zap, RefreshCw } from "lucide-react";
 import { HeroGraph } from "@/components/landing/HeroGraph";
 import { PrismIcon } from "@/components/icons/PrismIcon";
 
@@ -26,7 +26,7 @@ export function HeroSection() {
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56 text-center">
                 <div className="hidden sm:mb-8 sm:flex sm:justify-center">
                     <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-400/20 bg-emerald-400/10 hover:ring-emerald-400/30 transition-all flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-                        <span className="flex items-center gap-1"><span className="text-lg">🍵</span> Instant Insight. Steeped in Theory.</span>
+                        <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-emerald-400" /> Clarity through Analysis.</span>
                         <span className="hidden sm:inline w-px h-4 bg-emerald-400/20"></span>
                         <a href="mailto:demo@policyprism.com?subject=Schedule%2030-min%20Demo" className="font-semibold text-emerald-300 hover:text-emerald-200">
                             Book a 30-min Demo <span aria-hidden="true">&rarr;</span>
@@ -59,31 +59,39 @@ export function HeroSection() {
                         <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 shadow-xl my-8">
                             <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Love Policy Prism</h3>
                             <ul className="space-y-4">
-                                <li className="flex gap-4 items-start">
-                                    <span className="text-emerald-400 mt-1">✨</span>
+                                <li className="flex gap-4 items-start group">
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-emerald-400/10 flex items-center justify-center shrink-0 border border-emerald-400/20 group-hover:scale-110 group-hover:bg-emerald-400/20 transition-all">
+                                        <Users className="w-4 h-4 text-emerald-400" />
+                                    </div>
                                     <div>
                                         <span className="text-emerald-300 font-bold block mb-1">Work together live</span>
                                         <span className="text-slate-300">Everyone can edit the same map, add notes, and talk about it at the same time.</span>
                                     </div>
                                 </li>
-                                <li className="flex gap-4 items-start">
-                                    <span className="text-emerald-400 mt-1">👁️</span>
+                                <li className="flex gap-4 items-start group">
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-blue-400/10 flex items-center justify-center shrink-0 border border-blue-400/20 group-hover:scale-110 group-hover:bg-blue-400/20 transition-all">
+                                        <Eye className="w-4 h-4 text-blue-400" />
+                                    </div>
                                     <div>
-                                        <span className="text-emerald-300 font-bold block mb-1">Nothing hidden</span>
+                                        <span className="text-blue-300 font-bold block mb-1">Nothing hidden</span>
                                         <span className="text-slate-300">You see exactly how the map is made, so you can trust it.</span>
                                     </div>
                                 </li>
-                                <li className="flex gap-4 items-start">
-                                    <span className="text-emerald-400 mt-1">⚡</span>
+                                <li className="flex gap-4 items-start group">
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-amber-400/10 flex items-center justify-center shrink-0 border border-amber-400/20 group-hover:scale-110 group-hover:bg-amber-400/20 transition-all">
+                                        <Zap className="w-4 h-4 text-amber-400" />
+                                    </div>
                                     <div>
-                                        <span className="text-emerald-300 font-bold block mb-1">Super fast</span>
+                                        <span className="text-amber-300 font-bold block mb-1">Super fast</span>
                                         <span className="text-slate-300">Get useful insights in seconds, not weeks, and spend more time planning.</span>
                                     </div>
                                 </li>
-                                <li className="flex gap-4 items-start">
-                                    <span className="text-emerald-400 mt-1">🔄</span>
+                                <li className="flex gap-4 items-start group">
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-violet-400/10 flex items-center justify-center shrink-0 border border-violet-400/20 group-hover:scale-110 group-hover:bg-violet-400/20 transition-all">
+                                        <RefreshCw className="w-4 h-4 text-violet-400" />
+                                    </div>
                                     <div>
-                                        <span className="text-emerald-300 font-bold block mb-1">Built for change</span>
+                                        <span className="text-violet-300 font-bold block mb-1">Built for change</span>
                                         <span className="text-slate-300">Things shift quickly in policy. Policy Prism gives temporary views that spark team discussions.</span>
                                     </div>
                                 </li>

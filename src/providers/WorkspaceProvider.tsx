@@ -80,7 +80,10 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // 2. Fetch Teams
     const fetchTeams = useCallback(async () => {
-        if (!userId) return;
+        if (!userId) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const res = await fetch('/api/collaboration/teams');
