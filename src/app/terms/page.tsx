@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
                             <h1 className="text-3xl font-bold tracking-tight">Terms of Service</h1>
                         </div>
                         <p className="text-slate-300 text-lg">
-                            The rules and regulations for using the instantTEA platform.
+                            The rules and regulations for using the Policy Prism platform.
                         </p>
                         <p className="text-slate-400 text-sm mt-4">Last Updated: {new Date().toLocaleDateString()}</p>
                     </div>
@@ -33,7 +33,7 @@ export default function TermsOfServicePage() {
                                 1. Acceptance of Terms
                             </h2>
                             <p className="text-slate-600">
-                                By accessing or using <strong>instantTEA</strong>, you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access the service.
+                                By accessing or using <strong>Policy Prism</strong>, you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access the service.
                             </p>
                         </section>
 
@@ -76,7 +76,7 @@ export default function TermsOfServicePage() {
                                     <strong>"As Is" Service:</strong> The service is provided "AS IS" and "AS AVAILABLE" without any warranties of any kind. We do not guarantee the service will be uninterrupted or error-free.
                                 </p>
                                 <p>
-                                    **Limitation:** In no event shall instantTEA be liable for any indirect, incidental, special, consequential or punitive damages.
+                                    **Limitation:** In no event shall Policy Prism be liable for any indirect, incidental, special, consequential or punitive damages.
                                 </p>
                             </div>
                         </section>
@@ -112,13 +112,13 @@ export default function TermsOfServicePage() {
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Contact Us</h3>
                             <p className="text-slate-600 mb-4">If you have any questions about these Terms, please contact us.</p>
-                            <a href="mailto:admin@instanttea.com" className="text-blue-600 font-semibold hover:underline">admin@instanttea.com</a>
+                            <a href="mailto:admin@policyprism.com" className="text-blue-600 font-semibold hover:underline">admin@policyprism.com</a>
                         </section>
 
                     </div>
 
                     <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center text-slate-500 text-sm">
-                        &copy; {new Date().getFullYear()} instantTEA Research Group.
+                        &copy; {new Date().getFullYear()} Policy Prism Research Group.
                     </div>
                 </div>
             </div>

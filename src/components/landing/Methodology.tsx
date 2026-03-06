@@ -24,10 +24,10 @@ export function Methodology() {
                                     <div className="p-1 bg-indigo-500/20 rounded">
                                         <Play className="h-4 w-4 text-indigo-400" />
                                     </div>
-                                    Introduction To instantTEA
+                                    Introduction To Policy Prism
                                 </h3>
                                 <p className="text-sm text-slate-400 mt-1">
-                                    A video exploration of the need for instantTEA.
+                                    A video exploration of the need for Policy Prism.
                                 </p>
                             </div>
                             <div className="aspect-video w-full bg-black relative">

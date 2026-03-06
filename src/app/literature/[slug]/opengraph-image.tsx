@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { getPostBySlug } from '@/lib/mdx';
 
-export const alt = 'InstantTea Literature';
+export const alt = 'Policy Prism Literature';
 export const size = {
     width: 1200,
     height: 630,
@@ -13,8 +13,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     const post = await getPostBySlug('literature', p.slug);
 
     // Fallback if not found
-    const title = post?.frontmatter.title || 'InstantTea Literature';
-    const author = post?.frontmatter.author || 'InstantTea Team';
+    const title = post?.frontmatter.title || 'Policy Prism Literature';
+    const author = post?.frontmatter.author || 'Policy Prism Team';
 
     return new ImageResponse(
         (
@@ -41,7 +41,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                         marginBottom: '40px',
                         letterSpacing: '-0.05em'
                     }}>
-                        InstantTea
+                        Policy Prism
                         <span style={{ color: '#0f172a', marginLeft: '12px' }}>Literature</span>
                     </div>
 
@@ -81,7 +81,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                         fontSize: '28px',
                         fontWeight: '500'
                     }}>
-                        instanttea.com
+                        policyprism.com
                     </div>
                 </div>
             </div>

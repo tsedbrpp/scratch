@@ -165,7 +165,7 @@ export default function OntologyPage() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(researchState, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `instanttea_study_${researchState.evaluatorCode}.json`);
+        downloadAnchorNode.setAttribute("download", `policyprism_study_${researchState.evaluatorCode}.json`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();

@@ -5,7 +5,7 @@ export function ConsentContent() {
         <div className="space-y-6 text-sm leading-relaxed text-muted-foreground max-w-3xl mx-auto">
             <h3 className="font-semibold text-foreground">1. Invitation and Overview</h3>
             <p>
-                You are invited to participate in a research study evaluating whether the InstantTea platform correctly flags potential &quot;Ghost Nodes&quot;: stakeholders or actors that may be materially relevant to governance outcomes but are absent from a policy text&apos;s formal roles, rights, obligations, remedies, oversight, or enforcement pathways.
+                You are invited to participate in a research study evaluating whether the Policy Prism platform correctly flags potential &quot;Ghost Nodes&quot;: stakeholders or actors that may be materially relevant to governance outcomes but are absent from a policy text&apos;s formal roles, rights, obligations, remedies, oversight, or enforcement pathways.
             </p>
             <p>
                 If you agree to participate, you will review a set of cases drawn from AI governance legal and policy documents and provide expert ratings and brief comments.
@@ -18,7 +18,7 @@ export function ConsentContent() {
             <ul className="list-disc pl-5 space-y-1">
                 <li>establish an expert benchmark for model validation,</li>
                 <li>measure agreement across expert reviewers, and</li>
-                <li>refine InstantTea&apos;s detection criteria and outputs.</li>
+                <li>refine Policy Prism&apos;s detection criteria and outputs.</li>
             </ul>
 
             <h3 className="font-semibold text-foreground">3. Eligibility</h3>
@@ -39,7 +39,7 @@ export function ConsentContent() {
             </p>
             <ul className="list-disc pl-5 space-y-1">
                 <li>Complete a brief expertise profile (e.g., domain focus, role, familiarity with relevant jurisdictions).</li>
-                <li>Evaluate 10 cases of potential Ghost Nodes presented in the InstantTea interface.</li>
+                <li>Evaluate 10 cases of potential Ghost Nodes presented in the Policy Prism interface.</li>
             </ul>
             <p>
                 For each case, provide:

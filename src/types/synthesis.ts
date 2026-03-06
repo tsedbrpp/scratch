@@ -13,6 +13,21 @@ export interface SynthesisTopologyAxis {
 }
 
 export interface SynthesisComparisonResult {
+    key_divergences?: {
+        theme: string;
+        description: string;
+        tea?: {
+            term: string;
+            referent: string;
+            effect: string;
+            embedding_score?: number;
+            legibility_score?: number;
+        };
+        ant_bullets?: string[];
+        assemblage_bullets?: string[];
+        implication?: string;
+        stances?: { policy: string; stance: string }[];
+    }[];
     risk: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
     governance: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };
     rights: { convergence: string; divergence: string; coloniality: string; resistance: string; convergence_score?: number; coloniality_score?: number };

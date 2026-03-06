@@ -10,7 +10,7 @@ export function LandingFooter() {
                 <div className="col-span-1 md:col-span-2">
                     <div className="flex items-center gap-2 mb-4">
                         <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg"></div>
-                        <span className="text-xl font-bold text-white">instantTEA</span>
+                        <span className="text-xl font-bold text-white">Policy Prism</span>
                     </div>
                     <p className="text-sm leading-relaxed max-w-xs">
                         An open-source platform for critical policy and governance research, bridging the gap between policy intent and reality.
@@ -41,7 +41,7 @@ export function LandingFooter() {
                 </div>
             </div>
             <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 pt-8 border-t border-slate-900 text-xs text-center">
-                &copy; {new Date().getFullYear()} instantTEA Research Group. Open Source (MIT License).
+                &copy; {new Date().getFullYear()} Policy Prism Research Group. Open Source (MIT License).
             </div>
         </footer>
     );

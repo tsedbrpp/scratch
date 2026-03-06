@@ -3,7 +3,7 @@ import { CompareMachinesClient } from "@/components/analysis/CompareMachinesClie
 import { Network } from "lucide-react";
 
 export const metadata = {
-    title: "Compare Abstract Machines - InstantTea",
+    title: "Compare Abstract Machines - Policy Prism",
     description: "Compare abstract machines, operators, tokens, and double articulations side-by-side.",
 };
 

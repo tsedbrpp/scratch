@@ -16,9 +16,8 @@ import { AnalysisResult, GhostNode } from '@/types';
 export const maxDuration = 300; // Allow up to 5 minutes for analysis
 export const dynamic = 'force-dynamic';
 
-// Increment this version to invalidate all cached analyses
-const PROMPT_VERSION = 'v47-relaxed-schema';
-// Invalidated to debug ghost node pipeline
+// v53: Force extraction of translations and apex nodes for EU, Brazil, and India
+const PROMPT_VERSION = 'v53-tea-force-jurisdictions';
 
 /**
  * Determines the user ID to use for cache operations.
@@ -625,13 +624,16 @@ ${text}
         
         INSTRUCTIONS:
         CRITICAL: The INPUT DATA contains a "ant_assemblage_synthesis_report". You MUST read this theoretical synthesis narrative first, and use its conclusions as the primary foundational logic for mapping the TEA Diagram below.
-        CRITICAL: You MUST explicitly EXCLUDE any analysis of the United States (US). You MUST focus ONLY on the jurisdictions of Brazil, the European Union (EU), and India. Ensure local translations exist explicitly for these three jurisdictions.
+        
+        NEGATIVE CONSTRAINTS (MANDATORY):
+        1. You MUST explicitly EXCLUDE any analysis of the United States (US). You MUST focus ONLY on the jurisdictions of Brazil, the European Union (EU), and India. Ensure local translations exist explicitly for these three jurisdictions.
+        2. You MUST NOT mention the corporate entity "Slack" anywhere in the output, including in the contestations or outcomes. Focus purely on systemic policy contestations.
         
         Output a strict JSON object mapping the text to the TEA framework:
-        1. "vocabularies": Array of objects { id, term, description } (Portable Governance Vocabularies like "risk", "impact assessment")
-        2. "translations": Array of objects { id, jurisdiction, referential_drift: string[], description }
+        1. "vocabularies": Array of objects { id, term, description } (Portable Governance Vocabularies. Extract the structural, high-frequency terms that are actually anchoring the policy compliance mechanisms, e.g., "risk", "impact assessment", "conformity".)
+        2. "translations": Array of objects { id, jurisdiction, referential_drift: string[], description } (CRITICAL: You MUST generate discrete and distinct local translations for ALL THREE targeted jurisdictions: the European Union (EU), Brazil, and India. Do not skip any.)
         3. "embedding_infrastructures": Array of objects { id, name, description } (Embedding Infrastructures like "audits", "standards")
-        4. "apex_nodes": Array of objects { id, name, function: string[] } (e.g. "AI Office")
+        4. "apex_nodes": Array of objects { id, name, function: string[] } (CRITICAL: You MUST identify the coordinating or regulatory Apex Node for ALL THREE targeted jurisdictions: EU (e.g., AI Office), Brazil (e.g., ANPD), and India (e.g., MeitY/Ministry). Do not skip any.)
         5. "contestations": Array of objects { id, type: "counter_translation" | "sedimentation", description, examples: string[] }. CRITICAL: You MUST extract instances of "sedimentation" (where categories become normalized/entrenched) as well as "counter_translation".
         6. "stratified_legibility": Object { highly_legible: string[], weakly_legible: string[], description }
         7. "short_summary": A very brief 2-sentence executive summary of the TEA dynamics suitable for a UI header.

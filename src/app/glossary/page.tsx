@@ -144,7 +144,7 @@ const TERMS = [
     {
         term: "Translation-Embedding Account (TEA)",
         definition: "A mid-range theory of transnational digital governance formation explaining how portable governance vocabularies circulate, translate, and become institutionally durable through embedding in compliance infrastructures.",
-        scholar: "InstantTEA Framework",
+        scholar: "Policy Prism Framework",
         category: "TEA Framework"
     },
     {

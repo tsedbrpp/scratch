@@ -10,7 +10,7 @@ export function Community() {
                 <div className="mx-auto max-w-2xl lg:text-center mb-16">
                     <h2 className="text-base font-semibold leading-7 text-indigo-600">Community</h2>
                     <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                        Who uses instantTEA?
+                        Who uses Policy Prism?
                     </p>
                 </div>
                 <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-2">
@@ -20,7 +20,7 @@ export function Community() {
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 mb-2">For Researchers & Scholars</h3>
                         <p className="text-slate-600 leading-relaxed">
-                            Use instantTEA for initial tracing of actors in empirical studies, then layer with slower methods for full assemblage mapping.
+                            Use Policy Prism for initial tracing of actors in empirical studies, then layer with slower methods for full assemblage mapping.
                         </p>
                     </div>
                     <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">

@@ -5,6 +5,7 @@ import { TEAAnalysis } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Network, ArrowRight, ShieldAlert, BookOpen, Layers, AlertTriangle, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function TEADiagram({ data }: { data: TEAAnalysis }) {
     // We'll use a responsive flex-col to flex-row layout.
@@ -21,7 +22,10 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
                         <Network className="h-6 w-6 text-indigo-600" />
                         Translation-Embedding Account (TEA)
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1">Travel → Translate → Embed → Legibility → Contest</p>
+                    <p className="text-sm font-medium text-slate-600 mt-2">
+                        <strong>Macro Ecosystem View:</strong> Maps the global diffusion and structural embedding of multiple policy vocabularies.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Travel → Translate → Embed → Legibility → Contest</p>
                 </div>
             </div>
 
@@ -35,7 +39,17 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative">
                 {/* 1. Portable Governance Codes */}
                 <div className="flex flex-col space-y-4">
-                    <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">1. Portable Vocabularies</h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">1. Portable Vocabularies</h3>
+                        <Popover>
+                            <PopoverTrigger>
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+                            </PopoverTrigger>
+                            <PopoverContent className="text-sm w-72 text-slate-700 leading-relaxed shadow-md border-slate-200" side="bottom">
+                                <strong>Portable Vocabularies:</strong> Shared governance terms (e.g., "risk", "impact", "rights") that easily travel across transnational borders but often lack a fixed substantive meaning until embedded.
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base text-blue-800 dark:text-blue-300 flex items-center gap-2">
@@ -55,7 +69,17 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
 
                 {/* 2. Local Translation Regimes */}
                 <div className="flex flex-col space-y-4">
-                    <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">2. Local Translations</h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">2. Local Translations</h3>
+                        <Popover>
+                            <PopoverTrigger>
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+                            </PopoverTrigger>
+                            <PopoverContent className="text-sm w-72 text-slate-700 leading-relaxed shadow-md border-slate-200" side="bottom">
+                                <strong>Local Translations:</strong> How a portable term is differently interpreted and anchored into the distinct political, legal, and administrative traditions of a specific jurisdiction.
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     {(data.translations || []).map(regime => (
                         <Card key={regime.id} className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900">
                             <CardHeader className="pb-2">
@@ -76,7 +100,17 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
 
                 {/* 3. Stratifying Infrastructures */}
                 <div className="flex flex-col space-y-4">
-                    <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">3. Embedding Infrastructures</h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">3. Embedding Infrastructures</h3>
+                        <Popover>
+                            <PopoverTrigger>
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+                            </PopoverTrigger>
+                            <PopoverContent className="text-sm w-72 text-slate-700 leading-relaxed shadow-md border-slate-200" side="bottom">
+                                <strong>Embedding Infrastructures:</strong> The technical and bureaucratic systems (e.g., audits, registries, specific standards) that hard-code a translated concept into durable, enforceable compliance routines.
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     <Card className="bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900 h-full">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base text-amber-800 dark:text-amber-300 flex items-center gap-2">
@@ -119,7 +153,17 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
 
                 {/* 4. Coordinating Apex Nodes */}
                 <div className="flex flex-col space-y-4">
-                    <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">4. Apex Nodes</h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">4. Apex Nodes</h3>
+                        <Popover>
+                            <PopoverTrigger>
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+                            </PopoverTrigger>
+                            <PopoverContent className="text-sm w-72 text-slate-700 leading-relaxed shadow-md border-slate-200" side="bottom">
+                                <strong>Apex Nodes:</strong> Powerful coordinating institutions or bodies (e.g., AI Offices, Data Boards) that emerge to orchestrate and enforce the new bureaucratic infrastructure.
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                     <Card className="bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 h-full">
                         <CardContent className="pt-6 space-y-4">
                             {(data.apex_nodes || []).map(node => (
@@ -140,7 +184,17 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
 
                 {/* 5. Sedimentation & Counter-Translations */}
                 <div className="flex flex-col space-y-4">
-                    <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">5. Outcomes</h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold uppercase text-slate-500 tracking-wider">5. Outcomes</h3>
+                        <Popover>
+                            <PopoverTrigger>
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-help" />
+                            </PopoverTrigger>
+                            <PopoverContent className="text-sm w-72 text-slate-700 leading-relaxed shadow-md border-slate-200" side="bottom" align="end">
+                                <strong>Outcomes:</strong> The structural results of embedding—either the <em>Sedimentation</em> (normalization) of the governance category, or <em>Counter-Translations</em> (resistance) when the infrastructure fails to make certain harms or actors legible.
+                            </PopoverContent>
+                        </Popover>
+                    </div>
 
                     {/* Sedimentation */}
                     <Card className="bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900">
@@ -217,7 +271,7 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
                                         <div className="flex flex-col md:flex-row gap-4">
                                             <div className="flex-1">
                                                 <h4 className="font-semibold text-indigo-900 mb-2 text-sm">
-                                                    Proposition {prop.id.replace('prop_', '')}: {prop.proposition}
+                                                    Proposition {String(prop.id).replace('prop_', '')}: {prop.proposition}
                                                 </h4>
                                                 <p className="text-sm text-slate-700 bg-indigo-50/50 p-3 rounded-md border border-indigo-50/50">
                                                     <strong className="text-indigo-950 block mb-1">Empirical Evidence:</strong>

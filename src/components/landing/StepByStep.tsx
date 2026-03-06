@@ -12,7 +12,7 @@ export function StepByStep() {
                         From Text to Topology in 3 Steps
                     </h2>
                     <p className="mt-4 text-lg leading-8 text-slate-600">
-                        Instant TEA streamlines the complex process of Actor-Network Theory mapping.
+                        Policy Prism streamlines the complex process of Actor-Network Theory mapping.
                     </p>
                 </div>
                 <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">

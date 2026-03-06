@@ -34,6 +34,7 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 
 import { WorkspaceSelector } from "@/components/collaboration/WorkspaceSelector"; // [Collab]
 import { useWorkspace } from "@/providers/WorkspaceProvider"; // [Collab]
+import { PrismIcon } from "@/components/icons/PrismIcon";
 
 interface NavGroup {
     title: string;
@@ -131,6 +132,12 @@ const NAV_GROUPS: NavGroup[] = [
                 description: "Comparative synthesis across cases."
             },
             {
+                name: "Theory Map (TEA)",
+                href: "/theory-map",
+                icon: Network,
+                description: "View the translational embedding map."
+            },
+            {
                 name: "Micro-Resistance",
                 href: "/resistance",
                 icon: Users,
@@ -222,12 +229,12 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                 {/* ... (Existing Logo Logic) ... */}
                 <Link href="/" className="flex items-center gap-2 overflow-hidden group">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/20 group-hover:scale-105 transition-transform duration-300">
-                        <LayoutDashboard className="text-white w-5 h-5" />
+                        <PrismIcon className="text-white w-5 h-5" />
                     </div>
                     {!isCollapsed && (
                         <div className="flex flex-col">
                             <span className="font-bold text-lg text-white tracking-tight whitespace-nowrap animate-in fade-in duration-300 group-hover:text-blue-100 transition-colors">
-                                Instant <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">TEA</span>
+                                Policy <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Prism</span>
                             </span>
                             {isReadOnly && (
                                 <span className="text-[10px] leading-tight font-bold text-amber-500 animate-in fade-in uppercase tracking-wider">
@@ -445,10 +452,10 @@ export function Sidebar() {
             <div className="md:hidden flex items-center justify-between p-4 bg-slate-950 border-b border-slate-900 fixed top-0 left-0 right-0 z-30">
                 <Link href="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-lg flex items-center justify-center">
-                        <LayoutDashboard className="text-white w-5 h-5" />
+                        <PrismIcon className="text-white w-5 h-5" />
                     </div>
                     <span className="font-bold text-lg text-white tracking-tight">
-                        Instant <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">TEA</span>
+                        Policy <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Prism</span>
                     </span>
                 </Link>
                 <button

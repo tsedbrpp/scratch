@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
                             <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
                         </div>
                         <p className="text-slate-300 text-lg">
-                            We value your trust. This policy outlines how instantTEA collects, uses, and protects your research data.
+                            We value your trust. This policy outlines how Policy Prism collects, uses, and protects your research data.
                         </p>
                         <p className="text-slate-400 text-sm mt-4">Last Updated: {new Date().toLocaleDateString()}</p>
                     </div>
@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
                             </h2>
                             <div className="prose prose-slate max-w-none text-slate-600">
                                 <p>
-                                    Your data is used exclusively to provide the instantTEA service.
+                                    Your data is used exclusively to provide the Policy Prism service.
                                 </p>
                                 <ul>
                                     <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg my-4">
@@ -156,13 +156,13 @@ export default function PrivacyPolicyPage() {
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Questions?</h3>
                             <p className="text-slate-600 mb-4">If you have any questions about this Privacy Policy, please contact us.</p>
-                            <a href="mailto:admin@instanttea.com" className="text-blue-600 font-semibold hover:underline">admin@instanttea.com</a>
+                            <a href="mailto:admin@policyprism.com" className="text-blue-600 font-semibold hover:underline">admin@policyprism.com</a>
                         </section>
 
                     </div>
 
                     <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center text-slate-500 text-sm">
-                        &copy; {new Date().getFullYear()} instantTEA Research Group.
+                        &copy; {new Date().getFullYear()} Policy Prism Research Group.
                     </div>
                 </div>
             </div>

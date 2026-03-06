@@ -5,8 +5,8 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'About | InstantTea',
-    description: 'Learn about InstantTea, an open-source research initiative designed to map, analyze, and critique the complex ecosystems of global AI governance.',
+    title: 'About | Policy Prism',
+    description: 'Learn about Policy Prism, an open-source research initiative designed to map, analyze, and critique the complex ecosystems of global AI governance.',
 };
 
 export default function AboutPage() {
@@ -25,7 +25,7 @@ export default function AboutPage() {
                         Bridging Policy Intent <br className="hidden sm:block" /> and Reality
                     </h1>
                     <p className="text-lg text-slate-600 leading-relaxed">
-                        instantTEA is an open-source research initiative designed to map, analyze, and critique the complex ecosystems of global AI governance.
+                        Policy Prism is an open-source research initiative designed to map, analyze, and critique the complex ecosystems of global AI governance.
                     </p>
                 </div>
 

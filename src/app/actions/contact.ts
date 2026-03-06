@@ -63,7 +63,7 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const adminEmail = process.env.CONTACT_EMAIL || "admin@instanttea.com";
+    const adminEmail = process.env.CONTACT_EMAIL || "admin@policyprism.com";
 
     if (!smtpHost || !smtpUser || !smtpPass) {
         console.error("Missing SMTP Configuration", { smtpHost, smtpUser });
@@ -94,7 +94,7 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
             from: `"${rawFormData.name}" <${process.env.SMTP_FROM || smtpUser}>`, // Sender address
             to: adminEmail, // List of receivers
             replyTo: rawFormData.email,
-            subject: `[InstantTea Contact] ${rawFormData.subject || "New Message"}`, // Subject line
+            subject: `[Policy Prism Contact] ${rawFormData.subject || "New Message"}`, // Subject line
             text: `
 Name: ${rawFormData.name}
 Email: ${rawFormData.email}

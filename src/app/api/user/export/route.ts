@@ -58,7 +58,7 @@ export async function GET() {
 
             legal: {
                 export_reason: "GDPR Article 20 - Data Portability",
-                processor: "instantTEA",
+                processor: "Policy Prism",
             }
         };
 

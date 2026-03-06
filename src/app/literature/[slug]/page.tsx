@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
 
     return {
-        title: `${post.frontmatter.title} | InstantTea Literature`,
+        title: `${post.frontmatter.title} | Policy Prism Literature`,
         description: post.frontmatter.description,
         openGraph: {
             title: post.frontmatter.title,

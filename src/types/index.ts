@@ -256,6 +256,9 @@ export interface AnalysisResult {
 
     // [NEW] Governance Status
     escalation_status?: import('./escalation').EscalationStatus;
+
+    // Abstract Machine
+    abstract_machine?: AbstractMachineAnalysis;
 }
 
 // --- GHOST NODE (v2.0 Spec) ---
@@ -438,6 +441,16 @@ export interface ComparativeSynthesis {
     key_divergences: {
         theme: string;
         description: string;
+        tea?: {
+            term: string;
+            referent: string;
+            effect: string;
+            embedding_score?: number;
+            legibility_score?: number;
+        };
+        ant_bullets?: string[];
+        assemblage_bullets?: string[];
+        implication?: string;
         stances: { policy: string; stance: string }[];
     }[];
     concept_mutations: {

@@ -50,7 +50,7 @@ export async function sendStudyResultsEmail(studyState: StudyState): Promise<Ema
         });
 
         await transporter.sendMail({
-            from: `"InstantTea Research" <${process.env.SMTP_FROM || smtpUser}>`,
+            from: `"Policy Prism Research" <${process.env.SMTP_FROM || smtpUser}>`,
             to: adminEmail,
             subject: `[STUDY SUBMISSION] Evaluator: ${studyState.evaluatorCode}`,
             text: `

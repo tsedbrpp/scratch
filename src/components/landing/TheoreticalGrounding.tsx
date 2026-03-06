@@ -26,7 +26,7 @@ export function TheoreticalGrounding() {
                         </dt>
                         <dd className="flex flex-auto flex-col text-base leading-7 text-slate-300">
                             <p className="flex-auto">
-                                Outputs are actively produced through processes of inscription, enrollment, and mobilization—not neutral discoveries. instantTEA &quot;translates&quot; heterogeneous actors (human, non-human, material, discursive) into visible networks.
+                                Outputs are actively produced through processes of inscription, enrollment, and mobilization—not neutral discoveries. Policy Prism &quot;translates&quot; heterogeneous actors (human, non-human, material, discursive) into visible networks.
                             </p>
                         </dd>
                     </div>
@@ -37,7 +37,7 @@ export function TheoreticalGrounding() {
                         </dt>
                         <dd className="flex flex-auto flex-col text-base leading-7 text-slate-300">
                             <p className="flex-auto">
-                                Emphasizes temporality, contingency, and decay. Assemblages are never fully stable. instantTEA&apos;s &quot;instant&quot; snapshots capture a moment, but they fade or evolve—encouraging users to revisit and iterate.
+                                Emphasizes temporality, contingency, and decay. Assemblages are never fully stable. Policy Prism&apos;s &quot;instant&quot; snapshots capture a moment, but they fade or evolve—encouraging users to revisit and iterate.
                             </p>
                         </dd>
                     </div>
@@ -48,7 +48,7 @@ export function TheoreticalGrounding() {
                         </dt>
                         <dd className="flex flex-auto flex-col text-base leading-7 text-slate-300">
                             <p className="flex-auto">
-                                Retains the core focus on emergent wholes from heterogeneous parts, with capacities for expression, agency, and becoming. Keeps instantTEA grounded in relational ontologies.
+                                Retains the core focus on emergent wholes from heterogeneous parts, with capacities for expression, agency, and becoming. Keeps Policy Prism grounded in relational ontologies.
                             </p>
                         </dd>
                     </div>

@@ -1,0 +1,15 @@
+src/app/analysis/[id]/page.tsx(300,58): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/analysis/[id]/page.tsx(303,61): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/analysis/[id]/page.tsx(306,50): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/analysis/[id]/page.tsx(355,45): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/analysis/[id]/page.tsx(356,81): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/analyze/compare-machines/route.ts(78,36): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/analyze/compare-machines/route.ts(78,80): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/analyze/compare-machines/route.ts(83,62): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/analyze/compare-machines/route.ts(84,64): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/analyze/controversy-mapping/route.ts(74,50): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/sources/abstract-machines/route.ts(32,69): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+src/app/api/sources/abstract-machines/route.ts(42,51): error TS2339: Property 'abstract_machine' does not exist on type 'AnalysisResult'.
+test-redis.ts(17,18): error TS2339: Property 'key_divergences' does not exist on type '{}'.
+test-redis.ts(18,53): error TS2339: Property 'key_divergences' does not exist on type '{}'.
+test-redis.ts(19,68): error TS2339: Property 'key_divergences' does not exist on type '{}'.

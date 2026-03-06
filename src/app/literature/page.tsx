@@ -17,7 +17,7 @@ export default async function LiteraturePage() {
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold text-slate-900">Theoretical Framework & Literature</h1>
                 <p className="text-slate-600 max-w-3xl">
-                    Explore our in-depth articles on methodology, or review the core theoretical underpinnings framing the InstantTea architecture.
+                    Explore our in-depth articles on methodology, or review the core theoretical underpinnings framing the Policy Prism architecture.
                 </p>
             </div>
 

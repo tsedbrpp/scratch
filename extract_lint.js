@@ -2,29 +2,30 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 
 try {
-    const output = execSync('npx eslint src --format json', { encoding: 'utf8' });
-    console.log("No lint errors found!");
-} catch (error) {
-    if (error.stdout) {
-        try {
-            const data = JSON.parse(error.stdout);
-            let summary = "";
-            let errorCount = 0;
-
-            data.filter(r => r.errorCount > 0 || r.warningCount > 0).forEach(r => {
-                summary += `\nFile: ${r.filePath}\n`;
-                r.messages.forEach(m => {
-                    summary += `  Line ${m.line}: ${m.message} (${m.ruleId})\n`;
-                    errorCount++;
-                });
-            });
-
-            fs.writeFileSync('lint_summary_clean.txt', summary);
-            console.log(`Saved ${errorCount} lint issues to lint_summary_clean.txt`);
-        } catch (parseError) {
-            console.error("Failed to parse JSON output", parseError);
-        }
-    } else {
-        console.error("Failed to run eslint", error);
+    // Capture tsc output explicitly in utf8
+    let tscOutput = '';
+    try {
+        tscOutput = execSync('npx tsc --noEmit', { encoding: 'utf8', stdio: 'pipe' });
+    } catch (e) {
+        tscOutput = e.stdout.toString();
     }
+
+    // Save as clean utf8
+    fs.writeFileSync('clean-tsc-errors.txt', tscOutput, 'utf8');
+
+    // Tally top files with errors
+    const lines = tscOutput.split('\n');
+    const files = {};
+    for (const line of lines) {
+        const match = line.match(/^([a-zA-Z0-9_\-\./\\]+\.tsx?)\(/);
+        if (match) {
+            files[match[1]] = (files[match[1]] || 0) + 1;
+        }
+    }
+
+    const sorted = Object.entries(files).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    console.log("TOP FILES WITH TSC ERRORS:");
+    console.log(sorted);
+} catch (err) {
+    console.error(err);
 }

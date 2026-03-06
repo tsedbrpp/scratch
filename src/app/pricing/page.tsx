@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Pricing & Academic Grants | InstantTea',
+    title: 'Pricing & Academic Grants | Policy Prism',
     description: 'Transparent pay-as-you-go pricing for open science AI governance mapping. Discounts and free grants available for students and academic researchers.',
 };
 

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ArrowLeft, BookOpen, Scale, GitPullRequest, Eye, Globe, Shield } from "lucide-react";
 
 export const metadata = {
-    title: "Contributor Credit Policy | instantTEA",
-    description: "Policy on earning usage credits through substantive contributions to InstantTEA.",
+    title: "Contributor Credit Policy | Policy Prism",
+    description: "Policy on earning usage credits through substantive contributions to Policy Prism.",
 };
 
 export default function ContributorCreditPolicyPage() {
@@ -18,7 +18,7 @@ export default function ContributorCreditPolicyPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
                     </Link>
                     <div className="border-b border-slate-800 pb-8">
-                        <h1 className="text-4xl font-extrabold text-white mb-2">InstantTEA Contributor Credit Policy</h1>
+                        <h1 className="text-4xl font-extrabold text-white mb-2">Policy Prism Contributor Credit Policy</h1>
                         <p className="text-slate-400 text-lg">Version 1.0 • Effective: Upon publication</p>
                     </div>
                 </div>
@@ -29,7 +29,7 @@ export default function ContributorCreditPolicyPage() {
                         <span className="text-emerald-500">1.</span> Purpose
                     </h2>
                     <p className="text-slate-400 leading-relaxed">
-                        This policy defines how users may earn <strong>usage credits</strong> through substantive contributions to the critical, interpretive, and technical development of InstantTEA. The policy exists to:
+                        This policy defines how users may earn <strong>usage credits</strong> through substantive contributions to the critical, interpretive, and technical development of Policy Prism. The policy exists to:
                     </p>
                     <ul className="list-disc pl-6 text-slate-400 space-y-2">
                         <li>Recognize <strong>intellectual and critical labor</strong> as infrastructural work</li>
@@ -50,7 +50,7 @@ export default function ContributorCreditPolicyPage() {
                         <span className="text-emerald-500">2.</span> Principle of Alignment
                     </h2>
                     <p className="text-slate-400 leading-relaxed">
-                        InstantTEA treats critique as a <strong>constitutive component</strong> of the system rather than external feedback. Accordingly:
+                        Policy Prism treats critique as a <strong>constitutive component</strong> of the system rather than external feedback. Accordingly:
                     </p>
                     <div className="grid sm:grid-cols-3 gap-4">
                         <Card className="bg-slate-900 border-slate-800">
@@ -148,7 +148,7 @@ export default function ContributorCreditPolicyPage() {
                             </tbody>
                         </table>
                     </div>
-                    <p className="text-xs text-slate-500 italic">Final credit determination is made by the InstantTEA governance team.</p>
+                    <p className="text-xs text-slate-500 italic">Final credit determination is made by the Policy Prism governance team.</p>
                 </section>
 
                 {/* 5-10 Remaining Sections (Grouped for brevity) */}

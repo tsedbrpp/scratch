@@ -3,7 +3,7 @@ import { Activity } from "lucide-react";
 import { ControversyDashboard } from "@/components/analysis/ControversyDashboard";
 
 export const metadata = {
-    title: "Controversy Mapping - InstantTea",
+    title: "Controversy Mapping - Policy Prism",
     description: "Meta-Synthesis of consensus, frictions, and structural contradictions.",
 };
 

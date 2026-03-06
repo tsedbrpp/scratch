@@ -108,13 +108,13 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                                     </div>
                                 </div>
 
-                                {/* Optional: InstantTea credits */}
+                                {/* Optional: Policy Prism credits */}
                                 <div className="pt-4 border-t border-slate-100 space-y-2">
                                     <h3 className="font-bold text-slate-900">
-                                        Optional: InstantTea credits (unrelated to payment)
+                                        Optional: Policy Prism credits (unrelated to payment)
                                     </h3>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        If you&apos;d like to explore InstantTea with your own AI governance documents, you may create an account to receive <strong>100 free credits</strong>. This is completely optional and not required to receive your honorarium.
+                                        If you&apos;d like to explore Policy Prism with your own AI governance documents, you may create an account to receive <strong>100 free credits</strong>. This is completely optional and not required to receive your honorarium.
                                     </p>
                                 </div>
                             </CardContent>
@@ -128,7 +128,7 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                             }}
                             className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-md text-base py-5 font-bold"
                         >
-                            Explore InstantTea
+                            Explore Policy Prism
                         </Button>
 
                         <Button

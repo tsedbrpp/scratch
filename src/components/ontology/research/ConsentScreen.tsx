@@ -20,7 +20,7 @@ export function ConsentScreen({ onConsent, onDecline }: ConsentScreenProps) {
                     <CardTitle className="text-3xl font-bold text-slate-900 tracking-tight">Research Study Information and Consent Form</CardTitle>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 mt-3 pt-2">
                         <span className="flex items-center gap-1.5"><strong className="text-slate-900">Study Title:</strong> Expert Evaluation of &quot;Ghost Node&quot; Detection in AI Governance Policy Texts</span>
-                        <span className="flex items-center gap-1.5"><strong className="text-slate-900">Principal Investigator:</strong> Tod Sedbrook, PhD (InstantTea Research Group)</span>
+                        <span className="flex items-center gap-1.5"><strong className="text-slate-900">Principal Investigator:</strong> Tod Sedbrook, PhD (Policy Prism Research Group)</span>
                         <span className="flex items-center gap-1.5"><strong className="text-slate-900">PI Email:</strong> Tod.Sedbrook@bears.unco.edu</span>
                         <span className="flex items-center gap-1.5"><strong className="text-slate-900">Version Date:</strong> February 22, 2026</span>
                     </div>

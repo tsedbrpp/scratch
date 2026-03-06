@@ -308,6 +308,6 @@ export function useForceGraph(
         return { dragStarted, dragged, dragEnded };
     }
 
-    // eslint-disable-next-line react-hooks/refs
+     
     return { nodes, simulation: simulationRef.current, drag };
 }

@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { ContactForm } from "@/components/contact/ContactForm";
 
 export const metadata: Metadata = {
-    title: 'Contact Us | InstantTea',
-    description: 'Get in touch with the InstantTea team for research questions, account issues, or enterprise inquiries related to our AI governance mapping tools.',
+    title: 'Contact Us | Policy Prism',
+    description: 'Get in touch with the Policy Prism team for research questions, account issues, or enterprise inquiries related to our AI governance mapping tools.',
 };
 
 export default function ContactPage() {
@@ -37,8 +37,8 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold text-white">Email Support</h3>
                                         <p className="text-slate-400 text-sm mt-1">Typical response time: &lt; 24h</p>
-                                        <a href="mailto:support@instanttea.com" className="text-emerald-400 text-sm hover:underline mt-1 block">
-                                            support@instanttea.com
+                                        <a href="mailto:support@policyprism.com" className="text-emerald-400 text-sm hover:underline mt-1 block">
+                                            support@policyprism.com
                                         </a>
                                     </div>
                                 </div>

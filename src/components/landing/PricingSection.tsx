@@ -99,7 +99,7 @@ export function PricingSection() {
 
                                 <div className="p-8 pt-0 mt-auto">
                                     {isInstitution ? (
-                                        <a href="mailto:sales@instanttea.com" className="block">
+                                        <a href="mailto:sales@policyprism.com" className="block">
                                             <Button className="w-full bg-transparent hover:bg-slate-800 text-white border border-slate-700 transition-all">
                                                 Contact Sales
                                             </Button>

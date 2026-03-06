@@ -20,7 +20,7 @@ export default function TransparencyTestPage() {
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Algorithmic Transparency Test</h1>
                     <p className="text-zinc-400">
-                        This page demonstrates the transparency infrastructure for Instant TEA's scoring algorithms.
+                        This page demonstrates the transparency infrastructure for Policy Prism's scoring algorithms.
                     </p>
                 </div>
 

@@ -382,7 +382,7 @@ function AnalysisPageContent() {
                         {activeSection === 'reflexivity' && (
                             <div className="space-y-6">
                                 {(source.analysis.system_critique || critiqueResult) ? (
-                                    <SystemCritiqueSection critique={critiqueResult || source.analysis.system_critique!} />
+                                    <SystemCritiqueSection critique={(critiqueResult || source.analysis.system_critique)!} />
                                 ) : (
                                     <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
                                         <ShieldCheck className="h-12 w-12 text-slate-300 mx-auto mb-4" />

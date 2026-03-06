@@ -78,7 +78,7 @@ export function ResearchWorkflowGuide() {
                 <div>
                     <h3 className="font-bold text-sm flex items-center gap-2">
                         <BookOpen size={16} className="text-blue-400" />
-                        Instant TEA workflow
+                        Policy Prism workflow
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
                         Critical Analysis Workflow

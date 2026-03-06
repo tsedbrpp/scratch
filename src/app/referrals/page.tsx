@@ -22,7 +22,7 @@ export default async function ReferralsPage() {
                             Give 100, Get 5
                         </h1>
                         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                            Invite your colleagues to InstantTea. They get <span className="font-bold text-indigo-600">100 free credits</span> instantly,
+                            Invite your colleagues to Policy Prism. They get <span className="font-bold text-indigo-600">100 free credits</span> instantly,
                             and you get <span className="font-bold text-indigo-600">5 credits</span> when they use your code.
                         </p>
                     </div>

@@ -14,7 +14,7 @@ export default function DocumentationPage() {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="bg-slate-900 px-8 py-10 text-white">
-                        <h1 className="text-3xl font-bold tracking-tight">instantTEA System Documentation</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">Policy Prism System Documentation</h1>
                         <p className="mt-4 text-slate-300 text-lg">
                             Comprehensive technical guide for the Translational, Ephemeral Assemblages platform.
                         </p>
@@ -30,7 +30,7 @@ export default function DocumentationPage() {
                             </h2>
                             <div className="prose prose-slate max-w-none text-slate-600 space-y-4">
                                 <p>
-                                    <strong>instantTEA</strong> is an open-source platform for critical policy and governance research. It bridges the gap between policy intent and algorithmic reality by translating complex socio-technical assemblages into provisional, situated snapshots.
+                                    <strong>Policy Prism</strong> is an open-source platform for critical policy and governance research. It bridges the gap between policy intent and algorithmic reality by translating complex socio-technical assemblages into provisional, situated snapshots.
                                 </p>
                                 <div className="grid md:grid-cols-3 gap-6 mt-6">
                                     <div className="bg-blue-50 p-4 rounded-lg">
@@ -188,7 +188,7 @@ export default function DocumentationPage() {
                     </div>
 
                     <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center text-slate-500 text-sm">
-                        &copy; {new Date().getFullYear()} instantTEA Research Group. MIT License.
+                        &copy; {new Date().getFullYear()} Policy Prism Research Group. MIT License.
                     </div>
                 </div>
             </div>

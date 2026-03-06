@@ -309,7 +309,7 @@ export function OntologyMap({
         // Simple manual word wrap for SVG text since foreignObject doesn't export well
         const text = d.label || "";
         const words = text.split(/\s+/);
-        let line: string[] = [];
+        const line: string[] = [];
         let lineNumber = 0;
         const lineHeight = 1.1; // ems
         const maxCharsPerLine = 12; // Max characters per line

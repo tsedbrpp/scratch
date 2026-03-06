@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
 import { HeroGraph } from "@/components/landing/HeroGraph";
+import { PrismIcon } from "@/components/icons/PrismIcon";
 
 export function HeroSection() {
     return (
@@ -27,38 +28,36 @@ export function HeroSection() {
                     <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-emerald-400 ring-1 ring-emerald-400/20 bg-emerald-400/10 hover:ring-emerald-400/30 transition-all flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
                         <span className="flex items-center gap-1"><span className="text-lg">🍵</span> Instant Insight. Steeped in Theory.</span>
                         <span className="hidden sm:inline w-px h-4 bg-emerald-400/20"></span>
-                        <a href="mailto:demo@instanttea.com?subject=Schedule%2030-min%20Demo" className="font-semibold text-emerald-300 hover:text-emerald-200">
+                        <a href="mailto:demo@policyprism.com?subject=Schedule%2030-min%20Demo" className="font-semibold text-emerald-300 hover:text-emerald-200">
                             Book a 30-min Demo <span aria-hidden="true">&rarr;</span>
                         </a>
                     </div>
                 </div>
-                {/* Replaced Text Title with Branding Image */}
-                <div className="flex justify-center mb-8">
-                    <Image
-                        src="/instanttea-logo.png"
-                        alt="InstantTea"
-                        width={400} // Approximate width for h-64
-                        height={256} // h-64 equivalent
-                        priority
-                        className="h-48 md:h-64 w-auto object-contain animate-in fade-in zoom-in duration-1000 drop-shadow-2xl"
-                    />
+                {/* Branding Icon and Text */}
+                <div className="flex justify-center items-center gap-4 md:gap-6 mb-8">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-900/20 animate-in fade-in zoom-in duration-1000">
+                        <PrismIcon className="text-white w-10 h-10 md:w-12 md:h-12" />
+                    </div>
+                    <div className="text-5xl md:text-7xl font-black tracking-tight text-white animate-in fade-in zoom-in duration-1000">
+                        Policy <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Prism</span>
+                    </div>
                 </div>
 
                 <div className="mt-6 space-y-8">
                     <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-6">
                         <h1 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h1>
                         <p>
-                            InstantTea is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly.
+                            Policy Prism is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly.
                         </p>
                         <p>
-                            Instead of taking weeks to figure out connections between people, organizations, rules, and tech, your team can create clear maps in seconds with InstantTea.
+                            Instead of taking weeks to figure out connections between people, organizations, rules, and tech, your team can create clear maps in seconds with Policy Prism.
                         </p>
                         <p>
                             It uses smart ideas (Actor-Network Theory and Assemblage Theory) behind the scenes—you don’t need to know them. You just get honest, up-to-date views of changing situations.
                         </p>
 
                         <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 shadow-xl my-8">
-                            <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Love InstantTea</h3>
+                            <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Love Policy Prism</h3>
                             <ul className="space-y-4">
                                 <li className="flex gap-4 items-start">
                                     <span className="text-emerald-400 mt-1">✨</span>
@@ -85,17 +84,17 @@ export function HeroSection() {
                                     <span className="text-emerald-400 mt-1">🔄</span>
                                     <div>
                                         <span className="text-emerald-300 font-bold block mb-1">Built for change</span>
-                                        <span className="text-slate-300">Things shift quickly in policy. InstantTea gives temporary views that spark team discussions.</span>
+                                        <span className="text-slate-300">Things shift quickly in policy. Policy Prism gives temporary views that spark team discussions.</span>
                                     </div>
                                 </li>
                             </ul>
                         </div>
 
                         <p className="font-medium text-emerald-100 text-center text-xl max-w-2xl mx-auto">
-                            Perfect for mapping rules, stakeholders, or new tech setups. InstantTea helps teams make smarter decisions together.
+                            Perfect for mapping rules, stakeholders, or new tech setups. Policy Prism helps teams make smarter decisions together.
                         </p>
                         <p className="text-center font-bold text-white text-lg mt-4">
-                            Start using InstantTea today and make complex policy work simpler for your team!
+                            Start using Policy Prism today and make complex policy work simpler for your team!
                         </p>
                     </div>
                 </div>

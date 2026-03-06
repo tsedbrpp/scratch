@@ -120,6 +120,26 @@ You MUST output ONLY a JSON object with EXACTLY this structure:
   "rights": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
   "scope": { "convergence": "...", "divergence": "...", "coloniality": "...", "resistance": "...", "convergence_score": 5, "coloniality_score": 2 },
   
+  "key_divergences": [
+    {
+      "theme": "Provide a 1-4 word Theme Name",
+      "description": "Provide a 1-sentence descriptor covering the divergence.",
+      "tea": {
+            "term": "A conceptual term that bridges both cases",
+            "referent": "How the term's meaning shifts between cases",
+            "effect": "The structural, political, or material effect of this shift",
+            "embedding_score": 8,
+            "legibility_score": 4
+      },
+      "ant_bullets": ["Bullet 1 identifying material actors", "Bullet 2 on network flow"],
+      "assemblage_bullets": ["Bullet 1 on territorialization", "Bullet 2 on coding capacity"],
+      "stances": [
+         { "policy": "Source A Title", "stance": "Short stance description" },
+         { "policy": "Source B Title", "stance": "Short stance description" }
+      ]
+    }
+  ],
+  
   "topology_analysis": {
     "risk": {
       "a_score": 2.5, "b_score": 8.0,

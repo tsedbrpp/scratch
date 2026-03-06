@@ -14,7 +14,7 @@ export default function UserDocsPage() {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="bg-gradient-to-r from-emerald-900 to-slate-900 px-8 py-10 text-white">
-                        <h1 className="text-3xl font-bold tracking-tight">instantTEA User Guide</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">Policy Prism User Guide</h1>
                         <p className="mt-4 text-emerald-100 text-lg">
                             Your platform for analyzing complex socio-technical systems through the lenses of Actor-Network Theory and Assemblage Theory.
                         </p>
@@ -82,7 +82,7 @@ export default function UserDocsPage() {
 
                                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
                                     <h3 className="text-lg font-bold text-slate-900 mb-3">2.3 The Ecosystem Map</h3>
-                                    <p className="text-slate-600 mb-4">The heart of instantTEA, visualizng traced actors and relationships.</p>
+                                    <p className="text-slate-600 mb-4">The heart of Policy Prism, visualizng traced actors and relationships.</p>
                                     <div className="grid md:grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <h4 className="font-semibold text-slate-900">Nodes & Edges</h4>
@@ -176,7 +176,7 @@ export default function UserDocsPage() {
                     </div>
 
                     <div className="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center text-slate-500 text-sm">
-                        &copy; {new Date().getFullYear()} instantTEA Research Group. MIT License.
+                        &copy; {new Date().getFullYear()} Policy Prism Research Group. MIT License.
                     </div>
                 </div>
             </div>

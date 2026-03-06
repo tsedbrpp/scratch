@@ -12,7 +12,7 @@ export default function ExplorePage() {
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 group">
                         <ArrowLeft className="h-4 w-4 text-slate-500 group-hover:text-blue-600 transition-colors" />
-                        <span className="font-semibold text-slate-900">instantTEA</span>
+                        <span className="font-semibold text-slate-900">Policy Prism</span>
                     </Link>
                     <Link href="/dashboard">
                         <Button variant="ghost" className="text-slate-600 hover:text-blue-600">
@@ -34,7 +34,7 @@ export default function ExplorePage() {
                             Global AI Policy Analysis
                         </h1>
                         <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                            For this example analysis, we explore several global AI policies. Before exploring the data, understand the scope of our analysis. instantTEA compares regulatory frameworks across four key jurisdictions.
+                            For this example analysis, we explore several global AI policies. Before exploring the data, understand the scope of our analysis. Policy Prism compares regulatory frameworks across four key jurisdictions.
                         </p>
                     </div>
 

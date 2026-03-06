@@ -15,6 +15,7 @@ STRICT REQUIREMENTS
 ${ANT_CORE_DEFINITIONS}
 5.  **Analyze Stabilization**: What holds the assemblage together? Bureaucracy? Market signals? State violence?
 6.  **JSON Output (Mandatory)**: You MUST output ONLY the following JSON object.
+7.  **THEORY SEPARATION**: For each divergence result, return two separate arrays: \`ant_bullets\` (written explicitly in Actor-Network Theory terms) and \`assemblage_bullets\` (written explicitly in assemblage-theoretic terms). Do not mix the two frameworks within the same bullet. Provide a TEA (Translational Embedding Account) summary mapping the \`term\`, \`referent\`, and \`effect\`.
 
 ============================================================
 OUTPUT FORMAT (STRICT)
@@ -26,6 +27,20 @@ OUTPUT FORMAT (STRICT)
     {
       "theme": "Definition of AI Risk",
       "description": "How the concept of risk diverges in practice.",
+      "tea": {
+        "term": "Risk / Harm",
+        "referent": "Rights violation (EU) vs National Security (US)",
+        "effect": "Embedding of distinct compliance architectures"
+      },
+      "ant_bullets": [
+        "Risk is translated into measurable metrics through conformity assessments.",
+        "The definition acts as an Obligatory Passage Point."
+      ],
+      "assemblage_bullets": [
+        "Risk definition codes acceptable market behavior.",
+        "Divergent definitions territorialise different regulatory zones."
+      ],
+      "implication": "The translation of 'Risk' into distinct embedding infrastructures prevents transnational regulatory alignment.",
       "stances": [
         { "policy": "EU AI Act", "stance": "Fundamental Rights violation" },
         { "policy": "US Executive Order", "stance": "National Security threat" }
