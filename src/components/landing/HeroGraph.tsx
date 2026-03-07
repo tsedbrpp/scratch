@@ -149,14 +149,14 @@ export function HeroGraph() {
     if (!isMounted) return null;
 
     return (
-        <div className="absolute inset-0 -z-20 opacity-30 pointer-events-none">
+        <div className="absolute inset-0 -z-20 opacity-70 pointer-events-none">
             <ForceGraph3D
                 ref={graphRef}
                 graphData={data}
                 backgroundColor="rgba(0,0,0,0)" // Transparent
                 nodeLabel={() => ""} // No tooltips for clean bg
                 nodeColor="color"
-                linkColor={() => "rgba(255,255,255,0.2)"}
+                linkColor={() => "rgba(255,255,255,0.4)"}
                 showNavInfo={false}
                 enableNodeDrag={false}
                 width={dimensions.width}
@@ -187,7 +187,7 @@ export function HeroGraph() {
                     const edges = new THREE.EdgesGeometry(geometry);
                     const line = new THREE.LineSegments(
                         edges,
-                        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 })
+                        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })
                     );
                     mesh.add(line);
 
