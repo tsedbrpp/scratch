@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Upload, Activity, Sparkles, Users, Eye, Zap, RefreshCw } from "lucide-react";
+import { ArrowRight, Upload, Activity, Sparkles, Users, Eye, Zap, RefreshCw, Shield } from "lucide-react";
 import { HeroGraph } from "@/components/landing/HeroGraph";
 import { PrismIcon } from "@/components/icons/PrismIcon";
 
@@ -57,7 +57,16 @@ export function HeroSection() {
 
                         <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 shadow-xl my-8">
                             <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Chose Policy Prism</h3>
-                            <ul className="space-y-4">
+                            <ul className="space-y-4 text-left">
+                                <li className="flex gap-4 items-start group">
+                                    <div className="mt-1 w-8 h-8 rounded-full bg-slate-400/10 flex items-center justify-center shrink-0 border border-slate-400/20 group-hover:scale-110 group-hover:bg-slate-400/20 transition-all">
+                                        <Shield className="w-4 h-4 text-slate-300" />
+                                    </div>
+                                    <div>
+                                        <span className="text-white font-bold block mb-1">Uncompromising Privacy</span>
+                                        <span className="text-slate-300">GDPR-ready with zero data training. Your sensitive policy documents remain strictly confidential.</span>
+                                    </div>
+                                </li>
                                 <li className="flex gap-4 items-start group">
                                     <div className="mt-1 w-8 h-8 rounded-full bg-emerald-400/10 flex items-center justify-center shrink-0 border border-emerald-400/20 group-hover:scale-110 group-hover:bg-emerald-400/20 transition-all">
                                         <Users className="w-4 h-4 text-emerald-400" />

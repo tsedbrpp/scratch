@@ -47,7 +47,7 @@ export function StepByStep() {
                             <dd className="flex flex-auto flex-col text-sm leading-6 text-slate-600 text-center">
                                 <p className="flex-auto">
                                     Choose strict theoretical lenses (e.g., "Legitimacy", "Justification") to filter the analysis.
-                                    Our AI traces actors and actants based on your specific framework.
+                                    Our AI traces actors and actants based on your specific framework, turning weeks of manual qualitative coding into minutes.
                                 </p>
                             </dd>
                         </div>
