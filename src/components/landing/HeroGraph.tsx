@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import * as THREE from "three";
 
 // Dynamically import ForceGraph3D to avoid server-side rendering issues
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), {
@@ -159,7 +160,46 @@ export function HeroGraph() {
                 showNavInfo={false}
                 enableNodeDrag={false}
                 width={dimensions.width}
-                height={dimensions.height} // Approximate hero height
+                height={dimensions.height}
+
+                // Assemblage Geometries (Refractive Prisms)
+                nodeThreeObject={(node: any) => {
+                    const size = node.val;
+                    const geometry = node.isCenter
+                        ? new THREE.IcosahedronGeometry(size, 0)
+                        : new THREE.TetrahedronGeometry(size, 0);
+
+                    const material = new THREE.MeshPhysicalMaterial({
+                        color: node.color,
+                        transmission: 0.9,     // Glass-like refraction
+                        opacity: 1,
+                        metalness: 0.2,
+                        roughness: 0.1,
+                        ior: 2.0,
+                        thickness: 1.5,
+                        transparent: true,
+                        side: THREE.DoubleSide
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+
+                    // Add wireframe to emphasize the structural edges
+                    const edges = new THREE.EdgesGeometry(geometry);
+                    const line = new THREE.LineSegments(
+                        edges,
+                        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 })
+                    );
+                    mesh.add(line);
+
+                    return mesh;
+                }}
+
+                // Lines of Flight / Translation Particles
+                linkDirectionalParticles={2}
+                linkDirectionalParticleWidth={1.5}
+                linkDirectionalParticleSpeed={0.005}
+                linkDirectionalParticleColor={() => "rgba(255,255,255,0.6)"}
+                linkWidth={(link: any) => link.distance ? 1.5 : 0.5}
             />
         </div>
     );
