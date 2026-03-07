@@ -176,7 +176,7 @@ export function VectorsForceGraph({ vectors, narrativeContext, executiveSummary,
 
             ctx.font = "16px sans-serif";
             ctx.fillStyle = "rgba(100, 116, 139, 0.4)";
-            ctx.fillText("policyprism.com", width - 20, height - 20);
+            ctx.fillText("policyprism.io", width - 20, height - 20);
 
             // 5. Download
             const pngUrl = canvas.toDataURL("image/png");

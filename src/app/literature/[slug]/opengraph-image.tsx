@@ -81,7 +81,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                         fontSize: '28px',
                         fontWeight: '500'
                     }}>
-                        policyprism.com
+                        policyprism.io
                     </div>
                 </div>
             </div>

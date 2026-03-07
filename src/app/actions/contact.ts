@@ -63,7 +63,7 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
     const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const adminEmail = process.env.CONTACT_EMAIL || "admin@policyprism.com";
+    const adminEmail = process.env.CONTACT_EMAIL || "admin@policyprism.io";
 
     if (!smtpHost || !smtpUser || !smtpPass) {
         console.error("Missing SMTP Configuration", { smtpHost, smtpUser });

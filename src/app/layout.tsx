@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://policyprism.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://policyprism.io"),
   title: "Policy Prism | Easy Team Tool for Mapping Policy and Governance",
   description: "Policy Prism is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly. Create clear maps in seconds.",
   keywords: ["Team Collaboration", "Policy Mapping", "Governance Tools", "AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Policy Prism"],
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Policy Prism | Easy Team Tool for Mapping Policy and Governance",
     description: "Policy Prism is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast.",
-    url: "https://policyprism.com",
+    url: "https://policyprism.io",
     siteName: "Policy Prism",
     locale: "en_US",
     type: "website",

@@ -37,8 +37,8 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold text-white">Email Support</h3>
                                         <p className="text-slate-400 text-sm mt-1">Typical response time: &lt; 24h</p>
-                                        <a href="mailto:support@policyprism.com" className="text-emerald-400 text-sm hover:underline mt-1 block">
-                                            support@policyprism.com
+                                        <a href="mailto:support@policyprism.io" className="text-emerald-400 text-sm hover:underline mt-1 block">
+                                            support@policyprism.io
                                         </a>
                                     </div>
                                 </div>

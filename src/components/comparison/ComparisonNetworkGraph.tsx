@@ -149,7 +149,7 @@ export function ComparisonNetworkGraph({ networkData, width = 800, height = 500,
 
             ctx.font = "16px sans-serif";
             ctx.fillStyle = "rgba(100, 116, 139, 0.4)";
-            ctx.fillText("policyprism.com", dimensions.width - 20, dimensions.height - 20);
+            ctx.fillText("policyprism.io", dimensions.width - 20, dimensions.height - 20);
 
             // 5. Download
             const pngUrl = canvas.toDataURL("image/png");
