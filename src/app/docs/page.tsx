@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft, Server, Database, Shield, Cpu, CreditCard, Layout } from "lucide-react";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Documentation | Policy Prism',
+    description: 'Technical guidance, methodology docs, and tutorials for using Policy Prism for structural policy analysis and Actor-Network Theory mapping.',
+};
 
 export default function DocumentationPage() {
     return (
@@ -61,13 +67,13 @@ export default function DocumentationPage() {
 
                             <div className="bg-slate-900 rounded-xl p-6 text-slate-300 overflow-x-auto">
                                 <pre className="text-sm font-mono">
-                                    {`Researcher --> [Auth: Clerk] --> [Next.js App Router]
-                                       |
-                   +-------------------+-------------------+
+                                    {`Researcher-- > [Auth: Clerk]-- > [Next.js App Router]
+    |
+    +------------------- +------------------- +
                    |                   |                   |
-             [Data Layer]        [Intelligence]        [External]
-             - Redis (DB)        - OpenAI GPT-4        - Stripe
-             - Vector Search     - PDF Parser`}
+        [Data Layer][Intelligence][External]
+        - Redis(DB) - OpenAI GPT - 4 - Stripe
+            - Vector Search - PDF Parser`}
                                 </pre>
                             </div>
 

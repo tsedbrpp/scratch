@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft, Scale, AlertTriangle, FileText, Gavel, ShieldCheck, Globe } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Terms of Service | Policy Prism',
+    description: 'Review the terms of service, acceptable use, and academic attribution requirements for using the Policy Prism SaaS platform.',
+};
 
 export default function TermsOfServicePage() {
     return (
@@ -112,7 +118,7 @@ export default function TermsOfServicePage() {
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Contact Us</h3>
                             <p className="text-slate-600 mb-4">If you have any questions about these Terms, please contact us.</p>
-                            <a href="mailto:admin@policyprism.io" className="text-blue-600 font-semibold hover:underline">admin@policyprism.io</a>
+                            <a href="mailto:support@policyprism.io" className="text-blue-600 font-semibold hover:underline">support@policyprism.io</a>
                         </section>
 
                     </div>

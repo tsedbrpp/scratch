@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { ContactForm } from "@/components/contact/ContactForm";
 
 export const metadata: Metadata = {
-    title: 'Contact Us | Policy Prism',
-    description: 'Get in touch with the Policy Prism team for research questions, account issues, or enterprise inquiries related to our AI governance mapping tools.',
+    title: 'Contact Sales & Support | Policy Prism',
+    description: 'Get in touch with the Policy Prism team for enterprise inquiries, academic access, or technical support with our AI policy analysis tools.',
 };
 
 export default function ContactPage() {

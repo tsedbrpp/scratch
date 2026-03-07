@@ -22,9 +22,8 @@ export function ContactSection() {
 
                     <div className="pt-4">
                         <Button asChild size="lg" className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-6 text-lg h-auto">
-                            <a href="mailto:admin@policyprism.io">
-                                <Mail className="mr-2 h-5 w-5" />
-                                admin@policyprism.io
+                            <a href="mailto:support@policyprism.io">
+                                <h3 className="text-xl font-bold mb-2">support@policyprism.io</h3>
                             </a>
                         </Button>
                         <p className="mt-4 text-xs text-slate-500 uppercase tracking-widest font-medium">

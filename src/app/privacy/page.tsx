@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft, Shield, Lock, Eye, Server, Trash2, Globe } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Privacy Policy | Policy Prism',
+    description: 'Read the Policy Prism privacy policy to understand how we securely handle document uploads, API processing with OpenAI, and user data for policy analysis.',
+};
 
 export default function PrivacyPolicyPage() {
     return (
@@ -65,7 +71,7 @@ export default function PrivacyPolicyPage() {
                                             To provide our analysis features, User Inputs (including prompts and uploaded text) are transmitted to third-party Large Language Model (LLM) providers via API.
                                         </p>
                                         <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
-                                            <li><strong>Primary Providers:</strong> OpenAI (GPT-5.1) & Google (Gemini 3 Pro Preview / Google Search)</li>
+                                            <li><strong>Primary Providers:</strong> OpenAI (GPT-4o) & Google (Gemini 3 Pro Preview / Google Search)</li>
                                             <li><strong>Processing Purpose:</strong> To generate the requested analysis, summary, critique, or perform web-connected research.</li>
                                             <li><strong>Data Retention:</strong> Data is shared for the sole purpose of generating a response. We do not opt-in to model training. Providers may retain data temporarily (e.g., 30 days) for abuse monitoring.</li>
                                         </ul>
@@ -156,7 +162,7 @@ export default function PrivacyPolicyPage() {
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Questions?</h3>
                             <p className="text-slate-600 mb-4">If you have any questions about this Privacy Policy, please contact us.</p>
-                            <a href="mailto:admin@policyprism.io" className="text-blue-600 font-semibold hover:underline">admin@policyprism.io</a>
+                            <a href="mailto:support@policyprism.io" className="text-blue-600 font-semibold hover:underline">support@policyprism.io</a>
                         </section>
 
                     </div>

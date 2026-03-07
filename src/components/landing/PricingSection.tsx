@@ -90,7 +90,7 @@ export function PricingSection() {
                                     <ul className="space-y-4 mb-8">
                                         {pack.features.map((feature, i) => (
                                             <li key={i} className="flex items-start gap-3 text-sm">
-                                                <Check className={cn("w-5 h-5 shrink-0", isPopular || feature.includes("GPT-5.1") ? "text-emerald-400" : "text-slate-500")} />
+                                                <Check className={cn("w-5 h-5 shrink-0", isPopular || feature.includes("GPT-4o") ? "text-emerald-400" : "text-slate-500")} />
                                                 <span className={cn(isPopular ? "text-white" : "text-slate-300")}>{feature}</span>
                                             </li>
                                         ))}
@@ -99,8 +99,14 @@ export function PricingSection() {
 
                                 <div className="p-8 pt-0 mt-auto">
                                     {isInstitution ? (
-                                        <a href="mailto:sales@policyprism.io" className="block">
-                                            <Button className="w-full bg-transparent hover:bg-slate-800 text-white border border-slate-700 transition-all">
+                                        <a href="mailto:support@policyprism.io" className="block">
+                                            <Button
+                                                className={cn(
+                                                    "w-full transition-all",
+                                                    isPopular ? "bg-emerald-600 hover:bg-emerald-500" : "bg-slate-800 hover:bg-slate-700"
+                                                )}
+                                                variant={isPopular ? "default" : "secondary"}
+                                            >
                                                 Contact Sales
                                             </Button>
                                         </a>
