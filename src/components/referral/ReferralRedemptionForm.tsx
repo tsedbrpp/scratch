@@ -28,7 +28,7 @@ export function ReferralRedemptionForm() {
         <form action={formAction} className="flex flex-col sm:flex-row gap-4 max-w-lg">
             <Input
                 name="code"
-                placeholder="Enter Code (e.g. TEA-XC92)"
+                placeholder="Enter Code (e.g. PRISM-XC92)"
                 className="bg-slate-50 border-slate-300 font-mono uppercase placeholder:normal-case"
                 required
             />

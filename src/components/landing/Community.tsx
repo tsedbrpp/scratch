@@ -20,7 +20,7 @@ export function Community() {
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 mb-2">For Researchers & Scholars</h3>
                         <p className="text-slate-600 leading-relaxed">
-                            Use Policy Prism for initial tracing of actors in empirical studies, then layer with slower methods for full assemblage mapping.
+                            Use Policy Prism for initial tracing of actors in empirical studies, then layer with slower methods for deep structural analysis.
                         </p>
                     </div>
                     <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
@@ -29,7 +29,7 @@ export function Community() {
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 mb-2">For Practitioners & Activists</h3>
                         <p className="text-slate-600 leading-relaxed">
-                            Quick counter-mapping of power relations (e.g., regulatory tensions in AI governance, platform monopolies). Ephemerality supports tactical interventions without claiming exhaustive truth.
+                            Quick counter-mapping of power relations (e.g., regulatory tensions in AI governance, platform monopolies). Dynamic mapping supports tactical interventions without claiming exhaustive truth.
                         </p>
                     </div>
                     <div className="flex flex-col items-start p-6 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">

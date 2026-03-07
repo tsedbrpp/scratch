@@ -45,19 +45,19 @@ export function HeroSection() {
 
                 <div className="mt-6 space-y-8">
                     <div className="text-lg leading-8 text-slate-200 text-left max-w-3xl mx-auto space-y-6">
-                        <h1 className="text-3xl font-bold text-white mb-4 text-center">Easy Team Tool for Mapping Policy and Governance</h1>
+                        <h1 className="text-3xl font-bold text-white mb-4 text-center">Mapping the Invisible Forces of Policy and Governance</h1>
                         <p>
-                            Policy Prism is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly.
+                            Policy Prism is an open-source structural mapping platform designed for researchers, analysts, and policy experts.
                         </p>
                         <p>
-                            Instead of taking weeks to figure out connections between people, organizations, rules, and tech, your team can create clear maps in seconds with Policy Prism.
+                            Instantly map the complex relationships between actors, discourses, and institutional logics that shape policy outcomes. Our platform refracts vast archives into actionable network intelligence.
                         </p>
                         <p>
-                            It uses smart ideas (Actor-Network Theory and Assemblage Theory) behind the scenes—you don’t need to know them. You just get honest, up-to-date views of changing situations.
+                            By fusing Large Language Models with structural frameworks like Actor-Network Theory, Policy Prism accelerates discovery from weeks to seconds—giving your team unparalleled clarity in rapidly shifting environments.
                         </p>
 
                         <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 shadow-xl my-8">
-                            <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Love Policy Prism</h3>
+                            <h3 className="text-2xl font-bold text-white mb-6 text-center">Why Teams Chose Policy Prism</h3>
                             <ul className="space-y-4">
                                 <li className="flex gap-4 items-start group">
                                     <div className="mt-1 w-8 h-8 rounded-full bg-emerald-400/10 flex items-center justify-center shrink-0 border border-emerald-400/20 group-hover:scale-110 group-hover:bg-emerald-400/20 transition-all">
@@ -113,9 +113,9 @@ export function HeroSection() {
                             <Button size="lg" className="relative bg-black hover:bg-slate-900 text-emerald-400 border border-emerald-500/50 px-8 py-6 text-lg font-bold shadow-2xl transition-all hover:scale-[1.02] flex flex-col gap-0 items-center leading-tight">
                                 <div className="flex items-center gap-2">
                                     <Activity className="h-5 w-5 animate-pulse" />
-                                    <span>Explore Sample Analysis</span>
+                                    <span>Try Demo Workspace</span>
                                 </div>
-                                <span className="text-[10px] font-normal text-emerald-600/80 uppercase tracking-widest">Interactive Demo</span>
+                                <span className="text-[10px] font-normal text-emerald-600/80 uppercase tracking-widest">Interactive Sample</span>
                             </Button>
                         </Link>
 
@@ -159,15 +159,12 @@ export function HeroSection() {
                 <div className="mt-16 flow-root sm:mt-24">
                     <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
                         <div className="relative rounded-xl bg-slate-900/80 shadow-2xl ring-1 ring-white/10 backdrop-blur-md overflow-hidden group">
-                            {
-                                <video
-                                    controls
-                                    playsInline
-                                    className="w-full h-full object-cover opacity-90"
-                                >
-                                    <source src="/Sequence 01.mp4#t=0.001" type="video/mp4" />
-                                </video>
-                            }
+                            <video
+                                controls
+                                className="w-full h-full object-cover opacity-90"
+                            >
+                                <source src="/Sequence%2001.mp4#t=0.001" type="video/mp4" />
+                            </video>
 
                             {/* Scanline/CRT Effect Overlay */}
                             <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] bg-repeat opacity-20"></div>

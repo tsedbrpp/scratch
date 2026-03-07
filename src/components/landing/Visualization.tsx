@@ -9,7 +9,7 @@ export function Visualization() {
                 <div className="mx-auto max-w-2xl lg:text-center mb-12">
                     <h2 className="text-base font-semibold leading-7 text-emerald-400">Visualization</h2>
                     <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                        Mapping the Assemblage
+                        Visualizing the Network Spectrum
                     </p>
                     <p className="mt-4 text-lg text-slate-400">
                         Navigate fully interactive 3D and 2D graphs with clickable nodes and links to reveal hidden connections.

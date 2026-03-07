@@ -42,13 +42,13 @@ export function renderTheoreticalSynthesis(generator: ReportGeneratorDOCX, synth
         generator.addSpacer();
     }
 
-    // --- 2. TEA FRAMEWORK TRANSLATION ---
+    // --- 2. POLICY PRISM SYNTHESIS ---
     if (teaData) {
-        generator.addSubHeader("Part II: Translation-Embedding Account (TEA)");
+        generator.addSubHeader("Part II: Policy Prism Synthesis");
 
         // Disclaimer
         generator.addText(
-            "This section maps how governance vocabularies travel, translate, and embed into rigid infrastructures using the newly defined TEA framework.",
+            "This section maps how governance vocabularies travel, translate, and embed into rigid infrastructures using the Policy Prism framework.",
             STYLE.colors.meta,
             0,
             false // Not bold
@@ -56,7 +56,7 @@ export function renderTheoreticalSynthesis(generator: ReportGeneratorDOCX, synth
         generator.addSpacer();
 
         if (teaImage) {
-            generator.addImage(teaImage, 600, 300, "Figure 5: Translation-Embedding Account Structure");
+            generator.addImage(teaImage, 600, 300, "Figure 5: Policy Prism Synthesis Structure");
             generator.addSpacer();
         }
 

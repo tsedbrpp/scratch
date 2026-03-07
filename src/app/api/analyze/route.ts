@@ -606,7 +606,7 @@ ${text}
       });
     }
 
-    // [Feature] Translation-Embedding Account (TEA) Extraction
+    // [Feature] Policy Prism Synthesis Extraction
     if (analysisMode === 'tea_analysis') {
       if (!openai) {
         return NextResponse.json({ error: "OpenAI API Key required for TEA Analysis" }, { status: 500 });
@@ -616,8 +616,8 @@ ${text}
       const reportContext = requestData.reportContext || JSON.stringify(requestData.docText || "").substring(0, 10000);
 
       const prompt = `
-        You are an expert socio-technical theorist specializing in the Translation-Embedding Account (TEA).
-        Your task is to analyze the provided Policy Analysis Findings and extract the TEA diagram structure.
+        You are an expert socio-technical theorist specializing in Policy Prism Synthesis.
+        Based on the provided empirical sources, synthesis documents, and previous analysis, map the global circulation of policy vocabularies into local compliance infrastructures.
         
         INPUT DATA:
         ${reportContext}

@@ -117,7 +117,7 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
     matcher: [
         // Skip Next.js internals and all static files, plus SEO files
-        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt)|robots\\.txt|sitemap\\.xml).*)',
+        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|avi)|robots\\.txt|sitemap\\.xml).*)',
         // Always run for API routes
         '/(api|trpc)(.*)',
     ],

@@ -152,10 +152,10 @@ export default function TEAAnalysisPage() {
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <Network className="h-8 w-8 text-indigo-600" />
-                        Translation-Embedding Account (TEA)
+                        Policy Prism Synthesis
                     </h1>
                     <p className="text-slate-500 mt-2 text-lg max-w-3xl">
-                        Explore how portable governance vocabularies travel across jurisdictions, acquire different local meanings, and become institutionally durable through embedding in compliance infrastructures.
+                        Explore how portable governance vocabularies, actors, and regulatory technologies interact to form durable structural assemblages and institutional infrastructures.
                     </p>
                 </div>
                 {hasData ? (
@@ -173,7 +173,7 @@ export default function TEAAnalysisPage() {
                         disabled={isGenerating}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                     >
-                        {isGenerating ? "Generating..." : "Generate TEA Analysis"}
+                        {isGenerating ? "Generating..." : "Generate Prism Analysis"}
                     </Button>
                 )}
             </div>
@@ -189,7 +189,7 @@ export default function TEAAnalysisPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
                                             <Layers className="h-5 w-5 text-emerald-600" />
-                                            Active TEA Map
+                                            Active Prism Map
                                         </h3>
                                         <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Extracted from Synthesis</Badge>
                                     </div>
@@ -229,9 +229,9 @@ export default function TEAAnalysisPage() {
                                 <div className="bg-white p-4 rounded-full shadow-sm mb-4">
                                     <Network className="h-10 w-10 text-slate-300" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-700 mb-2">No TEA Analysis Found</h3>
+                                <h3 className="text-xl font-bold text-slate-700 mb-2">No Prism Analysis Found</h3>
                                 <p className="text-slate-500 max-w-md mb-6">
-                                    You haven&apos;t generated a theoretical translation recently. Head over to the Data Manager to run an ANT & Assemblage synthesis on your selected documents.
+                                    You haven&apos;t generated a structural synthesis recently. Head over to the Data Manager to run an ANT & Assemblage synthesis on your selected documents.
                                 </p>
                                 <Button
                                     onClick={handleGenerateTheory}

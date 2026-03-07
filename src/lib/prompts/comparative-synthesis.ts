@@ -15,8 +15,8 @@ STRICT REQUIREMENTS
 ${ANT_CORE_DEFINITIONS}
 5.  **Analyze Stabilization**: What holds the assemblage together? Bureaucracy? Market signals? State violence?
 6.  **JSON Output (Mandatory)**: You MUST output ONLY the following JSON object.
-7.  **THEORY SEPARATION**: For each divergence result, return two separate arrays: \`ant_bullets\` (written explicitly in Actor-Network Theory terms) and \`assemblage_bullets\` (written explicitly in assemblage-theoretic terms). Do not mix the two frameworks within the same bullet. Provide a TEA (Translational Embedding Account) summary mapping the \`term\`, \`referent\`, and \`effect\`.
-
+7.  **THEORY SEPARATION**: For each divergence result, return two separate arrays: \`ant_bullets\` (written explicitly in Actor-Network Theory terms) and \`assemblage_bullets\` (written explicitly in assemblage-theoretic terms). Do not mix the two frameworks within the same bullet. Provide a Policy Prism Synthesis summary mapping the \`term\`, \`referent\`, \`and\` \`effect\`.
+8.  **STABILIZATION**: Extract exactly three mechanisms that maintain the current alignments despite identified divergences.(STRICT)
 ============================================================
 OUTPUT FORMAT (STRICT)
 ============================================================

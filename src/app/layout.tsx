@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,15 +18,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://policyprism.io"),
-  title: "Policy Prism | Easy Team Tool for Mapping Policy and Governance",
-  description: "Policy Prism is an open-source tool designed for teams like policy experts and researchers who need to understand complex systems quickly. Create clear maps in seconds.",
-  keywords: ["Team Collaboration", "Policy Mapping", "Governance Tools", "AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Policy Prism"],
+  title: "Policy Prism | Mapping the Invisible Forces of Policy and Governance",
+  description: "Policy Prism is a premium structural analysis platform for researchers and policy experts. Synthesize complex networks, trace terminology diffusion, and map institutional infrastructures.",
+  keywords: ["Structural Analysis", "Policy Mapping", "Translational Stratification Theory", "AI Governance", "Actor-Network Theory", "ANT", "Assemblage Theory", "Socio-Technical Systems", "Policy Analysis", "Digital Sociology", "STS", "Policy Prism Synthesis"],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Policy Prism | Easy Team Tool for Mapping Policy and Governance",
-    description: "Policy Prism is a simple tool made for teams like policy experts and researchers who need to understand complicated systems fast.",
+    title: "Policy Prism | Mapping the Invisible Forces of Policy and Governance",
+    description: "Policy Prism is a premium structural analysis platform for researchers and policy experts. Synthesize complex networks, trace terminology diffusion, and map institutional infrastructures.",
     url: "https://policyprism.io",
     siteName: "Policy Prism",
     locale: "en_US",
@@ -69,7 +70,9 @@ export default function RootLayout({
         >
           <WorkspaceProvider>
             <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
-              <Sidebar />
+              <Suspense fallback={<div className="w-64 bg-slate-950 hidden md:block"></div>}>
+                <Sidebar />
+              </Suspense>
               <main className="flex-1 overflow-y-auto p-4 pt-20 md:p-8 md:pt-8">
                 {children}
               </main>

@@ -12,7 +12,7 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
     // The actual arrows from the python script are complex.
     // For this React version, we'll use a clean, modern card flow that works well on all screens.
 
-    if (!data) return <div className="p-8 text-center text-muted-foreground">No TEA data available. Generates a new analysis.</div>;
+    if (!data) return <div className="p-8 text-center text-muted-foreground">No Prism data available. Generates a new analysis.</div>;
 
     return (
         <div className="flex flex-col space-y-8 p-6 bg-slate-50 dark:bg-slate-900 rounded-xl border">
@@ -20,7 +20,7 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
                 <div>
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         <Network className="h-6 w-6 text-indigo-600" />
-                        Translation-Embedding Account (TEA)
+                        Policy Prism Synthesis
                     </h2>
                     <p className="text-sm font-medium text-slate-600 mt-2">
                         <strong>Macro Ecosystem View:</strong> Maps the global diffusion and structural embedding of multiple policy vocabularies.
@@ -247,7 +247,7 @@ export function TEADiagram({ data }: { data: TEAAnalysis }) {
                 <div className="relative z-10 pt-6 border-t border-slate-200 mt-8">
                     <div className="flex items-center gap-2 mb-4">
                         <CheckCircle2 className="text-indigo-600 h-6 w-6" />
-                        <h3 className="text-xl font-semibold text-slate-800">Evidence for TEA Propositions</h3>
+                        <h3 className="text-xl font-semibold text-slate-800">Evidence for Synthesis Propositions</h3>
                     </div>
                     <div className="space-y-4">
                         {data.propositions.map((prop, i) => {

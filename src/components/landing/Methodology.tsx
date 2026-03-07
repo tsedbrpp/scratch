@@ -5,7 +5,7 @@ import { Database, Cpu, GitGraph, Play } from "lucide-react";
 
 export function Methodology() {
     return (
-        <div className="py-24 sm:py-32 bg-slate-50">
+        <div id="methodology" className="py-24 sm:py-32 bg-slate-50">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <div className="mx-auto max-w-2xl lg:text-center">
                     <h2 className="text-base font-semibold leading-7 text-blue-600">Methodology</h2>

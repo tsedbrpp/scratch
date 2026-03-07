@@ -12,8 +12,8 @@ export function LandingFooter() {
                         <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg"></div>
                         <span className="text-xl font-bold text-white">Policy Prism</span>
                     </div>
-                    <p className="text-sm leading-relaxed max-w-xs">
-                        An open-source platform for critical policy and governance research, bridging the gap between policy intent and reality.
+                    <p className="text-sm leading-relaxed max-w-xs text-slate-400">
+                        An open-source platform for critical policy and governance research, refracting complex systemic challenges into visible, actionable insights.
                     </p>
                 </div>
                 <div>

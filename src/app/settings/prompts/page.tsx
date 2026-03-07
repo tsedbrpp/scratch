@@ -88,6 +88,7 @@ export default function PromptSettingsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [pageError, setPageError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchPrompts();
@@ -95,6 +96,7 @@ export default function PromptSettingsPage() {
 
     const fetchPrompts = async () => {
         setIsLoading(true);
+        setPageError(null);
         try {
             const headers: HeadersInit = {};
             if (process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === 'true' && process.env.NEXT_PUBLIC_DEMO_USER_ID) {
@@ -102,6 +104,17 @@ export default function PromptSettingsPage() {
             }
 
             const res = await fetch('/api/prompts', { headers, cache: 'no-store' });
+
+            if (!res.ok) {
+                const text = await res.text();
+                if (res.status === 401 || res.status === 403) {
+                    setPageError("You do not have permission to view or manage Lens Configurations.");
+                } else {
+                    setPageError(`Failed to load prompts: ${res.status} ${text}`);
+                }
+                throw new Error(`Failed to load prompts: ${res.status} ${text}`);
+            }
+
             const data = await res.json();
             if (data.prompts) {
                 setPrompts(data.prompts.map((p: any) => ({
@@ -136,11 +149,17 @@ export default function PromptSettingsPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
-            await fetch('/api/prompts', {
+            const res = await fetch('/api/prompts', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ id, value: editValue })
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Failed to save: ${res.status} ${text}`);
+            }
+
             await fetchPrompts();
             setEditingId(null);
         } catch (error) {
@@ -161,11 +180,17 @@ export default function PromptSettingsPage() {
                 headers['x-demo-user-id'] = process.env.NEXT_PUBLIC_DEMO_USER_ID;
             }
 
-            await fetch('/api/prompts', {
+            const res = await fetch('/api/prompts', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ id, action: 'reset' })
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Failed to reset: ${res.status} ${text}`);
+            }
+
             await fetchPrompts();
             if (editingId === id) {
                 setEditingId(null);
@@ -202,6 +227,12 @@ export default function PromptSettingsPage() {
                     userContent: prompt.testInput
                 })
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Server returned ${res.status}: ${text}`);
+            }
+
             const data = await res.json();
 
             if (data.success) {
@@ -322,6 +353,17 @@ export default function PromptSettingsPage() {
             {isLoading ? (
                 <div className="flex justify-center p-12">
                     <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                </div>
+            ) : pageError ? (
+                <div className="p-8 bg-red-50 text-red-800 border border-red-200 rounded-xl text-center shadow-sm">
+                    <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold mb-1">Access Denied / Error</h3>
+                    <p className="text-sm">{pageError}</p>
+                    <Link href="/">
+                        <Button variant="outline" className="mt-4 bg-white hover:bg-red-50 text-red-700 border-red-200">
+                            Return Home
+                        </Button>
+                    </Link>
                 </div>
             ) : (
                 <div className="grid gap-6">

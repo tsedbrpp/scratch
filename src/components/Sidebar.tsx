@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
     LayoutDashboard,
     Database,
@@ -100,10 +100,10 @@ const NAV_GROUPS: NavGroup[] = [
                 description: "Compare abstract machines, double articulations, and state capture."
             },
             {
-                name: "Translation-Embedding Account (TEA)",
+                name: "Policy Prism Synthesis",
                 href: "/tea-analysis",
                 icon: Network,
-                description: "Map how portable vocabularies embed into durable institutional infrastructures."
+                description: "Synthesize and map the complete structural spectrum of networks, discourses, and institutional logics."
             },
             {
                 name: "Cultural Framing",
@@ -216,6 +216,9 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
     const { isSignedIn } = useAuth();
     const { workspaceType } = useWorkspace(); // [Collab]
     const isTeamWorkspace = workspaceType === 'TEAM';
+    const searchParams = useSearchParams();
+    const isLandingPage = pathname === '/' && (!isSignedIn || searchParams?.get('view') === 'landing');
+    const forceSidebar = searchParams?.get('sidebar') === 'true';
 
     return (
         <div className="flex flex-col h-full bg-slate-950 text-slate-100 border-r border-slate-900 shadow-2xl">
@@ -231,7 +234,7 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                             <span className="font-bold text-lg text-white tracking-tight whitespace-nowrap animate-in fade-in duration-300 group-hover:text-blue-100 transition-colors">
                                 Policy <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Prism</span>
                             </span>
-                            {isReadOnly && (
+                            {isMounted && isReadOnly && (
                                 <span className="text-[10px] leading-tight font-bold text-amber-500 animate-in fade-in uppercase tracking-wider">
                                     Demo Mode
                                 </span>
@@ -245,6 +248,27 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
             {!isCollapsed && (
                 <div className="px-3 pt-3 space-y-2">
                     <WorkspaceSelector />
+                </div>
+            )}
+
+            {/* Landing Page Close Menu Button */}
+            {isLandingPage && forceSidebar && !isCollapsed && (
+                <div className="px-3 pt-4">
+                    <Link href="/">
+                        <Button variant="outline" className="w-full text-slate-400 justify-start hover:text-white hover:bg-slate-900 border-slate-800 bg-slate-950">
+                            <PanelLeftClose className="mr-2 h-4 w-4" />
+                            Close Menu
+                        </Button>
+                    </Link>
+                </div>
+            )}
+            {isLandingPage && forceSidebar && isCollapsed && (
+                <div className="px-2 pt-4 flex justify-center">
+                    <Link href="/">
+                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-slate-900" title="Close Menu">
+                            <PanelLeftClose className="h-5 w-5" />
+                        </Button>
+                    </Link>
                 </div>
             )}
 
@@ -388,6 +412,7 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
 
 export function Sidebar() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -403,15 +428,19 @@ export function Sidebar() {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
 
+        const forceSidebar = searchParams.get('sidebar') === 'true';
+
         // [Task] Collapse on survey page entry
         if (pathname === '/survey') {
             setIsCollapsed(true);
+        } else if (forceSidebar) {
+            setIsCollapsed(false);
         } else {
             // Recover collapsed state from local storage
             const savedCollapsed = localStorage.getItem("sidebar-collapsed");
             if (savedCollapsed === "true") setIsCollapsed(true);
         }
-    }, [pathname]);
+    }, [pathname, searchParams]);
 
     const toggleCollapse = () => {
         setIsCollapsed(prev => {
@@ -421,8 +450,12 @@ export function Sidebar() {
         });
     };
 
-    // [Task] Hide completely on survey page
-    if (pathname === '/survey') {
+    // [Task] Hide completely on survey page or landing page view
+    const { isSignedIn } = useAuth(); // Already imported, we just need the value here
+    const isLandingPage = pathname === '/' && (!isSignedIn || searchParams.get('view') === 'landing');
+    const forceSidebar = searchParams?.get('sidebar') === 'true';
+
+    if (pathname === '/survey' || (isLandingPage && !forceSidebar)) {
         return null;
     }
 

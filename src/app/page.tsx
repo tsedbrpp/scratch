@@ -12,12 +12,16 @@ import { TrustEthics } from "@/components/landing/TrustEthics";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { PricingSection } from "@/components/landing/PricingSection";
-
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { Suspense } from "react";
 
 // This is a Server Component now
 function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-slate-50 -m-4 -mt-20 md:-m-8 md:-mt-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)] overflow-x-hidden">
+      <Suspense fallback={<div className="h-16 w-full bg-transparent fixed top-0 z-50 pointer-events-none" />}>
+        <LandingNavbar />
+      </Suspense>
       <HeroSection />
 
       <StepByStep />
