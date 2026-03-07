@@ -80,7 +80,7 @@ export function Methodology() {
                             </dt>
                             <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600">
                                 <p className="flex-auto">
-                                    Visualize relationships between actors, concepts, and documents. Detect cultural holes and generate comparative reports.
+                                    Visualize relationships between actors, concepts, and documents. Detect missing (ghost) actors, diagram commonalities (territories), explore lines of disruption, and report results.
                                 </p>
                             </dd>
                         </div>
