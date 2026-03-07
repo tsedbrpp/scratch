@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSources } from "@/hooks/useSources";
 import { useServerStorage } from "@/hooks/useServerStorage";
 import { Source, EcosystemImpact } from "@/types";
@@ -18,6 +18,12 @@ import { AssemblageExport } from "@/types/bridge"; // [NEW] Import Data Contract
 import { useRouter } from "next/navigation"; // [NEW] For Deep Linking
 
 import { SynthesisComparisonResult as ComparisonResult } from "@/types/synthesis";
+import { ComparativeSynthesis, TEAAnalysis } from "@/types";
+import { TeaTheoryMap } from "@/components/analysis/theory-map/TeaTheoryMap";
+import { TheoryLegend } from "@/components/analysis/theory-map/TheoryLegend";
+import { adaptSynthesisToTheoryMap } from "@/components/analysis/theory-map/adapter";
+import { TheoryMapMode } from "@/components/analysis/theory-map/types";
+import { Download, LayoutPanelTop } from "lucide-react";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { CreditTopUpDialog } from "@/components/CreditTopUpDialog";
 import { useCredits } from "@/hooks/useCredits";
@@ -93,6 +99,12 @@ export default function SynthesisPage() {
     const [sourceB, setSourceB] = useState<Source | null>(null);
     const [isComparing, setIsComparing] = useState(false);
     const [comparisonResult, setComparisonResult] = useServerStorage<ComparisonResult | null>("synthesis_comparison_result", null);
+
+    // Theory Map State
+    const [teaAnalysis] = useServerStorage<TEAAnalysis | null>("tea_analysis_result", null);
+    const [mapMode, setMapMode] = useState<TheoryMapMode>("interactive");
+    const theoryMapRef = useRef<HTMLDivElement>(null);
+    const theoryMapPanels = comparisonResult ? adaptSynthesisToTheoryMap(comparisonResult as unknown as ComparativeSynthesis, teaAnalysis) : [];
 
     // [NEW] Local Session Cache to restore results without re-fetching
     const [runCache, setRunCache] = useState<Record<string, ComparisonResult>>({});
@@ -390,6 +402,20 @@ export default function SynthesisPage() {
 
     // [REMOVED] handleEcosystemMap logic - Moved to EcosystemPage (Separation of Concerns)
 
+    const handleTheoryMapExport = async () => {
+        if (!theoryMapRef.current) return;
+        try {
+            const htmlToImage = await import("html-to-image");
+            const dataUrl = await htmlToImage.toPng(theoryMapRef.current, { backgroundColor: mapMode === 'journal' ? '#ffffff' : '#171717', pixelRatio: 2 });
+            const link = document.createElement('a');
+            link.download = `tea-theory-map-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error("Failed to export figure:", err);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -686,6 +712,47 @@ export default function SynthesisPage() {
                     </>
                 )}
             </div>
+
+            {/* Theory Map (TEA) Section - Migrated from standalone page */}
+            {comparisonResult && theoryMapPanels.length > 0 && (
+                <Card className="border-indigo-200">
+                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <Network className="h-5 w-5 text-indigo-600" />
+                                <CardTitle>TEA Theory Map</CardTitle>
+                            </div>
+                            <CardDescription className="max-w-3xl mt-2 line-clamp-3">
+                                A translational grid positioning Actor-Network and Assemblage readings.
+                                The central narrative traces how portable governance vocabularies drift across jurisdictions,
+                                the friction they encounter, and exactly how they stabilize through local embedding infrastructures.
+                            </CardDescription>
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                            <button
+                                onClick={() => setMapMode(mapMode === 'interactive' ? 'journal' : 'interactive')}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded transition-colors border border-slate-200"
+                            >
+                                <LayoutPanelTop className="w-4 h-4" />
+                                {mapMode === 'interactive' ? "Journal Mode" : "Interactive Mode"}
+                            </button>
+                            <button
+                                onClick={handleTheoryMapExport}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                Export Figure
+                            </button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div ref={theoryMapRef} className={`p-4 rounded-xl transition-colors ${mapMode === 'journal' ? 'bg-white shadow-sm' : 'bg-neutral-900 border border-neutral-800'}`}>
+                            <TeaTheoryMap panels={theoryMapPanels} mode={mapMode} />
+                            <TheoryLegend mode={mapMode} />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Transversal Flows Section - ADDED for Assemblage Alignment */}
             {/* Transversal Resonances Section */}

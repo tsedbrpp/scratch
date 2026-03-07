@@ -131,12 +131,7 @@ const NAV_GROUPS: NavGroup[] = [
                 icon: Network,
                 description: "Comparative synthesis across cases."
             },
-            {
-                name: "Theory Map (TEA)",
-                href: "/theory-map",
-                icon: Network,
-                description: "View the translational embedding map."
-            },
+
             {
                 name: "Micro-Resistance",
                 href: "/resistance",
