@@ -114,7 +114,7 @@ export function DebriefScreen({ studyState, onDownload, onClose }: DebriefScreen
                                         Optional: Policy Prism credits (unrelated to payment)
                                     </h3>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        If you&apos;d like to explore Policy Prism with your own AI governance documents, you may create an account to receive <strong>100 free credits</strong>. This is completely optional and not required to receive your honorarium.
+                                        If you&apos;d like to explore Policy Prism with your own AI governance documents, you may create an account to receive <strong>50 free credits</strong>. This is completely optional and not required to receive your honorarium.
                                     </p>
                                 </div>
                             </CardContent>

@@ -9,7 +9,7 @@ export default function SignUpPage() {
                 <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mb-2">
                     Limited Time Promotion
                 </div>
-                <p className="text-emerald-600 font-medium">✨ Signup to receive a one time bonus of 100 credits</p>
+                <p className="text-emerald-600 font-medium">✨ Signup to receive a one time bonus of 50 credits</p>
             </div>
             <SignUp />
         </div>

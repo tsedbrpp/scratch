@@ -1,6 +1,6 @@
 import { redis } from '@/lib/redis';
 
-const DEFAULT_STARTING_CREDITS = 100;
+const DEFAULT_STARTING_CREDITS = 50;
 
 export interface CreditStatus {
     success: boolean;
