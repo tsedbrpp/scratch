@@ -8,10 +8,10 @@ import { redis } from './redis';
 const DEDUCT_CREDITS_SCRIPT = `
     local current_credits = redis.call("GET", KEYS[1])
     
-    -- Lazy Init: If key is missing, assume new user and give 100 free credits
+    -- Lazy Init: If key is missing, assume new user and give 50 free credits
     if not current_credits then
-        redis.call("SET", KEYS[1], 100)
-        current_credits = 100
+        redis.call("SET", KEYS[1], 50)
+        current_credits = 50
     end
 
     if tonumber(current_credits) < tonumber(ARGV[1]) then
@@ -35,16 +35,16 @@ export interface Transaction {
     createdAt: string;
 }
 
-// Atomic script: Add credits, respecting the "New User = 100" rule
+// Atomic script: Add credits, respecting the "New User = 50" rule
 // KEYS[1] = credits:{userId}
 // KEYS[2] = transactions:{userId}
 // ARGV[1] = amount (positive integer)
 // ARGV[2] = transaction JSON string
-// ARGV[3] = default/initial balance for new users (e.g., 100)
+// ARGV[3] = default/initial balance for new users (e.g., 50)
 const ADD_CREDITS_SCRIPT = `
     local current_credits = redis.call("GET", KEYS[1])
     
-    -- Lazy Init: If key is missing, assume new user -> start at 100 (promotional)
+    -- Lazy Init: If key is missing, assume new user -> start at 50 (promotional)
     if not current_credits then
         current_credits = tonumber(ARGV[3])
     else
@@ -73,9 +73,9 @@ export async function deductCredits(userId: string, amount: number, source: stri
         createdAt: new Date().toISOString()
     };
 
-    // Note: DEDUCT script (defined above/earlier) handles the lazy-init 100 logic too
+    // Note: DEDUCT script (defined above/earlier) handles the lazy-init 50 logic too
     // We should probably unify the script or logic, but for now we trust the existing DEDUCT_CREDITS_SCRIPT
-    // which was: "if not current_credits then redis.call('SET', KEYS[1], 100)..."
+    // which was: "if not current_credits then redis.call('SET', KEYS[1], 50)..."
     // That is consistent.
 
     const result = await redis.eval(DEDUCT_CREDITS_SCRIPT, 2, creditKey, txKey, amount, JSON.stringify(transaction));
@@ -104,7 +104,7 @@ export async function addCredits(userId: string, amount: number, source: string,
     };
 
     // Use atomic script instead of pipeline to ensure "read-modify-write" safety for the lazy init
-    await redis.eval(ADD_CREDITS_SCRIPT, 2, creditKey, txKey, amount, JSON.stringify(transaction), 100);
+    await redis.eval(ADD_CREDITS_SCRIPT, 2, creditKey, txKey, amount, JSON.stringify(transaction), 50);
 
     // Idempotency doesn't need to be in the same atomic block strictly, but good practice.
     // For simplicity, setting it after success is acceptable for "at least once" or "exactly once" approximation.
@@ -116,7 +116,7 @@ export async function addCredits(userId: string, amount: number, source: string,
 
 export async function getCredits(userId: string): Promise<number> {
     const credits = await redis.get(`credits:${userId}`);
-    return credits ? parseInt(credits, 10) : 100;
+    return credits ? parseInt(credits, 10) : 50;
 }
 
 export async function getTransactions(userId: string, limit: number = 50): Promise<Transaction[]> {

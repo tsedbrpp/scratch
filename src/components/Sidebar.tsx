@@ -292,34 +292,38 @@ function SidebarContent({ pathname, isMounted, isCollapsed, toggleCollapse }: { 
                             <div className="space-y-1">
                                 {visibleItems.map((item) => {
                                     const isActive = pathname === item.href;
+                                    const linkNode = (
+                                        <Link
+                                            key={!isCollapsed ? item.href : undefined}
+                                            href={item.href}
+                                            className={cn(
+                                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group overflow-hidden",
+                                                isActive
+                                                    ? "bg-gradient-to-r from-blue-600/10 to-emerald-600/10 text-white shadow-lg shadow-blue-900/5 ring-1 ring-white/10"
+                                                    : "text-slate-400 hover:text-white hover:bg-slate-900/50",
+                                                isCollapsed && "justify-center px-2"
+                                            )}
+                                        >
+                                            {isActive && (
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-blue-400 to-emerald-400 rounded-r-full" />
+                                            )}
+                                            <item.icon size={20} className={cn("shrink-0 transition-colors", isActive ? "text-blue-400" : "group-hover:text-slate-300")} />
+                                            {!isCollapsed && <span className="whitespace-nowrap animate-in fade-in duration-200">{item.name}</span>}
+                                        </Link>
+                                    );
+
+                                    if (!isCollapsed) return linkNode;
+
                                     return (
                                         <TooltipProvider key={item.href} delayDuration={0}>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Link
-                                                        href={item.href}
-                                                        className={cn(
-                                                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group overflow-hidden",
-                                                            isActive
-                                                                ? "bg-gradient-to-r from-blue-600/10 to-emerald-600/10 text-white shadow-lg shadow-blue-900/5 ring-1 ring-white/10"
-                                                                : "text-slate-400 hover:text-white hover:bg-slate-900/50",
-                                                            isCollapsed && "justify-center px-2"
-                                                        )}
-                                                    >
-                                                        {isActive && (
-                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-blue-400 to-emerald-400 rounded-r-full" />
-                                                        )}
-                                                        <item.icon size={20} className={cn("shrink-0 transition-colors", isActive ? "text-blue-400" : "group-hover:text-slate-300")} />
-                                                        {!isCollapsed && <span className="whitespace-nowrap animate-in fade-in duration-200">{item.name}</span>}
-                                                    </Link>
+                                                    {linkNode}
                                                 </TooltipTrigger>
-                                                {/* Tooltip Content */}
-                                                {isCollapsed && (
-                                                    <TooltipContent side="right" className="bg-slate-900 text-white border-slate-800 ml-2">
-                                                        <p className="font-semibold">{item.name}</p>
-                                                        <p className="text-xs text-slate-300 max-w-[200px]">{item.description}</p>
-                                                    </TooltipContent>
-                                                )}
+                                                <TooltipContent side="right" className="bg-slate-900 text-white border-slate-800 ml-2">
+                                                    <p className="font-semibold">{item.name}</p>
+                                                    <p className="text-xs text-slate-300 max-w-[200px]">{item.description}</p>
+                                                </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     );

@@ -75,7 +75,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
     },
     enterprise: {
         id: 'enterprise',
-        credits: 1000,
+        credits: 500,
         price: 80,
         name: "Power User",
         popular: false,
@@ -86,7 +86,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
             bannerText: "Limited time promotion. Offer may be rescinded at any time."
         },
         features: [
-            "1000 Analysis Credits",
+            "500 Analysis Credits",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",
