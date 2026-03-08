@@ -18,17 +18,17 @@ export interface CreditPackage {
 export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
     starter: {
         id: 'starter',
-        credits: 100,
+        credits: 50,
         price: 0,
         name: "First-Time Registrant",
         popular: false,
         description: "One-time offer for new accounts.",
         promo: {
             badge: "New Users Only",
-            bannerText: "Get 100 free credits when you sign up!"
+            bannerText: "Get 50 free credits when you sign up!"
         },
         features: [
-            "100 Analysis Credits",
+            "50 Analysis Credits",
             "Document Uploads",
             "Basic Assemblage Map",
             "Access to Community Support"
@@ -36,7 +36,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
     },
     standard: {
         id: 'standard',
-        credits: 100,
+        credits: 50,
         price: 10,
         name: "Standard Pack",
         popular: false,
@@ -46,7 +46,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
             bannerText: "Limited time promotion. Offer may be rescinded at any time."
         },
         features: [
-            "100 Analysis Credits",
+            "50 Analysis Credits",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",
@@ -55,7 +55,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
     },
     pro: {
         id: 'pro',
-        credits: 500,
+        credits: 250,
         price: 45,
         name: "Pro Pack",
         popular: true,
@@ -66,7 +66,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
             bannerText: "Limited time promotion. Offer may be rescinded at any time."
         },
         features: [
-            "500 Analysis Credits",
+            "250 Analysis Credits",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",
