@@ -148,7 +148,7 @@ export default function BillingPage() {
                     </h3>
                     <p className="text-indigo-700 mt-1 max-w-xl">
                         Are you a student or academic researcher? We support open science!
-                        Email us from your <strong>.edu</strong> or institutional address to receive <span className="font-bold underline">500 Free Credits</span> for your work.
+                        Email us from your <strong>.edu</strong> or institutional address to receive <span className="font-bold underline">100 Free Credits</span> for your work.
                     </p>
                 </div>
                 <a href="mailto:support@policyprism.io?subject=Academic Grant Request" className="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">

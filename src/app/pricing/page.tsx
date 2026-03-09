@@ -119,7 +119,7 @@ export default function PricingPage() {
                         <h2 className="text-2xl font-bold text-amber-900 mb-4">🎓 Academic Grants Available</h2>
                         <p className="text-amber-800 mb-6 max-w-2xl mx-auto">
                             We are committed to supporting open research. If you are a student or academic researcher with limited funding,
-                            please verify your <strong>.edu</strong> email address to apply for our research grant program (500 Free Credits).
+                            please verify your <strong>.edu</strong> email address to apply for our research grant program (100 Free Credits).
                         </p>
                         <Button variant="outline" className="border-amber-600 text-amber-700 hover:bg-amber-100">
                             Apply for Grant
