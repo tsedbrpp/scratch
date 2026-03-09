@@ -144,7 +144,7 @@ export default function PricingPage() {
                                 <dd className="mt-4 lg:col-span-7 lg:mt-0">
                                     <p className="text-base leading-7 text-slate-600">
                                         Since this is a pay-as-you-go model, there is no subscription to cancel.
-                                        Credits never expire. If you purchase credits by mistake, contact us within 24 hours for a refund.
+                                        Purchased credits automatically expire after 45 days. If you purchase credits by mistake, contact us within 24 hours for a refund.
                                     </p>
                                 </dd>
                             </div>

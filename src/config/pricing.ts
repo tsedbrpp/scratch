@@ -47,6 +47,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
         },
         features: [
             "50 Analysis Credits",
+            "Credits expire in 45 days",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",
@@ -67,6 +68,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
         },
         features: [
             "250 Analysis Credits",
+            "Credits expire in 45 days",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",
@@ -87,6 +89,7 @@ export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
         },
         features: [
             "500 Analysis Credits",
+            "Credits expire in 45 days",
             "Document Uploads",
             "Deep AI Analysis (GPT-5.1)",
             "Unlimited Projects",

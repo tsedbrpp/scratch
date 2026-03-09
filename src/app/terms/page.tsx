@@ -114,6 +114,25 @@ export default function TermsOfServicePage() {
                             </div>
                         </section>
 
+                        {/* 6. Service Termination & Data Export */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                                <AlertTriangle className="h-6 w-6 text-red-600" />
+                                6. Service Termination & Data Export
+                            </h2>
+                            <p className="text-slate-600 mb-4">
+                                Policy Prism reserves the right to modify, suspend, or terminate the service (or any part thereof) with or without cause. In the event of a permanent platform shutdown, we will provide users with a minimum of <strong>30 days advance notice</strong> via email and in-app notifications.
+                            </p>
+                            <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg space-y-3">
+                                <p className="text-sm text-slate-700">
+                                    <strong>Data Export:</strong> During this 30-day notice period, it is your sole responsibility to utilize the platform's Data Export features to download your intellectual property (JSON, PDF, DOCX formats). Policy Prism is not liable for data loss once the servers are permanently deactivated.
+                                </p>
+                                <p className="text-sm text-slate-700">
+                                    <strong>Unused Credits:</strong> In the event of an involuntary permanent shutdown, any remaining, unexpired pre-paid credits will be automatically refunded to your original payment method via Stripe on a pro-rated basis upon the final sunset date.
+                                </p>
+                            </div>
+                        </section>
+
                         {/* Contact */}
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Contact Us</h3>

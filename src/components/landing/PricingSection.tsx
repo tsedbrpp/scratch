@@ -134,7 +134,7 @@ export function PricingSection() {
                 <div className="mt-12 text-center">
                     <p className="text-slate-500 text-sm flex items-center justify-center gap-2">
                         <Info className="w-4 h-4" />
-                        <span>All plans include access to standard lenses. Credits are used for analysis steps.</span>
+                        <span>All plans include access to standard lenses. Credits are used for analysis steps. Purchased credits expire 45 days after purchase.</span>
                     </p>
                 </div>
             </div>

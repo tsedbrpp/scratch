@@ -185,7 +185,7 @@ export default function BillingPage() {
                                 <p className="text-sm text-slate-600">
                                     <strong>1 Credit = 1 Document Analysis</strong>.
                                     Looking at a document through a single lens (e.g., &quot;Legitimacy&quot; or &quot;Cultural Framing&quot;) costs 1 credit.
-                                    Complex synthesis tasks may cost more.
+                                    Complex synthesis tasks may cost more. Purchased credits <strong>expire after 45 days</strong>.
                                 </p>
                                 <Link href="/why-credits" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
                                     Learn more about credits &rarr;

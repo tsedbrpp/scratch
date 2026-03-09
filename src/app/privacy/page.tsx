@@ -158,6 +158,25 @@ export default function PrivacyPolicyPage() {
                             </p>
                         </section>
 
+                        {/* 7. Business Transfers & Data Destruction */}
+                        <section>
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                                <Server className="h-6 w-6 text-slate-700" />
+                                7. Business Transfers & Data Destruction
+                            </h2>
+                            <p className="text-slate-600 mb-4">
+                                In the event that Policy Prism undergoes a permanent business closure, bankruptcy, or is acquired by a third party, your privacy and data security remain our priority.
+                            </p>
+                            <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg space-y-3">
+                                <p className="text-sm text-slate-700">
+                                    <strong>Data Destruction Upon Shutdown:</strong> If the platform is permanently shut down, all User Inputs, uploaded documents, generated analysis graphs, and personal metadata stored on our active databases (e.g., PostgreSQL, Redis) will be <strong>permanently and irretrievably deleted</strong> following the 30-day notice period. We will not sell or transfer your proprietary research data to third parties as a business asset during liquidation.
+                                </p>
+                                <p className="text-sm text-slate-700">
+                                    <strong>Acquisitions:</strong> In the event of an acquisition or merger, your data will only be transferred if the acquiring entity agrees to be bound by a Privacy Policy that provides equal or greater protection for your data than this current policy.
+                                </p>
+                            </div>
+                        </section>
+
                         {/* Contact */}
                         <section className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
                             <h3 className="text-lg font-bold text-slate-900">Questions?</h3>

@@ -48,8 +48,10 @@ export default async function Home({
   const params = await searchParams; // Await params in newer Next.js versions
   const showLanding = params?.view === "landing";
 
-  // If user is authenticated and NOT specifically requesting the landing page, show Dashboard
-  if (userId && !showLanding) {
+  // If user is authenticated OR requesting demo mode, and NOT specifically requesting the landing page, show Dashboard
+  const isDemoMode = params?.demoMode === "true";
+
+  if ((userId || isDemoMode) && !showLanding) {
     return <Dashboard />;
   }
 
