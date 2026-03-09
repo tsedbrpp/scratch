@@ -53,6 +53,10 @@ export async function evaluateEscalationWithAI(
         });
 
         if (!response.ok) {
+            if (response.status === 403) {
+                // Gracefully degrade in read-only / demo mode
+                return null;
+            }
             throw new Error(`AI Escalation check failed: ${response.statusText}`);
         }
 
