@@ -51,12 +51,12 @@ export function CreditTopUpDialog({ open, onOpenChange }: CreditTopUpDialogProps
                     </DialogTitle>
                     <DialogDescription>
                         Select a credit package to run advanced AI analyses.
-                        {selectedPackage.promo?.bannerText && (
-                            <div className="mt-2 bg-amber-50 text-amber-800 text-xs px-2 py-1.5 rounded-md border border-amber-200">
-                                <strong>Note:</strong> {selectedPackage.promo.bannerText}
-                            </div>
-                        )}
                     </DialogDescription>
+                    {selectedPackage.promo?.bannerText && (
+                        <div className="mt-2 bg-amber-50 text-amber-800 text-xs px-2 py-1.5 rounded-md border border-amber-200">
+                            <strong>Note:</strong> {selectedPackage.promo.bannerText}
+                        </div>
+                    )}
                 </DialogHeader>
 
                 <div className="grid gap-3 py-4">
