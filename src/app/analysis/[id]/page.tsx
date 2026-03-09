@@ -286,7 +286,7 @@ function AnalysisPageContent() {
                                 size="sm"
                                 variant={source.analysis.system_critique ? "outline" : "default"}
                                 onClick={() => handleAnalyze('dsf')}
-                                disabled={isAnalyzing}
+                                disabled={isAnalyzing || isReadOnly}
                                 className={!source.analysis.system_critique ? "bg-indigo-600 text-white hover:bg-indigo-700" : ""}
                             >
                                 {isAnalyzing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
@@ -312,7 +312,7 @@ function AnalysisPageContent() {
                                 size="sm"
                                 variant={source.analysis.verified_quotes && source.analysis.verified_quotes.length > 0 ? "outline" : "default"}
                                 onClick={() => handleAnalyze('stress_test')}
-                                disabled={isAnalyzing}
+                                disabled={isAnalyzing || isReadOnly}
                                 className={!source.analysis.verified_quotes ? "bg-indigo-600 text-white hover:bg-indigo-700" : ""}
                             >
                                 {isAnalyzing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Zap className="mr-2 h-3 w-3" />}
@@ -395,7 +395,7 @@ function AnalysisPageContent() {
                                 <div className="flex justify-center">
                                     <Button
                                         onClick={handleRunCritique}
-                                        disabled={isCritiqueLoading}
+                                        disabled={isCritiqueLoading || isReadOnly}
                                         variant="outline"
                                         className="gap-2"
                                     >
