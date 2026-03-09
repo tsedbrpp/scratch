@@ -16,7 +16,7 @@ export function DemoModeAlert() {
 
         if (isReadOnly && !hasAlerted.current) {
             toast("Read-Only Demo Mode", {
-                description: "Analyze, Search, and AI functionalities are disabled for unauthenticated users. You can view existing data but cannot generate new insights.",
+                description: "Analyze, Search, and AI functionalities are disabled for unauthenticated users. You can view demostrations but cannot generate new insights.",
                 icon: <Lock className="h-4 w-4 text-amber-500" />,
                 duration: 8000,
                 position: "top-center",
