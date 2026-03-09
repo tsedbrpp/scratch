@@ -118,24 +118,6 @@ export function Dashboard() {
                 </Card>
             </div>
 
-            {/* Rhizomatic Explorer (Primary Navigation) */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="text-lg font-semibold text-slate-900">Rhizomatic Navigation</h3>
-                        <p className="text-sm text-slate-500">Explore the assemblage through entangled concepts.</p>
-                    </div>
-                    {highResistanceCount > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 animate-pulse">
-                            High Resistance Detected in Ecosystem
-                        </span>
-                    )}
-                </div>
-                <div className="mb-12">
-                    <GalaxyGraph highResistanceCount={highResistanceCount} />
-                </div>
-            </div>
-
             {/* Entry Points (Primary Navigation) */}
             <div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">How do you want to begin?</h3>
@@ -184,6 +166,24 @@ export function Dashboard() {
                             </div>
                         </div>
                     </Link>
+                </div>
+            </div>
+
+            {/* Rhizomatic Explorer (Secondary Navigation) */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Rhizomatic Navigation</h3>
+                        <p className="text-sm text-slate-500">Explore the assemblage through entangled concepts.</p>
+                    </div>
+                    {highResistanceCount > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 animate-pulse">
+                            High Resistance Detected in Ecosystem
+                        </span>
+                    )}
+                </div>
+                <div className="mb-12">
+                    <GalaxyGraph highResistanceCount={highResistanceCount} />
                 </div>
             </div>
             <CreditTopUpDialog
