@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it as below."
+title: "Policy Prism: An Open-Source Platform for Critical Analysis of AI Governance Policy"
+type: software
+authors:
+  - family-names: "[Last Name]"
+    given-names: "[First Name]"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/tsedbrpp/scratch"
+url: "https://policyprism.io"
+license: MIT
+version: 2.0.0
+date-released: "2026-04-22"
+keywords:
+  - ai-governance
+  - policy-analysis
+  - actor-network-theory
+  - assemblage-theory
+  - ghost-nodes
+  - translational-stratification
+  - algorithmic-assemblages
+abstract: >-
+  Policy Prism is an open-source research platform for critical analysis
+  of AI governance policy. It operationalises Actor-Network Theory and
+  Assemblage Theory through a coordinated LLM ensemble and an eight-layer
+  analytical framework, enabling multi-lens analysis, ghost node detection
+  (GNDP v1.0), ecosystem mapping, translational stratification theory,
+  and comparative synthesis across jurisdictions.

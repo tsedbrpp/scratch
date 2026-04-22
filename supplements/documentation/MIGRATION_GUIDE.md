@@ -361,5 +361,5 @@ For questions or issues:
 
 ---
 
-**Last Updated**: 2026-01-08
-**Migration Status**: Complete. All phases (Weeks 1-4) finished. System is fully migrated to the 3-layer architecture.
+**Last Updated**: 2026-04-22
+**Migration Status**: Complete. All phases (Weeks 1-4) finished. System is fully migrated to the three-layer architecture (ANT method → Assemblage ontology → Provisional inscriptions).

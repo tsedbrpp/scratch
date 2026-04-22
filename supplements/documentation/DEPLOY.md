@@ -1,106 +1,108 @@
-# Deployment Guide
-
-This project is built with [Next.js](https://nextjs.org/). Below are the instructions for deploying it to various platforms.
+# Policy Prism — Deployment Guide
 
 ## Prerequisites
 
-Before deploying, ensure you have the following environment variables ready, as they are required for the application to function correctly (see `env.example`):
+Ensure the following environment variables are configured:
 
-- `OPENAI_API_KEY`: Your OpenAI API key.
-- `GOOGLE_SEARCH_API_KEY`: Your Google Custom Search API key.
-- `GOOGLE_SEARCH_CX`: Your Google Custom Search Engine ID.
-- `REDIS_URL`: Connection string for your Redis instance (e.g., `redis://localhost:6379` for local, or your Vercel KV/Upstash URL).
+| Variable | Description | Required |
+|---|---|---|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Auth Public Key | Yes |
+| `CLERK_SECRET_KEY` | Clerk Auth Secret Key | Yes |
+| `OPENAI_API_KEY` | OpenAI API Key (GPT-4o, GPT-4o-mini) | Yes |
+| `REDIS_URL` | Upstash Redis connection string | Yes |
+| `GOOGLE_SEARCH_API_KEY` | Google Custom Search API Key | Yes |
+| `GOOGLE_SEARCH_CX` | Google Custom Search Engine ID | Yes |
+| `STRIPE_SECRET_KEY` | Stripe Secret for payments | Yes |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification | Yes |
+| `NEXT_PUBLIC_ENABLE_DEMO_MODE` | Set `true` for read-only demo | No |
+| `ADMIN_USER_IDS` | Comma-separated admin user IDs | No |
+
+---
 
 ## Option 1: Vercel (Recommended)
 
-Vercel is the creators of Next.js and offers the easiest deployment experience.
+Vercel is the creator of Next.js and offers the simplest deployment path.
 
-1.  **Push your code to a Git repository** (GitHub, GitLab, or Bitbucket).
-2.  **Sign up/Log in to [Vercel](https://vercel.com/)**.
-3.  **Add a New Project**:
-    *   Click "Add New..." -> "Project".
-    *   Import your Git repository.
-4.  **Configure Project**:
-    *   Vercel will automatically detect that it's a Next.js project.
-    *   **Environment Variables**: Expand the "Environment Variables" section and add the keys listed in the Prerequisites section.
-5.  **Deploy**: Click "Deploy".
+1. **Push code to Git** (GitHub, GitLab, or Bitbucket).
+2. **Sign in to [Vercel](https://vercel.com/)** and click "Add New..." → "Project".
+3. **Import** your Git repository.
+4. **Environment Variables**: Expand the "Environment Variables" section and add all variables from the table above.
+5. **Deploy**: Click "Deploy".
 
-Vercel will build and deploy your application. Any changes pushed to your repository will automatically trigger a new deployment.
+> **Critical**: `REDIS_URL` must point to a cloud Redis instance (e.g., Upstash), **not** `localhost`.
 
-## Option 2: Netlify
+Vercel auto-deploys on every push to the main branch.
 
-1.  **Push your code to a Git repository**.
-2.  **Sign up/Log in to [Netlify](https://www.netlify.com/)**.
-3.  **Add New Site**:
-    *   Click "Add new site" -> "Import from Git".
-    *   Connect your Git provider and select your repository.
-4.  **Build Settings**:
-    *   Netlify should auto-detect Next.js.
-    *   Build command: `npm run build`
-    *   Publish directory: `.next`
-5.  **Environment Variables**:
-    *   Click "Show advanced" or go to "Site settings" -> "Build & deploy" -> "Environment" after the site is created.
-    *   Add the required environment variables.
-6.  **Deploy**: Click "Deploy site".
+### Custom Domain
 
-## Option 3: Self-Hosting (Node.js)
+1. In Vercel project settings → Domains.
+2. Add your custom domain (e.g., `policyprism.io`).
+3. Update DNS records as instructed by Vercel.
+4. Update Clerk redirect URIs to include the new domain.
+5. Update Google OAuth redirect URIs in Google Cloud Console.
 
-You can host the application on any server that supports Node.js (e.g., AWS EC2, DigitalOcean, Heroku, Railway).
+---
 
-1.  **Build the application**:
-    Run the build command locally or in your CI/CD pipeline:
-    ```bash
-    npm run build
-    ```
+## Option 2: Self-Hosting (Node.js)
 
-2.  **Start the server**:
-    ```bash
-    npm start
-    ```
+Deploy on any Node.js-capable server (AWS EC2, DigitalOcean, Railway, Render).
 
-    The application will start on port 3000 by default. You can specify a port using the `-p` flag (e.g., `npm start -- -p 8080`).
+```bash
+# Build
+npm run build
 
-3.  **Environment Variables**:
-    Ensure the environment variables are set in your server's environment or in a `.env.production` file (though setting them in the system environment is more secure).
+# Start (port 3000 default)
+npm start
 
-## Option 4: Docker
+# Custom port
+npm start -- -p 8080
+```
 
-If you prefer containerization, you can use the official Next.js Docker example.
+Set environment variables in the server's system environment or via `.env.production`.
 
-1.  Create a `Dockerfile` in the root of your project (refer to [Next.js Docker documentation](https://github.com/vercel/next.js/tree/canary/examples/with-docker)).
-2.  Build the image:
-    ```bash
-    docker build -t my-next-app .
-    ```
-3.  Run the container:
-    ```bash
-    docker run -p 3000:3000 -e OPENAI_API_KEY=... -e GOOGLE_SEARCH_API_KEY=... -e GOOGLE_SEARCH_CX=... -e REDIS_URL=... my-next-app
-    ```
+---
 
-## Option 5: Local Development with Docker Compose
+## Option 3: Docker
 
-To run the required services (Redis) locally using Docker:
+```bash
+# Build image
+docker build -t policy-prism .
 
-1.  Ensure Docker Desktop is installed and running.
-2.  Run the following command in the project root:
-    ```bash
-    docker-compose up -d
-    ```
-    This will start a Redis instance on port 6379.
-3.  Set `REDIS_URL=redis://localhost:6379` in your `.env.local` file.
+# Run container
+docker run -p 3000:3000 \
+  -e OPENAI_API_KEY=sk-... \
+  -e CLERK_SECRET_KEY=sk_... \
+  -e REDIS_URL=redis://... \
+  -e GOOGLE_SEARCH_API_KEY=... \
+  -e GOOGLE_SEARCH_CX=... \
+  -e STRIPE_SECRET_KEY=sk_... \
+  -e STRIPE_WEBHOOK_SECRET=whsec_... \
+  policy-prism
+```
 
-## Static Export (Optional)
+---
 
-If you need to deploy to a static host (like GitHub Pages or AWS S3) and **do not** need server-side features (like API routes or SSR), you can configure a static export.
+## Local Development with Docker Compose
 
-1.  Update `next.config.ts`:
-    ```typescript
-    const nextConfig: NextConfig = {
-      output: 'export',
-      // ... other config
-    };
-    ```
-2.  Run `npm run build`.
-3.  The static assets will be generated in the `out` directory.
+To run Redis locally:
 
-**Note**: This project likely uses API routes for AI and search functionality, so **Static Export might not be suitable** unless you refactor those to client-side calls to external services or use Edge Functions.
+```bash
+docker-compose up -d
+```
+
+Set `REDIS_URL=redis://localhost:6379` in `.env.local`.
+
+---
+
+## Post-Deployment Verification
+
+1. **Authentication**: Sign in and verify Clerk authentication works.
+2. **Upload**: Upload a test PDF on the `/data` page.
+3. **Analysis**: Run an Institutional Logics analysis and confirm results.
+4. **Ghost Nodes**: Run GNDP detection and verify the pipeline completes all passes.
+5. **Ecosystem**: Navigate to `/ecosystem` and confirm the network graph renders.
+6. **Credits**: Verify Stripe integration via a test payment (use Stripe test mode keys).
+
+---
+
+**Last Updated**: 2026-04-22
