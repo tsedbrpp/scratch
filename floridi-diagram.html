@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Floridi's Intellectual Trajectory</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e8;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #6b9dfc, #b084f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #8888a0;
+      font-size: 0.95rem;
+      margin-bottom: 48px;
+    }
+    
+    .section {
+      background: #1a1a2e;
+      border: 1px solid #2a2a44;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 36px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #c0c0d8;
+      border-bottom: 1px solid #2a2a44;
+      padding-bottom: 12px;
+    }
+    
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      background: #12121f;
+      border-radius: 12px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    .mermaid svg {
+      max-width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      background: #22223a;
+      color: #b084f6;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #2a2a44;
+      font-size: 0.9rem;
+      color: #c0c0d8;
+    }
+
+    td:first-child {
+      font-weight: 600;
+      color: #e0e0f0;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(107, 157, 252, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Floridi's Intellectual Trajectory</h1>
+    <p class="subtitle">Five works mapped across epistemology, ethics, and AI governance (2008–2023)</p>
+
+    <div class="section">
+      <h2>📅 Timeline</h2>
+      <div class="mermaid">
+timeline
+    title Floridi's Intellectual Arc (2008 – 2023)
+    2008 : Method of Levels of Abstraction
+         : Epistemological Foundation
+    2013 : The Ethics of Information
+         : Core Ethical Framework
+    2018 : Soft Ethics and Digital Governance
+         : Bridge to Policy
+    2019 : Translating Principles into Practices
+         : Ethics Washing Critique
+    2023 : Ethics of Artificial Intelligence
+         : Comprehensive AI Ethics
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔗 Conceptual Dependency Map</h2>
+      <div class="mermaid">
+graph TD
+    A["Levels of Abstraction 2008\nEpistemological method:\nhow we model systems at\ndifferent granularities"]
+    B["Ethics of Information 2013\nCore framework: moral patients,\nmoral agents, informational\nobjects as entities with rights"]
+    C["Soft Ethics 2018\nEthics by design: embed ethical\ncommitments in system\narchitecture, not as add-ons"]
+    D["Translating Principles 2019\nFive risks of failure: ethics\nwashing, ethics shopping,\nethics lobbying, etc."]
+    E["Ethics of AI 2023\nComprehensive synthesis:\nprinciples + challenges +\nopportunities for AI governance"]
+
+    A -->|"provides analytical\nscaffolding for"| B
+    B -->|"moral framework\nmotivates"| C
+    B -->|"defines what is at\nstake when"| D
+    C -->|"prescribes design;\nwarns against"| D
+    C -->|"foundational concept\ncarried into"| E
+    D -->|"failure modes\naddressed in"| E
+    B -->|"ethical ontology\nunderpins"| E
+
+    style A fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+    style B fill:#6b5b95,stroke:#4a3d6e,color:#fff
+    style C fill:#88b04b,stroke:#5c7a2e,color:#fff
+    style D fill:#d65076,stroke:#a33a5a,color:#fff
+    style E fill:#e8a838,stroke:#b8832a,color:#fff
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📌 Connection to Your Manuscript</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Work</th>
+            <th>Your manuscript uses it for…</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Levels of Abstraction (2008)</td>
+            <td>Justifying how PolicyPrism models governance at multiple analytic layers</td>
+          </tr>
+          <tr>
+            <td>Ethics of Information (2013)</td>
+            <td>Ghost Node moral status prompts (moral patients denied agency)</td>
+          </tr>
+          <tr>
+            <td>Soft Ethics (2018)</td>
+            <td>Ethics by design — embedding reflexivity in the tool's architecture</td>
+          </tr>
+          <tr>
+            <td>Translating Principles (2019)</td>
+            <td>Ethics washing critique; referential drift as the infrastructure-level counterpart</td>
+          </tr>
+          <tr>
+            <td>Ethics of AI (2023)</td>
+            <td>Updated synthesis tying the whole program together</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#4a6fa5',
+        primaryTextColor: '#e0e0e8',
+        lineColor: '#6b9dfc',
+        secondaryColor: '#6b5b95',
+        tertiaryColor: '#1a1a2e'
+      }
+    });
+  </script>
+</body>
+</html>

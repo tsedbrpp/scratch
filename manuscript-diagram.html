@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manuscript Architecture — Policy Prism</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a14;
+      color: #d0d0e0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 {
+      text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;
+      background: linear-gradient(135deg, #6b9dfc, #e8a838);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle { text-align: center; color: #7878a0; font-size: 0.9rem; margin-bottom: 40px; }
+    .section {
+      background: #13132a; border: 1px solid #252548; border-radius: 14px;
+      padding: 28px; margin-bottom: 32px; box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    }
+    .section h2 {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #b0b0d0;
+      border-bottom: 1px solid #252548; padding-bottom: 10px;
+    }
+    .mermaid {
+      display: flex; justify-content: center; background: #0e0e1e;
+      border-radius: 10px; padding: 20px; overflow-x: auto;
+    }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;
+      justify-content: center; font-size: 0.8rem;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Policy Prism — Manuscript Architecture</h1>
+  <p class="subtitle">High-level map of sections, concepts, contributions, and their connections</p>
+
+  <!-- 1. PAPER SPINE -->
+  <div class="section">
+    <h2>📄 Paper Spine — Section Flow</h2>
+    <div class="mermaid">
+graph LR
+  A["§1 Introduction\nBlack Box → Assemblage"]
+  B["§2 Conceptual\nFramework"]
+  C["§3 eDSR\nMethodology"]
+  D["§4 Ghost Node\nConstruct"]
+  E["§5 Comparative\nAnalysis"]
+  F["§6 Demonstration\nof Utility"]
+  G["§7 Discussion\n& TST Framework"]
+  H["§8 Conclusion"]
+
+  A --> B --> C --> D --> E --> F --> G --> H
+
+  style A fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style B fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style C fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style D fill:#d65076,stroke:#a33a5a,color:#fff
+  style E fill:#e8a838,stroke:#b8832a,color:#fff
+  style F fill:#45b5aa,stroke:#2d8a82,color:#fff
+  style G fill:#c7604c,stroke:#9a4538,color:#fff
+  style H fill:#7a7aaa,stroke:#5a5a7a,color:#fff
+    </div>
+  </div>
+
+  <!-- 2. THREE CONTRIBUTIONS -->
+  <div class="section">
+    <h2>🎯 Three Ranked Contributions</h2>
+    <div class="mermaid">
+graph TD
+  C1["<b>1st — Ghost Node Construct</b>\nConceptual-methodological tool\nfor identifying constitutive absence\nvia 3-criterion evidentiary rubric"]
+  C2["<b>2nd — Design Principles</b>\nTraceability · Contestability\nProductive Friction\nembodied in PolicyPrism.io"]
+  C3["<b>3rd — Translational Stratification</b>\nEmergent interpretive framework:\nportable codes → infrastructural\nembedding → governance durability"]
+
+  C1 -->|"operationalized\nthrough"| C2
+  C2 -->|"enables comparative\nanalysis yielding"| C3
+  C3 -->|"Ghost Nodes are the\nempirical marker of"| C1
+
+  style C1 fill:#d65076,stroke:#a33a5a,color:#fff
+  style C2 fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style C3 fill:#e8a838,stroke:#b8832a,color:#fff
+    </div>
+  </div>
+
+  <!-- 3. CONCEPTUAL ARCHITECTURE -->
+  <div class="section">
+    <h2>🧠 Conceptual Architecture</h2>
+    <div class="mermaid">
+graph TD
+  subgraph Theoretical["Theoretical Foundations"]
+    ANT["ANT\nCallon · Latour\ntranslation chains, OPPs"]
+    ASM["Assemblage Theory\nDeLanda · Deleuze+Guattari\nstratification, deterritorialization"]
+    FLO["Floridi\ninfo ethics, LoA,\nethics by design"]
+    EJ["Epistemic Justice\nFricker · Birhane\nCoeckelbergh"]
+    SM["Sociomateriality\nOrlikowski · Leonardi\nmaterial enactment"]
+    DF["Data Feminism\nD'Ignazio+Klein\nintersectionality"]
+  end
+
+  subgraph Constructs["Paper's Constructs"]
+    GN["Ghost Node\n3-criterion rubric"]
+    PP["PolicyPrism.io\ndesign principles"]
+    TS["Translational\nStratification"]
+  end
+
+  ANT -->|"translation,\nOPPs"| GN
+  ASM -->|"absent presence,\nstratification"| GN
+  FLO -->|"moral patients,\nLoA, ethics washing"| GN
+  EJ -->|"who is excluded\nas knower"| GN
+  SM -->|"materially enacted\nabsence"| GN
+  DF -->|"intersectional\nprompts"| GN
+
+  GN -->|"instantiated in"| PP
+  PP -->|"comparative analysis\nproduces"| TS
+
+  ANT -->|"translation chains"| TS
+  ASM -->|"stratification"| TS
+
+  style ANT fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style ASM fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style FLO fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style EJ fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style SM fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style DF fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style GN fill:#d65076,stroke:#a33a5a,color:#fff
+  style PP fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style TS fill:#e8a838,stroke:#b8832a,color:#fff
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4a6fa5"></div> Core ontologies (ANT, Assemblage)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6b5b95"></div> Supporting frameworks</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d65076"></div> Ghost Node construct</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#88b04b"></div> Artifact / Design</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e8a838"></div> Emergent framework</div>
+    </div>
+  </div>
+
+  <!-- 4. GHOST NODE RUBRIC -->
+  <div class="section">
+    <h2>👻 Ghost Node Construct — Rubric & Types</h2>
+    <div class="mermaid">
+graph TD
+  CAND["Ghost Node Candidate\nidentified via LLM-assisted\nmediator tracing"]
+
+  CR1["Criterion 1\nFunctional Relevance\nactor plausibly bears\na governance function"]
+  CR2["Criterion 2\nTextual Trace\ndocument invokes actor's\ninterests without enrollment"]
+  CR3["Criterion 3\nStructural Foreclosure\nno complaint mechanism,\nno governance role"]
+
+  CAND --> CR1
+  CAND --> CR2
+  CAND --> CR3
+
+  PASS{"All 3\nmet?"}
+  CR1 --> PASS
+  CR2 --> PASS
+  CR3 --> PASS
+
+  T1["Affected-but-\nUnempowered"]
+  T2["Rhetorically\nInvoked"]
+  T3["Structurally\nExcluded"]
+  T4["Displaced"]
+
+  PASS -->|"Yes → classify"| T1
+  PASS -->|"Yes → classify"| T2
+  PASS -->|"Yes → classify"| T3
+  PASS -->|"Yes → classify"| T4
+
+  RAP["Reflexive Assessment Panel\nConfirm · Contest · Defer\n+ moral status + provenance chain"]
+  T1 --> RAP
+  T2 --> RAP
+  T3 --> RAP
+  T4 --> RAP
+
+  style CAND fill:#555580,stroke:#3a3a5a,color:#fff
+  style CR1 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style CR2 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style CR3 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style PASS fill:#333355,stroke:#222244,color:#fff
+  style T1 fill:#d65076,stroke:#a33a5a,color:#fff
+  style T2 fill:#d65076,stroke:#a33a5a,color:#fff
+  style T3 fill:#d65076,stroke:#a33a5a,color:#fff
+  style T4 fill:#d65076,stroke:#a33a5a,color:#fff
+  style RAP fill:#88b04b,stroke:#5c7a2e,color:#fff
+    </div>
+  </div>
+
+  <!-- 5. TRANSLATIONAL STRATIFICATION -->
+  <div class="section">
+    <h2>⚙️ Translational Stratification — Three Propositions</h2>
+    <div class="mermaid">
+graph LR
+  P1["<b>P1: Referential Drift</b>\nPortable codes travel\nwith stable labels but\nshifting referents"]
+  P2["<b>P2: Infrastructural Embedding</b>\nCodes become durable via\nstandards, audits, registries;\napex nodes concentrate authority"]
+  P3["<b>P3: Counter-Translation</b>\nExcluded actors contest\ndominant codings →\nsedimentation or reopening"]
+
+  P1 -->|"codes adopted\nthen embedded"| P2
+  P2 -->|"rigidity creates\nopenings"| P3
+  P3 -->|"new rounds\nof drift"| P1
+
+  GN2["Ghost Nodes =\nempirical marker of\nstratified legibility"]
+  P2 -->|"produces"| GN2
+
+  style P1 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style P2 fill:#e8a838,stroke:#b8832a,color:#fff
+  style P3 fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style GN2 fill:#d65076,stroke:#a33a5a,color:#fff
+    </div>
+  </div>
+
+  <!-- 6. COMPARATIVE CASES -->
+  <div class="section">
+    <h2>🌍 Comparative Cases & Orienting Statements</h2>
+    <div class="mermaid">
+graph TD
+  subgraph Cases["Four Jurisdictions"]
+    EU["EU AI Act\nProduct safety · CEN/CENELEC\nConformity assessment"]
+    CO["Colorado SB24-205\nConsumer harm · AG enforcement\nNo private right of action"]
+    IN["India Guidelines 2025\nDevelopmental state · IndiaAI Mission\nCARO + AIREC"]
+    BR["Brazil PL 2338\nRights-based · Objective liability\nANPD reclassification\n(exploratory vignette)"]
+  end
+
+  subgraph OS["Orienting Statements"]
+    O1["O1: Translation\nLabels travel,\nmeanings shift"]
+    O2["O2: Infrastructural\nStabilization\nApex nodes, OPPs"]
+    O3["O3: Counter-\nTranslation\nContesting exclusions"]
+  end
+
+  EU --> O1
+  CO --> O1
+  IN --> O1
+  EU --> O2
+  CO --> O2
+  IN --> O2
+  EU --> O3
+  CO --> O3
+  IN --> O3
+  BR -.->|"illustrates"| O3
+
+  O1 -->|"Strong"| SUP1["All 3 regimes show\nrisk = different referent"]
+  O2 -->|"Strong"| SUP2["Standards + apex nodes\nconcentrate authority"]
+  O3 -->|"Moderate"| SUP3["Counter-translation mostly\nextra-formal; Brazil strongest"]
+
+  style EU fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style CO fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style IN fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style BR fill:#e8a838,stroke:#b8832a,color:#fff
+  style O1 fill:#555580,stroke:#3a3a5a,color:#fff
+  style O2 fill:#555580,stroke:#3a3a5a,color:#fff
+  style O3 fill:#555580,stroke:#3a3a5a,color:#fff
+  style SUP1 fill:#2a6040,stroke:#1a4030,color:#fff
+  style SUP2 fill:#2a6040,stroke:#1a4030,color:#fff
+  style SUP3 fill:#7a6030,stroke:#5a4020,color:#fff
+    </div>
+  </div>
+
+  <!-- 7. RECURRING GHOST NODES -->
+  <div class="section">
+    <h2>👻 Recurring Ghost Nodes Across Jurisdictions</h2>
+    <div class="mermaid">
+graph LR
+  subgraph GhostNodes["Cross-Cutting Ghost Nodes"]
+    G1["Affected Communities\nas Co-Governors\nAffected-but-Unempowered"]
+    G2["Workers and\nLabor Unions\nStructurally Excluded"]
+    G3["Global South\nData Labor\nDisplaced"]
+  end
+
+  EU2["EU"] --> G1
+  EU2 --> G2
+  EU2 --> G3
+  CO2["CO"] --> G1
+  CO2 --> G2
+  CO2 --> G3
+  IN2["IN"] --> G1
+  IN2 --> G2
+  IN2 --> G3
+
+  G1 -->|"procedurally present\nstructurally disempowered"| SL["Stratified\nLegibility"]
+  G2 -->|"functionally necessary\nno governance role"| SL
+  G3 -->|"in supply chain\nbeyond jurisdictional scope"| SL
+
+  style G1 fill:#d65076,stroke:#a33a5a,color:#fff
+  style G2 fill:#d65076,stroke:#a33a5a,color:#fff
+  style G3 fill:#d65076,stroke:#a33a5a,color:#fff
+  style EU2 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style CO2 fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style IN2 fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style SL fill:#e8a838,stroke:#b8832a,color:#fff
+    </div>
+  </div>
+
+  <!-- 8. ARGUMENT CHAIN -->
+  <div class="section">
+    <h2>🔗 Core Argument Chain</h2>
+    <div class="mermaid">
+graph TD
+  S1["AI governance = algorithmic assemblage\nof heterogeneous actors, norms, infrastructure"]
+  S2["Existing tools cannot represent\nrelations + absences as first-class objects"]
+  S3["PolicyPrism.io built via eDSR\nwith 3 design principles"]
+  S4["Ghost Node construct identifies\nconstitutive absence via 3-criterion rubric"]
+  S5["Comparative analysis of EU · CO · IN\n+ Brazil vignette"]
+  S6["Recurring patterns:\nauthority concentration, upward accountability,\nstratified legibility"]
+  S7["Synthesis → Translational Stratification\nportable codes + infrastructural embedding\n= governance durability"]
+  S8["Ghost Nodes = empirical signature\nof Translational Stratification"]
+
+  S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+  S8 -.->|"reflexive loop"| S4
+
+  style S1 fill:#4a6fa5,stroke:#2d4a7a,color:#fff
+  style S2 fill:#555580,stroke:#3a3a5a,color:#fff
+  style S3 fill:#88b04b,stroke:#5c7a2e,color:#fff
+  style S4 fill:#d65076,stroke:#a33a5a,color:#fff
+  style S5 fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style S6 fill:#6b5b95,stroke:#4a3d6e,color:#fff
+  style S7 fill:#e8a838,stroke:#b8832a,color:#fff
+  style S8 fill:#c7604c,stroke:#9a4538,color:#fff
+    </div>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#4a6fa5',
+      primaryTextColor: '#e0e0e8',
+      lineColor: '#6b9dfc',
+      secondaryColor: '#6b5b95',
+      tertiaryColor: '#13132a',
+      fontSize: '13px'
+    },
+    flowchart: { curve: 'basis', padding: 16 }
+  });
+</script>
+</body>
+</html>

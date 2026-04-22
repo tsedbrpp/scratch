@@ -1,6 +1,7 @@
 import { redis } from '@/lib/redis';
 import { logger } from '@/lib/logger';
 import { GhostNode } from '@/types';
+import { AnalystAssessment, AssessmentHistoryEntry } from '@/lib/ghost-nodes/types';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -69,6 +70,67 @@ export class GhostNodeStore {
         } catch (error) {
             logger.error(`Failed to retrieve ghost nodes for policy ${policyId}`, error);
             return [];
+        }
+    }
+
+    /**
+     * Updates the analyst assessment on a specific ghost node, identified by fingerprint.
+     * Appends an immutable history entry to the provenance chain (P3) before updating.
+     */
+    static async updateGhostNodeAssessment(
+        contextId: string,
+        policyId: string,
+        fingerprint: string,
+        assessment: AnalystAssessment
+    ): Promise<boolean> {
+        try {
+            const redisKey = this.getRedisKey(contextId, policyId);
+            const raw = await redis.hget(redisKey, fingerprint);
+            if (!raw) {
+                logger.warn(`Ghost node not found for fingerprint: ${fingerprint}`);
+                return false;
+            }
+
+            const node: GhostNode = typeof raw === 'string' ? JSON.parse(raw) : raw as unknown as GhostNode;
+
+            // Build provenance chain — append current assessment as history entry
+            const existingHistory: AssessmentHistoryEntry[] = node.analystAssessment?.assessmentHistory ?? [];
+
+            // Determine action type
+            const prevStatus = node.analystAssessment?.status;
+            let action: AssessmentHistoryEntry['action'] = 'initial';
+            if (prevStatus) {
+                if (assessment.status === 'contested') action = 'contest';
+                else if (assessment.status === 'confirmed') action = 'confirm';
+                else if (assessment.status === 'deferred') action = 'defer';
+                else action = 'revision';
+            }
+
+            const historyEntry: AssessmentHistoryEntry = {
+                status: assessment.status,
+                criteriaChecklist: { ...assessment.criteriaChecklist },
+                contestReason: assessment.contestReason,
+                failedCriterion: assessment.failedCriterion,
+                reflexiveNote: assessment.reflexiveNote,
+                timestamp: assessment.assessedAt,
+                assessorId: assessment.assessedBy,
+                action,
+            };
+
+            const updated = {
+                ...node,
+                analystAssessment: {
+                    ...assessment,
+                    assessmentHistory: [...existingHistory, historyEntry],
+                },
+                updatedAt: new Date().toISOString(),
+            };
+
+            await redis.hset(redisKey, fingerprint, JSON.stringify(updated));
+            return true;
+        } catch (error) {
+            logger.error(`Failed to update ghost node assessment for fingerprint ${fingerprint}`, error);
+            throw error;
         }
     }
 }

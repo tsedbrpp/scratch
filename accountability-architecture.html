@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accountability Architecture — Directed Flow &amp; Institutional Logics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e14;
+    --surface: #14171f;
+    --surface-2: #1a1e2a;
+    --border: rgba(255,255,255,0.06);
+    --text: #e4e7ef;
+    --text-dim: #7a8194;
+    --text-muted: #4a5068;
+    --accent-up: #f97316;
+    --accent-up-glow: rgba(249,115,22,0.25);
+    --accent-down: #38bdf8;
+    --accent-down-dim: rgba(56,189,248,0.18);
+    --accent-absent: #ef4444;
+    --accent-absent-dim: rgba(239,68,68,0.15);
+    --eu: #6366f1;
+    --colorado: #22c55e;
+    --india: #f59e0b;
+    --brazil: #14b8a6;
+    --tier-top: rgba(249,115,22,0.07);
+    --tier-mid: rgba(99,102,241,0.05);
+    --tier-bottom: rgba(239,68,68,0.05);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+    line-height: 1.6;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .page-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #f97316, #fb923c, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header p {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 1.05rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .diagram-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .diagram-card-header {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .diagram-card-header .badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(249,115,22,0.12);
+    color: var(--accent-up);
+  }
+
+  .diagram-card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .diagram-body {
+    padding: 2rem;
+  }
+
+  /* ========== FIGURE 1: Flow Diagram ========== */
+  .flow-container {
+    position: relative;
+    width: 100%;
+    min-height: 620px;
+  }
+
+  .tier {
+    position: relative;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tier-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .tier-top { background: var(--tier-top); border: 1px solid rgba(249,115,22,0.12); }
+  .tier-mid { background: var(--tier-mid); border: 1px solid rgba(99,102,241,0.1); }
+  .tier-bottom { background: var(--tier-bottom); border: 1px solid rgba(239,68,68,0.1); }
+
+  .node-row {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .node {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    min-width: 160px;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .node:hover {
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .node .node-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .node .node-sub {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  /* SVG overlay for arrows */
+  .arrow-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Arrow legend */
+  .arrow-legend {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .legend-line {
+    width: 36px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .legend-line.up { background: var(--accent-up); }
+  .legend-line.down { background: var(--accent-down); height: 2px; opacity: 0.6; }
+  .legend-line.absent {
+    background: repeating-linear-gradient(90deg, var(--accent-absent) 0, var(--accent-absent) 4px, transparent 4px, transparent 8px);
+    height: 2px;
+  }
+
+  /* Annotation callout */
+  .callout {
+    background: rgba(239,68,68,0.06);
+    border-left: 3px solid var(--accent-absent);
+    border-radius: 0 8px 8px 0;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .callout strong { color: var(--accent-absent); font-weight: 600; }
+
+  /* ========== FIGURE 2: Comparative Matrix ========== */
+  .matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+  }
+
+  .matrix-table thead th {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+
+  .matrix-table tbody td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  .matrix-table tbody tr:last-child td { border-bottom: none; }
+
+  .matrix-table tbody tr {
+    transition: background 0.2s ease;
+  }
+
+  .matrix-table tbody tr:hover {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .jurisdiction-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .jurisdiction-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .logic-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .logic-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .logic-tag.industrial { background: rgba(249,115,22,0.1); color: #fb923c; }
+  .logic-tag.civic { background: rgba(99,102,241,0.1); color: #818cf8; }
+  .logic-tag.market { background: rgba(34,197,94,0.1); color: #4ade80; }
+  .logic-tag.state { background: rgba(239,68,68,0.1); color: #f87171; }
+  .logic-tag.professional { background: rgba(168,85,247,0.1); color: #c084fc; }
+  .logic-tag.developmental { background: rgba(245,158,11,0.1); color: #fbbf24; }
+
+  .flow-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+  }
+
+  .flow-arrow {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .flow-arrow.up { color: var(--accent-up); }
+  .flow-arrow.down-weak { color: var(--accent-down); opacity: 0.5; }
+
+  .empowerment-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    width: 80px;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  .bar-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* Convergence note */
+  .convergence-note {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: rgba(249,115,22,0.05);
+    border: 1px solid rgba(249,115,22,0.12);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .convergence-note strong {
+    color: var(--accent-up);
+    font-weight: 600;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .page-header h1 { font-size: 1.5rem; }
+    .diagram-body { padding: 1rem; }
+    .node { min-width: 120px; padding: 0.5rem 0.75rem; }
+    .matrix-table { font-size: 0.75rem; }
+  }
+
+  /* Animated arrow pulses */
+  @keyframes flowUp {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: -20; }
+  }
+
+  @keyframes flowDown {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 20; }
+  }
+
+  .arrow-up {
+    animation: flowUp 1.2s linear infinite;
+  }
+
+  .arrow-down {
+    animation: flowDown 2s linear infinite;
+  }
+
+  /* Citation style */
+  .cite {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Accountability Architecture</h1>
+  <p>"Accountability flows through compliance architecture rather than enforceable obligations to those who have been impacted."<br><span class="cite">— cf. Shaikh et al. (2023), relational spaces of algorithmic accountability</span></p>
+</div>
+
+<div class="diagram-grid">
+
+  <!-- ==================== FIGURE 1: Hierarchical Flow Diagram ==================== -->
+  <div class="diagram-card">
+    <div class="diagram-card-header">
+      <span class="badge">Figure 1</span>
+      <h2>Directed Accountability Flows</h2>
+    </div>
+    <div class="diagram-body">
+      <div class="flow-container" id="flowContainer">
+
+        <!-- Tier: Oversight Bodies -->
+        <div class="tier tier-top" id="tierTop">
+          <div class="tier-label">Oversight &amp; Regulatory Bodies</div>
+          <div class="node-row">
+            <div class="node" id="nodeRA">
+              <div class="node-name">Regulatory Agencies</div>
+              <div class="node-sub">Standard-setting, enforcement</div>
+            </div>
+            <div class="node" id="nodeCB">
+              <div class="node-name">Certification Bodies</div>
+              <div class="node-sub">Conformity assessment, audit</div>
+            </div>
+            <div class="node" id="nodeNB">
+              <div class="node-name">Notified Bodies</div>
+              <div class="node-sub">Third-party verification</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tier: Deployers & Operators -->
+        <div class="tier tier-mid" id="tierMid">
+          <div class="tier-label">Deployers &amp; Operators</div>
+          <div class="node-row">
+            <div class="node" id="nodeD">
+              <div class="node-name">Deployers</div>
+              <div class="node-sub">Impact assessments, risk classification</div>
+            </div>
+            <div class="node" id="nodeO">
+              <div class="node-name">Operators</div>
+              <div class="node-sub">Documentation, monitoring</div>
+            </div>
+            <div class="node" id="nodeP">
+              <div class="node-name">Providers / Developers</div>
+              <div class="node-sub">Technical compliance, testing</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tier: Impacted Communities -->
+        <div class="tier tier-bottom" id="tierBottom">
+          <div class="tier-label">Impacted Communities &amp; Affected Populations</div>
+          <div class="node-row">
+            <div class="node" id="nodeIC">
+              <div class="node-name">Impacted Individuals</div>
+              <div class="node-sub">Subjects of algorithmic decisions</div>
+            </div>
+            <div class="node" id="nodeCSO">
+              <div class="node-name">Civil Society Orgs</div>
+              <div class="node-sub">Advocacy, representation</div>
+            </div>
+            <div class="node" id="nodeMC">
+              <div class="node-name">Marginalized Communities</div>
+              <div class="node-sub">Disproportionately affected groups</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SVG Arrow Overlay -->
+        <svg class="arrow-svg" id="arrowSvg">
+          <defs>
+            <!-- Upward arrow marker (orange) -->
+            <marker id="arrowheadUp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+            </marker>
+            <!-- Downward arrow marker (blue, dim) -->
+            <marker id="arrowheadDown" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#38bdf8" opacity="0.5"/>
+            </marker>
+            <!-- Absent arrow marker (red, dashed) -->
+            <marker id="arrowheadAbsent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#ef4444" opacity="0.4"/>
+            </marker>
+            <!-- Glow filter -->
+            <filter id="glowUp" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+        </svg>
+
+      </div>
+
+      <!-- Legend -->
+      <div class="arrow-legend">
+        <div class="legend-item">
+          <div class="legend-line up"></div>
+          <span>Strong upward compliance flow</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-line down"></div>
+          <span>Weak downward obligation</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-line absent"></div>
+          <span>Absent / no formal pathway</span>
+        </div>
+      </div>
+
+      <!-- Callout -->
+      <div class="callout">
+        <strong>Structural observation:</strong> The density of upward arrows (compliance reporting, conformity assessments, audit documentation) vastly exceeds downward flows. Impacted communities have <strong>no formal channels</strong> to influence outcomes or hold deployers accountable — accountability is relational to regulators, not to those harmed.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIGURE 2: Comparative Institutional Logics Matrix ==================== -->
+  <div class="diagram-card">
+    <div class="diagram-card-header">
+      <span class="badge">Figure 2</span>
+      <h2>Institutional Logics &amp; Accountability Patterns</h2>
+    </div>
+    <div class="diagram-body">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Jurisdiction</th>
+            <th>Dominant Institutional Logics</th>
+            <th>Primary Accountability Direction</th>
+            <th>Mechanism</th>
+            <th>Community Empowerment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- EU -->
+          <tr>
+            <td>
+              <div class="jurisdiction-cell">
+                <div class="jurisdiction-dot" style="background:var(--eu)"></div>
+                European Union
+              </div>
+            </td>
+            <td>
+              <div class="logic-tags">
+                <span class="logic-tag industrial">Industrial</span>
+                <span class="logic-tag civic">Civic</span>
+                <span class="logic-tag market">Market</span>
+              </div>
+            </td>
+            <td>
+              <div class="flow-indicator">
+                <span class="flow-arrow up">↑↑↑</span>
+                <span>Deployers → Regulators</span>
+              </div>
+              <div class="flow-indicator" style="margin-top:4px;">
+                <span class="flow-arrow down-weak">↓</span>
+                <span style="color:var(--text-muted);">Weak: transparency rights</span>
+              </div>
+            </td>
+            <td style="color:var(--text-dim);">Conformity assessments, CE marking, risk classification tiering, FRIA obligations</td>
+            <td>
+              <div class="empowerment-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:20%; background: linear-gradient(90deg, #ef4444, #f97316);"></div></div>
+                <span class="bar-label">Low</span>
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">Art. 86 right to explanation exists but enforcement gap is structural</div>
+            </td>
+          </tr>
+          <!-- Colorado -->
+          <tr>
+            <td>
+              <div class="jurisdiction-cell">
+                <div class="jurisdiction-dot" style="background:var(--colorado)"></div>
+                Colorado (SB 21-169)
+              </div>
+            </td>
+            <td>
+              <div class="logic-tags">
+                <span class="logic-tag state">State</span>
+                <span class="logic-tag market">Market</span>
+                <span class="logic-tag professional">Professional</span>
+              </div>
+            </td>
+            <td>
+              <div class="flow-indicator">
+                <span class="flow-arrow up">↑↑↑</span>
+                <span>Deployers → AG Office</span>
+              </div>
+              <div class="flow-indicator" style="margin-top:4px;">
+                <span class="flow-arrow down-weak">↓</span>
+                <span style="color:var(--text-muted);">Minimal: notification duties</span>
+              </div>
+            </td>
+            <td style="color:var(--text-dim);">Impact assessments filed with AG, professional duty of care, market-based risk management</td>
+            <td>
+              <div class="empowerment-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:12%; background: linear-gradient(90deg, #ef4444, #dc2626);"></div></div>
+                <span class="bar-label">Very Low</span>
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">No private right of action; AG sole enforcer</div>
+            </td>
+          </tr>
+          <!-- India -->
+          <tr>
+            <td>
+              <div class="jurisdiction-cell">
+                <div class="jurisdiction-dot" style="background:var(--india)"></div>
+                India (DPDP Act / NITI Aayog)
+              </div>
+            </td>
+            <td>
+              <div class="logic-tags">
+                <span class="logic-tag industrial">Industrial</span>
+                <span class="logic-tag state">State</span>
+                <span class="logic-tag developmental">Developmental</span>
+              </div>
+            </td>
+            <td>
+              <div class="flow-indicator">
+                <span class="flow-arrow up">↑↑↑</span>
+                <span>Operators → Govt bodies</span>
+              </div>
+              <div class="flow-indicator" style="margin-top:4px;">
+                <span class="flow-arrow down-weak" style="opacity:0.3;">↓</span>
+                <span style="color:var(--text-muted);">Near absent downward</span>
+              </div>
+            </td>
+            <td style="color:var(--text-dim);">Principles-based framework, state developmental priorities override individual rights, industry self-regulation</td>
+            <td>
+              <div class="empowerment-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:8%; background: #ef4444;"></div></div>
+                <span class="bar-label">Minimal</span>
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">Developmental logic subordinates individual claims to national progress narrative</div>
+            </td>
+          </tr>
+          <!-- Brazil -->
+          <tr>
+            <td>
+              <div class="jurisdiction-cell">
+                <div class="jurisdiction-dot" style="background:var(--brazil)"></div>
+                Brazil (PL 2338/2023)
+              </div>
+            </td>
+            <td>
+              <div class="logic-tags">
+                <span class="logic-tag state">State</span>
+                <span class="logic-tag developmental">Developmental</span>
+                <span class="logic-tag civic">Civic</span>
+              </div>
+            </td>
+            <td>
+              <div class="flow-indicator">
+                <span class="flow-arrow up">↑↑↑</span>
+                <span>Operators → Supervisory authority</span>
+              </div>
+              <div class="flow-indicator" style="margin-top:4px;">
+                <span class="flow-arrow down-weak">↓</span>
+                <span style="color:var(--text-muted);">Formal rights, weak enforcement</span>
+              </div>
+            </td>
+            <td style="color:var(--text-dim);">Rights-based framework modeled on LGPD; algorithmic impact assessments; supervisory authority oversight</td>
+            <td>
+              <div class="empowerment-bar">
+                <div class="bar-track"><div class="bar-fill" style="width:28%; background: linear-gradient(90deg, #ef4444, #f97316, #eab308);"></div></div>
+                <span class="bar-label">Low–Moderate</span>
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">Civic logic in text (right to explanation, human review) but enforcement apparatus still compliance-oriented</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Convergence Observation -->
+      <div class="convergence-note">
+        <strong>Convergence finding (Thornton et al., 2012):</strong> Despite differences in dominant institutional logics — Industrial/Civic/Market (EU), State/Market/Professional (Colorado), Industrial/State-Developmental (India), and State-Developmental/Civic (Brazil) — all four jurisdictions exhibit the same structural pattern: <strong>accountability flows upward through compliance architecture</strong>. None establishes enforceable mechanisms through which impacted communities can meaningfully influence algorithmic outcomes. Brazil's civic logic comes closest to empowerment on paper, but its enforcement infrastructure mirrors the same upward-flowing compliance pattern observed elsewhere.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const svg = document.getElementById('arrowSvg');
+  const container = document.getElementById('flowContainer');
+
+  function getCenter(el) {
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    return {
+      x: eRect.left - cRect.left + eRect.width / 2,
+      y: eRect.top - cRect.top + eRect.height / 2
+    };
+  }
+
+  function getBottom(el) {
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    return {
+      x: eRect.left - cRect.left + eRect.width / 2,
+      y: eRect.top - cRect.top + eRect.height
+    };
+  }
+
+  function getTop(el) {
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    return {
+      x: eRect.left - cRect.left + eRect.width / 2,
+      y: eRect.top - cRect.top
+    };
+  }
+
+  function drawCurvedArrow(fromEl, toEl, type, offsetX = 0) {
+    const from = getTop(fromEl);
+    const to = getBottom(toEl);
+
+    from.x += offsetX;
+    to.x += offsetX;
+
+    const midY = (from.y + to.y) / 2;
+    const cpOffset = (from.x - to.x) * 0.3;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = `M ${from.x} ${from.y} C ${from.x + cpOffset} ${midY}, ${to.x - cpOffset} ${midY}, ${to.x} ${to.y}`;
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+
+    if (type === 'up') {
+      path.setAttribute('stroke', '#f97316');
+      path.setAttribute('stroke-width', '2.5');
+      path.setAttribute('stroke-opacity', '0.8');
+      path.setAttribute('marker-end', 'url(#arrowheadUp)');
+      path.setAttribute('stroke-dasharray', '6 4');
+      path.classList.add('arrow-up');
+      path.setAttribute('filter', 'url(#glowUp)');
+    } else if (type === 'down') {
+      path.setAttribute('stroke', '#38bdf8');
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('stroke-opacity', '0.35');
+      path.setAttribute('marker-end', 'url(#arrowheadDown)');
+      path.setAttribute('stroke-dasharray', '4 6');
+      path.classList.add('arrow-down');
+    } else if (type === 'absent') {
+      path.setAttribute('stroke', '#ef4444');
+      path.setAttribute('stroke-width', '1');
+      path.setAttribute('stroke-opacity', '0.25');
+      path.setAttribute('marker-end', 'url(#arrowheadAbsent)');
+      path.setAttribute('stroke-dasharray', '2 6');
+    }
+
+    svg.appendChild(path);
+  }
+
+  function drawAllArrows() {
+    // Clear existing
+    while (svg.children.length > 1) {
+      svg.removeChild(svg.lastChild);
+    }
+
+    const cRect = container.getBoundingClientRect();
+    svg.setAttribute('width', cRect.width);
+    svg.setAttribute('height', cRect.height);
+
+    // --- STRONG UPWARD ARROWS (compliance) ---
+    // Deployers → Regulatory Agencies
+    drawCurvedArrow(document.getElementById('nodeD'), document.getElementById('nodeRA'), 'up', -15);
+    // Deployers → Certification Bodies
+    drawCurvedArrow(document.getElementById('nodeD'), document.getElementById('nodeCB'), 'up', 10);
+    // Operators → Certification Bodies
+    drawCurvedArrow(document.getElementById('nodeO'), document.getElementById('nodeCB'), 'up', -10);
+    // Operators → Regulatory Agencies
+    drawCurvedArrow(document.getElementById('nodeO'), document.getElementById('nodeRA'), 'up', 15);
+    // Providers → Notified Bodies
+    drawCurvedArrow(document.getElementById('nodeP'), document.getElementById('nodeNB'), 'up', 0);
+    // Providers → Certification Bodies
+    drawCurvedArrow(document.getElementById('nodeP'), document.getElementById('nodeCB'), 'up', 15);
+    // Deployers → Notified Bodies
+    drawCurvedArrow(document.getElementById('nodeD'), document.getElementById('nodeNB'), 'up', 5);
+
+    // --- WEAK DOWNWARD ARROWS ---
+    // Regulatory Agencies → Deployers (enforcement)
+    drawCurvedArrow(document.getElementById('nodeRA'), document.getElementById('nodeD'), 'down', 20);
+    // Certification Bodies → Operators
+    drawCurvedArrow(document.getElementById('nodeCB'), document.getElementById('nodeO'), 'down', 15);
+
+    // --- ABSENT PATHWAYS ---
+    // Impacted → Regulatory (no formal channel)
+    drawCurvedArrow(document.getElementById('nodeIC'), document.getElementById('nodeRA'), 'absent', 0);
+    // Deployers → Impacted (no enforceable obligation)
+    drawCurvedArrow(document.getElementById('nodeD'), document.getElementById('nodeIC'), 'absent', -20);
+    // CSOs → Certification Bodies (no standing)
+    drawCurvedArrow(document.getElementById('nodeCSO'), document.getElementById('nodeCB'), 'absent', 0);
+  }
+
+  // Draw on load and resize
+  drawAllArrows();
+  window.addEventListener('resize', () => {
+    requestAnimationFrame(drawAllArrows);
+  });
+
+  // Redraw after fonts load
+  document.fonts.ready.then(() => {
+    requestAnimationFrame(drawAllArrows);
+  });
+});
+</script>
+
+</body>
+</html>

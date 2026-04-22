@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authority Concentration — Apex Funnel Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #111827;
+    --text-dim: #6B7280;
+    --text-muted: #9CA3AF;
+    --border: #E5E7EB;
+    --eu: #6366F1;
+    --eu-light: #EEF2FF;
+    --eu-border: #A5B4FC;
+    --co: #16A34A;
+    --co-light: #F0FDF4;
+    --co-border: #86EFAC;
+    --in: #D97706;
+    --in-light: #FFFBEB;
+    --in-border: #FCD34D;
+    --br: #0D9488;
+    --br-light: #F0FDFA;
+    --br-border: #5EEAD4;
+    --us: #6B7280;
+    --us-light: #F9FAFB;
+    --us-border: #9CA3AF;
+    --apex-band: #FFFBEB;
+    --apex-band-border: #FDE68A;
+    --accent: #D97706;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 40px 24px 40px;
+    width: 1200px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* Main layout */
+  .funnel-grid {
+    display: grid;
+    grid-template-columns: 26px repeat(5, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  /* Tier labels (left column) */
+  .tier-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    padding-top: 66px;
+  }
+
+  .tier-label {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    writing-mode: horizontal-tb;
+    text-align: center;
+  }
+
+  .tier-label.apex-lbl { color: var(--accent); margin-bottom: 42px; margin-top: 30px; }
+  .tier-label.mid-lbl { color: var(--text-dim); margin-bottom: 52px; margin-top: 40px; }
+  .tier-label.base-lbl { color: var(--text-muted); margin-top: 50px; }
+
+  /* Jurisdiction column */
+  .jurisdiction-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Header */
+  .jur-header {
+    text-align: center;
+    margin-bottom: 6px;
+    width: 100%;
+  }
+
+  .jur-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .jur-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .jur-arch {
+    display: block;
+    margin: 4px auto 0;
+    font-size: 8px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+    display: inline-block;
+  }
+
+  /* Funnel body with converging borders */
+  .funnel-body {
+    position: relative;
+    width: 100%;
+    padding: 0 4px;
+  }
+
+  /* Apex band highlight */
+  .apex-band {
+    position: absolute;
+    top: 0;
+    left: -8px;
+    right: -8px;
+    height: 94px;
+    background: var(--apex-band);
+    border: 1.5px solid var(--apex-band-border);
+    border-radius: 8px;
+    z-index: 0;
+  }
+
+  /* Funnel layers */
+  .funnel-layer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Apex node */
+  .apex-node {
+    border: 2.5px solid;
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    background: white;
+    width: 56%;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    line-height: 1.4;
+  }
+
+  /* Arrow between layers */
+  .flow-arrow {
+    font-size: 16px;
+    line-height: 1;
+    margin: 4px 0;
+    opacity: 0.7;
+  }
+
+  .flow-arrow.strong { font-size: 18px; opacity: 1; }
+
+  /* Mid nodes */
+  .mid-nodes {
+    width: 78%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 6px 0;
+  }
+
+  .mid-node {
+    border: 1px solid;
+    border-radius: 5px;
+    padding: 5px 6px;
+    text-align: center;
+    font-size: 8.5px;
+    color: #374151;
+    background: white;
+    line-height: 1.35;
+  }
+
+  /* Base nodes */
+  .base-nodes {
+    width: 96%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin: 6px 0;
+  }
+
+  .base-node {
+    border: 0.75px solid;
+    border-radius: 4px;
+    padding: 6px 3px;
+    text-align: center;
+    font-size: 7.5px;
+    color: var(--text-dim);
+    background: white;
+    line-height: 1.3;
+  }
+
+  /* Converging funnel lines */
+  .funnel-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Convergence callout */
+  .callout {
+    margin-top: 18px;
+    background: var(--apex-band);
+    border: 1.5px solid var(--apex-band-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 10px;
+    color: #78350F;
+    line-height: 1.6;
+  }
+
+  .callout strong { color: #B45309; font-weight: 700; }
+  .callout em { color: #92400E; }
+
+  /* Legend */
+  .legend-row {
+    display: flex;
+    gap: 28px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Apex label on the right */
+  .apex-pointer {
+    position: absolute;
+    right: -6px;
+    top: 72px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #B45309;
+    writing-mode: horizontal-tb;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<h1>Authority Concentration — Apex Funnel Architecture</h1>
+<div class="subtitle">
+  Different institutional architectures produce a similar effect: interpretive authority accumulates at the apex of the assemblage.
+</div>
+
+<div class="funnel-grid">
+  <!-- Tier labels column -->
+  <div class="tier-labels">
+    <div class="tier-label apex-lbl">APEX</div>
+    <div class="tier-label mid-lbl">TRANS-<br>MISSION</div>
+    <div class="tier-label base-lbl">BASE</div>
+  </div>
+
+  <!-- EU -->
+  <div class="jurisdiction-col">
+    <div class="jur-header">
+      <span class="jur-dot" style="background: var(--eu);"></span>
+      <span class="jur-name">European Union</span>
+      <span class="jur-arch" style="background: var(--eu-light); border-color: var(--eu-border); color: var(--eu);">Regulatory pyramid</span>
+    </div>
+    <div class="funnel-body">
+      <div class="funnel-layer">
+        <div class="apex-node" style="border-color: var(--eu); color: var(--eu);">
+          European Commission<br>+ AI Office
+        </div>
+        <div class="flow-arrow strong" style="color: var(--eu);">▲</div>
+        <div class="mid-nodes">
+          <div class="mid-node" style="border-color: var(--eu-border); background: var(--eu-light);">CEN / CENELEC</div>
+          <div class="mid-node" style="border-color: var(--eu-border); background: var(--eu-light);">Conformity assessment</div>
+        </div>
+        <div class="flow-arrow" style="color: var(--text-muted);">▲</div>
+        <div class="base-nodes">
+          <div class="base-node" style="border-color: var(--eu-border); background: var(--eu-light);">AI Act risk tiers</div>
+          <div class="base-node" style="border-color: var(--eu-border); background: var(--eu-light);">CE marking</div>
+          <div class="base-node" style="border-color: var(--eu-border); background: var(--eu-light);">Deployer obligations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colorado -->
+  <div class="jurisdiction-col">
+    <div class="jur-header">
+      <span class="jur-dot" style="background: var(--co);"></span>
+      <span class="jur-name">Colorado</span>
+      <span class="jur-arch" style="background: var(--co-light); border-color: var(--co-border); color: var(--co);">Monocentric enforcement</span>
+    </div>
+    <div class="funnel-body">
+      <div class="funnel-layer">
+        <div class="apex-node" style="border-color: var(--co); color: var(--co);">
+          Attorney<br>General
+        </div>
+        <div class="flow-arrow strong" style="color: var(--co);">▲</div>
+        <div class="mid-nodes">
+          <div class="mid-node" style="border-color: var(--co-border); background: var(--co-light);">Impact assessments</div>
+          <div class="mid-node" style="border-color: var(--co-border); background: var(--co-light);">Duty of care</div>
+        </div>
+        <div class="flow-arrow" style="color: var(--text-muted);">▲</div>
+        <div class="base-nodes">
+          <div class="base-node" style="border-color: var(--co-border); background: var(--co-light);">SB 21-169</div>
+          <div class="base-node" style="border-color: var(--co-border); background: var(--co-light);">Deployer duties</div>
+          <div class="base-node" style="border-color: var(--co-border); background: var(--co-light);">No private right of action</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- India -->
+  <div class="jurisdiction-col">
+    <div class="jur-header">
+      <span class="jur-dot" style="background: var(--in);"></span>
+      <span class="jur-name">India</span>
+      <span class="jur-arch" style="background: var(--in-light); border-color: var(--in-border); color: var(--in);">Multi-hub coordination</span>
+    </div>
+    <div class="funnel-body">
+      <div class="funnel-layer">
+        <div class="apex-node" style="border-color: var(--in); color: var(--in);">
+          CARO + AIREC<br>+ IndiaAI Mission
+        </div>
+        <div class="flow-arrow strong" style="color: var(--in);">▲</div>
+        <div class="mid-nodes">
+          <div class="mid-node" style="border-color: var(--in-border); background: var(--in-light);">Ministerial coordination</div>
+          <div class="mid-node" style="border-color: var(--in-border); background: var(--in-light);">NITI Aayog principles</div>
+        </div>
+        <div class="flow-arrow" style="color: var(--text-muted);">▲</div>
+        <div class="base-nodes">
+          <div class="base-node" style="border-color: var(--in-border); background: var(--in-light);">DPDP Act</div>
+          <div class="base-node" style="border-color: var(--in-border); background: var(--in-light);">Development priorities</div>
+          <div class="base-node" style="border-color: var(--in-border); background: var(--in-light);">Industry self-regulation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Brazil -->
+  <div class="jurisdiction-col">
+    <div class="jur-header">
+      <span class="jur-dot" style="background: var(--br);"></span>
+      <span class="jur-name">Brazil</span>
+      <span class="jur-arch" style="background: var(--br-light); border-color: var(--br-border); color: var(--br);">Centralized coordinator</span>
+    </div>
+    <div class="funnel-body">
+      <div class="funnel-layer">
+        <div class="apex-node" style="border-color: var(--br); color: var(--br);">
+          ANPD
+        </div>
+        <div class="flow-arrow strong" style="color: var(--br);">▲</div>
+        <div class="mid-nodes">
+          <div class="mid-node" style="border-color: var(--br-border); background: var(--br-light);">Sectoral regulators</div>
+          <div class="mid-node" style="border-color: var(--br-border); background: var(--br-light);">LGPD-derived audit routines</div>
+        </div>
+        <div class="flow-arrow" style="color: var(--text-muted);">▲</div>
+        <div class="base-nodes">
+          <div class="base-node" style="border-color: var(--br-border); background: var(--br-light);">PL 2338/2023</div>
+          <div class="base-node" style="border-color: var(--br-border); background: var(--br-light);">Rights framework</div>
+          <div class="base-node" style="border-color: var(--br-border); background: var(--br-light);">Multi-agency ecosystem</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- United States -->
+  <div class="jurisdiction-col">
+    <div class="jur-header">
+      <span class="jur-dot" style="background: var(--us);"></span>
+      <span class="jur-name">United States</span>
+      <span class="jur-arch" style="background: var(--us-light); border-color: var(--us-border); color: var(--us);">Distributed constellation</span>
+    </div>
+    <div class="funnel-body">
+      <div class="funnel-layer">
+        <div class="apex-node" style="border-color: var(--us); color: var(--us);">
+          OMB + CAISI<br>+ CAIOC
+        </div>
+        <div class="flow-arrow strong" style="color: var(--us);">▲</div>
+        <div class="mid-nodes">
+          <div class="mid-node" style="border-color: var(--us-border); background: var(--us-light);">NIST frameworks</div>
+          <div class="mid-node" style="border-color: var(--us-border); background: var(--us-light);">Procurement infrastructure</div>
+        </div>
+        <div class="flow-arrow" style="color: var(--text-muted);">▲</div>
+        <div class="base-nodes">
+          <div class="base-node" style="border-color: var(--us-border); background: var(--us-light);">EO 14110</div>
+          <div class="base-node" style="border-color: var(--us-border); background: var(--us-light);">Agency implementation</div>
+          <div class="base-node" style="border-color: var(--us-border); background: var(--us-light);">No standalone regulator</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Callout -->
+<div class="callout">
+  <strong>Convergence finding:</strong> Five jurisdictions adopt fundamentally different institutional architectures — regulatory pyramid (EU), monocentric enforcement (Colorado), multi-hub coordination (India), centralized coordinator (Brazil), and distributed constellation (U.S.) — yet all five concentrate <strong>interpretive authority at apex technocratic nodes.</strong> <em>The funnel shape is structural, not contingent.</em>
+</div>
+
+<!-- Legend -->
+<div class="legend-row">
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--apex-band); border: 1px solid var(--apex-band-border);"></div><strong style="color: #B45309;">Apex</strong> — Interpretive authority (standard-setting, enforcement, coordination)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: #F3F4F6; border: 1px solid #D1D5DB;"></div><strong style="color: #6B7280;">Transmission</strong> — Standards bodies, procurement, conformity assessment</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: #F9FAFB; border: 1px solid #E5E7EB;"></div><span style="color: #9CA3AF;">Base</span> — Statutory instruments, deployer obligations, implementation plans</div>
+</div>
+
+</body>
+</html>

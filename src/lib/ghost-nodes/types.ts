@@ -26,6 +26,68 @@ export interface ObligatoryPassagePoint {
     controllingActor?: string;
 }
 
+// --- Analyst Assessment (Reflexive Ghost Node Review) ---
+
+export type GhostNodeAssessmentStatus = 'proposed' | 'confirmed' | 'contested' | 'deferred';
+
+/** Structured analyst assessment for a Ghost Node, supporting the three-criterion rubric from §4.2. */
+export interface AnalystAssessment {
+    status: GhostNodeAssessmentStatus;
+    criteriaChecklist: {
+        /** Does this actor plausibly bear a governance function given the regime's stated objectives? */
+        functionalRelevance: boolean | null;
+        /** Does the document invoke the actor's interests without enrolling them as agents? */
+        textualTrace: boolean | null;
+        /** Does the procedural architecture foreclose the actor's participation? */
+        structuralForeclosure: boolean | null;
+    };
+    /** If contested, which criterion failed? */
+    failedCriterion?: 'functionalRelevance' | 'textualTrace' | 'structuralForeclosure' | 'other';
+    /** Free-text rebuttal or contest reason */
+    contestReason?: string;
+    /** Reflexive note: how might the analyst's position affect their reading? */
+    reflexiveNote?: string;
+    /** Floridi moral status: is this Ghost Node a moral patient denied agency, a moral agent excluded from governance, or both? */
+    moralStatus?: 'moral_patient' | 'moral_agent' | 'both' | 'undetermined';
+    /** ISO timestamp of assessment */
+    assessedAt: string;
+    /** Analyst identifier */
+    assessedBy?: string;
+    /** Immutable provenance chain — each assessment action appends an entry (P3) */
+    assessmentHistory?: AssessmentHistoryEntry[];
+}
+
+/** Immutable snapshot of a single assessment event in the provenance chain. */
+export interface AssessmentHistoryEntry {
+    /** The verdict at this point in time */
+    status: GhostNodeAssessmentStatus;
+    /** Criteria state at time of assessment */
+    criteriaChecklist: {
+        functionalRelevance: boolean | null;
+        textualTrace: boolean | null;
+        structuralForeclosure: boolean | null;
+    };
+    /** Contest reason if applicable */
+    contestReason?: string;
+    /** Failed criterion if applicable */
+    failedCriterion?: string;
+    /** Reflexive note at time of entry */
+    reflexiveNote?: string;
+    /** ISO timestamp */
+    timestamp: string;
+    /** Analyst who made this entry */
+    assessorId?: string;
+    /** What triggered this entry */
+    action: 'initial' | 'revision' | 'contest' | 'confirm' | 'defer';
+}
+
+/** Evidence tagged by evidentiary criterion, supporting per-criterion display. */
+export interface CriterionEvidence {
+    functionalRelevance?: Array<{ quote: string; rationale?: string; sourceRef?: string }>;
+    textualTrace?: Array<{ quote: string; rationale?: string; sourceRef?: string }>;
+    structuralForeclosure?: Array<{ quote: string; rationale?: string; sourceRef?: string }>;
+}
+
 // --- GNDP Enums ---
 
 export type GhostTypology = 'Structural' | 'Data' | 'Representational' | 'Scale' | 'Temporal' | 'SupplyChain';
@@ -175,6 +237,10 @@ export interface DetectedGhostNode {
     representationType?: RepresentationType;
     // Epistemic status — derived from structural concern signals, not grade alone
     nodeStanding?: NodeStanding;
+    // Analyst reflexive assessment (§4.2 three-criterion rubric)
+    analystAssessment?: AnalystAssessment;
+    // Per-criterion evidence linking (P2)
+    criterionEvidence?: CriterionEvidence;
 }
 
 export interface InstitutionalLogics {

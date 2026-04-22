@@ -9,6 +9,7 @@ import { Network, FileText, ArrowLeftRight, BookOpen, Layers } from "lucide-reac
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useCredits } from "@/hooks/useCredits";
 import { useTeam } from "@/hooks/useTeam";
@@ -179,6 +180,27 @@ export default function TEAAnalysisPage() {
             </div>
 
             <div>
+                {/* Analytical Framework Diagram */}
+                <details className="mb-8 group">
+                    <summary className="cursor-pointer flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
+                        <BookOpen className="h-4 w-4" />
+                        View Analytical Framework
+                        <span className="text-xs text-slate-400 group-open:hidden">(click to expand)</span>
+                    </summary>
+                    <div className="mt-4 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                        <Image
+                            src="/policy-prism-framework.png"
+                            alt="The Policy Prism — Analytical Framework for Translational Stratification of AI Governance. Shows how policy documents are decomposed through 8 analytical layers and reconverged into 3 testable propositions."
+                            width={800}
+                            height={800}
+                            className="w-full max-w-2xl mx-auto rounded-lg"
+                        />
+                        <p className="text-xs text-slate-400 text-center mt-3 italic">
+                            Policy documents are decomposed through 8 analytical layers and reconverged via Translational Stratification into three testable propositions.
+                        </p>
+                    </div>
+                </details>
+
                 {/* Analytics (TEA Map and Synthesis) */}
                 <div className="w-full">
                     {hasData ? (

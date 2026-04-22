@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Brain, FileText, ClipboardList, Info, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Clock, ArrowRight, Check, Search, AlertTriangle, Link as LinkIcon, Expand, Sparkles, Activity, ShieldAlert, MoveDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GhostNodeSurvey } from './research/GhostNodeSurvey';
+import { GhostNodeReflexiveAssessment } from '../analysis/GhostNodeReflexiveAssessment';
 import { Card, CardContent } from '@/components/ui/card';
 import { StudyCase, GhostNodeSurveyResponse, StudyState, SurveyResponseData, EvidenceQuote } from '@/lib/study-config';
 import { QuoteHighlighter } from './QuoteHighlighter';
@@ -625,6 +626,26 @@ export function EvaluationInterface({
                                                                     </div>
                                                                 </CardContent>
                                                             </Card>
+                                                        )}
+
+                                                        {/* Reflexive Ghost Node Assessment (§4.2 Three-Criterion Rubric) */}
+                                                        {selectedNode.isGhost && (
+                                                            <GhostNodeReflexiveAssessment
+                                                                ghostNode={{
+                                                                    fingerprint: (ghostData as any).fingerprint,
+                                                                    label: selectedNode.label,
+                                                                    policyId: sourceId || '',
+                                                                    description: ghostData.description || selectedNode.description,
+                                                                    ghostReason: (ghostData as any).ghostReason,
+                                                                    whyAbsent: (ghostData as any).whyAbsent,
+                                                                    absenceType: selectedNode.absenceType,
+                                                                    exclusionType: selectedNode.exclusionType,
+                                                                    evidence: (ghostData as any).evidence,
+                                                                    evidenceQuotes: ghostData.evidenceQuotes,
+                                                                    analystAssessment: (ghostData as any).analystAssessment,
+                                                                }}
+                                                                policyId={sourceId || ''}
+                                                            />
                                                         )}
                                                     </div>
                                                 </div>

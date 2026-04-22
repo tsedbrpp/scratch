@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worker Exclusion — Rhetoric vs. Institutional Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #111827;
+    --text-dim: #6B7280;
+    --text-muted: #9CA3AF;
+    --border: #E5E7EB;
+    --rhet-bg: #FFFBEB;
+    --rhet-border: #FDE68A;
+    --rhet-text: #78350F;
+    --inst-bg: #FEF2F2;
+    --inst-border: #FECACA;
+    --inst-text: #991B1B;
+    --inst-text-dim: #7F1D1D;
+    --eu: #6366F1;
+    --co: #16A34A;
+    --in: #D97706;
+    --br: #0D9488;
+    --us: #6B7280;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px 36px 20px;
+    width: 1200px;
+  }
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .subtitle { font-size: 10.5px; color: var(--text-dim); font-style: italic; margin-bottom: 18px; line-height: 1.6; }
+
+  /* Table layout */
+  .gap-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+
+  .gap-table thead th {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 12px; text-align: center; vertical-align: middle;
+  }
+  .gap-table thead th.jur-hdr { background: #1E293B; color: #F8FAFC; border-radius: 6px 0 0 0; width: 130px; }
+  .gap-table thead th.rhet-hdr { background: var(--rhet-bg); color: #92400E; border: 1px solid var(--rhet-border); }
+  .gap-table thead th.rhet-hdr .sub { font-size: 7px; font-weight: 400; display: block; margin-top: 2px; }
+  .gap-table thead th.div-hdr { width: 6px; background: transparent; border: none; }
+  .gap-table thead th.inst-hdr { background: var(--inst-bg); color: var(--inst-text); border: 1px solid var(--inst-border); }
+  .gap-table thead th.inst-hdr .sub { font-size: 7px; font-weight: 400; display: block; margin-top: 2px; }
+  .gap-table thead th.score-hdr { background: #1E293B; color: #F8FAFC; border-radius: 0 6px 0 0; width: 60px; }
+
+  /* Rows */
+  .gap-table tbody tr { transition: background 0.15s; }
+  .gap-table tbody tr:hover { background: #FAFBFC; }
+  .gap-table tbody tr.us-row { background: #FFF7ED; }
+  .gap-table tbody tr.us-row:hover { background: #FEF3C7; }
+
+  .gap-table tbody td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid var(--border); }
+
+  /* Jurisdiction cell */
+  .jur-cell { text-align: center; }
+  .jur-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-bottom: 4px; }
+  .jur-name { display: block; font-size: 11px; font-weight: 700; color: var(--text); }
+
+  /* Bar + Rhetoric cell */
+  .rhet-cell { display: flex; align-items: stretch; gap: 8px; }
+  .rhet-bar-track { width: 18px; background: #FEF3C7; border-radius: 3px; position: relative; overflow: hidden; flex-shrink: 0; }
+  .rhet-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; border-radius: 3px; transition: height 0.5s; }
+  .rhet-text { font-size: 9px; color: var(--rhet-text); line-height: 1.5; flex: 1; }
+  .rhet-text .quote { font-weight: 700; font-style: italic; color: #92400E; }
+
+  /* Divider */
+  .divider-cell { width: 6px; position: relative; }
+  .divider-cell::after {
+    content: ''; position: absolute; top: -4px; bottom: -4px; left: 50%;
+    border-left: 1.5px dashed #D1D5DB;
+  }
+
+  /* Institutional cell */
+  .inst-cell { background: var(--inst-bg); border-radius: 4px; padding: 8px 10px !important; }
+  .inst-line { font-size: 9px; color: var(--inst-text-dim); line-height: 1.6; }
+  .inst-line .x-mark { color: var(--inst-text); font-weight: 700; margin-right: 3px; }
+  .inst-line strong { color: var(--inst-text); }
+
+  /* Ghost score */
+  .score-cell { text-align: center; }
+  .score-val { font-size: 18px; font-weight: 800; color: var(--inst-text); }
+  .score-unit { font-size: 8px; color: var(--text-muted); }
+  .score-dash { font-size: 18px; color: #D1D5DB; }
+
+  /* US annotation */
+  .us-annotation {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 8px; font-weight: 700; font-style: italic;
+    color: #B45309; margin-top: 6px;
+  }
+  .us-annotation::before { content: '◀'; font-style: normal; }
+
+  /* Callout */
+  .callout {
+    margin-top: 14px; background: var(--inst-bg); border: 1.5px solid var(--inst-border);
+    border-left: 3px solid var(--inst-text); border-radius: 0 8px 8px 0;
+    padding: 10px 14px; font-size: 10px; color: var(--inst-text-dim); line-height: 1.6;
+  }
+  .callout strong { color: var(--inst-text); }
+  .callout em { color: var(--inst-text); font-weight: 600; }
+
+  /* Legend */
+  .legend-row {
+    display: flex; gap: 28px; margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--text-dim); }
+  .legend-bar { width: 18px; height: 10px; background: #FCD34D; border: 1px solid #FBBF24; border-radius: 2px; }
+  .legend-x { font-size: 11px; font-weight: 700; color: var(--inst-text); }
+</style>
+</head>
+<body>
+
+<h1>Worker Exclusion — Rhetoric vs. Institutional Architecture</h1>
+<div class="subtitle">
+  The recurring mechanism is not merely an omission but a structured exclusion from the architectures through which governance becomes actionable.
+</div>
+
+<table class="gap-table">
+  <thead>
+    <tr>
+      <th class="jur-hdr">JURISDICTION</th>
+      <th class="rhet-hdr" colspan="1">RHETORICAL PRESENCE<span class="sub">What the policy text says about workers</span></th>
+      <th class="div-hdr"></th>
+      <th class="inst-hdr">INSTITUTIONAL ROLE<span class="sub">What the governance architecture provides</span></th>
+      <th class="score-hdr">GHOST<br>SCORE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- EU -->
+    <tr>
+      <td class="jur-cell"><span class="jur-dot" style="background: var(--eu);"></span><span class="jur-name">European<br>Union</span></td>
+      <td>
+        <div class="rhet-cell">
+          <div class="rhet-bar-track"><div class="rhet-bar-fill" style="height: 55%; background: #FDE68A;"></div></div>
+          <div class="rhet-text">Recital 57 references AI in the workplace; "employment" listed in Annex III high-risk categories; Art. 26 deployer obligations mention workers</div>
+        </div>
+      </td>
+      <td class="divider-cell"></td>
+      <td class="inst-cell">
+        <div class="inst-line"><span class="x-mark">✗</span> <strong>No role in conformity assessment</strong> process</div>
+        <div class="inst-line"><span class="x-mark">✗</span> Excluded from compliance assessment design</div>
+        <div class="inst-line"><span class="x-mark">✗</span> No seat on AI Board</div>
+      </td>
+      <td class="score-cell"><span class="score-val">87</span><span class="score-unit">/100</span></td>
+    </tr>
+    <!-- Colorado -->
+    <tr>
+      <td class="jur-cell"><span class="jur-dot" style="background: var(--co);"></span><span class="jur-name">Colorado</span></td>
+      <td>
+        <div class="rhet-cell">
+          <div class="rhet-bar-track"><div class="rhet-bar-fill" style="height: 40%; background: #FDE68A;"></div></div>
+          <div class="rhet-text"><span class="quote">"Consequential decisions"</span> explicitly includes employment decisions; deployers must assess impact on affected individuals</div>
+        </div>
+      </td>
+      <td class="divider-cell"></td>
+      <td class="inst-cell">
+        <div class="inst-line"><span class="x-mark">✗</span> <strong>No worker voice</strong> in impact assessments</div>
+        <div class="inst-line"><span class="x-mark">✗</span> AG sole enforcer — no private right of action</div>
+        <div class="inst-line"><span class="x-mark">✗</span> Self-testing regime</div>
+      </td>
+      <td class="score-cell"><span class="score-dash">—</span></td>
+    </tr>
+    <!-- India -->
+    <tr>
+      <td class="jur-cell"><span class="jur-dot" style="background: var(--in);"></span><span class="jur-name">India</span></td>
+      <td>
+        <div class="rhet-cell">
+          <div class="rhet-bar-track"><div class="rhet-bar-fill" style="height: 25%; background: #FDE68A;"></div></div>
+          <div class="rhet-text">NITI Aayog principles reference "inclusive AI" and labor disruption; developmental framing subsumes worker concerns</div>
+        </div>
+      </td>
+      <td class="divider-cell"></td>
+      <td class="inst-cell">
+        <div class="inst-line"><span class="x-mark">✗</span> <strong>No labor channel</strong> in governance architecture</div>
+        <div class="inst-line"><span class="x-mark">✗</span> Enterprise-only design; deployment without labor impact analysis</div>
+      </td>
+      <td class="score-cell"><span class="score-dash">—</span></td>
+    </tr>
+    <!-- Brazil -->
+    <tr>
+      <td class="jur-cell"><span class="jur-dot" style="background: var(--br);"></span><span class="jur-name">Brazil</span></td>
+      <td>
+        <div class="rhet-cell">
+          <div class="rhet-bar-track"><div class="rhet-bar-fill" style="height: 50%; background: #FDE68A;"></div></div>
+          <div class="rhet-text">PL 2338/2023 invokes workers' rights via LGPD framework; formal right to explanation and human review mentioned in text</div>
+        </div>
+      </td>
+      <td class="divider-cell"></td>
+      <td class="inst-cell">
+        <div class="inst-line"><span class="x-mark">✗</span> <strong>Principle-level only;</strong> no institutional seat</div>
+        <div class="inst-line"><span class="x-mark">✗</span> ANPD coordination has no labor representative</div>
+        <div class="inst-line"><span class="x-mark">✗</span> Compliance-oriented enforcement</div>
+      </td>
+      <td class="score-cell"><span class="score-val">80</span><span class="score-unit">/100</span></td>
+    </tr>
+    <!-- United States -->
+    <tr class="us-row">
+      <td class="jur-cell">
+        <span class="jur-dot" style="background: var(--us);"></span>
+        <span class="jur-name">United<br>States</span>
+      </td>
+      <td>
+        <div class="rhet-cell">
+          <div class="rhet-bar-track"><div class="rhet-bar-fill" style="height: 95%; background: linear-gradient(to top, #FBBF24, #F59E0B);"></div></div>
+          <div class="rhet-text">
+            <span class="quote">"Worker-first AI agenda"</span><br>
+            <span class="quote">"Workers must benefit from AI-driven growth"</span><br>
+            Executive Orders center worker welfare prominently across multiple policy instruments
+          </div>
+        </div>
+      </td>
+      <td class="divider-cell"></td>
+      <td class="inst-cell">
+        <div class="inst-line"><span class="x-mark">✗</span> <strong>No role in compliance design</strong> or evaluation</div>
+        <div class="inst-line"><span class="x-mark">✗</span> No seat on governance boards (CAISI, CAIOC)</div>
+        <div class="inst-line"><span class="x-mark">✗</span> No institutional channel for worker input</div>
+        <div class="us-annotation">Maximum rhetoric, zero institutional role — sharpest case</div>
+      </td>
+      <td class="score-cell"><span class="score-dash">—</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Structural observation:</strong> All five jurisdictions govern domains in which AI affects employment, labor process, or workplace decision-making. Yet none creates an institutional role for worker organizations in compliance design, evaluation, or governance boards. <em>The exclusion is structured, not incidental.</em>
+</div>
+
+<div class="legend-row">
+  <div class="legend-item"><div class="legend-bar"></div> Rhetorical commitment level (bar height = relative intensity)</div>
+  <div class="legend-item"><span class="legend-x">✗</span> No institutional role in governance function</div>
+  <div class="legend-item" style="color: #9CA3AF;">Ghost Score — absence strength from Ghost Node Detection Pipeline (where measured)</div>
+</div>
+
+</body>
+</html>

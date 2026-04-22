@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figure 2 — Institutional Logics &amp; Accountability Patterns</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ffffff;
+    color: #1a1a2e;
+    padding: 40px 50px 30px 50px;
+    width: 1200px;
+  }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+  h1 span { color: #8a8fa2; font-weight: 400; font-size: 18px; }
+  .subtitle { font-size: 12px; color: #5a5f72; font-style: italic; margin-bottom: 28px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+  thead th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #2d313d;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 2px solid #2d313d;
+  }
+  tbody td {
+    padding: 14px 14px;
+    border-bottom: 1px solid #e8eaee;
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(odd) { background: #fafbfc; }
+  tbody tr:nth-child(even) { background: #ffffff; }
+
+  .jur-cell { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .jur-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  .jur-sub { font-size: 10px; color: #5a5f72; font-weight: 400; margin-top: 2px; }
+
+  .logic-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .logic-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .logic-tag.industrial { background: #fef0e1; color: #c26a0a; }
+  .logic-tag.civic { background: #edeefe; color: #6366f1; }
+  .logic-tag.market { background: #e8faed; color: #16a34a; }
+  .logic-tag.state { background: #feecec; color: #dc2626; }
+  .logic-tag.professional { background: #f3e8fe; color: #9333ea; }
+  .logic-tag.developmental { background: #fef9e7; color: #b45d09; }
+
+  .flow-up { color: #d95e0e; font-weight: 700; font-size: 12px; }
+  .flow-down { color: #2980b9; font-size: 11px; opacity: 0.7; }
+
+  .mechanism { font-size: 11px; color: #5a5f72; }
+
+  .emp-header { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+  .emp-header.minimal { color: #dc2626; }
+  .emp-header.low { color: #d95e0e; }
+  .emp-header.low-mod { color: #ca8a04; }
+  .emp-header.very-low { color: #b91c1c; }
+  .emp-bar-track { width: 90px; height: 6px; background: #eef0f3; border-radius: 3px; overflow: hidden; margin: 4px 0 4px 0; }
+  .emp-bar-fill { height: 100%; border-radius: 3px; }
+  .emp-note { font-size: 10px; color: #8a8fa2; line-height: 1.4; }
+
+  .convergence {
+    background: #fef7ed;
+    border: 1.5px solid #f97316;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 11.5px;
+    color: #5a5f72;
+    line-height: 1.65;
+  }
+  .convergence strong { color: #d95e0e; font-weight: 700; }
+  .convergence .bold-finding { color: #1a1a2e; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Figure 2. <span>Institutional Logics &amp; Accountability Patterns</span></h1>
+<div class="subtitle">Comparative analysis across four jurisdictions (Thornton et al., 2012)</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:16%">Jurisdiction</th>
+      <th style="width:17%">Dominant Institutional Logics</th>
+      <th style="width:17%">Primary Accountability Direction</th>
+      <th style="width:25%">Mechanism</th>
+      <th style="width:25%">Community Empowerment</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- EU -->
+    <tr>
+      <td>
+        <div class="jur-cell"><div class="jur-dot" style="background:#6366f1"></div>European Union</div>
+        <div class="jur-sub">(AI Act)</div>
+      </td>
+      <td>
+        <div class="logic-tags">
+          <span class="logic-tag industrial">Industrial</span>
+          <span class="logic-tag civic">Civic</span>
+          <span class="logic-tag market">Market</span>
+        </div>
+      </td>
+      <td>
+        <div class="flow-up">↑↑↑ Deployers → Regulators</div>
+        <div class="flow-down">↓ Weak: transparency rights</div>
+      </td>
+      <td class="mechanism">Conformity assessments, CE marking, risk classification tiering, FRIA obligations</td>
+      <td>
+        <div class="emp-header low">Low</div>
+        <div class="emp-bar-track"><div class="emp-bar-fill" style="width:20%; background:linear-gradient(90deg,#ef4444,#f97316);"></div></div>
+        <div class="emp-note">Art. 86 right to explanation exists but enforcement gap is structural</div>
+      </td>
+    </tr>
+    <!-- Colorado -->
+    <tr>
+      <td>
+        <div class="jur-cell"><div class="jur-dot" style="background:#16a34a"></div>Colorado</div>
+        <div class="jur-sub">(SB 21-169)</div>
+      </td>
+      <td>
+        <div class="logic-tags">
+          <span class="logic-tag state">State</span>
+          <span class="logic-tag market">Market</span>
+          <span class="logic-tag professional">Professional</span>
+        </div>
+      </td>
+      <td>
+        <div class="flow-up">↑↑↑ Deployers → AG Office</div>
+        <div class="flow-down">↓ Minimal: notification duties</div>
+      </td>
+      <td class="mechanism">Impact assessments filed with AG, professional duty of care, market-based risk management</td>
+      <td>
+        <div class="emp-header very-low">Very Low</div>
+        <div class="emp-bar-track"><div class="emp-bar-fill" style="width:12%; background:linear-gradient(90deg,#ef4444,#dc2626);"></div></div>
+        <div class="emp-note">No private right of action; AG sole enforcer</div>
+      </td>
+    </tr>
+    <!-- India -->
+    <tr>
+      <td>
+        <div class="jur-cell"><div class="jur-dot" style="background:#d97706"></div>India</div>
+        <div class="jur-sub">(DPDP Act / NITI Aayog)</div>
+      </td>
+      <td>
+        <div class="logic-tags">
+          <span class="logic-tag industrial">Industrial</span>
+          <span class="logic-tag state">State</span>
+          <span class="logic-tag developmental">Developmental</span>
+        </div>
+      </td>
+      <td>
+        <div class="flow-up">↑↑↑ Operators → Govt bodies</div>
+        <div class="flow-down">↓ Near absent downward flow</div>
+      </td>
+      <td class="mechanism">Principles-based framework, state developmental priorities override individual rights, industry self-regulation</td>
+      <td>
+        <div class="emp-header minimal">Minimal</div>
+        <div class="emp-bar-track"><div class="emp-bar-fill" style="width:8%; background:#ef4444;"></div></div>
+        <div class="emp-note">Developmental logic subordinates individual claims to national progress narrative</div>
+      </td>
+    </tr>
+    <!-- Brazil -->
+    <tr>
+      <td>
+        <div class="jur-cell"><div class="jur-dot" style="background:#0d9b8a"></div>Brazil</div>
+        <div class="jur-sub">(PL 2338/2023)</div>
+      </td>
+      <td>
+        <div class="logic-tags">
+          <span class="logic-tag state">State</span>
+          <span class="logic-tag developmental">Developmental</span>
+          <span class="logic-tag civic">Civic</span>
+        </div>
+      </td>
+      <td>
+        <div class="flow-up">↑↑↑ Operators → Supervisory auth.</div>
+        <div class="flow-down">↓ Formal rights, weak enforcement</div>
+      </td>
+      <td class="mechanism">Rights-based framework modeled on LGPD; algorithmic impact assessments; supervisory authority oversight</td>
+      <td>
+        <div class="emp-header low-mod">Low–Moderate</div>
+        <div class="emp-bar-track"><div class="emp-bar-fill" style="width:28%; background:linear-gradient(90deg,#ef4444,#f97316,#eab308);"></div></div>
+        <div class="emp-note">Civic logic in text (right to explanation, human review) but enforcement apparatus still compliance-oriented</div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="convergence">
+  <strong>Convergence finding (Thornton et al., 2012):</strong>
+  Despite differences in dominant institutional logics — Industrial/Civic/Market (EU), State/Market/Professional (Colorado), Industrial/State-Developmental (India), and State-Developmental/Civic (Brazil) — all four jurisdictions exhibit the same structural pattern:
+  <span class="bold-finding">accountability flows upward through compliance architecture.</span>
+  None establishes enforceable mechanisms through which impacted communities can meaningfully influence algorithmic outcomes. Brazil's civic logic comes closest to empowerment on paper, but its enforcement infrastructure mirrors the same upward-flowing compliance pattern observed elsewhere.
+</div>
+
+</body>
+</html>

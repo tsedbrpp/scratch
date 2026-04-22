@@ -53,7 +53,159 @@ function renderOntologyMaps(generator: ReportGeneratorDOCX, maps: any[]) {
             if (relations.length > 15) generator.addText(`...and ${relations.length - 15} more relations.`);
             generator.addSpacer();
         }
+
+        // Ghost Node Assessment Audit
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghostNodes = (map.nodes || []).filter((n: any) => n.isGhost);
+        if (ghostNodes.length > 0) {
+            renderGhostNodeAssessmentAudit(generator, ghostNodes);
+        }
     });
+}
+
+const CRITERION_LABELS: Record<string, string> = {
+    functionalRelevance: 'Functional Relevance',
+    textualTrace: 'Textual Trace',
+    structuralForeclosure: 'Structural Foreclosure',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    proposed: 'Unassessed',
+    confirmed: 'Confirmed',
+    contested: 'Contested',
+    deferred: 'Deferred',
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderGhostNodeAssessmentAudit(generator: ReportGeneratorDOCX, ghostNodes: any[]) {
+    generator.addSubHeader("Ghost Node Assessment Audit");
+    generator.addText(
+        "The following records document the analyst's reflexive assessment of each AI-detected Ghost Node against the three evidentiary criteria (§4.2). " +
+        "Each entry logs the assessment verdict (confirmed, contested, or deferred), per-criterion judgments, any contest reason, and the analyst's reflexive note.",
+        STYLE.colors.meta
+    );
+    generator.addSpacer();
+
+    // Aggregate counts
+    const counts = { confirmed: 0, contested: 0, deferred: 0, proposed: 0 };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ghostNodes.forEach((node: any) => {
+        const assessment = node.analystAssessment;
+        const status = assessment?.status || 'proposed';
+        counts[status as keyof typeof counts]++;
+
+        const statusLabel = STATUS_LABELS[status] || status;
+        const statusColor = status === 'confirmed' ? STYLE.colors.success :
+            status === 'contested' ? STYLE.colors.danger : STYLE.colors.meta;
+
+        // Node header
+        generator.addText(
+            `• ${node.label || node.name || 'Unknown'} — ${statusLabel}`,
+            statusColor, 0, true
+        );
+
+        // Absence type
+        if (node.absenceType || node.exclusionType) {
+            generator.addText(
+                `Absence Type: ${node.absenceType || node.exclusionType}`,
+                STYLE.colors.meta, 1
+            );
+        }
+
+        if (assessment) {
+            // Criteria checklist
+            if (assessment.criteriaChecklist) {
+                const criteriaLine = Object.entries(assessment.criteriaChecklist)
+                    .map(([key, value]) => {
+                        const label = CRITERION_LABELS[key] || key;
+                        return `${label}: ${value === true ? '✓ Met' : value === false ? '✗ Unmet' : '— Unassessed'}`;
+                    })
+                    .join('  |  ');
+                generator.addText(criteriaLine, STYLE.colors.secondary, 1);
+            }
+
+            // Contest reason
+            if (status === 'contested' && assessment.contestReason) {
+                generator.addText(`Contest Reason: ${assessment.contestReason}`, STYLE.colors.danger, 1);
+                if (assessment.failedCriterion) {
+                    generator.addText(
+                        `Failed Criterion: ${CRITERION_LABELS[assessment.failedCriterion] || assessment.failedCriterion}`,
+                        STYLE.colors.danger, 1
+                    );
+                }
+            }
+
+            // Reflexive note
+            if (assessment.reflexiveNote?.trim()) {
+                generator.addText(`Reflexive Note: "${assessment.reflexiveNote}"`, STYLE.colors.subtle, 1);
+            }
+
+            // Timestamp
+            if (assessment.assessedAt) {
+                const date = new Date(assessment.assessedAt).toLocaleDateString("en-US", {
+                    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+                });
+                generator.addText(`Assessed: ${date}`, STYLE.colors.meta, 1);
+            }
+
+            // Provenance chain (P3)
+            if (assessment.assessmentHistory && assessment.assessmentHistory.length > 0) {
+                generator.addText(`Provenance Chain (${assessment.assessmentHistory.length} entries):`, STYLE.colors.meta, 1, true);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                assessment.assessmentHistory.forEach((entry: any, i: number) => {
+                    const actionLabels: Record<string, string> = {
+                        initial: 'Initial', revision: 'Revised', contest: 'Contested',
+                        confirm: 'Confirmed', defer: 'Deferred',
+                    };
+                    const criteriaStr = [
+                        `FR:${entry.criteriaChecklist?.functionalRelevance === true ? '✓' : entry.criteriaChecklist?.functionalRelevance === false ? '✗' : '—'}`,
+                        `TT:${entry.criteriaChecklist?.textualTrace === true ? '✓' : entry.criteriaChecklist?.textualTrace === false ? '✗' : '—'}`,
+                        `SF:${entry.criteriaChecklist?.structuralForeclosure === true ? '✓' : entry.criteriaChecklist?.structuralForeclosure === false ? '✗' : '—'}`,
+                    ].join(' ');
+                    const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleDateString("en-US", {
+                        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+                    }) : '';
+                    const assessor = entry.assessorId ? ` [${entry.assessorId.slice(0, 8)}]` : '';
+                    generator.addText(
+                        `• ${i + 1}. ${actionLabels[entry.action] || entry.action} — ${criteriaStr} — ${ts}${assessor}`,
+                        STYLE.colors.meta, 2
+                    );
+                });
+
+                // Multi-analyst summary (P4)
+                const assessors = new Map<string, string>();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                assessment.assessmentHistory.forEach((e: any) => {
+                    if (e.assessorId) assessors.set(e.assessorId, e.status);
+                });
+                if (assessors.size > 1) {
+                    const verdicts = [...assessors.values()];
+                    const allAgree = verdicts.every((v: string) => v === verdicts[0]);
+                    generator.addText(
+                        allAgree
+                            ? `Inter-analyst agreement: ${assessors.size} analysts concur — ${verdicts[0]}`
+                            : `⚠ Inter-analyst disagreement: ${[...assessors.entries()].map(([id, v]) => `${id.slice(0, 8)}: ${v}`).join(', ')}`,
+                        allAgree ? STYLE.colors.success : STYLE.colors.danger, 2
+                    );
+                }
+            }
+        } else {
+            generator.addText("No analyst assessment recorded.", STYLE.colors.meta, 1);
+        }
+    });
+
+    // Aggregate summary
+    generator.addSpacer();
+    generator.addText("Assessment Summary:", STYLE.colors.secondary, 0, true);
+    const total = ghostNodes.length;
+    const assessed = counts.confirmed + counts.contested + counts.deferred;
+    generator.addText(
+        `${total} Ghost Nodes detected | ${assessed} assessed (${Math.round((assessed / total) * 100)}%) | ` +
+        `${counts.confirmed} confirmed | ${counts.contested} contested | ${counts.deferred} deferred | ${counts.proposed} unassessed`,
+        STYLE.colors.text
+    );
+    generator.addSpacer();
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -319,6 +319,8 @@ export interface GhostNode {
         relationshipType: string;
         evidence: string;
     }>;
+    // Analyst reflexive assessment (§4.2 three-criterion rubric)
+    analystAssessment?: import('@/lib/ghost-nodes/types').AnalystAssessment;
 }
 
 // Core interfaces for analysis

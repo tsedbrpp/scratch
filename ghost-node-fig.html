@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figure 3 — Ghost Node Exclusion Matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1a1a2e;
+    --text-dim: #5a5f72;
+    --text-muted: #8a8fa2;
+    --border: #e2e5ea;
+    --excluded: #7f1d1d;
+    --excluded-bg: #fef2f2;
+    --excluded-fill: #dc2626;
+    --marginalized: #92400e;
+    --marginalized-bg: #fffbeb;
+    --marginalized-fill: #f59e0b;
+    --silenced: #1e3a5f;
+    --silenced-bg: #eff6ff;
+    --silenced-fill: #6b7280;
+    --eu: #6366f1;
+    --co: #16a34a;
+    --in: #d97706;
+    --br: #0d9b8a;
+    --legible-high: #15803d;
+    --legible-low: #b91c1c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 36px 44px 32px 44px;
+    width: 1200px;
+  }
+
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 5px; }
+  h1 span { color: var(--text-muted); font-weight: 400; font-size: 18px; }
+  .subtitle { font-size: 11.5px; color: var(--text-dim); font-style: italic; margin-bottom: 6px; line-height: 1.5; }
+  .subtitle .cite { color: var(--text-muted); }
+  .pipeline-note {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 26px;
+    padding: 6px 12px;
+    background: #f8f9fb;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px solid var(--border);
+  }
+  .pipeline-note strong { color: var(--text-dim); }
+
+  /* ─── Main Layout ─── */
+  .figure-layout {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ─── Matrix Table ─── */
+  .matrix-wrapper {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+  }
+
+  .matrix thead th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #2d313d;
+    padding: 14px 12px;
+    text-align: center;
+    border-right: 1px solid #3d414d;
+  }
+  .matrix thead th:first-child {
+    text-align: left;
+    width: 230px;
+    padding-left: 16px;
+  }
+  .matrix thead th:last-child { border-right: none; }
+
+  .matrix thead th .jur-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .matrix tbody td {
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+    height: 72px;
+  }
+  .matrix tbody td:first-child {
+    text-align: left;
+    padding: 10px 14px;
+    background: #fafbfc;
+    font-weight: 600;
+    font-size: 11px;
+    border-right: 2px solid var(--border);
+  }
+  .matrix tbody td:last-child { border-right: none; }
+  .matrix tbody tr:last-child td { border-bottom: none; }
+
+  .actor-label { font-weight: 700; font-size: 11.5px; color: var(--text); margin-bottom: 2px; }
+  .actor-sub { font-size: 9px; color: var(--text-muted); font-weight: 400; line-height: 1.3; }
+
+  /* Cell states */
+  .cell-excluded {
+    background: var(--excluded-bg);
+    position: relative;
+  }
+  .cell-marginalized {
+    background: var(--marginalized-bg);
+    position: relative;
+  }
+  .cell-silenced {
+    background: var(--silenced-bg);
+    position: relative;
+  }
+  .cell-empty {
+    background: #fafbfc;
+    position: relative;
+  }
+
+  .cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 6px;
+  }
+
+  .standing-badge {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .badge-excluded { background: #fee2e2; color: var(--excluded); }
+  .badge-marginalized { background: #fef3c7; color: var(--marginalized); }
+  .badge-silenced { background: #e0e7ff; color: var(--silenced); }
+
+  .absence-score {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .score-high { color: var(--excluded); }
+  .score-med { color: var(--marginalized); }
+  .score-unit { font-size: 9px; font-weight: 500; color: var(--text-muted); }
+
+  .cell-dash {
+    font-size: 18px;
+    color: #d0d5dd;
+    font-weight: 300;
+  }
+
+  /* ─── Stratified Legibility Panel ─── */
+  .legibility-panel {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .legibility-header {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #2d313d;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .legibility-body {
+    padding: 16px 14px;
+  }
+
+  .legibility-gradient {
+    position: relative;
+    height: 360px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .gradient-bar {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    transform: translateX(-50%);
+    border-radius: 4px;
+    background: linear-gradient(to bottom, #15803d 0%, #65a30d 20%, #d97706 45%, #dc2626 70%, #7f1d1d 100%);
+    opacity: 0.7;
+  }
+
+  .gradient-label {
+    position: absolute;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .gradient-label.top-label {
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    color: var(--legible-high);
+    margin-top: -4px;
+  }
+  .gradient-label.bottom-label {
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    color: var(--legible-low);
+    margin-bottom: -4px;
+  }
+
+  .gradient-item {
+    position: absolute;
+    font-size: 10px;
+    line-height: 1.3;
+    max-width: 90px;
+  }
+  .gradient-item.left {
+    right: calc(50% + 16px);
+    text-align: right;
+  }
+  .gradient-item.right {
+    left: calc(50% + 16px);
+    text-align: left;
+  }
+  .gradient-item strong { font-weight: 700; }
+  .gradient-item .gi-label { color: var(--text-dim); font-size: 9px; }
+
+  .gradient-marker {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* ─── Legend ─── */
+  .legend-row {
+    display: flex;
+    gap: 24px;
+    justify-content: flex-start;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  /* ─── Validation Box ─── */
+  .validation-box {
+    margin-top: 16px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .validation-box strong { color: #15803d; font-weight: 700; }
+  .validation-box .val-score { font-weight: 800; color: var(--text); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>Figure 3. <span>Ghost Node Exclusion Matrix</span></h1>
+<div class="subtitle">
+  Constitutive absences across four AI governance jurisdictions — actors structurally excluded from regulatory architectures<br>
+  <span class="cite">Ghost Node Detection Pipeline v1.0 · Human evaluator validation v5.0-hybrid (n=4, 10 cases)</span>
+</div>
+<div class="pipeline-note">
+  <strong>10 ghost nodes</strong> detected across <strong>4 jurisdictions</strong> · Standing categories: Structurally Excluded, Marginalized, Silenced
+</div>
+
+<div class="figure-layout">
+
+  <!-- ─── LEFT: Matrix ─── -->
+  <div>
+    <div class="matrix-wrapper">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Actor Category</th>
+            <th><span class="jur-dot" style="background:#6366f1"></span>European Union</th>
+            <th><span class="jur-dot" style="background:#16a34a"></span>Colorado</th>
+            <th><span class="jur-dot" style="background:#d97706"></span>India</th>
+            <th><span class="jur-dot" style="background:#0d9b8a"></span>Brazil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row 1: Civil Society -->
+          <tr>
+            <td>
+              <div class="actor-label">Civil Society / NGOs</div>
+              <div class="actor-sub">Rights orgs, digital rights, grassroots advocacy</div>
+            </td>
+            <td class="cell-excluded">
+              <div class="cell-content">
+                <span class="standing-badge badge-excluded">Excluded</span>
+                <div class="actor-sub">Rights invoked as objectives but NGOs absent from architecture</div>
+              </div>
+            </td>
+            <td class="cell-excluded">
+              <div class="cell-content">
+                <span class="standing-badge badge-excluded">Excluded</span>
+                <div class="actor-sub">Self-testing regime excludes external monitors</div>
+              </div>
+            </td>
+            <td class="cell-excluded">
+              <div class="cell-content">
+                <span class="standing-badge badge-excluded">Excluded</span>
+                <div class="actor-sub">Framework targets ministries &amp; enterprises only</div>
+              </div>
+            </td>
+            <td class="cell-silenced">
+              <div class="cell-content">
+                <span class="standing-badge badge-silenced">Silenced</span>
+                <div class="actor-sub">No provisions for participation in implementation</div>
+              </div>
+            </td>
+          </tr>
+          <!-- Row 2: Workers -->
+          <tr>
+            <td>
+              <div class="actor-label">Workers / Labor Unions</div>
+              <div class="actor-sub">Workers affected by AI deployment &amp; decisions</div>
+            </td>
+            <td class="cell-marginalized">
+              <div class="cell-content">
+                <span class="standing-badge badge-marginalized">Marginalized</span>
+                <div class="absence-score score-high">87<span class="score-unit">/100</span></div>
+                <div class="actor-sub">Excluded from compliance assessments</div>
+              </div>
+            </td>
+            <td class="cell-marginalized">
+              <div class="cell-content">
+                <span class="standing-badge badge-marginalized">Marginalized</span>
+                <div class="actor-sub">"Consequential decision" but no worker voice</div>
+              </div>
+            </td>
+            <td class="cell-excluded">
+              <div class="cell-content">
+                <span class="standing-badge badge-excluded">Excluded</span>
+                <div class="actor-sub">Deployment without labor impact analysis</div>
+              </div>
+            </td>
+            <td class="cell-marginalized">
+              <div class="cell-content">
+                <span class="standing-badge badge-marginalized">Marginalized</span>
+                <div class="absence-score score-med">80<span class="score-unit">/100</span></div>
+                <div class="actor-sub">Principle-level only; no institutional role</div>
+              </div>
+            </td>
+          </tr>
+          <!-- Row 3: End Users -->
+          <tr>
+            <td>
+              <div class="actor-label">End Users as Stakeholders</div>
+              <div class="actor-sub">People subject to algorithmic decisions</div>
+            </td>
+            <td class="cell-silenced">
+              <div class="cell-content">
+                <span class="standing-badge badge-silenced">Silenced</span>
+                <div class="absence-score score-high">84<span class="score-unit">/100</span></div>
+                <div class="actor-sub">Appear only as passive aggregate category</div>
+              </div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+          </tr>
+          <!-- Row 4: Indigenous -->
+          <tr>
+            <td>
+              <div class="actor-label">Indigenous / Traditional Communities</div>
+              <div class="actor-sub">Holders of differentiated collective rights</div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+            <td class="cell-empty">
+              <div class="cell-content"><span class="cell-dash">—</span></div>
+            </td>
+            <td class="cell-excluded">
+              <div class="cell-content">
+                <span class="standing-badge badge-excluded">Excluded</span>
+                <div class="actor-sub">Universal framing erases differentiated rights</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-swatch" style="background:#fef2f2; border-color:#fca5a5;"></div><strong style="color:#7f1d1d;">Structurally Excluded</strong> — absent from governance architecture</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#fffbeb; border-color:#fcd34d;"></div><strong style="color:#92400e;">Marginalized</strong> — mentioned but no institutional role</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#eff6ff; border-color:#93c5fd;"></div><strong style="color:#1e3a5f;">Silenced</strong> — present as passive object only</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#fafbfc; border-color:#e2e5ea;"></div><span style="color:#8a8fa2;">— Not detected</span></div>
+    </div>
+
+    <!-- Validation -->
+    <div class="validation-box">
+      <strong>Human Evaluator Validation:</strong>
+      Average absence strength <span class="val-score">65.7/100</span> (n=4 evaluators, confirming non-trivial structural absence).
+      High-confidence exclusions (≥80): <strong>EU Workers</strong> (87), <strong>EU End Users</strong> (84), <strong>Brazil Workers</strong> (80).
+      Scores embedded in matrix cells above.
+    </div>
+  </div>
+
+  <!-- ─── RIGHT: Stratified Legibility Panel ─── -->
+  <div class="legibility-panel">
+    <div class="legibility-header">Stratified Legibility</div>
+    <div class="legibility-body">
+      <div class="legibility-gradient">
+        <!-- Gradient bar -->
+        <div class="gradient-bar"></div>
+
+        <!-- Top label -->
+        <div class="gradient-label top-label">Highly Legible ▲</div>
+
+        <!-- Highly legible items -->
+        <div class="gradient-marker" style="top: 8%; background: #15803d;"></div>
+        <div class="gradient-item right" style="top: 5%;">
+          <strong style="color:#15803d;">Risk management frameworks</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 18%; background: #22c55e;"></div>
+        <div class="gradient-item right" style="top: 15%;">
+          <strong style="color:#16a34a;">Formal regulatory instruments</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 28%; background: #65a30d;"></div>
+        <div class="gradient-item right" style="top: 25%;">
+          <strong style="color:#65a30d;">Compliance documentation</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 38%; background: #ca8a04;"></div>
+        <div class="gradient-item right" style="top: 35%;">
+          <strong style="color:#ca8a04;">Conformity assessments</strong>
+        </div>
+
+        <!-- Divider zone -->
+        <div style="position:absolute; left:10%; right: 10%; top:48%; border-top: 1.5px dashed #d0d5dd;"></div>
+        <div style="position:absolute; left:50%; top:48%; transform: translateX(-50%) translateY(-50%); background: white; padding: 2px 8px; font-size: 7px; color: #8a8fa2; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Visibility threshold</div>
+
+        <!-- Weakly legible items -->
+        <div class="gradient-marker" style="top: 58%; background: #dc2626;"></div>
+        <div class="gradient-item left" style="top: 55%;">
+          <strong style="color:#b91c1c;">Individual user resistance</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 68%; background: #b91c1c;"></div>
+        <div class="gradient-item left" style="top: 65%;">
+          <strong style="color:#991b1b;">Informal governance mechanisms</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 78%; background: #991b1b;"></div>
+        <div class="gradient-item left" style="top: 75%;">
+          <strong style="color:#7f1d1d;">Labor impact pathways</strong>
+        </div>
+
+        <div class="gradient-marker" style="top: 88%; background: #7f1d1d;"></div>
+        <div class="gradient-item left" style="top: 85%;">
+          <strong style="color:#7f1d1d;">Community voice channels</strong>
+        </div>
+
+        <!-- Bottom label -->
+        <div class="gradient-label bottom-label">▼ Invisible</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governance Styles – Technocratic Core vs. Legitimacy Framing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #111827;
+    --text-dim: #6B7280;
+    --border: #E5E7EB;
+    --core-bg: #F9FAFB;
+    --core-border: #D1D5DB;
+    --legit-bg: #FFFBEB;
+    --legit-border: #FDE68A;
+    --anchor-bg: #FEF2F2;
+    --anchor-border: #FECACA;
+    --eu: #6366F1;
+    --co: #16A34A;
+    --in: #D97706;
+    --br: #0D9488;
+    --us: #6B7280;
+  }
+  * {margin:0;padding:0;box-sizing:border-box;}
+  body {font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);padding:24px 36px;max-width:1200px;}
+  h1 {font-size:20px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px;}
+  .subtitle {font-size:10.5px;color:var(--text-dim);font-style:italic;margin-bottom:18px;line-height:1.6;}
+  .matrix {display:grid;grid-template-columns:1.4fr 3.2fr 0.06fr 3fr 3.2fr;gap:0.08rem;align-items:start;}
+  .cell {padding:10px 12px;border-bottom:1px solid var(--border);}
+  .jur {background:var(--core-bg);color:var(--text);font-weight:700;text-align:center;}
+  .legit, .anchor {background:var(--legit-bg);border:1px solid var(--legit-border);color:#78350F;}
+  .anchor {background:var(--anchor-bg);border-color:var(--anchor-border);color:#991B1B;}
+  .core {background:var(--core-bg);border:1px solid var(--core-border);text-align:center;font-weight:600;color:#374151;}
+  .divider {background:transparent;position:relative;}
+  .divider::after {content:'';position:absolute;top:-4px;bottom:-4px;left:50%;border-left:1.5px dashed #D1D5DB;}
+  .row:hover {background:#FAFBFC;}
+  .us-row {background:#FFF7ED;}
+  .us-row:hover {background:#FEF3C7;}
+  .callout {margin-top:14px;background:var(--anchor-bg);border:1.5px solid var(--anchor-border);border-left:3px solid #991B1B;border-radius:0 8px 8px 0;padding:10px 14px;font-size:10px;color:#7F1D1D;line-height:1.6;}
+  .callout strong {color:#991B1B;}
+  .callout em {color:#991B1B;font-weight:600;}
+  .legend {margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:28px;flex-wrap:wrap;}
+  .legend-item {font-size:9px;color:var(--text-dim);display:flex;align-items:center;gap:6px;}
+</style>
+</head>
+<body>
+<h1>Governance Styles – Technocratic Core vs. Legitimacy Framing</h1>
+<div class="subtitle">All regimes share a compliance‑driven technocratic core, but each legitimises it differently.</div>
+<div class="matrix">
+  <!-- Header -->
+  <div class="cell jur"><strong>JURISDICTION</strong></div>
+  <div class="cell legit"><strong>LEGITIMACY FRAMING</strong></div>
+  <div class="cell divider"></div>
+  <div class="cell core"><strong>TECHNOCRATIC CORE</strong></div>
+  <div class="cell anchor"><strong>INSTITUTIONAL ANCHOR</strong></div>
+  <!-- EU Row -->
+  <div class="cell jur" style="background:#EEF2FF;border-color:#A5B4FC;color:#6366F1;">European Union</div>
+  <div class="cell legit" style="background:#EEF2FF;border-color:#A5B4FC;">Market‑harmonisation<br>& supply‑chain compliance</div>
+  <div class="cell divider"></div>
+  <div class="cell core" style="background:#F9FAFB;border-color:#D1D5DB;">Standards → Compliance → Administration</div>
+  <div class="cell anchor" style="background:#EEF2FF;border-color:#A5B4FC;color:#6366F1;">European Commission<br>+ AI Office</div>
+  <!-- Colorado Row -->
+  <div class="cell jur" style="background:#F0FDF4;border-color:#86EFAC;color:#16A34A;">Colorado</div>
+  <div class="cell legit" style="background:#F0FDF4;border-color:#86EFAC;">Consumer‑protection<br>& AG enforcement</div>
+  <div class="cell divider"></div>
+  <div class="cell core" style="background:#F9FAFB;border-color:#D1D5DB;">Standards → Compliance → Administration</div>
+  <div class="cell anchor" style="background:#F0FDF4;border-color:#86EFAC;color:#16A34A;">Attorney General</div>
+  <!-- India Row -->
+  <div class="cell jur" style="background:#FFFBEB;border-color:#FCD34D;color:#D97706;">India</div>
+  <div class="cell legit" style="background:#FFFBEB;border-color:#FCD34D;">Mission‑oriented<br>state capacity</div>
+  <div class="cell divider"></div>
+  <div class="cell core" style="background:#F9FAFB;border-color:#D1D5DB;">Standards → Compliance → Administration</div>
+  <div class="cell anchor" style="background:#FFFBEB;border-color:#FCD34D;color:#D97706;">CARO + AIREC<br>+ IndiaAI Mission</div>
+  <!-- Brazil Row -->
+  <div class="cell jur" style="background:#F0FDFA;border-color:#5EEAD4;color:#0D9488;">Brazil</div>
+  <div class="cell legit" style="background:#F0FDFA;border-color:#5EEAD4;">Civic‑developmental<br>language & ANPD oversight</div>
+  <div class="cell divider"></div>
+  <div class="cell core" style="background:#F9FAFB;border-color:#D1D5DB;">Standards → Compliance → Administration</div>
+  <div class="cell anchor" style="background:#F0FDFA;border-color:#5EEAD4;color:#0D9488;">ANPD</div>
+  <!-- US Row -->
+  <div class="cell jur us-row" style="background:#FFF7ED;border-color:#FED7AA;color:#6B7280;">United States</div>
+  <div class="cell legit us-row" style="background:#FFF7ED;border-color:#FED7AA;">Security‑industrial<br>& federal logic</div>
+  <div class="cell divider"></div>
+  <div class="cell core" style="background:#F9FAFB;border-color:#D1D5DB;">Standards → Compliance → Administration</div>
+  <div class="cell anchor us-row" style="background:#FFF7ED;border-color:#FED7AA;color:#6B7280;">OMB + CAISI<br>+ CAIOC</div>
+</div>
+<div class="callout">
+  <strong>Shared core:</strong> compliance‑driven technocratic architecture. <em>Distinct legitimacy framings (market, consumer, mission, civic, security) sit around this core.</em>
+</div>
+<div class="legend">
+  <div class="legend-item">Core – standards → compliance → administration</div>
+  <div class="legend-item">Legitimacy framing – the narrative each regime uses</div>
+  <div class="legend-item">Institutional anchor – the body that operationalises the core</div>
+</div>
+</body>
+</html>

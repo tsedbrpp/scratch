@@ -24,6 +24,7 @@ import { MapGallery } from "@/components/ontology/MapGallery";
 import { ConceptDetailsModal } from "@/components/ontology/ConceptDetailsModal";
 import { ComparisonView } from "@/components/ontology/ComparisonView";
 import { generateCasesFromOntology } from "@/lib/study-utils";
+import { GhostNodeAssessmentSummary } from "@/components/analysis/GhostNodeAssessmentSummary";
 
 // Static Data (Fallback) - Kept for initial state visualization
 
@@ -603,6 +604,13 @@ export default function OntologyPage() {
                                     </CardContent>
                                 </Card>
                             </div>
+                        )}
+
+                        {/* Ghost Node Assessment Summary Dashboard */}
+                        {currentOntologyData && currentOntologyData.nodes.some(n => n.isGhost) && (
+                            <GhostNodeAssessmentSummary
+                                ghostNodes={currentOntologyData.nodes.filter(n => n.isGhost) as any[]}
+                            />
                         )}
 
                         {/* AI Methodology Notes — transparency panel */}

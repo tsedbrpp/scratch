@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figure 1 — Directed Accountability Flows</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8f9fb;
+    --border: #e2e5ea;
+    --text: #1a1a2e;
+    --text-dim: #5a5f72;
+    --text-muted: #8a8fa2;
+    --accent-up: #d95e0e;
+    --accent-down: #2980b9;
+    --accent-absent: #c0392b;
+    --tier-top-bg: #fef3e7;
+    --tier-top-border: #f0c8a0;
+    --tier-mid-bg: #eef0fc;
+    --tier-mid-border: #c0c4e8;
+    --tier-bot-bg: #fdecec;
+    --tier-bot-border: #e8b0b0;
+    --node-bg: #ffffff;
+    --node-border: #d0d5dd;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 50px 30px 50px;
+    width: 1200px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  h1 span { color: var(--text-muted); font-weight: 400; font-size: 18px; }
+  .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 30px;
+    line-height: 1.5;
+  }
+  .subtitle .cite { color: var(--text-muted); }
+
+  .flow-container {
+    position: relative;
+    width: 100%;
+  }
+
+  .tier {
+    border-radius: 10px;
+    padding: 14px 20px 18px 20px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  .tier-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .tier-top { background: var(--tier-top-bg); border: 1.5px solid var(--tier-top-border); }
+  .tier-top .tier-label { color: var(--accent-up); }
+  .tier-mid { background: var(--tier-mid-bg); border: 1.5px solid var(--tier-mid-border); }
+  .tier-mid .tier-label { color: #6366f1; }
+  .tier-bot { background: var(--tier-bot-bg); border: 1.5px solid var(--tier-bot-border); }
+  .tier-bot .tier-label { color: var(--accent-absent); }
+
+  .node-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+  .node {
+    background: var(--node-bg);
+    border: 1.5px solid var(--node-border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    text-align: center;
+    width: 220px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .node-name { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .node-sub { font-size: 9px; color: var(--text-dim); }
+
+  /* SVG Arrow Canvas */
+  .arrow-canvas {
+    width: 100%;
+    height: 200px;
+    display: block;
+  }
+  .arrow-canvas-small {
+    width: 100%;
+    height: 170px;
+    display: block;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .legend-line {
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+  }
+  .legend-line.up { background: var(--accent-up); }
+  .legend-line.down { background: var(--accent-down); height: 2px; opacity: 0.5; }
+  .legend-line.absent {
+    background: repeating-linear-gradient(90deg, var(--accent-absent) 0, var(--accent-absent) 4px, transparent 4px, transparent 8px);
+    height: 2px;
+  }
+
+  /* Callout */
+  .callout {
+    background: #fef2f2;
+    border-left: 3px solid var(--accent-absent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .callout strong { color: var(--accent-absent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Figure 1. <span>Directed Accountability Flows</span></h1>
+<div class="subtitle">
+  "Accountability flows through compliance architecture rather than enforceable obligations to those who have been impacted."<br>
+  <span class="cite">— cf. Shaikh et al. (2023), relational spaces of algorithmic accountability</span>
+</div>
+
+<div class="flow-container">
+  <!-- TIER TOP -->
+  <div class="tier tier-top">
+    <div class="tier-label">Oversight &amp; Regulatory Bodies</div>
+    <div class="node-row">
+      <div class="node" id="nRA"><div class="node-name">Regulatory Agencies</div><div class="node-sub">Standard-setting, enforcement</div></div>
+      <div class="node" id="nCB"><div class="node-name">Certification Bodies</div><div class="node-sub">Conformity assessment, audit</div></div>
+      <div class="node" id="nNB"><div class="node-name">Notified Bodies</div><div class="node-sub">Third-party verification</div></div>
+    </div>
+  </div>
+
+  <!-- SVG: Upper arrows (Mid → Top) -->
+  <svg class="arrow-canvas" id="svgUpper"></svg>
+
+  <!-- TIER MID -->
+  <div class="tier tier-mid">
+    <div class="tier-label">Deployers &amp; Operators</div>
+    <div class="node-row">
+      <div class="node" id="nD"><div class="node-name">Deployers</div><div class="node-sub">Impact assessments, risk classification</div></div>
+      <div class="node" id="nO"><div class="node-name">Operators</div><div class="node-sub">Documentation, monitoring</div></div>
+      <div class="node" id="nPD"><div class="node-name">Providers / Developers</div><div class="node-sub">Technical compliance, testing</div></div>
+    </div>
+  </div>
+
+  <!-- SVG: Lower arrows (Bot → Mid) -->
+  <svg class="arrow-canvas-small" id="svgLower"></svg>
+
+  <!-- TIER BOT -->
+  <div class="tier tier-bot">
+    <div class="tier-label">Impacted Communities &amp; Affected Populations</div>
+    <div class="node-row">
+      <div class="node" id="nIC"><div class="node-name">Impacted Individuals</div><div class="node-sub">Subjects of algorithmic decisions</div></div>
+      <div class="node" id="nCSO"><div class="node-name">Civil Society Orgs</div><div class="node-sub">Advocacy, representation</div></div>
+      <div class="node" id="nMC"><div class="node-name">Marginalized Communities</div><div class="node-sub">Disproportionately affected groups</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-line up"></div>Strong upward compliance flow (7 arrows)</div>
+  <div class="legend-item"><div class="legend-line down"></div>Weak downward obligation (2 arrows)</div>
+  <div class="legend-item"><div class="legend-line absent"></div>Absent / no formal pathway (3 arrows)</div>
+</div>
+
+<div class="callout">
+  <strong>Structural observation:</strong> The density of upward arrows (compliance reporting, conformity assessments, audit documentation) vastly exceeds downward flows. Impacted communities have <strong>no formal channels</strong> to influence outcomes or hold deployers accountable — accountability is relational to regulators, not to those harmed.
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Get node positions relative to the page
+  function nodeInfo(id) {
+    const el = document.getElementById(id);
+    const r = el.getBoundingClientRect();
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, cx: r.left + r.width/2, cy: r.top + r.height/2 };
+  }
+
+  function svgRect(svgEl) {
+    return svgEl.getBoundingClientRect();
+  }
+
+  // ─── UPPER SVG: Arrows between Mid tier and Top tier ───
+  function drawUpper() {
+    const svg = document.getElementById('svgUpper');
+    const sr = svgRect(svg);
+    const svgH = sr.height;
+    const svgW = sr.width;
+    svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+    svg.innerHTML = `
+      <defs>
+        <marker id="ahUp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#d95e0e"/>
+        </marker>
+        <marker id="ahDown" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto">
+          <polygon points="8 0, 0 3, 8 6" fill="#2980b9"/>
+        </marker>
+      </defs>
+    `;
+
+    // Source nodes (mid tier - bottom of these nodes → top of svg)
+    const d = nodeInfo('nD');
+    const o = nodeInfo('nO');
+    const p = nodeInfo('nPD');
+    // Target nodes (top tier - bottom of these nodes → bottom of svg is actually top of SVG for arrows going up)
+    const ra = nodeInfo('nRA');
+    const cb = nodeInfo('nCB');
+    const nb = nodeInfo('nNB');
+
+    // Arrows go from bottom (mid tier top edge = svg bottom) to top (top tier bottom edge = svg top)
+    // In SVG coords: y=svgH is bottom, y=0 is top
+    function xRel(pageX) { return pageX - sr.left; }
+
+    function drawArrow(fromCx, toCx, color, width, marker, dashArray='', opacity=1) {
+      const x1 = xRel(fromCx);
+      const x2 = xRel(toCx);
+      const y1 = svgH - 4;  // bottom
+      const y2 = 4;          // top
+      const cpY1 = svgH * 0.4;
+      const cpY2 = svgH * 0.6;
+      const cpXoff = (x1 - x2) * 0.15;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1+cpXoff} ${cpY1}, ${x2-cpXoff} ${cpY2}, ${x2} ${y2}`);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', width);
+      path.setAttribute('opacity', opacity);
+      path.setAttribute('marker-end', `url(#${marker})`);
+      if (dashArray) path.setAttribute('stroke-dasharray', dashArray);
+      svg.appendChild(path);
+    }
+
+    // 7 UPWARD arrows (orange) — from mid to top
+    drawArrow(d.cx - 8, ra.cx,      '#d95e0e', 2.5, 'ahUp');       // D → RA
+    drawArrow(d.cx + 8, cb.cx - 15, '#d95e0e', 2, 'ahUp');         // D → CB
+    drawArrow(d.cx + 20, nb.cx - 10, '#d95e0e', 1.5, 'ahUp');      // D → NB
+    drawArrow(o.cx - 10, ra.cx + 15, '#d95e0e', 1.8, 'ahUp');      // O → RA
+    drawArrow(o.cx, cb.cx,           '#d95e0e', 2.5, 'ahUp');       // O → CB
+    drawArrow(p.cx - 8, cb.cx + 15, '#d95e0e', 1.8, 'ahUp');       // P → CB
+    drawArrow(p.cx + 5, nb.cx,      '#d95e0e', 2.5, 'ahUp');       // P → NB
+
+    // 2 DOWNWARD arrows (blue, dashed) — from top to mid
+    // For downward: start at top (y=4), end at bottom (y=svgH-4), use reverse marker
+    function drawDownArrow(fromCx, toCx) {
+      const x1 = xRel(fromCx);
+      const x2 = xRel(toCx);
+      const y1 = 4;
+      const y2 = svgH - 4;
+      const cpY1 = svgH * 0.35;
+      const cpY2 = svgH * 0.65;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${cpY1}, ${x2} ${cpY2}, ${x2} ${y2}`);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#2980b9');
+      path.setAttribute('stroke-width', 1.5);
+      path.setAttribute('opacity', 0.5);
+      path.setAttribute('stroke-dasharray', '6 4');
+      path.setAttribute('marker-end', 'url(#ahDown)');
+      svg.appendChild(path);
+    }
+
+    drawDownArrow(ra.cx - 20, d.cx - 25);   // RA → D
+    drawDownArrow(cb.cx + 15, o.cx + 15);    // CB → O
+  }
+
+  // ─── LOWER SVG: Arrows between Bot tier and Mid tier ───
+  function drawLower() {
+    const svg = document.getElementById('svgLower');
+    const sr = svgRect(svg);
+    const svgH = sr.height;
+    const svgW = sr.width;
+    svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+    svg.innerHTML = `
+      <defs>
+        <marker id="ahAbsent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#c0392b" opacity="0.5"/>
+        </marker>
+        <marker id="ahAbsentDown" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto">
+          <polygon points="8 0, 0 3, 8 6" fill="#c0392b" opacity="0.5"/>
+        </marker>
+      </defs>
+    `;
+
+    const d = nodeInfo('nD');
+    const o = nodeInfo('nO');
+    const ic = nodeInfo('nIC');
+    const cso = nodeInfo('nCSO');
+
+    function xRel(pageX) { return pageX - sr.left; }
+
+    function drawAbsent(fromCx, toCx, goingUp) {
+      const x1 = xRel(fromCx);
+      const x2 = xRel(toCx);
+      let y1, y2, cpY1, cpY2, marker;
+      if (goingUp) {
+        y1 = svgH - 4;
+        y2 = 4;
+        cpY1 = svgH * 0.4;
+        cpY2 = svgH * 0.6;
+        marker = 'ahAbsent';
+      } else {
+        y1 = 4;
+        y2 = svgH - 4;
+        cpY1 = svgH * 0.35;
+        cpY2 = svgH * 0.65;
+        marker = 'ahAbsentDown';
+      }
+      const cpXoff = (x1 - x2) * 0.1;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1+cpXoff} ${cpY1}, ${x2-cpXoff} ${cpY2}, ${x2} ${y2}`);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#c0392b');
+      path.setAttribute('stroke-width', 1.5);
+      path.setAttribute('opacity', 0.4);
+      path.setAttribute('stroke-dasharray', '4 6');
+      path.setAttribute('marker-end', `url(#${marker})`);
+      svg.appendChild(path);
+
+      // Add ✗ label midway
+      const mx = (x1 + x2) / 2;
+      const my = svgH / 2;
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', mx + 12);
+      text.setAttribute('y', my + 4);
+      text.setAttribute('font-size', '10');
+      text.setAttribute('fill', '#c0392b');
+      text.setAttribute('opacity', '0.6');
+      text.setAttribute('font-family', 'Inter, sans-serif');
+      text.setAttribute('font-weight', '600');
+      text.textContent = '✗';
+      svg.appendChild(text);
+    }
+
+    // IC → mid (RA proxy via D) — no formal channel upward
+    drawAbsent(ic.cx, d.cx, true);
+    // CSO → CB proxy (via O) — no standing
+    drawAbsent(cso.cx, o.cx, true);
+    // D → IC — no enforceable obligation downward
+    drawAbsent(d.cx + 30, ic.cx + 30, false);
+  }
+
+  drawUpper();
+  drawLower();
+  window.addEventListener('resize', () => { drawUpper(); drawLower(); });
+});
+</script>
+</body>
+</html>
