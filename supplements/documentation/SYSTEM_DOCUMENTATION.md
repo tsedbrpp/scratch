@@ -1,29 +1,30 @@
-# instantTEA System Documentation
+# Policy Prism — System Documentation
 
 ## 1. System Overview
 
-**instantTEA** (Translational, Ephemeral Assemblages) is an open-source platform for critical policy and governance research. It bridges the gap between policy intent and algorithmic reality by translating complex socio-technical assemblages into provisional, situated snapshots.
+**Policy Prism** is an open-source research platform for critical analysis of AI governance policy through the theoretical lenses of Actor-Network Theory (ANT) and Assemblage Theory. It transforms static policy documents into dynamic, multi-dimensional analytical artefacts — mapping actors, relationships, structural absences, and governance architectures across jurisdictions.
 
-### Core Philosophy
-- **Translational**: Actively producing knowledge through inscription and enrollment (ANT).
-- **Ephemeral**: Capturing fleeting moments of territorialization/deterritorialization (Assemblage Theory).
-- **Critical**: Exposing power structures and hidden agencies.
+### Design Principles
+- **Traceability**: Every analytical claim is grounded in verbatim textual evidence with provenance tracking.
+- **Contestability**: Analyst override, disagreement logging, and positionality recording ensure interpretive claims remain open to challenge.
+- **Productive Friction**: The system surfaces ambiguity, contradiction, and structural tension rather than resolving them prematurely.
 
 ---
 
 ## 2. Architecture
 
-The application is built on a modern **Next.js 16** stack, optimized for performance, scalability, and security.
-
 ### Tech Stack
-- **Framework**: Next.js 16 (App Router, Turbopack)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS, Shadcn UI, Lucid React
-- **Data Persistence**: Redis (via `ioredis` / Upstash) + Local Storage Fallback
-- **Auth**: Clerk (Middleware-protected routes)
-- **AI/LLM**: OpenAI GPT-4o (via `openai` SDK)
-- **Payments**: Stripe (Elements & Webhooks)
-- **Visualization**: D3.js, React Force Graph
+| Component | Technology |
+|---|---|
+| **Framework** | Next.js 16 (App Router, Turbopack) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS, Shadcn UI, Lucide React |
+| **Data Persistence** | Redis (Upstash) with 86,400s TTL caching |
+| **Authentication** | Clerk (middleware-protected routes, Google OAuth) |
+| **LLM Ensemble** | GPT-4o (structured extraction, GNDP), GPT-4o-mini (parsing, lightweight passes), Gemini 1.5 Flash (web search) |
+| **Payments** | Stripe (Elements & Webhooks) |
+| **Visualisation** | D3.js, React Force Graph, Recharts |
+| **Export** | DOCX generation with native image capture of React-rendered D3/Recharts diagrams |
 
 ### Component Diagram
 ```mermaid
@@ -32,108 +33,145 @@ graph TD
     User -->|UI/UX| NextJS[Next.js App Router]
     
     subgraph Data Layer
-        NextJS -->|Read/Write| Redis[(Redis Database)]
-        NextJS -->|Vectors| VectorStore[Vector Search]
+        NextJS -->|Read/Write| Redis[(Redis / Upstash)]
     end
     
-    subgraph Intelligence
-        NextJS -->|Analysis| OpenAI[OpenAI API]
-        NextJS -->|Extraction| PDFParser[PDF Parse]
+    subgraph LLM Ensemble
+        NextJS -->|Analysis / GNDP| GPT4o[GPT-4o]
+        NextJS -->|Parsing| GPT4oMini[GPT-4o-mini]
+        NextJS -->|Web Search| Gemini[Gemini 1.5 Flash]
     end
     
     subgraph External
         NextJS -->|Payments| Stripe
+        NextJS -->|Search| Google[Google Custom Search]
     end
 ```
 
 ---
 
-## 3. Key Components & Data Flow
+## 3. Eight-Layer Analytical Architecture
 
-### 3.1 Authentication & Authorization
-- **Provider**: Clerk.
-- **Middleware**: `src/middleware.ts` protects all `/api/*` and dashboard routes.
-- **Demo Mode**: Read-only system state configured via `NEXT_PUBLIC_ENABLE_DEMO_MODE`.
-- **RBAC**: Admin users defined via `ADMIN_USER_IDS` env var have privileged access (e.g., prompt editing).
+The system implements an eight-layer analytical framework, each generating independent analytical strata:
 
-### 3.2 Data Ingestion & Analysis (`/data`)
-1.  **Ingestion**: Users upload PDFs or scrape URLs.
-2.  **Extraction**: `src/lib/content-extractor.ts` parses raw text.
-3.  **Analysis**: 
-    - Text is sent to `/api/analyze`.
-    - `src/lib/analysis-service.ts` coordinates LLM calls using specific theoretical lenses (e.g., Situated Teleology, Normative Attractors).
-    - Results are cached in Redis (24h TTL) to minimize costs.
-
-### 3.3 Ecosystem Mapping (`/ecosystem`)
-- **Actors**: Identified entities (human/non-human) are stored as nodes.
-- **Assemblage**: Relationships are mapped using force-directed graphs.
-- **State**: Side panels (`Actors` left, `Analysis` right) are open by default for immediate context.
-
-### 3.4 Payments & Credits System
-- **Model**: Credit-based usage (1 analysis = 1 credit).
-- **Storage**: Redis Atomic Counters (`INCR`, `DECR`, `Lua Scripts`).
-- **Processing**: Stripe Checkout session → Webhook (`payment_intent.succeeded`) → Credit Top-up.
-- **Security**: Webhook signatures verified to prevent spoofing.
-
-### 3.5 Security Features
-- **Strict Headers**: HSTS, X-Frame-Options, No-Sniff configured in `next.config.ts`.
-- **Input Validation**: Manual checks in API routes; read-only guards in mutation endpoints.
-- **Dependency Management**: Automated audits (`npm audit`) enforced.
+| Layer | Analysis Mode | Output |
+|---|---|---|
+| 1. Relationship Extraction | ANT Tracing, Assemblage Extraction | Actors, associations, mediator classifications |
+| 2. Ecosystem Mapping | Ecosystem Impact Analysis | Force-directed network graph with typed edges (Power, Logic, Ghost) |
+| 3. Ghost Node Detection | GNDP v1.0 (4-pass pipeline) | Structurally absent actors with weighted scoring, evidence grading, counterfactual tests |
+| 4. Ontology Generation | Concept Mapping + Comparison | Conceptual distance metrics across policy architectures |
+| 5. Cultural Framing | Institutional Logics, Cultural Framing, Legitimacy | State-market-society configurations, dominant discursive frames |
+| 6. Resistance Analysis | Resistance Detection + Discourse Analysis | Counter-conduct strategies, micro-resistance typologies |
+| 7. Comparative Synthesis | Cross-document divergence mapping | Shared structural spines, unique components, axes of divergence |
+| 8. Meta-Synthesis | Translational Stratification Theory (TST), Controversy Mapping, Abstract Machine Extraction | Five-column TST schema, proposition evaluation, consensus/friction zones |
 
 ---
 
-## 4. Configuration
+## 4. Key Components & Data Flow
+
+### 4.1 Authentication & Authorization
+- **Provider**: Clerk with Google OAuth.
+- **Middleware**: `src/middleware.ts` protects all `/api/*` and dashboard routes.
+- **Demo Mode**: Read-only system state via `NEXT_PUBLIC_ENABLE_DEMO_MODE`. Mirrors production data in a sandboxed view.
+- **RBAC**: Admin users defined via `ADMIN_USER_IDS` have privileged access (prompt editing, system configuration).
+
+### 4.2 Data Ingestion & Analysis (`/data`)
+1. **Ingestion**: Upload PDFs or scrape URLs.
+2. **Extraction**: `src/lib/content-extractor.ts` parses raw text with chunking.
+3. **Analysis**: Text is sent to `/api/analyze` with a specified `analysisMode`. The prompt registry (`src/lib/prompts/registry.ts`) manages 30+ versioned prompt templates across four categories (Analysis, Extraction, Simulation, Critique).
+4. **Caching**: Results are cached in Redis with 86,400s (24h) TTL to minimise API costs.
+
+### 4.3 Ghost Node Detection Pipeline (GNDP v1.0)
+- **Pass 1A** (GPT-4o-mini): Structural extraction — formal actors, affected-population claims, obligatory passage points.
+- **Pass 1B** (GPT-4o-mini): Candidate synthesis via structural subtraction with five-dimensional assessment.
+- **Pass 1.5** (Rule-based): NegEx filtering to eliminate false positives.
+- **Pass 2** (GPT-4o): Deep dive — evidence grading (E1–E4), weighted absence scoring (100-point scale), ghost typology assignment.
+- **Pass 3** (GPT-4o): Counterfactual power test — quarantined speculation with typed mechanism chains and enforcement ladder.
+- **Analyst Review**: Three-criterion reflexive assessment (Functional Relevance, Textual Trace, Structural Foreclosure) with immutable provenance chain.
+- **Implementation**: `src/lib/ghost-nodes/` (11 files), `src/lib/prompts/gndp-v1.ts`.
+
+### 4.4 Ecosystem Mapping (`/ecosystem`)
+- **Actors**: Human and non-human entities extracted from policy documents.
+- **Edges**: Typed relationships (Power, Logic, Ghost) with mediator/intermediary classification.
+- **Visualisation**: Interactive force-directed graph with configurable node filtering, edge type highlighting, and actor detail panels.
+
+### 4.5 Translational Stratification Theory (`/data` → Theory tab)
+- **Dual-Track Parallel Architecture**: Track 1 (qualitative ANT/Assemblage synthesis) and Track 2 (structured five-column JSON extraction) execute concurrently on compressed context from six prior analytical strata.
+- **Model**: GPT-4o for both tracks (reliability decision — avoids Length Refusal Paradox).
+- **Output**: Portable vocabularies, local translations, embedding infrastructures, apex nodes, contestation dynamics, stratified legibility assessment, and five-proposition evaluation.
+
+### 4.6 Prompt Registry
+- 30+ versioned prompt templates managed in `src/lib/prompts/registry.ts`.
+- Categories: Analysis, Extraction, Simulation, Critique.
+- Admins can override prompts via `/settings/prompts` UI; overrides persist in Redis per-user.
+- All prompts are versioned with changelogs.
+
+### 4.7 Report Export
+- **DOCX Generation**: Complex report generation with native image capture of React-rendered D3/Recharts visualisations.
+- **JSON/CSV Export**: Ecosystem graph data exportable for use in Gephi, Kumu, or other network analysis tools.
+
+### 4.8 Payments & Credits
+- **Model**: Credit-based usage (1 analysis = 1 credit).
+- **Storage**: Redis atomic counters (`INCR`, `DECR`, Lua scripts).
+- **Processing**: Stripe Checkout → Webhook (`payment_intent.succeeded`) → Credit top-up.
+- **Security**: Webhook signature verification.
+
+---
+
+## 5. Security
+- **Strict Headers**: HSTS, X-Frame-Options, Content-Type-Options configured in `next.config.ts`.
+- **CSP**: Content Security Policy aligned with Clerk, Stripe, and OpenAI domains.
+- **Input Validation**: API route validation; read-only guards in mutation endpoints during Demo Mode.
+- **Authentication**: All API routes require valid Clerk session tokens via middleware.
+
+---
+
+## 6. Configuration
 
 ### Environment Variables (.env.local)
 
 | Variable | Description | Required |
-|----------|-------------|----------|
+|---|---|---|
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Auth Public Key | Yes |
 | `CLERK_SECRET_KEY` | Clerk Auth Secret Key | Yes |
-| `OPENAI_API_KEY` | OpenAI API Key for analysis | Yes |
-| `REDIS_URL` | Connection string for Redis | Yes |
+| `OPENAI_API_KEY` | OpenAI API Key (GPT-4o, GPT-4o-mini) | Yes |
+| `REDIS_URL` | Upstash Redis connection string | Yes |
+| `GOOGLE_SEARCH_API_KEY` | Google Custom Search API Key | Yes |
+| `GOOGLE_SEARCH_CX` | Google Custom Search Engine ID | Yes |
 | `STRIPE_SECRET_KEY` | Stripe Secret for payments | Yes |
-| `STRIPE_WEBHOOK_SECRET` | Signature verification secret | Yes |
-| `NEXT_PUBLIC_ENABLE_DEMO_MODE` | Set `true` to enable read-only demo | No |
-| `ADMIN_USER_IDS` | Comma-separated list of Admin user IDs | No |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification | Yes |
+| `NEXT_PUBLIC_ENABLE_DEMO_MODE` | Set `true` for read-only demo | No |
+| `ADMIN_USER_IDS` | Comma-separated admin user IDs | No |
 
 ---
 
-## 5. Deployment
+## 7. Deployment
 
-### Recommended: Vercel
-1.  **Push to Git**: Ensure main branch is up to date.
-2.  **Import Project**: Select repository in Vercel.
-3.  **Env Vars**: Copy all production values to Vercel Settings.
-4.  **Build Command**: `next build`.
-5.  **Output Directory**: `.next`.
+### Production: Vercel
+1. Push to Git (main branch).
+2. Import project in Vercel dashboard.
+3. Configure all environment variables in Vercel Settings.
+4. **Critical**: `REDIS_URL` must point to a cloud Redis instance (Upstash), not localhost.
+5. Build command: `next build`. Output: `.next`.
 
-### Docker (Optional)
-A `docker-compose.yml` is provided for local Redis orchestration.
-
----
-
-## 6. Developer Workflows
-
-### Running Locally
+### Local Development
 ```bash
 npm install
 npm run dev
 ```
 
-### Running Tests
-```bash
-# Security Audit
-npm audit
+---
 
-# API Tests
-npm run test:api
-```
+## 8. Resources
 
-### Adding New Prompts
-Prompts are managed in `src/lib/prompts/registry.ts`. Admins can override them via the `/settings/prompts` UI.
+| Resource | URL |
+|---|---|
+| Live Demo | https://policyprism.io |
+| Source Code | https://github.com/tsedbrpp/scratch |
+| Supplements | https://github.com/tsedbrpp/scratch/tree/main/supplements |
+| GNDP Protocol | https://github.com/tsedbrpp/scratch/blob/main/supplements/GNDP_v1.0_full_protocol.md |
 
 ---
 
-**Version**: 1.0.0
+**Version**: 2.0.0  
 **License**: MIT

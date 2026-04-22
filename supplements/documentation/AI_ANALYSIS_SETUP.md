@@ -1,92 +1,99 @@
-# AI-Powered PDF Analysis - Setup Instructions
+# Policy Prism — AI Analysis Setup
 
-## What's Been Implemented
+## Prerequisites
 
-✅ **Core Infrastructure**:
-- OpenAI API integration with DSF lens
-- PDF text extraction utility
-- API route at `/api/analyze`
-- Environment configuration template
+- Node.js 18+ installed
+- An OpenAI API key with access to GPT-4o and GPT-4o-mini
+- A Google Custom Search API key and Search Engine ID (for empirical traces)
 
-## Setup Required
+## Setup
 
-### 1. Get OpenAI API Key
+### 1. Configure Environment Variables
 
-1. Go to [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-2. Sign in or create an account
-3. Click "Create new secret key"
-4. Copy the key (starts with `sk-`)
+Create `.env.local` in the project root:
 
-### 2. Configure Environment Variables
-
-1. Create a file named `.env.local` in the project root:
-   ```bash
-   # In c:\Users\mount\.gemini\antigravity\scratch\
-   ```
-
-2. Add your API key:
-   ```
-   OPENAI_API_KEY=sk-your-actual-key-here
-   ```
-
-3. **Important**: `.env.local` is already in `.gitignore` and won't be committed
-
-### 3. Restart Dev Server
-
-After adding the API key:
 ```bash
-# Stop the current server (Ctrl+C)
+# Required — AI Analysis
+OPENAI_API_KEY=sk-your-openai-key-here
+
+# Required — Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+
+# Required — Data Persistence
+REDIS_URL=redis://your-upstash-url
+
+# Required — Web Search (Empirical Traces)
+GOOGLE_SEARCH_API_KEY=your-google-api-key
+GOOGLE_SEARCH_CX=your-search-engine-id
+
+# Required — Payments
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Optional
+NEXT_PUBLIC_ENABLE_DEMO_MODE=false
+ADMIN_USER_IDS=user_id_1,user_id_2
+```
+
+> **Important**: `.env.local` is in `.gitignore` and will not be committed.
+
+### 2. Start the Development Server
+
+```bash
+npm install
 npm run dev
 ```
 
-## How to Use
+### 3. Verify Setup
 
-### Upload & Analyze a PDF:
+Navigate to `/data`, upload a PDF, and run an analysis. If you see results, the API connection is working.
 
-1. Go to `/data` page
-2. Click "Upload PDF" button (to be added to UI)
-3. Select a PDF file (EU AI Act, Brazil PL 2338, etc.)
-4. System will:
-   - Extract text from PDF
-   - Send to OpenAI for DSF lens analysis
-   - Display results with:
-     - Situated Teleology
-     - Normative Attractors
-     - Colonial/Crip Blind Spots
-     - Key Insights
+## LLM Ensemble
 
-### API Endpoint:
+Policy Prism uses a coordinated multi-model architecture:
 
-```typescript
-POST /api/analyze
-Body: {
-  "text": "extracted PDF text...",
-  "sourceType": "Policy Document"
-}
+| Model | Usage | Rationale |
+|---|---|---|
+| **GPT-4o** | Deep analysis, GNDP Pass 2/3, TST extraction | Reliable structured JSON output; avoids Length Refusal Paradox |
+| **GPT-4o-mini** | GNDP Pass 1A/1B, parsing, lightweight extraction | Cost-effective for high-throughput extraction passes |
+| **Gemini 1.5 Flash** | Web search result processing | Fast processing of search results for empirical traces |
 
-Response: {
-  "success": true,
-  "analysis": {
-    "situated_teleology": "...",
-    "normative_attractors": "...",
-    "blind_spots": "...",
-    "key_insight": "..."
-  }
-}
-```
+## Prompt Registry
+
+All 30+ analysis prompts are versioned and managed in `src/lib/prompts/registry.ts`. Categories:
+
+- **Analysis** (18 prompts): Institutional Logics, Cultural Framing, Legitimacy, Resistance, Ecosystem, Ghost Nodes, Controversy Mapping, etc.
+- **Extraction** (6 prompts): ANT Tracing, Assemblage, Ontology, Theme Extraction, Key Terms, Subject Identification.
+- **Simulation** (1 prompt): Trajectory Simulation.
+- **Critique** (2 prompts): Critique Panel, Stress Test.
+
+Admin users can override any prompt via the `/settings/prompts` UI. Overrides persist per-user in Redis.
 
 ## Cost Considerations
 
-- GPT-4 API calls cost approximately $0.03 per 1K tokens (input) and $0.06 per 1K tokens (output)
-- A typical policy document analysis might cost $0.10-0.50
-- Set usage limits in your OpenAI dashboard
+| Operation | Approximate Cost |
+|---|---|
+| Single analysis (GPT-4o) | $0.05–0.20 |
+| GNDP full pipeline (4 passes) | $0.30–0.80 |
+| TST meta-synthesis (dual track) | $0.15–0.40 |
+| Web search + trace processing | $0.01–0.05 |
 
-## Next Steps
+Set usage limits in your OpenAI dashboard to control costs.
 
-To complete the UI integration, we need to:
-1. Add PDF upload button to Data page
-2. Create analysis results display component
-3. Store analyzed segments with sources
-4. Add "Analyze" button for existing sources
+## API Endpoint
 
-Would you like me to complete the UI integration?
+All analyses are routed through a single endpoint:
+
+```
+POST /api/analyze
+Content-Type: application/json
+
+{
+  "text": "extracted document text...",
+  "sourceType": "Policy Document",
+  "analysisMode": "institutional_logics"
+}
+```
+
+Available `analysisMode` values correspond to prompt registry IDs. See `src/lib/prompts/registry.ts` for the full list.
