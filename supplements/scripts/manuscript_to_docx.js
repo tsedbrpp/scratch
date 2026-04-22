@@ -314,7 +314,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buffer) => {
-  const outPath = path.join(__dirname, "..", "manuscript_final.docx");
+  const outPath = path.join(__dirname, "..", "manuscript_revised_final.docx");
   fs.writeFileSync(outPath, buffer);
   console.log(`✅ Word document generated: ${outPath}`);
   console.log(`   Size: ${(buffer.length / 1024).toFixed(1)} KB`);
