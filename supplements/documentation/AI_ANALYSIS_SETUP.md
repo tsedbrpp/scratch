@@ -55,7 +55,7 @@ Policy Prism uses a coordinated multi-model architecture:
 
 | Model | Usage | Rationale |
 |---|---|---|
-| **GPT-4o** | Deep analysis, GNDP Pass 2/3, TST extraction | Reliable structured JSON output; avoids Length Refusal Paradox |
+| **GPT-4o** | Deep analysis, GNDP Pass 2/3, TLF extraction | Reliable structured JSON output; avoids Length Refusal Paradox |
 | **GPT-4o-mini** | GNDP Pass 1A/1B, parsing, lightweight extraction | Cost-effective for high-throughput extraction passes |
 | **Gemini 1.5 Flash** | Web search result processing | Fast processing of search results for empirical traces |
 
@@ -76,7 +76,7 @@ Admin users can override any prompt via the `/settings/prompts` UI. Overrides pe
 |---|---|
 | Single analysis (GPT-4o) | $0.05–0.20 |
 | GNDP full pipeline (4 passes) | $0.30–0.80 |
-| TST meta-synthesis (dual track) | $0.15–0.40 |
+| TLF meta-synthesis (dual track) | $0.15–0.40 |
 | Web search + trace processing | $0.01–0.05 |
 
 Set usage limits in your OpenAI dashboard to control costs.

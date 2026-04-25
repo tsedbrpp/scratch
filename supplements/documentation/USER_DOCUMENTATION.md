@@ -41,7 +41,7 @@ Interactive force-directed network graph visualising actors and relationships:
 - **Side Panels**: Left (actor list), Right (detailed analysis of selected actor).
 
 ### 2.5 Meta-Synthesis (`/data` → Theory tab)
-Generate Translational Stratification Theory (TST) analysis across multiple sources:
+Generate Translational Legibility Framework (TLF) analysis across multiple sources:
 - Select sources and click **Generate Theory**.
 - Dual-track output: qualitative synthesis + structured five-column extraction.
 - Proposition evaluation with support levels.

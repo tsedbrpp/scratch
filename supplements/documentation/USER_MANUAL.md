@@ -124,8 +124,8 @@ After automated detection, you can perform a **Reflexive Assessment** for each G
 
 ## 6. Meta-Synthesis & Theory
 
-### Translational Stratification Theory (`/data` → Theory tab)
-After running analyses across multiple sources, generate a TST meta-synthesis:
+### Translational Legibility Framework (`/data` → Theory tab)
+After running analyses across multiple sources, generate a TLF meta-synthesis:
 1. Navigate to the **Theory** tab on the Data page.
 2. Select the sources to include.
 3. Click **Generate Theory**.
@@ -135,7 +135,7 @@ After running analyses across multiple sources, generate a TST meta-synthesis:
 5. Results include proposition evaluation with support levels (Strong / Moderate / Weak / Insufficient) and stratified legibility assessment.
 
 ### TEA Analysis (`/tea-analysis`)
-View the structured TST output with interactive visualisation of the five-column schema, proposition support levels, and stratified legibility findings.
+View the structured TLF output with interactive visualisation of the five-column schema, proposition support levels, and stratified legibility findings.
 
 ### Controversy Mapping
 Synthesises points of consensus, friction, and structural contradictions across all analytical strata.
@@ -160,7 +160,7 @@ Synthesises points of consensus, friction, and structural contradictions across 
 
 ### DOCX Reports
 - Generate comprehensive Word documents with embedded visualisations (D3/Recharts diagrams captured as native images).
-- Reports include all analytical strata, Ghost Node findings, and TST results.
+- Reports include all analytical strata, Ghost Node findings, and TLF results.
 
 ### Data Export
 - **JSON**: Full ecosystem graph data for import into network analysis tools (Gephi, Kumu).

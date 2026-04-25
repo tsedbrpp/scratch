@@ -22,7 +22,7 @@ Every analytical surface available in the system, with its theoretical grounding
 | 6 | **Resistance Discourse Analysis** | Critical discourse analysis + assemblage theory | `resistance_discourse_analysis` | `src/lib/prompts/resistance-analysis.ts` | Frames, rhetorical strategies, reconfiguration dynamics |
 | 7 | **Comparative Synthesis** | Cross-document assemblage comparison | `comparative_synthesis_v2` | `src/lib/prompts/comparative-synthesis.ts` | Shared spines, unique components, divergence axes |
 | 7 | **Comparison Framework** | DSF-based two-framework comparison | `comparison_framework` | `src/lib/prompts/comparison.ts` | Divergent definitions, conflict points |
-| 8 | **Translational Stratification Theory** | TST (custom middle-range theory) | Custom prompts in `src/app/api/analyze/route.ts` | `src/app/data/page.tsx`, `src/types/tea.ts` | Five-column schema, proposition evaluation, stratified legibility |
+| 8 | **Translational Legibility Framework** | TLF (custom middle-range framework) | Custom prompts in `src/app/api/analyze/route.ts` | `src/app/data/page.tsx`, `src/types/tea.ts` | Five-column schema, proposition evaluation, stratified legibility |
 | 8 | **Controversy Mapping** | Multi-stratum meta-synthesis | `controversy_mapping` | `src/lib/prompts/controversy-mapping.ts` | Consensus zones, active frictions, structural contradictions |
 | 8 | **Abstract Machine Extraction** | Deleuze & Guattari (abstract machines, diagrams) | `abstract_machine_extraction` | `src/lib/prompts/abstract-machine.ts` | Diagram, double articulation, affective capacities, limits |
 

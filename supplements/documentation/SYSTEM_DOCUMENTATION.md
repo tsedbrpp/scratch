@@ -63,7 +63,7 @@ The system implements an eight-layer analytical framework, each generating indep
 | 5. Cultural Framing | Institutional Logics, Cultural Framing, Legitimacy | State-market-society configurations, dominant discursive frames |
 | 6. Resistance Analysis | Resistance Detection + Discourse Analysis | Counter-conduct strategies, micro-resistance typologies |
 | 7. Comparative Synthesis | Cross-document divergence mapping | Shared structural spines, unique components, axes of divergence |
-| 8. Meta-Synthesis | Translational Stratification Theory (TST), Controversy Mapping, Abstract Machine Extraction | Five-column TST schema, proposition evaluation, consensus/friction zones |
+| 8. Meta-Synthesis | Translational Legibility Framework (TLF), Controversy Mapping, Abstract Machine Extraction | Five-column TLF schema, proposition evaluation, consensus/friction zones |
 
 ---
 
@@ -95,7 +95,7 @@ The system implements an eight-layer analytical framework, each generating indep
 - **Edges**: Typed relationships (Power, Logic, Ghost) with mediator/intermediary classification.
 - **Visualisation**: Interactive force-directed graph with configurable node filtering, edge type highlighting, and actor detail panels.
 
-### 4.5 Translational Stratification Theory (`/data` → Theory tab)
+### 4.5 Translational Legibility Framework (`/data` → Theory tab)
 - **Dual-Track Parallel Architecture**: Track 1 (qualitative ANT/Assemblage synthesis) and Track 2 (structured five-column JSON extraction) execute concurrently on compressed context from six prior analytical strata.
 - **Model**: GPT-4o for both tracks (reliability decision — avoids Length Refusal Paradox).
 - **Output**: Portable vocabularies, local translations, embedding infrastructures, apex nodes, contestation dynamics, stratified legibility assessment, and five-proposition evaluation.

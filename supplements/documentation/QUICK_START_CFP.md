@@ -42,11 +42,11 @@ Go to https://policyprism.io and create an account (email or Google Auth).
 3. Navigate to **Comparison** and select both documents.
 4. View: divergent definitions, shared structural spines, and axes of divergence.
 
-## Step 7: Generate TST Meta-Synthesis
+## Step 7: Generate TLF Meta-Synthesis
 
 1. After analysing multiple documents, go to the **Theory** tab on the Data page.
 2. Select all sources and click **Generate Theory**.
-3. View the five-column TST schema: Portable Vocabularies, Local Translations, Embedding Infrastructures, Apex Nodes, Contestation Dynamics.
+3. View the five-column TLF schema: Portable Vocabularies, Local Translations, Embedding Infrastructures, Apex Nodes, Contestation Dynamics.
 4. Review proposition evaluation and stratified legibility findings.
 
 ## Step 8: Export
@@ -65,7 +65,7 @@ Go to https://policyprism.io and create an account (email or Google Auth).
 | **Ecosystem** | Interactive network graph, actor detail panels, mediator/intermediary classifications |
 | **Ghost Nodes** | Absence scores, evidence grades, ghost types, counterfactual power tests, analyst assessments |
 | **Ontology** | Conceptual map, cross-jurisdictional concept distances |
-| **TST / Theory** | Five-column schema, proposition evaluation, stratified legibility |
+| **TLF / Theory** | Five-column schema, proposition evaluation, stratified legibility |
 
 ---
 

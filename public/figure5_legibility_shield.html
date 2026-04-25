@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figure 5. The Legibility Shield</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .figure-container {
+    max-width: 780px;
+    width: 100%;
+  }
+
+  /* Caption */
+  .figure-caption {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #d0d0d0;
+    padding-bottom: 14px;
+  }
+
+  .figure-label {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 3px;
+  }
+
+  .figure-title {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    font-weight: 400;
+    font-style: italic;
+    color: #1a1a1a;
+    line-height: 1.4;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #fafafa;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #555;
+  }
+
+  .legend-line {
+    width: 24px;
+    height: 2px;
+  }
+
+  .legend-line.solid { background: #1a1a1a; }
+  .legend-line.dashed {
+    background: none;
+    border-top: 2px dashed #b91c1c;
+  }
+  .legend-line.contested {
+    background: none;
+    border-top: 2px dotted #92400e;
+  }
+
+  .legend-arrow {
+    width: 0; height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid #1a1a1a;
+  }
+
+  .legend-x {
+    font-size: 12px;
+    font-weight: 700;
+    color: #b91c1c;
+    line-height: 1;
+  }
+
+  /* Diagram */
+  .diagram {
+    position: relative;
+  }
+
+  /* Source box */
+  .source-box {
+    border: 2px solid #1a1a1a;
+    border-radius: 6px;
+    padding: 10px 16px;
+    text-align: center;
+    background: #f8f8f8;
+    margin: 0 auto;
+    max-width: 420px;
+  }
+
+  .source-box .box-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .source-box .box-sub {
+    font-size: 10px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  /* Vertical connector */
+  .v-connector {
+    display: flex;
+    justify-content: center;
+    height: 20px;
+  }
+
+  .v-connector .v-line {
+    width: 1.5px;
+    height: 100%;
+    background: #1a1a1a;
+    position: relative;
+  }
+
+  .v-connector .v-line::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: -4px;
+    width: 0; height: 0;
+    border-left: 4.5px solid transparent;
+    border-right: 4.5px solid transparent;
+    border-top: 6px solid #1a1a1a;
+  }
+
+  /* Column headers */
+  .col-headers {
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    margin: 12px 0 6px;
+  }
+
+  .col-headers span {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #888;
+  }
+
+  .col-headers .left { text-align: right; padding-right: 14px; color: #b91c1c; }
+  .col-headers .center { text-align: center; color: #555; }
+  .col-headers .right { padding-left: 14px; color: #1a1a1a; }
+
+  /* Layer row */
+  .layer-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  /* Left: blocked */
+  .blocked-side {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    padding-right: 6px;
+  }
+
+  .blocked-label {
+    font-size: 9.5px;
+    color: #b91c1c;
+    text-align: right;
+    line-height: 1.3;
+  }
+
+  .blocked-arrow-line {
+    width: 28px;
+    height: 0;
+    border-top: 1.5px dashed #b91c1c;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .blocked-arrow-line::after {
+    content: '✕';
+    position: absolute;
+    right: -2px;
+    top: -8px;
+    font-size: 10px;
+    color: #b91c1c;
+    font-weight: 700;
+  }
+
+  /* Center: layer box */
+  .layer-box {
+    border: 1.5px solid #555;
+    border-radius: 5px;
+    padding: 8px 14px;
+    text-align: center;
+    background: #ffffff;
+    transition: background 0.15s;
+  }
+
+  .layer-box:hover {
+    background: #f5f5f5;
+  }
+
+  .layer-box .layer-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .layer-box .layer-mech {
+    font-size: 10px;
+    color: #666;
+    margin-top: 1px;
+  }
+
+  .layer-box .layer-ex {
+    font-size: 9px;
+    color: #999;
+    margin-top: 1px;
+    font-style: italic;
+  }
+
+  /* Right: upward flow */
+  .upward-side {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 6px;
+  }
+
+  .upward-arrow-line {
+    width: 28px;
+    height: 1.5px;
+    background: #1a1a1a;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .upward-arrow-line::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -3.5px;
+    width: 0; height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid #1a1a1a;
+  }
+
+  .upward-label {
+    font-size: 9.5px;
+    color: #333;
+    line-height: 1.3;
+  }
+
+  /* Result section */
+  .result-header {
+    text-align: center;
+    margin: 18px 0 8px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+  }
+
+  .result-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .result-cell {
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .result-cell.producers { border-color: #555; }
+  .result-cell.evaluators { border-color: #555; border-style: solid; }
+  .result-cell.affected { border-color: #b91c1c; border-style: dashed; }
+
+  .result-cell .cell-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 3px;
+  }
+
+  .result-cell .cell-actors {
+    font-size: 9px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  /* Disconnection bar */
+  .disconnection {
+    text-align: center;
+    padding: 7px 12px;
+    border: 1.5px solid #b91c1c;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #b91c1c;
+    background: #fef2f2;
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Contestation note */
+  .contestation {
+    padding: 8px 14px;
+    border: 1px solid #d4a017;
+    border-left: 3px solid #b8860b;
+    border-radius: 0 4px 4px 0;
+    background: #fffbeb;
+    font-size: 10px;
+    color: #78350f;
+    line-height: 1.5;
+  }
+
+  .contestation strong {
+    font-weight: 600;
+    color: #92400e;
+  }
+
+  /* Print styles */
+  @media print {
+    body { padding: 0; }
+    .legend { border-color: #ccc; background: #fff; }
+    .layer-box:hover { background: #fff; }
+  }
+
+  @media (max-width: 700px) {
+    .layer-row, .col-headers { grid-template-columns: 1fr; }
+    .blocked-side, .upward-side, .col-headers .left, .col-headers .right { display: none; }
+    .result-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="figure-container">
+
+  <div class="figure-caption">
+    <div class="figure-label">Figure 5</div>
+    <div class="figure-title">The Legibility Shield: How Compliance Layers Reproduce Structural Absence</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-line solid"></div>
+      <div class="legend-arrow"></div>
+      <span>Upward accountability flow</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-line dashed"></div>
+      <div class="legend-x">✕</div>
+      <span>Blocked outward channel</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-line contested"></div>
+      <span>Contestable interruption</span>
+    </div>
+  </div>
+
+  <div class="diagram">
+
+    <!-- Source -->
+    <div class="source-box">
+      <div class="box-label">Governance Text</div>
+      <div class="box-sub">EU AI Act · U.S. Federal AI Policy · State / National Statutes</div>
+    </div>
+
+    <div class="v-connector"><div class="v-line"></div></div>
+
+    <!-- Headers -->
+    <div class="col-headers">
+      <span class="left">Affected Communities</span>
+      <span class="center">Compliance Layer</span>
+      <span class="right">Oversight Bodies</span>
+    </div>
+
+    <!-- Layer 1: Standards -->
+    <div class="layer-row">
+      <div class="blocked-side">
+        <div class="blocked-label">Workers, civil society<br>excluded from drafting</div>
+        <div class="blocked-arrow-line"></div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Standards Organizations</div>
+        <div class="layer-mech">Referential drift → auditable specifications</div>
+        <div class="layer-ex">CEN/CENELEC · NIST · ISO/IEC</div>
+      </div>
+      <div class="upward-side">
+        <div class="upward-arrow-line"></div>
+        <div class="upward-label">Harmonised standards<br>adopted by regulators</div>
+      </div>
+    </div>
+
+    <div class="v-connector"><div class="v-line"></div></div>
+
+    <!-- Layer 2: Audit -->
+    <div class="layer-row">
+      <div class="blocked-side">
+        <div class="blocked-label">No representation<br>or accountability to<br>affected populations</div>
+        <div class="blocked-arrow-line"></div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Audit & Conformity Assessment</div>
+        <div class="layer-mech">Provider-led assessment · Notified bodies (Art. 43)</div>
+        <div class="layer-ex">Technical competence, independence, impartiality</div>
+      </div>
+      <div class="upward-side">
+        <div class="upward-arrow-line"></div>
+        <div class="upward-label">Conformity certificates<br>→ market surveillance</div>
+      </div>
+    </div>
+
+    <div class="v-connector"><div class="v-line"></div></div>
+
+    <!-- Layer 3: Legal -->
+    <div class="layer-row">
+      <div class="blocked-side">
+        <div class="blocked-label">No institutional basis<br>to require engagement</div>
+        <div class="blocked-arrow-line"></div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Corporate Legal Departments</div>
+        <div class="layer-mech">Legal endogeneity → internal compliance programs</div>
+        <div class="layer-ex">Workflow design · audit prep · risk documentation</div>
+      </div>
+      <div class="upward-side">
+        <div class="upward-arrow-line"></div>
+        <div class="upward-label">Compliance reports<br>→ regulators & boards</div>
+      </div>
+    </div>
+
+    <div class="v-connector"><div class="v-line"></div></div>
+
+    <!-- Layer 4: Procurement -->
+    <div class="layer-row">
+      <div class="blocked-side">
+        <div class="blocked-label">Institutionally distant<br>from procurement<br>decisions</div>
+        <div class="blocked-arrow-line"></div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Procurement Offices</div>
+        <div class="layer-mech">Procurement insulation → acquisition-based governance</div>
+        <div class="layer-ex">OMB M-25-21/22 · FAR/DFARS · contract terms</div>
+      </div>
+      <div class="upward-side">
+        <div class="upward-arrow-line"></div>
+        <div class="upward-label">Procurement compliance<br>→ OMB, GAO, IG</div>
+      </div>
+    </div>
+
+    <div class="v-connector"><div class="v-line"></div></div>
+
+    <!-- Layer 5: Internal -->
+    <div class="layer-row">
+      <div class="blocked-side">
+        <div class="blocked-label">Absence cascades<br>inward: missing from<br>all internal routines</div>
+        <div class="blocked-arrow-line"></div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Internal Compliance Documentation</div>
+        <div class="layer-mech">Sedimentation → auditable categories</div>
+        <div class="layer-ex">Risk assessments · impact analyses · conformity statements</div>
+      </div>
+      <div class="upward-side">
+        <div class="upward-arrow-line"></div>
+        <div class="upward-label">Documentation<br>satisfies oversight</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-header">Resulting Accountability Architecture</div>
+
+    <div class="result-row">
+      <div class="result-cell producers">
+        <div class="cell-label">Evidence Producers</div>
+        <div class="cell-actors">Tech companies · Providers<br>Deployers · Legal teams</div>
+      </div>
+      <div class="result-cell evaluators">
+        <div class="cell-label">Evidence Evaluators</div>
+        <div class="cell-actors">Regulators · Notified bodies<br>Auditors · Procurement offices</div>
+      </div>
+      <div class="result-cell affected">
+        <div class="cell-label">Affected Communities</div>
+        <div class="cell-actors">Workers · Consumers · Publics<br>Civil society · Labor unions</div>
+      </div>
+    </div>
+
+    <div class="disconnection">
+      ← Largely disconnected channels → Differential visibility stabilized
+    </div>
+
+    <div class="contestation">
+      <strong>Contestable, not permanent.</strong> Public scandals, civil-society litigation, labor campaigns, procurement reform, and participatory standards processes can interrupt sedimented routines and reopen the evidentiary frame.
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

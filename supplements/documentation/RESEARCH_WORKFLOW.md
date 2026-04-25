@@ -10,7 +10,7 @@ The system guides you from raw data collection to meta-theoretical synthesis thr
 2. **Micro Analysis** — Per-document extraction and resistance detection
 3. **Meso Analysis** — Ecosystem mapping, ghost node detection, and ontology generation
 4. **Macro Analysis** — Cultural framing, institutional logics, and governance analysis
-5. **Synthesis** — Cross-document comparison, TST meta-synthesis, and reporting
+5. **Synthesis** — Cross-document comparison, TLF meta-synthesis, and reporting
 
 ---
 
@@ -100,8 +100,8 @@ The system guides you from raw data collection to meta-theoretical synthesis thr
 ### 5.2 Meta-Synthesis (`/data` → Theory tab)
 **Goal**: Generate overarching theoretical insights.
 - **Controversy Mapping**: Cross-stratum synthesis of consensus zones, active frictions, and structural contradictions.
-- **Translational Stratification Theory (TST)**: Dual-track parallel analysis producing five-column structured extraction and proposition evaluation across all sources.
-- **TEA Analysis**: View structured TST output with stratified legibility assessment.
+- **Translational Legibility Framework (TLF)**: Dual-track parallel analysis producing five-column structured extraction and proposition evaluation across all sources.
+- **TEA Analysis**: View structured TLF output with stratified legibility assessment.
 
 ### 5.3 Reporting
 **Goal**: Publication-ready outputs.

@@ -32,7 +32,7 @@ graph TB
         PromptRegistry["Prompt Registry\n36 versioned prompts"]
         GhostNodeService["Ghost Node Service\n11 modules"]
         ComparativeService["Comparative Synthesis"]
-        TSTService["TST Meta-Synthesis"]
+        TLFService["TLF Meta-Synthesis"]
     end
 
     subgraph Framework["Eight-Layer Analytical Framework"]
@@ -43,11 +43,11 @@ graph TB
         L5["Layer 5\nCultural Framing\nLogics · Legitimacy · DSF"]
         L6["Layer 6\nResistance Analysis\nCounter-conduct"]
         L7["Layer 7\nComparative Synthesis\nCross-document divergence"]
-        L8["Layer 8\nMeta-Synthesis\nTST · Controversy · Abstract Machine"]
+        L8["Layer 8\nMeta-Synthesis\nTLF · Controversy · Abstract Machine"]
     end
 
     subgraph External["External Services"]
-        GPT4o["GPT-4o\nAnalysis · GNDP Pass 2/3 · TST"]
+        GPT4o["GPT-4o\nAnalysis · GNDP Pass 2/3 · TLF"]
         GPT4oMini["GPT-4o-mini\nParsing · GNDP Pass 1A/1B"]
         Gemini["Gemini 1.5 Flash\nWeb search processing"]
         Clerk["Clerk Auth"]
@@ -79,7 +79,7 @@ graph TB
     AnalysisService --> PromptRegistry
     GhostNodeService --> L3
     ComparativeService --> L7
-    TSTService --> L8
+    TLFService --> L8
 
     L1 --> L2
     L1 & L2 & L3 & L4 & L5 & L6 --> L7
@@ -116,7 +116,7 @@ graph LR
     style AR fill:#1e3a5f,color:#fff
 ```
 
-## TST Dual-Track Architecture
+## TLF Dual-Track Architecture
 
 ```mermaid
 graph TB

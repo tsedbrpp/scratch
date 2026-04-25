@@ -4,7 +4,7 @@ Key JSON output schemas for the system's primary analytical types. These schemas
 
 ---
 
-## 1. TEA Analysis (Translational Stratification)
+## 1. TEA Analysis (Translational Legibility)
 
 **Source**: `src/types/tea.ts`
 

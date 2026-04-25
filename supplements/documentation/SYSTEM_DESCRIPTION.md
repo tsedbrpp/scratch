@@ -21,7 +21,7 @@ A four-pass pipeline identifies actors, institutions, or stakeholder groups whos
 ### 3. Ecosystem & Assemblage Mapping
 Interactive force-directed network graphs visualise governance architectures as active assemblages. Edges are typed (Power, Logic, Ghost) and classified as mediators or intermediaries. The system traces how specific policy mechanisms constrain or afford possibilities for diverse actors, distinguishing material infrastructures from discursive norms.
 
-### 4. Translational Stratification Theory (TST)
+### 4. Translational Legibility Framework (TLF)
 A dual-track meta-synthesis pipeline that maps empirical findings into a five-column analytical schema (Portable Vocabularies, Local Translations, Embedding Infrastructures, Apex Nodes, Contestation Dynamics). The system evaluates five propositions covering referential drift, infrastructural embedding, and stratified legibility — connecting directly to Ghost Node detection results.
 
 ### 5. Comparative Synthesis
