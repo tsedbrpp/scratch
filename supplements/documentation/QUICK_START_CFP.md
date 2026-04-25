@@ -4,7 +4,7 @@ Get your first analysis running in under 5 minutes.
 
 ## Step 1: Sign In
 
-Go to https://policyprism.io and create an account (email or Google Auth).
+Go to [REDACTED FOR REVIEW] and create an account (email or Google Auth).
 
 ## Step 2: Upload a Document
 
@@ -82,4 +82,4 @@ Go to https://policyprism.io and create an account (email or Google Auth).
 
 ---
 
-*Live demo: https://policyprism.io | Full docs: [USER_MANUAL.md](./USER_MANUAL.md)*
+*Live demo: [REDACTED FOR REVIEW] | Full docs: [USER_MANUAL.md](./USER_MANUAL.md)*

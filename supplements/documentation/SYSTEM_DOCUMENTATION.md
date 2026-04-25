@@ -166,10 +166,10 @@ npm run dev
 
 | Resource | URL |
 |---|---|
-| Live Demo | https://policyprism.io |
-| Source Code | https://github.com/tsedbrpp/scratch |
-| Supplements | https://github.com/tsedbrpp/scratch/tree/main/supplements |
-| GNDP Protocol | https://github.com/tsedbrpp/scratch/blob/main/supplements/GNDP_v1.0_full_protocol.md |
+| Live Demo | [REDACTED FOR REVIEW] |
+| Source Code | [REDACTED FOR REVIEW] |
+| Supplements | [REDACTED FOR REVIEW] |
+| GNDP Protocol | [REDACTED FOR REVIEW] |
 
 ---
 

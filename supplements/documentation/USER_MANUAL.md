@@ -22,7 +22,7 @@ Welcome to the user manual for **Policy Prism**, a research platform for analysi
 ## 1. Getting Started
 
 ### Account Creation
-1. Navigate to the **Sign Up** page at https://policyprism.io.
+1. Navigate to the **Sign Up** page at [REDACTED FOR REVIEW].
 2. Enter your email and create a password, or use **Google Auth** for quick access.
 3. New accounts start with a small number of free credits for trial use.
 
@@ -205,4 +205,4 @@ A: Yes. Admin users can edit all 30+ prompt templates via `/settings/prompts`. O
 ---
 
 *Need help? Contact support via the Help menu or refer to [SYSTEM_DOCUMENTATION.md](./SYSTEM_DOCUMENTATION.md) for technical details.*
-*Live demo: https://policyprism.io | Source: https://github.com/tsedbrpp/scratch*
+*Live demo: [REDACTED FOR REVIEW] | Source: [REDACTED FOR REVIEW]*

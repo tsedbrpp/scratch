@@ -350,4 +350,4 @@ For the complete JSON schema definitions, Zod validation schemas, and TypeScript
 ---
 
 *GNDP v1.0 — Ghost Node Detection Protocol. Part of the Policy Prism analytical framework.*
-*Source: https://github.com/tsedbrpp/scratch*
+*Source: [REDACTED FOR REVIEW]*

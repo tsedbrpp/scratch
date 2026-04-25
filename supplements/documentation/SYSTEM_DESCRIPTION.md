@@ -42,7 +42,7 @@ An integrated web search engine (Google Custom Search + Gemini 1.5 Flash) finds 
 
 | Resource | URL |
 |---|---|
-| Live Demo | https://policyprism.io |
-| Source Code | https://github.com/tsedbrpp/scratch |
-| GNDP Protocol | https://github.com/tsedbrpp/scratch/blob/main/supplements/GNDP_v1.0_full_protocol.md |
-| Documentation | https://github.com/tsedbrpp/scratch/tree/main/supplements/documentation |
+| Live Demo | [REDACTED FOR REVIEW] |
+| Source Code | [REDACTED FOR REVIEW] |
+| GNDP Protocol | [REDACTED FOR REVIEW] |
+| Documentation | [REDACTED FOR REVIEW] |

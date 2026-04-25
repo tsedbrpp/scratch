@@ -36,7 +36,7 @@ Vercel auto-deploys on every push to the main branch.
 ### Custom Domain
 
 1. In Vercel project settings → Domains.
-2. Add your custom domain (e.g., `policyprism.io`).
+2. Add your custom domain (e.g., `yourdomain.io`).
 3. Update DNS records as instructed by Vercel.
 4. Update Clerk redirect URIs to include the new domain.
 5. Update Google OAuth redirect URIs in Google Cloud Console.

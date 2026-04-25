@@ -5,7 +5,7 @@ Welcome to **Policy Prism**, your platform for analysing AI governance policy th
 ## 1. Getting Started
 
 ### Account Creation
-1. Navigate to the **Sign Up** page at https://policyprism.io.
+1. Navigate to the **Sign Up** page at [REDACTED FOR REVIEW].
 2. Enter your email and password, or use **Google Auth**.
 3. New accounts start with free credits for trial use.
 
@@ -89,4 +89,4 @@ A: Admin users can override all 30+ prompt templates via `/settings/prompts`.
 
 ---
 
-*Live demo: https://policyprism.io | Source: https://github.com/tsedbrpp/scratch*
+*Live demo: [REDACTED FOR REVIEW] | Source: [REDACTED FOR REVIEW]*

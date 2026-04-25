@@ -21,9 +21,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── GitHub base ──────────────────────────────────────────────────────────
 const GITHUB_BASE =
-  "https://github.com/tsedbrpp/scratch/blob/main/supplements";
+  "[REDACTED FOR REVIEW]/blob/main/supplements";
 const GITHUB_TREE =
-  "https://github.com/tsedbrpp/scratch/tree/main/supplements";
+  "[REDACTED FOR REVIEW]/tree/main/supplements";
 
 // ── Supplementary materials catalogue ────────────────────────────────────
 const materials = [
@@ -409,8 +409,8 @@ const doc = new Document({
               color: "555555",
             }),
             linkRun(
-              "https://github.com/tsedbrpp/scratch",
-              "https://github.com/tsedbrpp/scratch"
+              "[REDACTED FOR REVIEW]",
+              "[REDACTED FOR REVIEW]"
             ),
             new TextRun({
               text: "  |  Supplements: ",
