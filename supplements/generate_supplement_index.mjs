@@ -21,9 +21,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── GitHub base ──────────────────────────────────────────────────────────
 const GITHUB_BASE =
-  "[REDACTED FOR REVIEW]/blob/main/supplements";
+  "https://anonymous.4open.science/r/scratch-41CE/supplements";
 const GITHUB_TREE =
-  "[REDACTED FOR REVIEW]/tree/main/supplements";
+  "https://anonymous.4open.science/r/scratch-41CE/supplements";
 
 // ── Supplementary materials catalogue ────────────────────────────────────
 const materials = [
@@ -409,8 +409,8 @@ const doc = new Document({
               color: "555555",
             }),
             linkRun(
-              "[REDACTED FOR REVIEW]",
-              "[REDACTED FOR REVIEW]"
+              "https://anonymous.4open.science/r/scratch-41CE",
+              "https://anonymous.4open.science/r/scratch-41CE"
             ),
             new TextRun({
               text: "  |  Supplements: ",
