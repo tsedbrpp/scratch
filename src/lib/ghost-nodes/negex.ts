@@ -87,3 +87,58 @@ export function detectExplicitExclusions(
 
     return results;
 }
+
+// ===================================================================
+// GNDP v1.1 — Subsumption Override Detection
+// ===================================================================
+
+function escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * GNDP v1.1: Check if a candidate flagged as "subsumed" actually has
+ * dedicated provisions elsewhere in the text. If so, flag for manual
+ * review rather than automatic invalidation.
+ */
+export function detectSubsumptionOverrides(
+    text: string,
+    candidates: CandidateActor[],
+): Map<string, { hasDedicatedProvision: boolean; matchedText: string; action: 'manual_review_required' }> {
+    const results = new Map<string, { hasDedicatedProvision: boolean; matchedText: string; action: 'manual_review_required' }>();
+    const textLower = text.toLowerCase();
+
+    for (const candidate of candidates) {
+        if (candidate.ghostPathway !== 'subsumption') continue;
+
+        const terms = [candidate.name, ...(candidate.aliases ?? [])];
+        let found = false;
+
+        for (const term of terms) {
+            if (found) break;
+            const escaped = escapeRegex(term.toLowerCase());
+
+            const patterns = [
+                new RegExp(`\\b${escaped}\\b.{0,80}\\b(shall|must|entitled|right|consulted|represented|complaint|remedy)\\b`, 'gi'),
+                new RegExp(`\\b(rights?|protection|obligations?|consultation|representation)\\b.{0,80}\\b${escaped}\\b`, 'gi'),
+            ];
+
+            for (const pattern of patterns) {
+                const match = pattern.exec(textLower);
+                if (match) {
+                    results.set(candidate.name, {
+                        hasDedicatedProvision: true,
+                        matchedText: text.slice(
+                            Math.max(0, match.index - 50),
+                            match.index + match[0].length + 50
+                        ),
+                        action: 'manual_review_required',
+                    });
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    return results;
+}

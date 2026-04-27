@@ -1,5 +1,5 @@
 // ===================================================================
-// GNDP v1.0 — Ghost Node Detection Protocol Types
+// GNDP v1.1 — Ghost Node Detection Protocol Types
 // ===================================================================
 
 // --- Pass 1A: Extraction-Only Types ---
@@ -40,9 +40,11 @@ export interface AnalystAssessment {
         textualTrace: boolean | null;
         /** Does the procedural architecture foreclose the actor's participation? */
         structuralForeclosure: boolean | null;
+        /** v1.1: Is categorical inclusion operationally meaningful? Only for subsumption pathway. */
+        subsumptionJudgment?: 'nominal_only' | 'partially_operative' | 'operationally_adequate' | null;
     };
     /** If contested, which criterion failed? */
-    failedCriterion?: 'functionalRelevance' | 'textualTrace' | 'structuralForeclosure' | 'other';
+    failedCriterion?: 'functionalRelevance' | 'textualTrace' | 'structuralForeclosure' | 'subsumptionJudgment' | 'other';
     /** Free-text rebuttal or contest reason */
     contestReason?: string;
     /** Reflexive note: how might the analyst's position affect their reading? */
@@ -92,6 +94,61 @@ export interface CriterionEvidence {
 
 export type GhostTypology = 'Structural' | 'Data' | 'Representational' | 'Scale' | 'Temporal' | 'SupplyChain';
 
+/** GNDP v1.1: Mechanism of ghost node production — separate from typology. */
+export type GhostPathway = 'structural' | 'proxy' | 'subsumption' | 'uncertain';
+
+export type SchematicAdequacy = 'Adequate' | 'Partial' | 'Deficient';
+export type ScoreVersion = 'gndp-v1.0' | 'gndp-v1.1';
+
+// --- GNDP v1.1: Subsumption Types ---
+
+/** Evidence for a single subsumption gate. */
+export interface SubsumptionGate {
+    passed: boolean;
+    evidence: string;
+}
+
+/** Three-gate evidentiary filter for subsumption classification. */
+export interface SubsumptionGates {
+    categoricalAbsorption: SubsumptionGate;
+    functionalRelevance: SubsumptionGate;
+    operationalDeficiencyPrelim: SubsumptionGate;
+}
+
+/** Subsumption source metadata from Pass 1B. */
+export interface SubsumptionSource {
+    absorbingCategory: string;
+    sourceRef?: string;
+    absorptionEvidence: string;
+    differentiatedClaims: string[];
+    gates: SubsumptionGates;
+}
+
+/** A single capacity that the governance framework fails to register. */
+export interface CapacityNonRegistration {
+    capacity: string;
+    sociallyPresent: boolean;
+    procedurallyActionable: boolean;
+    reason: string;
+}
+
+/** Pass 2 schematic adequacy assessment for subsumed actors. */
+export interface SchematicAdequacyResult {
+    assessment: SchematicAdequacy;
+    absorbingCategory: string;
+    subsumedActor: string;
+    schemaMediators: string[];
+    adequacyRationale: string;
+    capacityNonRegistration: CapacityNonRegistration[];
+}
+
+/** NegEx override flag for subsumed actors with dedicated provisions. */
+export interface SubsumptionOverrideFlag {
+    hasDedicatedProvision: boolean;
+    matchedText: string;
+    action: 'manual_review_required';
+}
+
 /** Evidence grade ladder. E1/E2 = insufficient, E3/E4 = scoring allowed. */
 export type EvidenceGrade = 'E1' | 'E2' | 'E3' | 'E4';
 
@@ -118,6 +175,8 @@ export interface ScoreBreakdown {
     sanctionAbsence: number | null;     // 0–20
     dataInvisibility: number | null;    // 0–15
     representationGap: number | null;   // 0–10
+    // v1.1 — separate mechanism score, NOT added to absenceScore
+    schematicAdequacyScore?: number | null;  // 0–10
 }
 
 // --- Pass 3: Counterfactual Types ---
@@ -241,6 +300,11 @@ export interface DetectedGhostNode {
     analystAssessment?: AnalystAssessment;
     // Per-criterion evidence linking (P2)
     criterionEvidence?: CriterionEvidence;
+    // GNDP v1.1: Subsumption detection
+    ghostPathway?: GhostPathway;
+    subsumptionSource?: SubsumptionSource;
+    schematicAdequacy?: SchematicAdequacyResult;
+    analysisVersion?: ScoreVersion;
 }
 
 export interface InstitutionalLogics {
@@ -303,6 +367,11 @@ export interface CandidateActor {
     sanctionPower?: SanctionPower;
     dataVisibility?: DataVisibility;
     representationType?: RepresentationType;
+    // GNDP v1.1: Subsumption fields
+    ghostPathway?: GhostPathway;
+    subsumptionSource?: SubsumptionSource;
+    subsumptionOverrideFlag?: SubsumptionOverrideFlag;
+    aliases?: string[];
 }
 
 export interface AbsentActorResponse {
@@ -358,6 +427,10 @@ export interface AbsentActorResponse {
     sanctionPower?: SanctionPower;
     dataVisibility?: DataVisibility;
     representationType?: RepresentationType;
+    // GNDP v1.1: Subsumption fields
+    ghostPathway?: GhostPathway;
+    subsumptionSource?: SubsumptionSource;
+    schematicAdequacy?: SchematicAdequacyResult;
 }
 
 export interface ValidationIssue {

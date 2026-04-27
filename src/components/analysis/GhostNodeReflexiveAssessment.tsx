@@ -56,6 +56,23 @@ interface GhostNodeData {
         textualTrace?: Array<{ quote: string; rationale?: string; sourceRef?: string }>;
         structuralForeclosure?: Array<{ quote: string; rationale?: string; sourceRef?: string }>;
     };
+    // GNDP v1.1: Subsumption fields
+    ghostPathway?: string;
+    subsumptionSource?: {
+        absorbingCategory: string;
+        sourceRef?: string;
+        absorptionEvidence?: string;
+        differentiatedClaims?: string[];
+    };
+    schematicAdequacy?: {
+        assessment: string;
+        adequacyRationale?: string;
+        capacityNonRegistration?: Array<{
+            capacity: string;
+            procedurallyActionable: boolean;
+            reason: string;
+        }>;
+    };
 }
 
 interface GhostNodeReflexiveAssessmentProps {
@@ -137,10 +154,12 @@ export function GhostNodeReflexiveAssessment({
         functionalRelevance: boolean | null;
         textualTrace: boolean | null;
         structuralForeclosure: boolean | null;
+        subsumptionJudgment?: 'nominal_only' | 'partially_operative' | 'operationally_adequate' | null;
     }>(existing?.criteriaChecklist ?? {
         functionalRelevance: null,
         textualTrace: null,
         structuralForeclosure: null,
+        subsumptionJudgment: null,
     });
 
     const [contestReason, setContestReason] = useState(existing?.contestReason ?? '');
@@ -328,6 +347,51 @@ export function GhostNodeReflexiveAssessment({
                         </div>
                     )}
 
+                    {/* ── GNDP v1.1: Subsumption Context ── */}
+                    {ghostNode.ghostPathway === 'subsumption' && ghostNode.subsumptionSource && (
+                        <div className="space-y-1.5">
+                            <h5 className="text-[10px] font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Categorical Subsumption Detected
+                            </h5>
+                            <div className="p-2 bg-amber-50 rounded border border-amber-200 text-[11px] space-y-1">
+                                <div>
+                                    <span className="font-medium text-amber-700">Subsumed under: </span>
+                                    <span className="text-amber-600">&ldquo;{ghostNode.subsumptionSource.absorbingCategory}&rdquo;</span>
+                                    {ghostNode.subsumptionSource.sourceRef && (
+                                        <span className="text-amber-400 ml-1">({ghostNode.subsumptionSource.sourceRef})</span>
+                                    )}
+                                </div>
+                                {ghostNode.schematicAdequacy && (
+                                    <div>
+                                        <span className="font-medium text-amber-700">Operational adequacy: </span>
+                                        <span className={`font-semibold ${ghostNode.schematicAdequacy.assessment === 'Deficient' ? 'text-red-600' : ghostNode.schematicAdequacy.assessment === 'Partial' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                            {ghostNode.schematicAdequacy.assessment}
+                                        </span>
+                                    </div>
+                                )}
+                                {ghostNode.schematicAdequacy?.capacityNonRegistration && ghostNode.schematicAdequacy.capacityNonRegistration.length > 0 && (
+                                    <details className="group">
+                                        <summary className="text-[10px] text-amber-500 cursor-pointer hover:text-amber-700">
+                                            Non-registered capacities ({ghostNode.schematicAdequacy.capacityNonRegistration.length})
+                                        </summary>
+                                        <ul className="mt-1 space-y-0.5 ml-3">
+                                            {ghostNode.schematicAdequacy.capacityNonRegistration.map((cap, i) => (
+                                                <li key={i} className="text-[10px] text-slate-600">
+                                                    <span className="font-medium">{cap.capacity}</span>
+                                                    <span className="text-slate-400"> — {cap.reason}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </details>
+                                )}
+                                <p className="text-[9px] text-amber-400 italic mt-1">
+                                    This is a candidate classification. Use the Subsumption Judgment criterion below to confirm or override.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ── Three-Criterion Checklist (§4.2) ── */}
                     <div className="space-y-2">
                         <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
@@ -409,6 +473,36 @@ export function GhostNodeReflexiveAssessment({
                             );
                         })}
                     </div>
+
+                    {/* ── GNDP v1.1: Subsumption Judgment (fourth criterion) ── */}
+                    {ghostNode.ghostPathway === 'subsumption' && (
+                        <div className="space-y-1.5">
+                            <h5 className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                Subsumption Judgment (v1.1)
+                            </h5>
+                            <div className="bg-white rounded-md border border-slate-100 p-2 space-y-1.5">
+                                <div className="text-[11px] font-medium text-slate-700">Is the actor&apos;s inclusion through a broad category operationally meaningful?</div>
+                                <div className="text-[10px] text-slate-500 italic">Select &ldquo;Operationally adequate&rdquo; to override the Subsumed Ghost classification.</div>
+                                <select
+                                    value={criteria.subsumptionJudgment ?? ''}
+                                    onChange={e => setCriteria(prev => ({ ...prev, subsumptionJudgment: (e.target.value || null) as any }))}
+                                    disabled={isReadOnly}
+                                    className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                                >
+                                    <option value="">Not assessed</option>
+                                    <option value="nominal_only">Nominal only — no actor-specific mechanisms</option>
+                                    <option value="partially_operative">Partially operative — some mechanisms exist</option>
+                                    <option value="operationally_adequate">Operationally adequate — override subsumption</option>
+                                </select>
+                                {criteria.subsumptionJudgment === 'operationally_adequate' && (
+                                    <div className="text-[10px] text-emerald-600 bg-emerald-50 p-1.5 rounded border border-emerald-100">
+                                        ✓ Subsumption classification will be overridden. The actor is reclassified as formally included with limited but genuine procedural standing.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Contest Reason (if any criterion is false) ── */}
                     {Object.values(criteria).some(v => v === false) && (

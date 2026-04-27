@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ===================================================================
-// GNDP v1.0 — Zod Schemas (all new fields optional, versioned)
+// GNDP v1.1 — Zod Schemas (all new fields optional, versioned)
 // ===================================================================
 
 // --- Shared Enums ---
@@ -38,6 +38,48 @@ const ScoreBreakdownSchema = z.object({
     sanctionAbsence: z.number().min(0).max(20).nullable(),
     dataInvisibility: z.number().min(0).max(15).nullable(),
     representationGap: z.number().min(0).max(10).nullable(),
+    // v1.1 — separate mechanism score, NOT added to absenceScore
+    schematicAdequacyScore: z.number().min(0).max(10).nullable().optional(),
+});
+
+// --- GNDP v1.1: Subsumption Schemas ---
+
+const GhostPathwaySchema = z.enum(['structural', 'proxy', 'subsumption', 'uncertain']);
+const SchematicAdequacyEnumSchema = z.enum(['Adequate', 'Partial', 'Deficient']);
+
+const SubsumptionGateSchema = z.object({
+    passed: z.boolean(),
+    evidence: z.string().min(1).max(300),
+});
+
+const SubsumptionGatesSchema = z.object({
+    categoricalAbsorption: SubsumptionGateSchema,
+    functionalRelevance: SubsumptionGateSchema,
+    operationalDeficiencyPrelim: SubsumptionGateSchema,
+});
+
+const SubsumptionSourceSchema = z.object({
+    absorbingCategory: z.string().min(1).max(120),
+    sourceRef: z.string().max(120).optional(),
+    absorptionEvidence: z.string().min(1).max(300),
+    differentiatedClaims: z.array(z.string().min(1).max(160)).min(1).max(5),
+    gates: SubsumptionGatesSchema,
+});
+
+const CapacityNonRegistrationSchema = z.object({
+    capacity: z.string().min(1).max(160),
+    sociallyPresent: z.boolean(),
+    procedurallyActionable: z.boolean(),
+    reason: z.string().min(1).max(200),
+});
+
+const SchematicAdequacyResultSchema = z.object({
+    assessment: SchematicAdequacyEnumSchema,
+    absorbingCategory: z.string().min(1).max(120),
+    subsumedActor: z.string().min(1).max(120),
+    schemaMediators: z.array(z.string().min(1).max(160)).max(5),
+    adequacyRationale: z.string().min(1).max(400),
+    capacityNonRegistration: z.array(CapacityNonRegistrationSchema).max(5),
 });
 
 // --- Pass 1A: Extraction-Only Schema ---
@@ -80,6 +122,10 @@ export const GhostNodesPass1BSchema = z.object({
             quote: z.string(),
             locationMarker: z.string(),
         })).optional(),
+        // GNDP v1.1: Subsumption fields
+        ghostPathway: GhostPathwaySchema.optional(),
+        subsumptionSource: SubsumptionSourceSchema.optional(),
+        aliases: z.array(z.string().max(120)).max(5).optional(),
     })).max(10),
 });
 
@@ -148,6 +194,10 @@ export const GhostNodesPass2Schema = z.object({
         evidenceGrade: EvidenceGradeSchema.optional(),
         absenceScore: z.number().min(0).max(100).nullable().optional(),
         scoreBreakdown: ScoreBreakdownSchema.optional(),
+        // GNDP v1.1: Subsumption fields
+        ghostPathway: GhostPathwaySchema.optional(),
+        subsumptionSource: SubsumptionSourceSchema.optional(),
+        schematicAdequacy: SchematicAdequacyResultSchema.optional(),
     }))
 });
 

@@ -68,6 +68,11 @@ export function buildGndpPass2Prompt(
             c.sanctionPower ? `**Sanction Power**: ${c.sanctionPower}` : '',
             c.dataVisibility ? `**Data Visibility**: ${c.dataVisibility}` : '',
             c.representationType ? `**Representation**: ${c.representationType}` : '',
+            // GNDP v1.1: Subsumption context
+            c.ghostPathway ? `**Ghost Pathway**: ${c.ghostPathway}` : '',
+            c.subsumptionSource ? `**Subsumed under**: "${c.subsumptionSource.absorbingCategory}" (${c.subsumptionSource.sourceRef || 'N/A'})` : '',
+            c.subsumptionSource?.differentiatedClaims ? `**Differentiated Claims**: ${c.subsumptionSource.differentiatedClaims.join('; ')}` : '',
+            c.subsumptionOverrideFlag ? `**\u26A0\uFE0F Subsumption override detected**: dedicated provision found \u2014 validate whether subsumption classification holds` : '',
         ].filter(Boolean).join('\n');
 
         return `### Candidate: "${c.name}"\n` +
@@ -91,13 +96,14 @@ export function buildGndpPass2Prompt(
  * Takes top 6 validated ghost nodes + OPPs for speculative scenario analysis.
  */
 export function buildPass3Prompt(
-    validatedGhostNodes: Array<{ id: string; label: string; ghostReason: string; absenceScore?: number | null; ghostType?: string | null }>,
+    validatedGhostNodes: Array<{ id: string; label: string; ghostReason: string; absenceScore?: number | null; ghostType?: string | null; ghostPathway?: string | null; subsumptionSource?: { absorbingCategory: string } | null }>,
     opps?: Array<{ name: string; type: string; controllingActor?: string }>,
 ): string {
     const candidateBlocks = validatedGhostNodes.slice(0, 6).map(g => {
         return `### ${g.label} (${g.id})\n` +
             `**Ghost Reason**: ${g.ghostReason}\n` +
             (g.ghostType ? `**Type**: ${g.ghostType}\n` : '') +
+            (g.ghostPathway ? `**Pathway**: ${g.ghostPathway}${g.subsumptionSource ? ` (subsumed under: "${g.subsumptionSource.absorbingCategory}")` : ''}\n` : '') +
             (g.absenceScore != null ? `**Absence Score**: ${g.absenceScore}\n` : '');
     }).join('\n\n---\n\n');
 

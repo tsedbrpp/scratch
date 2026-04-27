@@ -6,12 +6,14 @@ import {
     AbsentActorResponse,
     FormalActor,
     AffectedClaim,
-    ObligatoryPassagePoint
+    ObligatoryPassagePoint,
+    SubsumptionSource,
+    SchematicAdequacyResult
 } from './types';
 import { GhostNodesPass1Schema, GhostNodesPass1ASchema, GhostNodesPass1BSchema, GhostNodesPass2Schema, GhostNodesPass3Schema } from './schemas';
 import { DISCOURSE_TAXONOMY } from './constants';
 import { parseDocumentSections, formatSectionsForPrompt } from './parser';
-import { detectExplicitExclusions } from './negex';
+import { detectExplicitExclusions, detectSubsumptionOverrides } from './negex';
 import { buildPass1APrompt, buildPass1BPrompt, buildGndpPass2Prompt, buildPass3Prompt } from './prompt-builders';
 import { normalizeCounterfactualResult } from './normalizeCounterfactual';
 import { validateGhostNodeResponse, bestTrigramSimilarity } from './validation';
@@ -164,7 +166,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
     }
 
     try {
-        console.warn('[GHOST_NODES] === GNDP v1.0 MULTI-PASS PIPELINE START ===');
+        console.warn('[GHOST_NODES] === GNDP v1.1 MULTI-PASS PIPELINE START ===');
         console.warn('[GHOST_NODES] Document type:', documentType);
 
         // STAGE 0: Parse document into structured sections
@@ -246,6 +248,10 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 sanctionPower: c.sanctionPower,
                 dataVisibility: c.dataVisibility,
                 representationType: c.representationType,
+                // GNDP v1.1: Subsumption fields
+                ghostPathway: c.ghostPathway,
+                subsumptionSource: c.subsumptionSource,
+                aliases: c.aliases,
             }));
         } catch (err) {
             console.warn('[GHOST_NODES] Pass 1B Zod parsing failed. Using raw payload.', err);
@@ -289,6 +295,17 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
         }).slice(0, MAX_DEEP_DIVE_CANDIDATES);
 
         console.warn(`[GHOST_NODES] Post-filter: ${sortedCandidates.length} candidates sent to Pass 2`);
+
+        // GNDP v1.1: Subsumption override check
+        const subsumptionOverrides = detectSubsumptionOverrides(text, sortedCandidates);
+        for (const [name, override] of subsumptionOverrides.entries()) {
+            const candidate = sortedCandidates.find(c => c.name === name);
+            if (candidate && override.hasDedicatedProvision) {
+                candidate.subsumptionOverrideFlag = override;
+                console.warn(`[GHOST_NODES] Subsumption override: "${name}" — manual review required`);
+            }
+        }
+
         const logPath = 'c:\\Users\\mount\\.gemini\\antigravity\\scratch\\ghost_debug.log';
         const allAbsentActors: AbsentActorResponse[] = [];
 
@@ -424,6 +441,11 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
                 ...(absentActor.sanctionPower && { sanctionPower: absentActor.sanctionPower }),
                 ...(absentActor.dataVisibility && { dataVisibility: absentActor.dataVisibility }),
                 ...(absentActor.representationType && { representationType: absentActor.representationType }),
+                // GNDP v1.1: Subsumption fields
+                ...(absentActor.ghostPathway && { ghostPathway: absentActor.ghostPathway }),
+                ...(absentActor.subsumptionSource && { subsumptionSource: absentActor.subsumptionSource }),
+                ...(absentActor.schematicAdequacy && { schematicAdequacy: absentActor.schematicAdequacy }),
+                analysisVersion: 'gndp-v1.1' as const,
                 // Epistemic status — seeded from evidenceGrade as prior, overridden by structural concern analysis
                 nodeStanding: absentActor.evidenceGrade === 'E4' ? 'structural_ghost' as const
                     : absentActor.evidenceGrade === 'E3' ? 'standing_candidate' as const
@@ -540,7 +562,7 @@ export async function analyzeInstitutionalLogicsAndDetectGhostNodes(
             }
         }
 
-        console.warn(`[GHOST_NODES] === GNDP v1.0 PIPELINE COMPLETE === ${ghostNodes.length} ghost nodes detected`);
+        console.warn(`[GHOST_NODES] === GNDP v1.1 PIPELINE COMPLETE === ${ghostNodes.length} ghost nodes detected`);
 
         return {
             ghostNodes,

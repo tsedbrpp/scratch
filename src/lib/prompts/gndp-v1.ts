@@ -1,10 +1,10 @@
 // ===================================================================
-// GNDP v1.0 — Ghost Node Detection Protocol Prompts
+// GNDP v1.1 — Ghost Node Detection Protocol Prompts
 // ===================================================================
 // Pass 1A: Extraction-only (compact, no speculation)
-// Pass 1B: Candidate synthesis via subtraction
-// Pass 2:  Deep dive (evidence grading, typology, weighted scoring)
-// Pass 3:  Counterfactual power test (quarantined speculation)
+// Pass 1B: Candidate synthesis via subtraction + subsumption mapping
+// Pass 2:  Deep dive (evidence grading, typology, weighted scoring, schematic adequacy)
+// Pass 3:  Counterfactual power test (quarantined speculation + differential capacity)
 // ===================================================================
 
 // ---------------------------------------------------------------
@@ -134,8 +134,43 @@ For each candidate NOT already in the FormalActors list:
 - Return minified JSON only.
 - Do NOT assume Western-centric governance norms. Assess from the text only.
 
+## Ghost Pathway Classification (GNDP v1.1)
+For each candidate, classify the MECHANISM of absence:
+
+a) THREE-GATE SUBSUMPTION TEST — apply IN ORDER:
+   Gate 1 — Categorical Absorption: Is the actor present ONLY through a broader category
+   (e.g., "affected persons," "users," "citizens," "stakeholders," "beneficiaries")?
+   Required: text uses a general term; no dedicated provision names the actor specifically.
+
+   Gate 2 — Functional Relevance: Is this actor plausibly affected by the governance object?
+   Required: scope, use cases, or stated aims create a material connection.
+
+   Gate 3 — Operational Deficiency (Preliminary): Does the framework appear to lack
+   actor-specific standing, evidence channels, complaint rights, or enforcement access?
+   Required: absence from mechanisms, bodies, audits, remedies.
+
+   RULE: Set ghostPathway = "subsumption" ONLY if all three gates pass.
+   If any gate is uncertain, set ghostPathway = "uncertain" and explain.
+
+b) If the actor is NOT subsumed:
+   - If entirely absent from text with functional relevance: ghostPathway = "structural"
+   - If present through a representative without binding authority: ghostPathway = "proxy"
+   - If classification is unclear: ghostPathway = "uncertain"
+   Do NOT classify as "structural" merely because subsumption is absent.
+   The actor must still satisfy the existing Ghost Node evidence criteria.
+
+c) If ghostPathway = "subsumption", provide subsumptionSource:
+   - absorbingCategory: the broad term used (max 120 chars)
+   - sourceRef: article/section reference
+   - absorptionEvidence: why this category subsumes the actor (max 300 chars)
+   - differentiatedClaims: 1-5 specific claims the broad category cannot register (each max 160 chars)
+   - gates: { categoricalAbsorption: {passed, evidence}, functionalRelevance: {passed, evidence}, operationalDeficiencyPrelim: {passed, evidence} }
+
+d) aliases: up to 5 alternative names for this actor type.
+   e.g., for "Gig Workers": ["platform workers", "independent contractors", "app-based workers"]
+
 ## OUTPUT SCHEMA
-{"candidates":[{"name":"Actor Type","reason":"max 160 chars","materialImpact":"High","oppAccess":"None","sanctionPower":"None","dataVisibility":"Invisible","representationType":"None","preliminaryAbsenceStrength":"High","keywords":["k1","k2","k3"],"evidencePackets":[{"quote":"verbatim","locationMarker":"Section X"}]}]}
+{"candidates":[{"name":"Actor Type","reason":"max 160 chars","materialImpact":"High","oppAccess":"None","sanctionPower":"None","dataVisibility":"Invisible","representationType":"None","preliminaryAbsenceStrength":"High","keywords":["k1","k2","k3"],"evidencePackets":[{"quote":"verbatim","locationMarker":"Section X"}],"ghostPathway":"subsumption","subsumptionSource":{"absorbingCategory":"affected persons","sourceRef":"Art. 3(1)","absorptionEvidence":"max 300 chars","differentiatedClaims":["claim1"],"gates":{"categoricalAbsorption":{"passed":true,"evidence":"..."},"functionalRelevance":{"passed":true,"evidence":"..."},"operationalDeficiencyPrelim":{"passed":true,"evidence":"..."}}},"aliases":["alt name 1"]}]}
 `;
 
 // ---------------------------------------------------------------
@@ -235,6 +270,38 @@ Rules for isValid:
 - false if synonymous with actor in {{EXISTING_LABELS}}
 - false if evidenceGrade is E1 or E2
 - true only with E3 structural framing or E4 explicit exclusion
+
+## Schematic Adequacy (v1.1 — ONLY for ghostPathway = "subsumption")
+If the candidate has ghostPathway = "subsumption" from Pass 1B:
+
+1. Validate the subsumption: does the absorbing category actually lack operational reach?
+   Check: participation rights, complaint channels, audit criteria, enforcement pathways,
+   evidentiary standing, institutional representation.
+
+2. Assess:
+   - Adequate: category links to ≥1 concrete actor-specific mechanism → REJECT subsumption.
+   - Partial: some mechanisms exist but significant gaps remain.
+   - Deficient: nominal inclusion without procedural reach.
+
+   HARD RULE: If schematicAdequacy = "Adequate", reclassify ghostPathway from
+   "subsumption" to "structural" or reject the ghost candidate entirely.
+   An "adequate Subsumed Ghost" is conceptually incoherent.
+
+3. Map CAPACITY NON-REGISTRATION (for Partial or Deficient only, max 5):
+   - capacity: what the actor can do socially (max 160 chars)
+   - sociallyPresent: true
+   - procedurallyActionable: false
+   - reason: why this capacity is non-operative (max 200 chars)
+
+   NOTE: "Capacity non-registration" — the framework does not DESTROY capacities,
+   it makes them PROCEDURALLY NON-OPERATIVE.
+
+4. Add schematicAdequacyScore to scoreBreakdown (0–10).
+   This is a SEPARATE mechanism score, NOT added to the main absenceScore.
+   Adequate = 0, Partial = 4, Deficient = 10.
+
+5. Provide full schematicAdequacy object:
+   {"assessment":"Deficient","absorbingCategory":"affected persons","subsumedActor":"gig workers","schemaMediators":["Art. 43","Annex IV"],"adequacyRationale":"max 400 chars","capacityNonRegistration":[{"capacity":"...","sociallyPresent":true,"procedurallyActionable":false,"reason":"..."}]}
 `;
 
 // ---------------------------------------------------------------
@@ -345,6 +412,15 @@ Examples:
 - {"kind":"CapacityBacklog","description":"Authority capacity constraints could reduce timeliness, weakening benefits"}
 
 Do NOT omit this section. Scenarios without acknowledged downsides are advocacy, not analysis.
+
+### 9) Differential Capacity Analysis (v1.1 — ONLY for subsumption pathway)
+If this ghost node has ghostPathway = "subsumption":
+- For each non-registered capacity from schematicAdequacy.capacityNonRegistration,
+  project what governance mechanisms would need to change for the capacity to become
+  procedurally registered.
+- Distinguish between capacities the actor possesses SOCIALLY and capacities the
+  governance framework makes PROCEDURALLY ACTIONABLE.
+- Add to analyticalChallenges with kind: "CategoryBoundary" or "JurisdictionalVariation".
 
 ## RULES
 - No paragraphs. No prose beyond max lengths. JSON only.
