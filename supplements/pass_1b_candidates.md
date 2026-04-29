@@ -1,7 +1,7 @@
-# Pass 1B — Candidate Synthesis
+# Pass 1B — Candidate Synthesis (GNDP v1.1)
 
 **Model:** GPT-4o-mini
-**Purpose:** Generate 8–10 ghost node candidates via structural subtraction. Assess five GNDP dimensions for each candidate. No deep scoring — that occurs in Pass 2.
+**Purpose:** Generate 8–10 ghost node candidates via structural subtraction. Assess five GNDP dimensions for each candidate. **v1.1: detect subsumption pathway and populate three-gate evidence for categorically absorbed actors.** No deep scoring — that occurs in Pass 2.
 
 ---
 
@@ -14,7 +14,7 @@
 ## Prompt Template
 
 ```
-# CANDIDATE GHOST NODE SYNTHESIS — GNDP Phase 1
+# CANDIDATE GHOST NODE SYNTHESIS — GNDP Phase 1 (v1.1)
 
 Role: You are a governance gap analyst. Using the extraction data below,
 identify actors who are AFFECTED but LACK FORMAL RECOGNITION.
@@ -48,6 +48,34 @@ For each candidate NOT already in the FormalActors list:
    - Medium = Partial structural inclusion
    - Low = Advisory or indirect inclusion
 
+## v1.1: SUBSUMPTION PATHWAY DETECTION
+
+For each candidate, additionally assess whether the actor is NOMINALLY
+INCLUDED under a broader category (e.g., "affected persons," "users,"
+"citizens," "stakeholders," "beneficiaries") that DOES NOT preserve
+differentiated standing.
+
+If subsumption is detected, set ghostPathway = "subsumption" and provide:
+
+ghostPathway: "structural" | "proxy" | "subsumption" | "uncertain"
+
+If ghostPathway = "subsumption", populate subsumptionSource:
+- absorbingCategory: the broad category (max 120 chars)
+- sourceRef: document location (max 120 chars)
+- absorptionEvidence: textual evidence of absorption (max 300 chars)
+- differentiatedClaims: 1-5 specific claims the actor could make that
+  the broad category cannot register (each max 160 chars)
+- gates: three-gate evidence filter:
+  - categoricalAbsorption: { passed: bool, evidence: "max 300 chars" }
+  - functionalRelevance: { passed: bool, evidence: "max 300 chars" }
+  - operationalDeficiencyPrelim: { passed: bool, evidence: "max 300 chars" }
+
+All three gates must pass for subsumption classification.
+If any gate fails, set ghostPathway to "structural" or "uncertain".
+
+Also provide aliases (max 5): alternative names for the actor to support
+NegEx override detection in Pass 1.5.
+
 ## INPUTS
 
 ### Formal Actors (from Pass 1A)
@@ -74,13 +102,22 @@ For each candidate NOT already in the FormalActors list:
 - Provide 1-3 evidence packets per candidate (verbatim quotes + location).
 - Return minified JSON only.
 - Do NOT assume Western-centric governance norms. Assess from the text only.
+- Subsumption requires all three gates to pass. Do NOT over-classify.
 
 ## OUTPUT SCHEMA
 {"candidates":[{"name":"Actor Type","reason":"max 160 chars",
 "materialImpact":"High","oppAccess":"None","sanctionPower":"None",
 "dataVisibility":"Invisible","representationType":"None",
 "preliminaryAbsenceStrength":"High","keywords":["k1","k2","k3"],
-"evidencePackets":[{"quote":"verbatim","locationMarker":"Section X"}]}]}
+"evidencePackets":[{"quote":"verbatim","locationMarker":"Section X"}],
+"ghostPathway":"structural",
+"subsumptionSource":{"absorbingCategory":"affected persons",
+"sourceRef":"Art. 3","absorptionEvidence":"...",
+"differentiatedClaims":["claim1"],
+"gates":{"categoricalAbsorption":{"passed":true,"evidence":"..."},
+"functionalRelevance":{"passed":true,"evidence":"..."},
+"operationalDeficiencyPrelim":{"passed":true,"evidence":"..."}}},
+"aliases":["alt name 1"]}]}
 ```
 
 ---
@@ -100,6 +137,10 @@ For each candidate NOT already in the FormalActors list:
 
 > Do NOT assume Western-centric governance norms. Assess from the text only.
 
+## v1.1 Anti-Inflation Constraint
+
+> Subsumption requires all three gates to pass with textual evidence. Do NOT classify an actor as subsumed merely because a broad category exists. The category must demonstrably absorb the actor's differentiated claims.
+
 ---
 
-*Source implementation: [`src/lib/prompts/gndp-v1.ts`](../../src/lib/prompts/gndp-v1.ts) → `GNDP_PASS_1B_PROMPT`*
+*Source implementation: [`src/lib/prompts/gndp-v1.ts`](../src/lib/prompts/gndp-v1.ts) → `GNDP_PASS_1B_PROMPT`*

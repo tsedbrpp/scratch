@@ -1,7 +1,7 @@
-# Pass 2 — Deep Dive: Evidence Grading + GNDP Classification
+# Pass 2 — Deep Dive: Evidence Grading + GNDP Classification (v1.1)
 
 **Model:** GPT-4o
-**Purpose:** Forensic evidence grounding for each candidate. Evidence grading (E1–E4), weighted absence scoring (100-point scale), ghost typology assignment, and full classification.
+**Purpose:** Forensic evidence grounding for each candidate. Evidence grading (E1–E4), weighted absence scoring (100-point scale), ghost typology assignment, and full classification. **v1.1: schematic adequacy assessment and pathway validation for subsumption candidates.**
 
 **Critical Gate:** Evidence grades E1 or E2 → `absenceScore = null`, `ghostType = null`, `isValid = false`.
 
@@ -16,11 +16,12 @@
 ## Prompt Template
 
 ```
-# DEEP DIVE: Evidence Grounding + GNDP Classification
+# DEEP DIVE: Evidence Grounding + GNDP Classification (v1.1)
 
 ## Mission
 Perform forensic evidence grounding for each candidate. Decide validity,
-assign ghost typology, compute weighted absence score, and grade evidence quality.
+assign ghost typology, compute weighted absence score, grade evidence quality,
+and — for subsumption-pathway candidates — assess schematic adequacy.
 
 ## Analytical Lens: Institutional Logics & Discourses
 Anchor your analysis in the dominant discourses:
@@ -71,6 +72,14 @@ Classify as exactly one:
 - Temporal: affected later but excluded from early-stage design
 - SupplyChain: hidden upstream/downstream labour or resource contribution
 
+### Ghost Pathway (v1.1 — validate or reclassify)
+If the candidate arrived from Pass 1B with a ghostPathway, validate it.
+If evidence contradicts the Pass 1B classification, reclassify:
+- structural: actor is relevant but has no actionable governance role
+- proxy: actor appears only through a representative with limited authority
+- subsumption: actor is nominally included under a broad category
+- uncertain: pathway cannot be determined
+
 ### Weighted Absence Score (only if evidenceGrade >= E3)
 Compute from these dimensions (sum = absenceScore, max 100):
 - materialImpact: 0-30
@@ -79,12 +88,28 @@ Compute from these dimensions (sum = absenceScore, max 100):
 - dataInvisibility: 0-15
 - representationGap: 0-10
 
+### v1.1: Schematic Adequacy (only if ghostPathway = "subsumption")
+For subsumption candidates, assess whether the absorbing category
+operationally preserves the actor's governance capacities:
+- assessment: Adequate | Partial | Deficient
+- absorbingCategory: the broad category
+- subsumedActor: the specific actor
+- schemaMediators: instruments that could bridge the gap (max 5)
+- adequacyRationale: explanation (max 400 chars)
+- capacityNonRegistration: specific capacities not registered (max 5)
+  Each: { capacity, sociallyPresent: bool, procedurallyActionable: bool,
+           reason (max 200 chars) }
+
+Also compute schematicAdequacyScore (0-10) in scoreBreakdown.
+This score is SEPARATE from absenceScore and must NOT be added to it.
+
 ## Non-Negotiables
 1) Evaluate EVERY candidate in {{CANDIDATE_BLOCKS}}.
 2) Never return empty ghostNodes array.
 3) Return ONLY minified JSON. No markdown. No extra text.
 4) No hallucinated quotes — every quote must be exact text.
 5) Every isValid=true must have 2+ evidenceQuotes; isValid=false must have 1+.
+6) schematicAdequacyScore is NEVER added to absenceScore.
 
 ## Field Semantics
 
@@ -113,7 +138,11 @@ institutionalLogics: coherent 0-1 profile across market, state, professional,
 "community":0.0},
 "ghostType":"Structural","evidenceGrade":"E4","absenceScore":85,
 "scoreBreakdown":{"materialImpact":25,"oppExclusion":22,
-"sanctionAbsence":18,"dataInvisibility":12,"representationGap":8}}]}
+"sanctionAbsence":18,"dataInvisibility":12,"representationGap":8,
+"schematicAdequacyScore":null},
+"ghostPathway":"structural",
+"subsumptionSource":null,
+"schematicAdequacy":null}]}
 
 Rules for isValid:
 - false if candidate is well-represented in text
@@ -135,4 +164,4 @@ Rules for isValid:
 
 ---
 
-*Source implementation: [`src/lib/prompts/gndp-v1.ts`](../../src/lib/prompts/gndp-v1.ts) → `GNDP_PASS_2_PROMPT`*
+*Source implementation: [`src/lib/prompts/gndp-v1.ts`](../src/lib/prompts/gndp-v1.ts) → `GNDP_PASS_2_PROMPT`*

@@ -38,7 +38,7 @@ graph TB
     subgraph Framework["Eight-Layer Analytical Framework"]
         L1["Layer 1\nRelationship Extraction\nANT Tracing · Assemblage"]
         L2["Layer 2\nEcosystem Mapping\nForce-directed graph"]
-        L3["Layer 3\nGhost Node Detection\nGNDP v1.0"]
+        L3["Layer 3\nGhost Node Detection\nGNDP v1.1"]
         L4["Layer 4\nOntology Generation\nConcept mapping"]
         L5["Layer 5\nCultural Framing\nLogics · Legitimacy · DSF"]
         L6["Layer 6\nResistance Analysis\nCounter-conduct"]
@@ -97,19 +97,19 @@ graph TB
     AnalyzeAPI --> Clerk
 ```
 
-## GNDP v1.0 Pipeline Detail
+## GNDP v1.1 Pipeline Detail
 
 ```mermaid
 graph LR
-    subgraph GNDP["Ghost Node Detection Pipeline v1.0"]
+    subgraph GNDP["Ghost Node Detection Pipeline v1.1"]
         PDF["Policy\nDocument"] --> P1A
-        P1A["Pass 1A\nStructural\nExtraction\n─────\nGPT-4o-mini"] --> P1B["Pass 1B\nCandidate\nSynthesis\n─────\nGPT-4o-mini"]
-        P1B --> P15["Pass 1.5\nNegEx\nFilter\n─────\nRule-based"]
-        P15 --> P2["Pass 2\nDeep Dive\n─────\nGPT-4o\n─────\nEvidence: E1–E4\nScore: 0–100\nTypology"]
+        P1A["Pass 1A\nStructural\nExtraction\n─────\nGPT-4o-mini"] --> P1B["Pass 1B\nCandidate\nSynthesis\n─────\nGPT-4o-mini\n─────\nv1.1: Subsumption\npathway detection\nThree-gate filter"]
+        P1B --> P15["Pass 1.5\nNegEx Filter +\nOverride Detection\n─────\nRule-based\n─────\nv1.1: Subsumption\noverride check"]
+        P15 --> P2["Pass 2\nDeep Dive\n─────\nGPT-4o\n─────\nEvidence: E1–E4\nScore: 0–100\nTypology\nv1.1: Schematic\nadequacy (0–10)"]
         P2 --> Gate{"E3/E4?"}
-        Gate -->|Yes| P3["Pass 3\nCounterfactual\nPower Test\n─────\nGPT-4o\n─────\nRole semantics\nEnforcement ladder\nMechanism chain"]
+        Gate -->|Yes| P3["Pass 3\nCounterfactual\nPower Test\n─────\nGPT-4o\n─────\nRole semantics\nEnforcement ladder\nv1.1: Differential\ncapacity analysis"]
         Gate -->|No: E1/E2| Invalid["❌ Invalidated\nscore = null\ntype = null"]
-        P3 --> AR["Analyst\nReflexive\nAssessment\n─────\nHuman\n─────\n3 criteria\nProvenance chain"]
+        P3 --> AR["Analyst\nReflexive\nAssessment\n─────\nHuman\n─────\n3 criteria + v1.1\nSubsumption judgment\nProvenance chain"]
     end
 
     style Invalid fill:#991b1b,color:#fff

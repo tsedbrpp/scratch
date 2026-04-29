@@ -16,6 +16,8 @@ LLMs tend to fill structural absences with plausible inferences, potentially inf
 - **Evidence gating**: E1/E2 candidates are automatically invalidated.
 - **NegEx filtering**: Rule-based (non-LLM) pass prunes false positives.
 - **Fuzzy trigram rescue**: Guards against false negatives from terminological variation.
+- **Three-gate subsumption filter (v1.1)**: Prevents over-classification of nominally included actors as subsumed. All three gates (categorical absorption, functional relevance, operational deficiency) must pass with textual evidence.
+- **Subsumption override detection (v1.1)**: Rule-based check flags subsumed candidates with dedicated provisions for manual review rather than automatic classification.
 
 ### 1.3 Training Data Bias
 LLM training corpora over-represent Global North governance norms. The GNDP explicitly prohibits assuming Western-centric governance norms in Pass 1B. However, subtle framing biases may persist in how actors, risks, and governance structures are interpreted.
@@ -56,10 +58,15 @@ The counterfactual power test (GNDP Pass 3) is intentionally speculative. All ou
 | **Analytical Challenges** | Every counterfactual scenario must include 2–4 acknowledged downsides | GNDP Pass 3 (mandatory field) |
 | **Epistemic Partition** | Every proposition evaluation partitions evidence into grounded/inferred/unknown | GNDP Pass 3, TLF |
 | **Anti-Bias Constraint** | "Do NOT assume Western-centric governance norms" | GNDP Pass 1B prompt |
+| **Three-Gate Subsumption Filter (v1.1)** | Categorical absorption, functional relevance, and operational deficiency must each pass with evidence before subsumption classification | GNDP Pass 1B |
+| **Subsumption Override Detection (v1.1)** | Rule-based check for dedicated provisions prevents automatic subsumption of actors with specific rights | GNDP Pass 1.5 (NegEx) |
+| **Schematic Adequacy Separation (v1.1)** | Adequacy score (0–10) is a mechanism classifier; never added to the core 100-point absence score | GNDP Pass 2 |
+| **Analyst Subsumption Judgment (v1.1)** | Fourth criterion for subsumption-pathway ghosts; analyst can override model classification | Ghost Node assessment UI |
 | **Analyst Reflexive Assessment** | Three-criterion human evaluation with immutable provenance chain | Ghost Node assessment UI |
 | **Positionality Recording** | Analyst records how their positionality may shape the reading | PositionalityDialog component |
 | **Disagreement Preservation** | Analyst disagreements documented and retained, not resolved by editing | Provenance chain |
 | **Cross-Stratum Triangulation** | Convergent findings across independently generated strata carry greater weight | TLF validation strategy |
+| **Backward Compatibility Normalizer (v1.1)** | Cached v1.0 results transparently normalised with inferred pathway and version | `normalizeGhostNode.ts` |
 
 ---
 
@@ -98,6 +105,8 @@ The counterfactual power test (GNDP Pass 3) is intentionally speculative. All ou
 | Highly technical standards (ISO, CEN) | Dense referential language may produce false negatives in ghost node detection | Fuzzy trigram rescue partially mitigates |
 | Documents with extensive cross-references | Context compression may lose referential chains | Manual review recommended for heavily cross-referenced texts |
 | Conflicting analyst assessments | Both assessments preserved; no automated resolution | Disagreement documented in provenance chain |
+| Broad stakeholder categories (v1.1) | Documents using categories like "affected persons" or "stakeholders" may trigger subsumption detection for actors who are genuinely well-served by the broad category | Three-gate filter + analyst override via `subsumptionJudgment: operationally_adequate` |
+| Mixed v1.0/v1.1 cached results | Cached v1.0 results lack subsumption fields | `normalizeGhostNode.ts` infers `ghostPathway` and `analysisVersion`; subsumption fields remain undefined |
 
 ---
 
@@ -113,4 +122,4 @@ The counterfactual power test (GNDP Pass 3) is intentionally speculative. All ou
 
 ---
 
-*This document should be read alongside the [GNDP v1.0 Full Protocol](./GNDP_v1.0_full_protocol.md) for detailed descriptions of each safeguard mechanism.*
+*This document should be read alongside the [GNDP v1.1 Full Protocol](./GNDP_v1.1_full_protocol.md) for detailed descriptions of each safeguard mechanism.*

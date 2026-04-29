@@ -67,7 +67,7 @@ Key JSON output schemas for the system's primary analytical types. These schemas
 
 ---
 
-## 2. Ghost Node (GNDP v1.0)
+## 2. Ghost Node (GNDP v1.1)
 
 **Source**: `src/lib/ghost-nodes/types.ts`
 
@@ -93,6 +93,10 @@ Key JSON output schemas for the system's primary analytical types. These schemas
 | `missingSignals` | `MissingSignal[]` | What text would prove inclusion |
 | `scoreBreakdown` | `ScoreBreakdown` | Per-dimension scoring |
 | `institutionalLogics` | `object` | 0–1 profile: market, state, professional, community |
+| `ghostPathway` | `GhostPathway` | **v1.1:** Production mechanism (structural / proxy / subsumption / uncertain) |
+| `subsumptionSource` | `SubsumptionSource \| null` | **v1.1:** Subsumption metadata (if pathway = subsumption) |
+| `schematicAdequacy` | `SchematicAdequacyResult \| null` | **v1.1:** Adequacy assessment for subsumed actors |
+| `analysisVersion` | `"gndp-v1.0" \| "gndp-v1.1"` | **v1.1:** Protocol version used for this analysis |
 
 ### ScoreBreakdown
 
@@ -103,6 +107,36 @@ Key JSON output schemas for the system's primary analytical types. These schemas
 | `sanctionAbsence` | 20 | No means to trigger enforcement |
 | `dataInvisibility` | 15 | Harms rendered illegible by data categories |
 | `representationGap` | 10 | Deficit in formal voice |
+| `schematicAdequacyScore` | 10 | **v1.1:** Mechanism classifier score (separate, NOT added to absenceScore) |
+
+### v1.1: SubsumptionSource
+
+| Field | Type | Description |
+|---|---|---|
+| `absorbingCategory` | `string` | Broad category absorbing the actor |
+| `sourceRef` | `string` | Document location |
+| `absorptionEvidence` | `string` | Textual evidence of absorption |
+| `differentiatedClaims` | `string[]` | 1–5 specific claims the category cannot register |
+| `gates` | `SubsumptionGates` | Three-gate evidentiary filter |
+
+### v1.1: SubsumptionGates
+
+| Field | Type | Description |
+|---|---|---|
+| `categoricalAbsorption` | `SubsumptionGate` | Is the actor absorbed under a broader category? |
+| `functionalRelevance` | `SubsumptionGate` | Could differentiated claims serve governance aims? |
+| `operationalDeficiencyPrelim` | `SubsumptionGate` | Does the category fail to preserve standing? |
+
+### v1.1: SchematicAdequacyResult
+
+| Field | Type | Description |
+|---|---|---|
+| `assessment` | `"Adequate" \| "Partial" \| "Deficient"` | Overall adequacy |
+| `absorbingCategory` | `string` | The broad category |
+| `subsumedActor` | `string` | The specific actor |
+| `schemaMediators` | `string[]` | Instruments that could bridge the gap |
+| `adequacyRationale` | `string` | Why the category is/isn't adequate |
+| `capacityNonRegistration` | `CapacityNonRegistration[]` | Specific capacities not registered |
 
 ### Counterfactual
 
@@ -126,6 +160,7 @@ Key JSON output schemas for the system's primary analytical types. These schemas
 | `functionalRelevance` | `boolean` | Plausible governance function exists |
 | `textualTrace` | `boolean` | Interests invoked without enrolment |
 | `structuralForeclosure` | `boolean` | Architecture eliminates participation |
+| `subsumptionJudgment` | `"nominal_only" \| "partially_operative" \| "operationally_adequate" \| null` | **v1.1:** Is categorical inclusion operationally meaningful? |
 | `moralStatus` | `"moral_patient" \| "moral_agent" \| "both" \| "undetermined"` | Floridi-informed classification |
 | `reflexiveNote` | `string` | Positionality record |
 | `timestamp` | `string` | ISO 8601 timestamp |

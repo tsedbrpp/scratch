@@ -1,9 +1,14 @@
-# Pass 3 — Counterfactual Power Test (v3)
+# Pass 3 — Counterfactual Power Test (v3, GNDP v1.1)
 
 **Model:** GPT-4o
-**Purpose:** Quarantined speculation — project structural consequences of hypothetical inclusion at governance chokepoints. All outputs are explicitly conditional.
+**Purpose:** Quarantined speculation — project structural consequences of hypothetical inclusion at governance chokepoints. All outputs are explicitly conditional. **v1.1: for subsumption-pathway candidates, counterfactuals model what would change if the actor received differentiated standing rather than mere categorical inclusion.**
 
 **Structural Separation:** Pass 3 is intentionally isolated from Pass 2. Counterfactual outputs cannot modify absence scores or evidence grades.
+
+**v1.1 Context Injection:** For subsumption-pathway candidates, Pass 3 receives:
+- `subsumptionSource.absorbingCategory` and `differentiatedClaims` from Pass 1B
+- `schematicAdequacy` assessment from Pass 2
+- `subsumptionOverrideFlag` from Pass 1.5 (if applicable)
 
 ---
 

@@ -50,14 +50,16 @@ All analysis prompts are versioned and managed in `src/lib/prompts/registry.ts`.
 | `critique_panel` | Critique Panel | Simulates a 3-person academic review panel (Decolonial, ANT, Legal) | JSON: blind_spots, over_interpretation, legitimacy_correction |
 | `stress_test` | Adversarial Stress Test | Red-teams a policy by reframing through an opposing ideological lens | JSON |
 
-## Ghost Node Detection Prompts (GNDP v1.0)
+## Ghost Node Detection Prompts (GNDP v1.1)
 
 | Prompt ID | Name | Description | Output |
 |---|---|---|---|
 | `ghost_nodes_combined_pass_1` | Ghost Nodes: Theme & Actor Scan | Extracts dominant discourses and broadly identifies absent actor candidates | JSON: dominantDiscourses, ghostNodeCandidates |
-| `ghost_nodes_pass_2` | Ghost Nodes: Deep Dive | Forensic evidence grounding on absent actor candidates | JSON |
+| `ghost_nodes_pass_2` | Ghost Nodes: Deep Dive | Forensic evidence grounding on absent actor candidates; **v1.1: schematic adequacy + pathway validation** | JSON |
 
-For GNDP v1.0 full pipeline prompts (Pass 1A, 1B, 2, 3), see [`supplements/pass_1a_extraction.md`](./pass_1a_extraction.md) through [`pass_3_counterfactual.md`](./pass_3_counterfactual.md).
+For the full GNDP v1.1 pipeline prompts (Pass 1A, 1B, 2, 3), see [`supplements/pass_1a_extraction.md`](./pass_1a_extraction.md) through [`pass_3_counterfactual.md`](./pass_3_counterfactual.md). v1.1 additions include subsumption pathway detection (Pass 1B), override detection (Pass 1.5), schematic adequacy assessment (Pass 2), and differential-capacity counterfactuals (Pass 3).
+
+See also: [`GNDP_v1.1_full_protocol.md`](./GNDP_v1.1_full_protocol.md) for the complete technical supplement.
 
 ## Theoretical Lens Additions (4)
 
